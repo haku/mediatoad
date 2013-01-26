@@ -46,10 +46,7 @@ public class ContentNode {
 	}
 
 	public File getFile () {
-		if (this.isItem && this.file != null) {
-			return this.file;
-		}
-		return null;
+		return this.file;
 	}
 
 	public boolean isItem () {
