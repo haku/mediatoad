@@ -11,16 +11,29 @@
 	<properties>
 		<java.version>1.6</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<args4j.version>2.0.21</args4j.version>
+		<cling.version>1.0.5</cling.version>
+		<teleal.version>1.0.14</teleal.version>
+		<jetty.version>8.1.8.v20121106</jetty.version>
+		<commonsio.version>2.4</commonsio.version>
+		<logback.version>1.0.9</logback.version>
+		<slf4j.version>1.7.2</slf4j.version>
 		<junit.version>4.11</junit.version>
 		<hamcrest.version>1.3</hamcrest.version>
-		<mockito.version>1.9.0</mockito.version>
-		<powermock.version>1.4.12</powermock.version>
+		<mockito.version>1.9.5</mockito.version>
+		<powermock.version>1.5</powermock.version>
 	</properties>
+
+	<prerequisites>
+		<maven>2.2.1</maven>
+	</prerequisites>
 
 	<build>
 		<plugins>
+
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -32,6 +45,7 @@
 					</descriptorRefs>
 				</configuration>
 			</plugin>
+
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.0</version>
@@ -40,6 +54,7 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
 
@@ -67,7 +82,7 @@
 				<checksumPolicy>fail</checksumPolicy>
 			</releases>
 			<snapshots>
-				<enabled>false</enabled> <!-- Or 'true', if you want -->
+				<enabled>false</enabled>
 			</snapshots>
 		</repository>
 
@@ -80,7 +95,7 @@
 		<dependency>
 			<groupId>args4j</groupId>
 			<artifactId>args4j</artifactId>
-			<version>2.0.21</version>
+			<version>${args4j.version}</version>
 		</dependency>
 
 		<!-- Cling -->
@@ -88,19 +103,19 @@
 		<dependency>
 			<groupId>org.teleal.cling</groupId>
 			<artifactId>cling-core</artifactId>
-			<version>1.0.5</version>
+			<version>${cling.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.teleal.cling</groupId>
 			<artifactId>cling-support</artifactId>
-			<version>1.0.5</version>
+			<version>${cling.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.teleal</groupId>
 			<artifactId>teleal-common</artifactId>
-			<version>1.0.14</version>
+			<version>${teleal.version}</version>
 		</dependency>
 
 		<!-- Jetty -->
@@ -108,7 +123,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-servlet</artifactId>
-			<version>8.1.8.v20121106</version>
+			<version>${jetty.version}</version>
 		</dependency>
 
 		<!-- Util -->
@@ -116,7 +131,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.4</version>
+			<version>${commonsio.version}</version>
 		</dependency>
 
 		<!-- Logging -->
@@ -124,19 +139,19 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.9</version>
+			<version>${logback.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.2</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jul-to-slf4j</artifactId>
-			<version>1.7.2</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 
 		<!-- Testing. -->
