@@ -41,7 +41,3 @@ http://www.eclipse.org/jetty/
 
 Some classes are based on code from WireMe and are used under the Apache 2 License.  WireMe was also used as a general example of how to expose content via DLNA using the Cling library.  See https://code.google.com/p/wireme/ for more details.
 
-== Known issues ==
-
-* Root dir gets called '.'.
-* Paths have magic numbers in them that change and will confuse devices that try to remember where you last played to.
