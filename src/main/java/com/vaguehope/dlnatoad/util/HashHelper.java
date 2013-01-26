@@ -14,7 +14,7 @@ public final class HashHelper {
 	public static String sha1(String s) {
 		MessageDigest dig = getSha1Digest();
 		byte[] bytes = dig.digest(getBytes(s));
-		return new BigInteger(1, bytes).toString(16);
+		return new BigInteger(1, bytes).toString(16); // NOSONAR Hex is not a magic number.
 	}
 
 	private static byte[] getBytes (String s) {
