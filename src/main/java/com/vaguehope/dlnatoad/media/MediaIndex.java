@@ -41,7 +41,7 @@ public class MediaIndex {
 
 	public void refresh () throws IOException {
 		this.contentTree.prune();
-		new TreeWalker(this.baseDirs, MediaIdentifier.FILE_FILTER, new Hiker() {
+		new TreeWalker(this.baseDirs, MediaFormat.FILE_FILTER, new Hiker() {
 			@Override
 			public void onDirWithFiles (final File dir, final List<File> files) {
 				putDirToContentTree(dir, files);
@@ -53,8 +53,8 @@ public class MediaIndex {
 	protected void putDirToContentTree (final File dir, final List<File> files) {
 		final Container container = makeContainerOnTree(this.videoContainer, contentId(dir), dir.getName());
 		for (final File file : files) {
-			final String mimeType = MediaIdentifier.getMimeType(file);
-			makeVideoItemInContainer(container, file, file.getName(), mimeType);
+			final MediaFormat format = MediaFormat.identify(file);
+			makeVideoItemInContainer(container, file, file.getName(), format);
 		}
 		LOG.info("shared: {} ({})", dir.getName(), container.getChildCount());
 	}
@@ -94,9 +94,10 @@ public class MediaIndex {
 
 	}
 
-	protected void makeVideoItemInContainer (final Container parent, final File file, final String title, final String mimeType) {
+	protected void makeVideoItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
 		final String id = contentId(file);
-		final MimeType extMimeType = new MimeType(mimeType.substring(0, mimeType.indexOf('/')), mimeType.substring(mimeType.indexOf('/') + 1));
+		final String mime = format.getMime();
+		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		//res.setDuration(formatDuration(durationMillis));
 		//res.setResolution(resolutionXbyY);
