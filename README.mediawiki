@@ -12,6 +12,11 @@ The few good free DLNA server implementations I found online were clunky with aw
 
 It compiles to a runnable jar.  Run it in the top directory you want to share.  Your DLNA device should magically detect it on your LAN.  DLNA is magical like that.  Media files are identified purely on file extension.  Known extensions are .avi, .flv, .m4v, .mkv, .mp4, .mpeg, .mpg and .wmv.
 
+== Any configuration? ==
+
+You can include multiple root direcories:
+ java -jar dlnatoad.jar foo/ bar/
+
 == How can I compile it? ==
 
 Its a Maven project.

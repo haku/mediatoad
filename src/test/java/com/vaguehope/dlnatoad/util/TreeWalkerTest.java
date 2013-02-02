@@ -7,7 +7,9 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,7 +36,9 @@ public class TreeWalkerTest {
 		when(fileFilter.accept(isA(File.class))).thenReturn(true);
 
 		Hiker hiker = mock(Hiker.class);
-		new TreeWalker(this.tmp.getRoot(), fileFilter, hiker).walk();
+		List<File> roots = new ArrayList<File>();
+		roots.add(this.tmp.getRoot());
+		new TreeWalker(roots, fileFilter, hiker).walk();
 
 		InOrder o = inOrder(hiker);
 		o.verify(hiker).onDirWithFiles(this.tmp.getRoot(), Arrays.asList(file1, file2));

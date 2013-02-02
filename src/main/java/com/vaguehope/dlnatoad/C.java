@@ -2,6 +2,8 @@ package com.vaguehope.dlnatoad;
 
 public interface C {
 
+	String APPNAME = "DLNAtoad";
+
 	String METADATA_MANUFACTURER = "VagueHope";
 
 	String METADATA_MODEL_NAME = "DLNAtoad";

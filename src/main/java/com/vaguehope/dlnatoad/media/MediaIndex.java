@@ -25,14 +25,14 @@ public class MediaIndex {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MediaIndex.class);
 
-	private final File baseDir;
+	private final List<File> baseDirs;
 	private final ContentTree contentTree;
 	private final String externalHttpContext;
 
 	private final Container videoContainer;
 
-	public MediaIndex (final File baseDir, final ContentTree contentTree, final String externalHttpContext) {
-		this.baseDir = baseDir;
+	public MediaIndex (final List<File> dirs, final ContentTree contentTree, final String externalHttpContext) {
+		this.baseDirs = dirs;
 		this.contentTree = contentTree;
 		this.externalHttpContext = externalHttpContext;
 
@@ -41,7 +41,7 @@ public class MediaIndex {
 
 	public void refresh () throws IOException {
 		this.contentTree.prune();
-		new TreeWalker(this.baseDir, MediaIdentifier.FILE_FILTER, new Hiker() {
+		new TreeWalker(this.baseDirs, MediaIdentifier.FILE_FILTER, new Hiker() {
 			@Override
 			public void onDirWithFiles (final File dir, final List<File> files) {
 				putDirToContentTree(dir, files);

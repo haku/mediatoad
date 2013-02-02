@@ -37,7 +37,9 @@ public class MediaIndexTest {
 	@Before
 	public void before () throws Exception {
 		this.contentTree = new ContentTree();
-		this.undertest = new MediaIndex(this.tmp.getRoot(), this.contentTree, EXTERNAL_HTTP_CONTEXT);
+		List<File> roots = new ArrayList<File>();
+		roots.add(this.tmp.getRoot());
+		this.undertest = new MediaIndex(roots, this.contentTree, EXTERNAL_HTTP_CONTEXT);
 	}
 
 	@Test

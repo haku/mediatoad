@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -10,6 +11,8 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.UpnpService;
@@ -31,10 +34,28 @@ public final class Main {
 		throw new AssertionError();
 	}
 
-	public static void main (final String[] args) throws Exception { // NOSONAR
+	public static void main (final String[] rawArgs) throws Exception { // NOSONAR
 		LogHelper.bridgeJul();
-		final File baseDir = new File(".");
 
+		final PrintStream err = System.err;
+		final Args args = new Args();
+		final CmdLineParser parser = new CmdLineParser(args);
+		try {
+			parser.parseArgument(rawArgs);
+			run(args.getDirs());
+		}
+		catch (CmdLineException e) {
+			err.println(e.getMessage());
+			help(parser, err);
+			return;
+		}
+		catch (Exception e) {
+			err.println("An unhandled error occured.");
+			e.printStackTrace(err);
+		}
+	}
+
+	private static void run (final List<File> dirs) throws Exception { // NOSONAR
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		final List<InetAddress> addresses = NetHelper.getIpAddresses();
 		final InetAddress address = addresses.iterator().next();
@@ -51,12 +72,12 @@ public final class Main {
 		server.start();
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
-		new MediaIndex(baseDir, contentTree, externalHttpContext).refresh();
+		new MediaIndex(dirs, contentTree, externalHttpContext).refresh();
 
 		server.join(); // Keep app alive.
 	}
 
-	public static Server makeContentServer (final ContentTree contentTree) {
+	private static Server makeContentServer (final ContentTree contentTree) {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
@@ -75,6 +96,15 @@ public final class Main {
 		connector.setStatsOn(false);
 		connector.setPort(port);
 		return connector;
+	}
+
+	private static void help (CmdLineParser parser, PrintStream ps) {
+		ps.print("Usage: ");
+		ps.print(C.APPNAME);
+		parser.printSingleLineUsage(ps);
+		ps.println();
+		parser.printUsage(ps);
+		ps.println();
 	}
 
 }

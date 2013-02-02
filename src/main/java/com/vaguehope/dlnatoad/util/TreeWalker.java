@@ -14,19 +14,22 @@ import org.slf4j.LoggerFactory;
 
 public class TreeWalker {
 
-	private final File root;
+	private final List<File> roots;
 	private final FileFilter fileFilter;
 	private final Hiker hiker;
 
-	public TreeWalker (final File root, final FileFilter fileFilter, final Hiker hiker) {
-		this.root = root;
+	public TreeWalker (final List<File> roots, final FileFilter fileFilter, final Hiker hiker) {
+		this.roots = roots;
 		this.fileFilter = fileFilter;
 		this.hiker = hiker;
 	}
 
 	public void walk () throws IOException {
 		final Queue<File> dirs = new LinkedList<File>();
-		dirs.add(this.root.getCanonicalFile());
+		for (File root : this.roots) {
+			dirs.add(root.getCanonicalFile());
+		}
+
 		while (!dirs.isEmpty()) {
 			final File dir = dirs.poll();
 			final File[] listFiles = dir.listFiles();
