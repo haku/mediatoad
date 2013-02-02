@@ -23,7 +23,9 @@ public class ContentTree {
 
 	public static final String ROOT_ID = "0"; // Root id of '0' is in the spec.
 	public static final String VIDEO_ID = "1-videos";
+	public static final String IMAGE_ID = "2-images";
 	public static final String VIDEO_PREFIX = "video-";
+	public static final String IMAGE_PREFIX = "images-";
 
 	private final Map<String, ContentNode> contentMap;
 	private final ContentNode rootNode;
@@ -48,7 +50,7 @@ public class ContentTree {
 	}
 
 	private static boolean isDefault (Container c) {
-		return ROOT_ID.equals(c.getId()) || VIDEO_ID.equals(c.getId());
+		return ROOT_ID.equals(c.getId()) || VIDEO_ID.equals(c.getId()) || IMAGE_ID.equals(c.getId());
 	}
 
 	private static boolean isValidItem (ContentNode node) {

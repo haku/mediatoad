@@ -68,6 +68,24 @@ public class MediaIndexTest {
 	}
 
 	@Test
+	public void itSeparatesVideosAndImages () throws Exception {
+		List<File> expectedVideos = mockFiles(3, ".mkv");
+		List<File> expectedImages = mockFiles(5, ".jpg");
+
+		this.undertest.refresh();
+
+		List<Container> videoDirs = this.contentTree.getNode(ContentTree.VIDEO_ID).getContainer().getContainers();
+		assertEquals(1, videoDirs.size());
+		ContentNode vidDirNode = this.contentTree.getNode(videoDirs.get(0).getId());
+		assertNodeWithItems(this.tmp.getRoot(), expectedVideos, vidDirNode);
+
+		List<Container> imageDirs = this.contentTree.getNode(ContentTree.IMAGE_ID).getContainer().getContainers();
+		assertEquals(1, imageDirs.size());
+		ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
+		assertNodeWithItems(this.tmp.getRoot(), expectedImages, imgDirNode);
+	}
+
+	@Test
 	public void itIndexesAFewVideoRootDirs () throws Exception {
 		File dir1 = new File(this.tmp.getRoot(), "dir 1");
 		File dir2 = new File(this.tmp.getRoot(), "dir 2");

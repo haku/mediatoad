@@ -17,7 +17,10 @@ public enum MediaFormat {
 	FLV("flv", "video/x-flv", MediaType.VIDEO),
 	WMV("wmv", "video/x-ms-wmv", MediaType.VIDEO),
 	MPG("mpg", "video/mpeg", MediaType.VIDEO),
-	MPEG("mpeg", "video/mpeg", MediaType.VIDEO);
+	MPEG("mpeg", "video/mpeg", MediaType.VIDEO),
+	JPG("jpg", "image/jpeg", MediaType.IMAGE),
+	JPEG("jpeg", "image/jpeg", MediaType.IMAGE),
+	PNG("png", "image/png", MediaType.IMAGE);
 
 	public static final FileFilter FILE_FILTER = new MediaFileFilter();
 
