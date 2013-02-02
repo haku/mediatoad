@@ -116,6 +116,7 @@ public class MediaIndex {
 		final String mime = format.getMime();
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
+		res.setSize(file.length());
 		//res.setDuration(formatDuration(durationMillis));
 		//res.setResolution(resolutionXbyY);
 		final VideoItem videoItem = new VideoItem(id, parent, title, "", res);
@@ -131,6 +132,7 @@ public class MediaIndex {
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		//res.setResolution(resolutionXbyY);
+		res.setSize(file.length());
 		final ImageItem imageItem = new ImageItem(id, parent, title, "", res);
 
 		parent.addItem(imageItem);
