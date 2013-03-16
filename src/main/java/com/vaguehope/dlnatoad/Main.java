@@ -23,6 +23,7 @@ import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.DeviceWatcher;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.media.MediaIndex;
+import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 
@@ -81,6 +82,7 @@ public final class Main {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree)), "/index");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });
@@ -98,7 +100,7 @@ public final class Main {
 		return connector;
 	}
 
-	private static void help (CmdLineParser parser, PrintStream ps) {
+	private static void help (final CmdLineParser parser, final PrintStream ps) {
 		ps.print("Usage: ");
 		ps.print(C.APPNAME);
 		parser.printSingleLineUsage(ps);
