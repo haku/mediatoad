@@ -78,19 +78,7 @@ public final class Main {
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 		final MediaIndex index = new MediaIndex(dirs, contentTree, externalHttpContext);
 		index.refresh();
-
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(new Runnable() {
-			@Override
-			public void run () {
-				try {
-					index.refresh();
-				}
-				catch (IOException e) {
-					LOG.error("Error while refreshing media index: " + e.toString());
-				}
-			}
-		}, C.REFRESH_INTERVAL_MINUTES, C.REFRESH_INTERVAL_MINUTES, TimeUnit.MINUTES);
-		LOG.info("refresh timer: {} minutes.", C.REFRESH_INTERVAL_MINUTES);
+		scheduleRefresher(index);
 
 		server.join(); // Keep app alive.
 	}
@@ -115,6 +103,21 @@ public final class Main {
 		connector.setStatsOn(false);
 		connector.setPort(port);
 		return connector;
+	}
+
+	private static void scheduleRefresher (final MediaIndex index) {
+		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(new Runnable() {
+			@Override
+			public void run () {
+				try {
+					index.refresh();
+				}
+				catch (final IOException e) {
+					LOG.error("Error while refreshing media index: " + e.toString());
+				}
+			}
+		}, C.REFRESH_INTERVAL_MINUTES, C.REFRESH_INTERVAL_MINUTES, TimeUnit.MINUTES);
+		LOG.info("refresh timer: {} minutes.", C.REFRESH_INTERVAL_MINUTES);
 	}
 
 	private static void help (final CmdLineParser parser, final PrintStream ps) {
