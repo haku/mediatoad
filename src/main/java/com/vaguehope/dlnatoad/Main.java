@@ -1,9 +1,12 @@
 package com.vaguehope.dlnatoad;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -73,7 +76,21 @@ public final class Main {
 		server.start();
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
-		new MediaIndex(dirs, contentTree, externalHttpContext).refresh();
+		final MediaIndex index = new MediaIndex(dirs, contentTree, externalHttpContext);
+		index.refresh();
+
+		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(new Runnable() {
+			@Override
+			public void run () {
+				try {
+					index.refresh();
+				}
+				catch (IOException e) {
+					LOG.error("Error while refreshing media index: " + e.toString());
+				}
+			}
+		}, C.REFRESH_INTERVAL_MINUTES, C.REFRESH_INTERVAL_MINUTES, TimeUnit.MINUTES);
+		LOG.info("refresh timer: {} minutes.", C.REFRESH_INTERVAL_MINUTES);
 
 		server.join(); // Keep app alive.
 	}
