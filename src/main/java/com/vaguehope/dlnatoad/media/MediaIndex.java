@@ -11,6 +11,7 @@ import org.teleal.cling.support.model.DIDLObject;
 import org.teleal.cling.support.model.Res;
 import org.teleal.cling.support.model.WriteStatus;
 import org.teleal.cling.support.model.container.Container;
+import org.teleal.cling.support.model.item.AudioItem;
 import org.teleal.cling.support.model.item.ImageItem;
 import org.teleal.cling.support.model.item.Item;
 import org.teleal.cling.support.model.item.VideoItem;
@@ -32,6 +33,7 @@ public class MediaIndex {
 
 	private final Container videoContainer;
 	private final Container imageContainer;
+	private final Container audioContainer;
 
 	public MediaIndex (final List<File> dirs, final ContentTree contentTree, final String externalHttpContext) {
 		this.baseDirs = dirs;
@@ -40,6 +42,7 @@ public class MediaIndex {
 
 		this.videoContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.VIDEO_ID, "Videos");
 		this.imageContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.IMAGE_ID, "Images");
+		this.audioContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.AUDIO_ID, "Audio");
 	}
 
 	public void refresh () throws IOException {
@@ -56,6 +59,7 @@ public class MediaIndex {
 	protected void putDirToContentTree (final File dir, final List<File> files) {
 		Container vidContainer = null;
 		Container imgContainer = null;
+		Container audContainer = null;
 		for (final File file : files) {
 			final MediaFormat format = MediaFormat.identify(file);
 			switch (format.getType()) {
@@ -67,13 +71,18 @@ public class MediaIndex {
 					if (imgContainer == null) imgContainer = makeContainerOnTree(this.imageContainer, contentId(format.getType(), dir), dir.getName());
 					makeImageItemInContainer(imgContainer, file, file.getName(), format);
 					break;
+				case AUDIO:
+					if (audContainer == null) audContainer = makeContainerOnTree(this.audioContainer, contentId(format.getType(), dir), dir.getName());
+					makeAudioItemInContainer(audContainer, file, file.getName(), format);
+					break;
 				default:
 					throw new IllegalStateException();
 			}
 		}
-		LOG.info("shared: {} ({}v, {}i)", dir.getName(),
+		LOG.info("shared: {} ({}v, {}i, {}a)", dir.getName(),
 				vidContainer == null ? 0 : vidContainer.getChildCount(),
-				imgContainer == null ? 0 : imgContainer.getChildCount());
+				imgContainer == null ? 0 : imgContainer.getChildCount(),
+				audContainer == null ? 0 : audContainer.getChildCount());
 	}
 
 	private Container makeContainerOnTree (final Container parentContainer, final String id, final String title) {
@@ -108,7 +117,6 @@ public class MediaIndex {
 		this.contentTree.addNode(new ContentNode(id, container));
 
 		return container;
-
 	}
 
 	private void makeVideoItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
@@ -140,12 +148,29 @@ public class MediaIndex {
 		this.contentTree.addNode(new ContentNode(imageItem.getId(), imageItem, file));
 	}
 
-	private static String contentId (MediaType type, final File file) {
+	private void makeAudioItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
+		final String id = contentId(format.getType(), file);
+		final String mime = format.getMime();
+		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
+		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
+		res.setSize(file.length());
+		//res.setDuration(formatDuration(durationMillis));
+		final AudioItem audioItem = new AudioItem(id, parent, title, "", res);
+
+		parent.addItem(audioItem);
+		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
+		this.contentTree.addNode(new ContentNode(audioItem.getId(), audioItem, file));
+	}
+
+	private static String contentId (final MediaType type, final File file) {
+		final String name = HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file);
 		switch (type) {
 			case VIDEO:
-				return ContentTree.VIDEO_PREFIX + HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file);
+				return ContentTree.VIDEO_PREFIX + name;
 			case IMAGE:
-				return ContentTree.IMAGE_PREFIX + HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file);
+				return ContentTree.IMAGE_PREFIX + name;
+			case AUDIO:
+				return ContentTree.AUDIO_PREFIX + name;
 			default:
 				throw new IllegalStateException();
 		}

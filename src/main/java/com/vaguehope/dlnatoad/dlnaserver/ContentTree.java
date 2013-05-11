@@ -24,8 +24,10 @@ public class ContentTree {
 	public static final String ROOT_ID = "0"; // Root id of '0' is in the spec.
 	public static final String VIDEO_ID = "1-videos";
 	public static final String IMAGE_ID = "2-images";
+	public static final String AUDIO_ID = "3-audio";
 	public static final String VIDEO_PREFIX = "video-";
 	public static final String IMAGE_PREFIX = "images-";
+	public static final String AUDIO_PREFIX = "audio-";
 
 	private final Map<String, ContentNode> contentMap;
 	private final ContentNode rootNode;
@@ -49,11 +51,14 @@ public class ContentTree {
 		return new ContentNode(ROOT_ID, root);
 	}
 
-	private static boolean isDefault (Container c) {
-		return ROOT_ID.equals(c.getId()) || VIDEO_ID.equals(c.getId()) || IMAGE_ID.equals(c.getId());
+	private static boolean isDefault (final Container c) {
+		return ROOT_ID.equals(c.getId())
+				|| VIDEO_ID.equals(c.getId())
+				|| IMAGE_ID.equals(c.getId())
+				|| AUDIO_ID.equals(c.getId());
 	}
 
-	private static boolean isValidItem (ContentNode node) {
+	private static boolean isValidItem (final ContentNode node) {
 		return node.getFile() != null && node.getFile().exists();
 	}
 
@@ -94,12 +99,12 @@ public class ContentTree {
 		}
 	}
 
-	private void removeNode (ContentNode node) {
+	private void removeNode (final ContentNode node) {
 		this.contentMap.remove(node.getId());
 		LOG.info("unshared: {}", node);
 	}
 
-	private void pruneItems (Container c) {
+	private void pruneItems (final Container c) {
 		Iterator<Item> it = c.getItems().iterator();
 		while (it.hasNext()) {
 			Item item = it.next();

@@ -20,7 +20,10 @@ public enum MediaFormat {
 	MPEG("mpeg", "video/mpeg", MediaType.VIDEO),
 	JPG("jpg", "image/jpeg", MediaType.IMAGE),
 	JPEG("jpeg", "image/jpeg", MediaType.IMAGE),
-	PNG("png", "image/png", MediaType.IMAGE);
+	PNG("png", "image/png", MediaType.IMAGE),
+	MP3("mp3", "audio/mpeg", MediaType.AUDIO),
+	OGG("ogg", "audio/ogg", MediaType.AUDIO),
+	;
 
 	public static final FileFilter FILE_FILTER = new MediaFileFilter();
 
