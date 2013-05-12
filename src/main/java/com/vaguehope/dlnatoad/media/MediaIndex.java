@@ -63,17 +63,17 @@ public class MediaIndex {
 		Container audContainer = null;
 		for (final File file : files) {
 			final MediaFormat format = MediaFormat.identify(file);
-			switch (format.getType()) {
+			switch (format.getContentGroup()) {
 				case VIDEO:
-					if (vidContainer == null) vidContainer = makeContainerOnTree(this.videoContainer, contentId(format.getType(), dir), dir.getName());
+					if (vidContainer == null) vidContainer = makeContainerOnTree(this.videoContainer, contentId(format.getContentGroup(), dir), dir.getName());
 					makeVideoItemInContainer(vidContainer, file, file.getName(), format);
 					break;
 				case IMAGE:
-					if (imgContainer == null) imgContainer = makeContainerOnTree(this.imageContainer, contentId(format.getType(), dir), dir.getName());
+					if (imgContainer == null) imgContainer = makeContainerOnTree(this.imageContainer, contentId(format.getContentGroup(), dir), dir.getName());
 					makeImageItemInContainer(imgContainer, file, file.getName(), format);
 					break;
 				case AUDIO:
-					if (audContainer == null) audContainer = makeContainerOnTree(this.audioContainer, contentId(format.getType(), dir), dir.getName());
+					if (audContainer == null) audContainer = makeContainerOnTree(this.audioContainer, contentId(format.getContentGroup(), dir), dir.getName());
 					makeAudioItemInContainer(audContainer, file, file.getName(), format);
 					break;
 				default:
@@ -125,7 +125,7 @@ public class MediaIndex {
 	}
 
 	private void makeVideoItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
-		final String id = contentId(format.getType(), file);
+		final String id = contentId(format.getContentGroup(), file);
 		final String mime = format.getMime();
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
@@ -140,7 +140,7 @@ public class MediaIndex {
 	}
 
 	private void makeImageItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
-		final String id = contentId(format.getType(), file);
+		final String id = contentId(format.getContentGroup(), file);
 		final String mime = format.getMime();
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
@@ -154,7 +154,7 @@ public class MediaIndex {
 	}
 
 	private void makeAudioItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
-		final String id = contentId(format.getType(), file);
+		final String id = contentId(format.getContentGroup(), file);
 		final String mime = format.getMime();
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
@@ -167,8 +167,8 @@ public class MediaIndex {
 		this.contentTree.addNode(new ContentNode(audioItem.getId(), audioItem, file));
 	}
 
-	private static String contentId (final MediaType type, final File file) {
-		return type.idPrefix() + (HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file));
+	private static String contentId (final ContentGroup type, final File file) {
+		return type.getItemIdPrefix() + (HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file));
 	}
 
 	private static String getSafeName (final File file) {

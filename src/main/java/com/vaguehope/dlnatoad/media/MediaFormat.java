@@ -8,21 +8,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+
 public enum MediaFormat {
 
-	AVI("avi", "video/avi", MediaType.VIDEO),
-	MP4("mp4", "video/mp4", MediaType.VIDEO),
-	M4V("m4v", "video/mp4", MediaType.VIDEO),
-	MKV("mkv", "video/x-matroska", MediaType.VIDEO),
-	FLV("flv", "video/x-flv", MediaType.VIDEO),
-	WMV("wmv", "video/x-ms-wmv", MediaType.VIDEO),
-	MPG("mpg", "video/mpeg", MediaType.VIDEO),
-	MPEG("mpeg", "video/mpeg", MediaType.VIDEO),
-	JPG("jpg", "image/jpeg", MediaType.IMAGE),
-	JPEG("jpeg", "image/jpeg", MediaType.IMAGE),
-	PNG("png", "image/png", MediaType.IMAGE),
-	MP3("mp3", "audio/mpeg", MediaType.AUDIO),
-	OGG("ogg", "audio/ogg", MediaType.AUDIO),
+	AVI("avi", "video/avi", ContentGroup.VIDEO),
+	MP4("mp4", "video/mp4", ContentGroup.VIDEO),
+	M4V("m4v", "video/mp4", ContentGroup.VIDEO),
+	MKV("mkv", "video/x-matroska", ContentGroup.VIDEO),
+	FLV("flv", "video/x-flv", ContentGroup.VIDEO),
+	WMV("wmv", "video/x-ms-wmv", ContentGroup.VIDEO),
+	MPG("mpg", "video/mpeg", ContentGroup.VIDEO),
+	MPEG("mpeg", "video/mpeg", ContentGroup.VIDEO),
+	JPG("jpg", "image/jpeg", ContentGroup.IMAGE),
+	JPEG("jpeg", "image/jpeg", ContentGroup.IMAGE),
+	PNG("png", "image/png", ContentGroup.IMAGE),
+	MP3("mp3", "audio/mpeg", ContentGroup.AUDIO),
+	OGG("ogg", "audio/ogg", ContentGroup.AUDIO),
 	;
 
 	public static final FileFilter FILE_FILTER = new MediaFileFilter();
@@ -38,20 +40,20 @@ public enum MediaFormat {
 
 	private final String ext;
 	private final String mime;
-	private final MediaType type;
+	private final ContentGroup contentGroup;
 
-	private MediaFormat (final String ext, final String mime, final MediaType type) {
+	private MediaFormat (final String ext, final String mime, final ContentGroup type) {
 		this.ext = ext;
 		this.mime = mime;
-		this.type = type;
+		this.contentGroup = type;
 	}
 
 	public String getMime () {
 		return this.mime;
 	}
 
-	public MediaType getType () {
-		return this.type;
+	public ContentGroup getContentGroup () {
+		return this.contentGroup;
 	}
 
 	public static MediaFormat identify (final File file) {
