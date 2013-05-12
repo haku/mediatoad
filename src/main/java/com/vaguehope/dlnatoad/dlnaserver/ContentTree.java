@@ -1,8 +1,12 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -21,13 +25,14 @@ public class ContentTree {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentTree.class);
 
-	public static final String ROOT_ID = "0"; // Root id of '0' is in the spec.
+	private static final String ROOT_ID = "0"; // Root id of '0' is in the spec.
 	public static final String VIDEO_ID = "1-videos";
 	public static final String IMAGE_ID = "2-images";
 	public static final String AUDIO_ID = "3-audio";
-	public static final String VIDEO_PREFIX = "video-";
-	public static final String IMAGE_PREFIX = "images-";
-	public static final String AUDIO_PREFIX = "audio-";
+	private static final Set<String> DEFAULT_IDS = Collections.unmodifiableSet(new HashSet<String>(
+			Arrays.asList(new String[] {
+					ROOT_ID, VIDEO_ID, IMAGE_ID, AUDIO_ID
+			})));
 
 	private final Map<String, ContentNode> contentMap;
 	private final ContentNode rootNode;
@@ -52,10 +57,7 @@ public class ContentTree {
 	}
 
 	private static boolean isDefault (final Container c) {
-		return ROOT_ID.equals(c.getId())
-				|| VIDEO_ID.equals(c.getId())
-				|| IMAGE_ID.equals(c.getId())
-				|| AUDIO_ID.equals(c.getId());
+		return DEFAULT_IDS.contains(c.getId());
 	}
 
 	private static boolean isValidItem (final ContentNode node) {

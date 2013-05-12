@@ -163,17 +163,7 @@ public class MediaIndex {
 	}
 
 	private static String contentId (final MediaType type, final File file) {
-		final String name = HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file);
-		switch (type) {
-			case VIDEO:
-				return ContentTree.VIDEO_PREFIX + name;
-			case IMAGE:
-				return ContentTree.IMAGE_PREFIX + name;
-			case AUDIO:
-				return ContentTree.AUDIO_PREFIX + name;
-			default:
-				throw new IllegalStateException();
-		}
+		return type.idPrefix() + (HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file));
 	}
 
 	private static String getSafeName (final File file) {
