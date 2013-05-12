@@ -22,6 +22,7 @@ import org.junit.rules.TemporaryFolder;
 import org.teleal.cling.support.model.container.Container;
 import org.teleal.cling.support.model.item.Item;
 
+import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 
@@ -61,7 +62,7 @@ public class MediaIndexTest {
 
 		this.undertest.refresh();
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentTree.VIDEO_ID).getContainer().getContainers();
+		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
 		ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedFiles, node);
@@ -74,12 +75,12 @@ public class MediaIndexTest {
 
 		this.undertest.refresh();
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentTree.VIDEO_ID).getContainer().getContainers();
+		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
 		ContentNode vidDirNode = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedVideos, vidDirNode);
 
-		List<Container> imageDirs = this.contentTree.getNode(ContentTree.IMAGE_ID).getContainer().getContainers();
+		List<Container> imageDirs = this.contentTree.getNode(ContentGroup.IMAGE.getId()).getContainer().getContainers();
 		assertEquals(1, imageDirs.size());
 		ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedImages, imgDirNode);
@@ -94,7 +95,7 @@ public class MediaIndexTest {
 
 		this.undertest.refresh();
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentTree.VIDEO_ID).getContainer().getContainers();
+		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(2, videoDirs.size());
 
 		assertContainer(dir1, Arrays.asList(file1), videoDirs.get(0));
@@ -109,7 +110,7 @@ public class MediaIndexTest {
 		this.undertest.refresh();
 		this.undertest.refresh();
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentTree.VIDEO_ID).getContainer().getContainers();
+		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
 		ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(rootDir, expectedFiles, node);
@@ -151,11 +152,11 @@ public class MediaIndexTest {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	private List<File> mockFiles (int n, String ext) throws IOException {
+	private List<File> mockFiles (final int n, final String ext) throws IOException {
 		return mockFiles(n, ext, this.tmp.getRoot());
 	}
 
-	private static List<File> mockFiles (int n, String ext, File parent) throws IOException {
+	private static List<File> mockFiles (final int n, final String ext, final File parent) throws IOException {
 		List<File> ret = new ArrayList<File>();
 		for (int i = 0; i < n; i++) {
 			File f = mockFile("file_" + i + ext, parent);
@@ -164,17 +165,17 @@ public class MediaIndexTest {
 		return ret;
 	}
 
-	private File mockFile (String name) throws IOException {
+	private File mockFile (final String name) throws IOException {
 		return mockFile(name, this.tmp.getRoot());
 	}
 
-	private static File mockFile (String name, File parent) throws IOException {
+	private static File mockFile (final String name, final File parent) throws IOException {
 		File f = new File(parent, name);
 		FileUtils.touch(f);
 		return f;
 	}
 
-	public static List<String> getItemIds (List<Item> items) {
+	public static List<String> getItemIds (final List<Item> items) {
 		List<String> ids = new ArrayList<String>();
 		for (Item item : items) {
 			ids.add(item.getId());
@@ -182,7 +183,7 @@ public class MediaIndexTest {
 		return ids;
 	}
 
-	public static List<String> getNodeIds (List<Container> list) {
+	public static List<String> getNodeIds (final List<Container> list) {
 		List<String> ids = new ArrayList<String>();
 		for (Container i : list) {
 			ids.add(i.getId());
@@ -190,7 +191,7 @@ public class MediaIndexTest {
 		return ids;
 	}
 
-	public static List<String> getNodeTitles (List<Container> list) {
+	public static List<String> getNodeTitles (final List<Container> list) {
 		List<String> ret = new ArrayList<String>();
 		for (Container i : list) {
 			ret.add(i.getTitle());
@@ -198,7 +199,7 @@ public class MediaIndexTest {
 		return ret;
 	}
 
-	private List<ContentNode> getNodes (List<String> ids) {
+	private List<ContentNode> getNodes (final List<String> ids) {
 		List<ContentNode> nodes = new ArrayList<ContentNode>();
 		for (String id : ids) {
 			nodes.add(this.contentTree.getNode(id));
@@ -206,7 +207,7 @@ public class MediaIndexTest {
 		return nodes;
 	}
 
-	private static List<File> getFiles (Collection<ContentNode> nodes) {
+	private static List<File> getFiles (final Collection<ContentNode> nodes) {
 		List<File> files = new ArrayList<File>();
 		for (ContentNode node : nodes) {
 			if (node.isItem()) files.add(node.getFile());
@@ -214,7 +215,7 @@ public class MediaIndexTest {
 		return files;
 	}
 
-	private static List<Container> getContaners (Collection<ContentNode> nodes) {
+	private static List<Container> getContaners (final Collection<ContentNode> nodes) {
 		List<Container> cs = new ArrayList<Container>();
 		for (ContentNode node : nodes) {
 			if (!node.isItem()) cs.add(node.getContainer());
@@ -222,13 +223,13 @@ public class MediaIndexTest {
 		return cs;
 	}
 
-	private void assertContainer (File dir, List<File> files, Container cont1) {
+	private void assertContainer (final File dir, final List<File> files, final Container cont1) {
 		assertEquals(dir.getName(), cont1.getTitle());
 		ContentNode node1 = this.contentTree.getNode(cont1.getId());
 		assertNodeWithItems(dir, files, node1);
 	}
 
-	private void assertNodeWithItems (File rootDir, List<File> expectedFiles, ContentNode node) {
+	private void assertNodeWithItems (final File rootDir, final List<File> expectedFiles, final ContentNode node) {
 		assertFalse(node.isItem());
 		Container container = node.getContainer();
 		assertEquals(rootDir.getName(), container.getTitle());

@@ -1,12 +1,8 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -25,27 +21,18 @@ public class ContentTree {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentTree.class);
 
-	private static final String ROOT_ID = "0"; // Root id of '0' is in the spec.
-	public static final String VIDEO_ID = "1-videos";
-	public static final String IMAGE_ID = "2-images";
-	public static final String AUDIO_ID = "3-audio";
-	private static final Set<String> DEFAULT_IDS = Collections.unmodifiableSet(new HashSet<String>(
-			Arrays.asList(new String[] {
-					ROOT_ID, VIDEO_ID, IMAGE_ID, AUDIO_ID
-			})));
-
 	private final Map<String, ContentNode> contentMap;
 	private final ContentNode rootNode;
 
 	public ContentTree () {
 		this.contentMap = new ConcurrentHashMap<String, ContentNode>();
 		this.rootNode = createRootNode();
-		this.contentMap.put(ROOT_ID, this.rootNode);
+		this.contentMap.put(ContentGroup.ROOT.getId(), this.rootNode);
 	}
 
 	private static ContentNode createRootNode () {
 		final Container root = new Container();
-		root.setId(ROOT_ID);
+		root.setId(ContentGroup.ROOT.getId());
 		root.setParentID("-1");
 		root.setTitle(C.CONTENT_ROOT_DIR);
 		root.setCreator(C.METADATA_MODEL_NAME);
@@ -53,11 +40,7 @@ public class ContentTree {
 		root.setSearchable(true);
 		root.setWriteStatus(WriteStatus.NOT_WRITABLE);
 		root.setChildCount(Integer.valueOf(0));
-		return new ContentNode(ROOT_ID, root);
-	}
-
-	private static boolean isDefault (final Container c) {
-		return DEFAULT_IDS.contains(c.getId());
+		return new ContentNode(ContentGroup.ROOT.getId(), root);
 	}
 
 	private static boolean isValidItem (final ContentNode node) {
@@ -96,7 +79,7 @@ public class ContentTree {
 			else {
 				Container c = node.getContainer();
 				pruneItems(c);
-				if (c.getChildCount() < 1 && !isDefault(c)) removeNode(node);
+				if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) removeNode(node);
 			}
 		}
 	}

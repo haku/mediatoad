@@ -17,6 +17,7 @@ import org.teleal.cling.support.model.item.Item;
 import org.teleal.cling.support.model.item.VideoItem;
 import org.teleal.common.util.MimeType;
 
+import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.util.HashHelper;
@@ -40,9 +41,9 @@ public class MediaIndex {
 		this.contentTree = contentTree;
 		this.externalHttpContext = externalHttpContext;
 
-		this.videoContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.VIDEO_ID, "Videos");
-		this.imageContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.IMAGE_ID, "Images");
-		this.audioContainer = makeContainerOnTree(contentTree.getRootNode(), ContentTree.AUDIO_ID, "Audio");
+		this.videoContainer = makeContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
+		this.imageContainer = makeContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
+		this.audioContainer = makeContainerOnTree(contentTree.getRootNode(), ContentGroup.AUDIO);
 	}
 
 	public void refresh () throws IOException {
@@ -87,6 +88,10 @@ public class MediaIndex {
 
 	private Container makeContainerOnTree (final Container parentContainer, final String id, final String title) {
 		return makeContainerOnTree(this.contentTree.getNode(parentContainer.getId()), id, title);
+	}
+
+	private Container makeContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
+		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
 	/**
