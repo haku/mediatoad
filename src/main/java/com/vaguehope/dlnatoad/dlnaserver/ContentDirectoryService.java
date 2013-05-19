@@ -23,6 +23,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 	private final ContentTree contentTree;
 
 	public ContentDirectoryService (final ContentTree contentTree) {
+		super();
 		this.contentTree = contentTree;
 	}
 
