@@ -6,8 +6,11 @@ import java.util.List;
 
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.Option;
 
 public class Args {
+
+	@Option(name = "-r", aliases = { "--refresh" }) private boolean refresh;
 
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
@@ -24,7 +27,11 @@ public class Args {
 		return files;
 	}
 
-	private static List<File> pathsToFiles (List<String> paths) {
+	public boolean isRefresh () {
+		return this.refresh;
+	}
+
+	private static List<File> pathsToFiles (final List<String> paths) {
 		List<File> files = new ArrayList<File>();
 		for (String path : paths) {
 			files.add(new File(path));
@@ -32,7 +39,7 @@ public class Args {
 		return files;
 	}
 
-	private static void checkDirExist (List<File> files) throws CmdLineException {
+	private static void checkDirExist (final List<File> files) throws CmdLineException {
 		for (File file : files) {
 			if (!file.exists() || !file.isDirectory()) {
 				throw new CmdLineException(null, "Directory not found: " + file.getAbsolutePath());

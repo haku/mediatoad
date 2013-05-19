@@ -46,7 +46,7 @@ public final class Main {
 		final CmdLineParser parser = new CmdLineParser(args);
 		try {
 			parser.parseArgument(rawArgs);
-			run(args.getDirs());
+			run(args.getDirs(), args.isRefresh());
 		}
 		catch (CmdLineException e) {
 			err.println(e.getMessage());
@@ -59,7 +59,7 @@ public final class Main {
 		}
 	}
 
-	private static void run (final List<File> dirs) throws Exception { // NOSONAR
+	private static void run (final List<File> dirs, final boolean autoRefresh) throws Exception { // NOSONAR
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		final List<InetAddress> addresses = NetHelper.getIpAddresses();
 		final InetAddress address = addresses.iterator().next();
@@ -78,7 +78,7 @@ public final class Main {
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 		final MediaIndex index = new MediaIndex(dirs, contentTree, externalHttpContext);
 		index.refresh();
-		scheduleRefresher(index);
+		if (autoRefresh) scheduleRefresher(index);
 
 		server.join(); // Keep app alive.
 	}
