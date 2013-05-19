@@ -17,6 +17,9 @@ It compiles to a runnable jar.  Run it in the top directory you want to share.  
 You can include multiple root directories:
  java -jar dlnatoad.jar foo/ bar/
 
+Refresh file index every 10 minutes:
+ java -jar dlnatoad.jar -r foo/ bar/
+
 == How can I compile it? ==
 
 Its a Maven project.
