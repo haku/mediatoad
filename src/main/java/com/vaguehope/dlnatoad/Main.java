@@ -87,7 +87,7 @@ public final class Main {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree)), "/index");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree)), "/index/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });
