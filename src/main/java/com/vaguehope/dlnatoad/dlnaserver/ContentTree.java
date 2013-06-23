@@ -34,7 +34,7 @@ public class ContentTree {
 		final Container root = new Container();
 		root.setId(ContentGroup.ROOT.getId());
 		root.setParentID("-1");
-		root.setTitle(C.CONTENT_ROOT_DIR);
+		root.setTitle(ContentGroup.ROOT.getHumanName());
 		root.setCreator(C.METADATA_MODEL_NAME);
 		root.setRestricted(true);
 		root.setSearchable(true);
