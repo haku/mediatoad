@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.support.model.DIDLObject;
@@ -133,6 +134,17 @@ public class MediaIndex {
 		//res.setDuration(formatDuration(durationMillis));
 		//res.setResolution(resolutionXbyY);
 		final VideoItem videoItem = new VideoItem(id, parent, title, "", res);
+
+		// TODO tidy this hack.
+		// TODO handle upper case extension.
+		final File srtFile = new File(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".srt");
+		if (srtFile.exists()) {
+			final String srtId = contentId(format.getContentGroup(), srtFile);
+			final MimeType srtMimeType = new MimeType("text", "srt");
+			final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
+			videoItem.addResource(srtRes);
+			this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
+		}
 
 		parent.addItem(videoItem);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
