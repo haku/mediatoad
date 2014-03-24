@@ -49,7 +49,7 @@ public class MediaServer {
 
 		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
 		LOG.info("uniqueSystemIdentifier: {}", usi);
-		this.localDevice = new LocalDevice(new DeviceIdentity(usi), type, details, new LocalService[] { contDirSrv, connManSrv });
+		this.localDevice = new LocalDevice(new DeviceIdentity(usi, C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, new LocalService[] { contDirSrv, connManSrv });
 	}
 
 	public LocalDevice getDevice () {
