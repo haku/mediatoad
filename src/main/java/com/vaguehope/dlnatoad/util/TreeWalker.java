@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import org.apache.commons.io.comparator.NameFileComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class TreeWalker {
 			final File dir = dirs.poll();
 			final File[] listFiles = dir.listFiles();
 			if (listFiles != null) {
-				Arrays.sort(listFiles);
+				Arrays.sort(listFiles, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
 				List<File> keepFiles = null;
 				for (final File file : listFiles) {
 					final File cFile = file.getCanonicalFile();

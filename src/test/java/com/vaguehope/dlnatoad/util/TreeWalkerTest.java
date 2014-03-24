@@ -25,7 +25,7 @@ public class TreeWalkerTest {
 	@Test
 	public void itWalksTree () throws Exception {
 		File file1 = this.tmp.newFile("file_1");
-		File file2 = this.tmp.newFile("file_2");
+		File file2 = this.tmp.newFile("File_2");
 		File dir1 = this.tmp.newFolder("dir_1");
 		File file3 = new File(dir1, "file_3");
 		file3.createNewFile();
