@@ -24,7 +24,7 @@ Refresh file index every 10 minutes:
 
 Its a Maven project.
 
- mvn clean install assembly:single
+ mvn clean install
  java -jar target/dlnatoad-0.0.1-SNAPSHOT-jar-with-dependencies.jar
 
 == How does it work? ==
