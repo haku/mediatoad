@@ -66,6 +66,12 @@ public final class Main {
 		LOG.info("addresses: {} using address: {}", addresses, address);
 
 		final UpnpService upnpService = new UpnpServiceImpl();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				upnpService.shutdown();
+			}
+		});
 
 		final ContentTree contentTree = new ContentTree();
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName).getDevice());
@@ -77,6 +83,7 @@ public final class Main {
 		index.refresh();
 		if (autoRefresh) scheduleRefresher(index);
 
+		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
 		server.join(); // Keep app alive.
 	}
 
