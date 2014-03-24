@@ -23,7 +23,6 @@ import org.teleal.cling.UpnpServiceImpl;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
-import com.vaguehope.dlnatoad.dlnaserver.DeviceWatcher;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
@@ -67,8 +66,6 @@ public final class Main {
 		LOG.info("addresses: {} using address: {}", addresses, address);
 
 		final UpnpService upnpService = new UpnpServiceImpl();
-		upnpService.getRegistry().addListener(new DeviceWatcher());
-		upnpService.getControlPoint().search();
 
 		final ContentTree contentTree = new ContentTree();
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName).getDevice());
