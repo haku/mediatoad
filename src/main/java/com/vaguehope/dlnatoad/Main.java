@@ -64,7 +64,7 @@ public final class Main {
 		final List<InetAddress> addresses = NetHelper.getIpAddresses();
 		final InetAddress address = addresses.iterator().next();
 		LOG.info("hostName: {}", hostName);
-		LOG.info("addresses: {} useing address: {}", addresses, address);
+		LOG.info("addresses: {} using address: {}", addresses, address);
 
 		final UpnpService upnpService = new UpnpServiceImpl();
 		upnpService.getRegistry().addListener(new DeviceWatcher());
