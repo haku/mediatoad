@@ -1,5 +1,9 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.binding.annotations.AnnotationLocalServiceBinder;
@@ -7,6 +11,7 @@ import org.teleal.cling.model.DefaultServiceManager;
 import org.teleal.cling.model.ValidationException;
 import org.teleal.cling.model.meta.DeviceDetails;
 import org.teleal.cling.model.meta.DeviceIdentity;
+import org.teleal.cling.model.meta.Icon;
 import org.teleal.cling.model.meta.LocalDevice;
 import org.teleal.cling.model.meta.LocalService;
 import org.teleal.cling.model.meta.ManufacturerDetails;
@@ -30,11 +35,14 @@ public class MediaServer {
 
 	private final LocalDevice localDevice;
 
-	public MediaServer (final ContentTree contentTree, final String hostName) throws ValidationException {
+	public MediaServer (final ContentTree contentTree, final String hostName) throws ValidationException, IOException {
+		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
+		LOG.info("uniqueSystemIdentifier: {}", usi);
 		final DeviceType type = new UDADeviceType(DEVICE_TYPE, VERSION);
 		final DeviceDetails details = new DeviceDetails(C.METADATA_MODEL_NAME + " (" + hostName + ")",
 				new ManufacturerDetails(C.METADATA_MANUFACTURER),
 				new ModelDetails(C.METADATA_MODEL_NAME, C.METADATA_MODEL_DESCRIPTION, C.METADATA_MODEL_NUMBER));
+		final Icon icon = createDeviceIcon();
 
 		final LocalService<ContentDirectoryService> contDirSrv = new AnnotationLocalServiceBinder().read(ContentDirectoryService.class);
 		contDirSrv.setManager(new DefaultServiceManager<ContentDirectoryService>(contDirSrv, ContentDirectoryService.class) {
@@ -47,13 +55,18 @@ public class MediaServer {
 		final LocalService<ConnectionManagerService> connManSrv = new AnnotationLocalServiceBinder().read(ConnectionManagerService.class);
 		connManSrv.setManager(new DefaultServiceManager<ConnectionManagerService>(connManSrv, ConnectionManagerService.class));
 
-		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
-		LOG.info("uniqueSystemIdentifier: {}", usi);
-		this.localDevice = new LocalDevice(new DeviceIdentity(usi, C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, new LocalService[] { contDirSrv, connManSrv });
+		this.localDevice = new LocalDevice(new DeviceIdentity(usi, C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, icon, new LocalService[] { contDirSrv, connManSrv });
 	}
 
 	public LocalDevice getDevice () {
 		return this.localDevice;
 	}
 
+	private static Icon createDeviceIcon () throws IOException {
+		final InputStream res = MediaServer.class.getResourceAsStream("/icon.png");
+		if (res == null) throw new IllegalStateException("Icon not found.");
+		final Icon icon = new Icon("image/png", 48, 48, 8, URI.create("icon.png"), res);
+		icon.validate();
+		return icon;
+	}
 }
