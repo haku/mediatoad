@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.teleal.cling.support.model.DIDLObject;
 import org.teleal.cling.support.model.WriteStatus;
 import org.teleal.cling.support.model.container.Container;
 import org.teleal.cling.support.model.item.Item;
@@ -32,6 +33,7 @@ public class ContentTree {
 
 	private static ContentNode createRootNode () {
 		final Container root = new Container();
+		root.setClazz(new DIDLObject.Class("object.container"));
 		root.setId(ContentGroup.ROOT.getId());
 		root.setParentID("-1");
 		root.setTitle(ContentGroup.ROOT.getHumanName());
