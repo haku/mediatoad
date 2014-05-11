@@ -1,5 +1,7 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.support.contentdirectory.AbstractContentDirectoryService;
@@ -63,7 +65,10 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 					contentContainer.getChildCount().intValue());
 		}
 		catch (final Exception e) {
-			LOG.warn("Failed to generate directory listing.", e);
+			LOG.warn(String.format("Failed to generate directory listing" +
+					" (objectID=%s, browseFlag=%s, filter=%s, firstResult=%s, maxResults=%s, orderby=%s).",
+					objectID, browseFlag, filter, firstResult, maxResults, Arrays.toString(orderby)),
+					e);
 			throw new ContentDirectoryException(ContentDirectoryErrorCode.CANNOT_PROCESS, e.toString()); // NOSONAR
 		}
 	}
