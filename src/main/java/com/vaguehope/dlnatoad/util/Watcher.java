@@ -1,24 +1,24 @@
 package com.vaguehope.dlnatoad.util;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchEvent.Kind;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.vaguehope.dlnatoad.util.TreeWalker.Hiker;
 
 public class Watcher {
 
@@ -36,14 +36,16 @@ public class Watcher {
 	protected static final Logger LOG = LoggerFactory.getLogger(Watcher.class);
 
 	private final List<File> roots;
+	private final FileFilter filter;
 	private final FileListener listener;
 	private final WatchService watchService;
 	private final HashMap<WatchKey, Path> watchKeys;
 
 	private volatile boolean running = true;
 
-	public Watcher (final List<File> roots, final FileListener listener) throws IOException {
+	public Watcher (final List<File> roots, final FileFilter filter, final FileListener listener) throws IOException {
 		this.roots = roots;
+		this.filter = filter;
 		this.listener = listener;
 		this.watchService = FileSystems.getDefault().newWatchService();
 		this.watchKeys = new HashMap<WatchKey, Path>();
@@ -72,29 +74,17 @@ public class Watcher {
 
 	private void registerRecursive (final File root) throws IOException {
 		if (!root.exists()) throw new FileNotFoundException("Unable to watch dir '" + root + "' as it does not exist.");
-		registerRecursive(root.toPath());
-	}
-
-	private void registerRecursive (final Path root) throws IOException {
-		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+		new TreeWalker(root, this.filter, new Hiker() {
 			@Override
-			public FileVisitResult preVisitDirectory (final Path dir, final BasicFileAttributes attrs) throws IOException {
-				register(dir);
-				return FileVisitResult.CONTINUE;
+			public void onDir (final File dir) throws IOException {
+				register(dir.toPath());
 			}
 
 			@Override
-			public FileVisitResult visitFile (final Path file, final BasicFileAttributes attrs) throws IOException {
-				callListener(StandardWatchEventKinds.ENTRY_CREATE, file, EventType.SCAN);
-				return FileVisitResult.CONTINUE;
+			public void onDirWithFiles (final File dir, final List<File> files) {
+				callListener(StandardWatchEventKinds.ENTRY_CREATE, files, EventType.SCAN);
 			}
-
-			@Override
-			public FileVisitResult visitFileFailed (final Path file, final IOException exc) throws IOException {
-				LOG.warn("File not readable {}: {}", file, exc);
-				return FileVisitResult.CONTINUE;
-			}
-		});
+		}).walk();
 	}
 
 	private void watch () {
@@ -145,24 +135,30 @@ public class Watcher {
 			LOG.debug("{} {}", ev.kind().name(), path);
 
 			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(path)) {
-				registerRecursive(path);
+				registerRecursive(path.toFile());
 			}
 
-			callListener(ev.kind(), path, EventType.NOTIFY);
+			callListener(ev.kind(), path.toFile(), EventType.NOTIFY);
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final Path path, final EventType eventType) {
+	protected void callListener (final Kind<Path> kind, final List<File> files, final EventType eventType) {
+		for (final File file : files) {
+			callListener(kind, file, eventType);
+		}
+	}
+
+	protected void callListener (final Kind<Path> kind, final File file, final EventType eventType) {
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-				this.listener.fileFound(path.toFile(), eventType);
+				this.listener.fileFound(file, eventType);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-				this.listener.fileGone(path.toFile());
+				this.listener.fileGone(file);
 			}
 		}
 		catch (final Exception e) { // NOSONAR do not allow errors to kill watcher.
-			LOG.warn("Listener failed: {} {}: {}", kind.name(), path, e);
+			LOG.warn("Listener failed: {} {}: {}", kind.name(), file.getAbsolutePath(), e);
 		}
 	}
 

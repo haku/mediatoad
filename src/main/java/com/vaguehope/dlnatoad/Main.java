@@ -21,6 +21,7 @@ import org.teleal.cling.UpnpServiceImpl;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
+import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
@@ -131,7 +132,7 @@ public final class Main {
 		@Override
 		public void run () {
 			try {
-				new Watcher(this.roots, this.index).run();
+				new Watcher(this.roots, MediaFormat.FILE_FILTER, this.index).run();
 				LOG.error("Watcher thread exited.");
 			}
 			catch (Exception e) { // NOSONAR
