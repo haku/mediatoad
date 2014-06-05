@@ -12,8 +12,6 @@ public interface C {
 
 	int HTTP_PORT = 8192;
 
-	long REFRESH_INTERVAL_MINUTES = 10;
-
 	/**
 	 * Shorter version of org.teleal.cling.model.Constants.MIN_ADVERTISEMENT_AGE_SECONDS.
 	 * Remove when Cling 2.0 has a stable release.

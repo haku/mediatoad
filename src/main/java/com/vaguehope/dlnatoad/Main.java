@@ -1,12 +1,9 @@
 package com.vaguehope.dlnatoad;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -28,10 +25,11 @@ import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
+import com.vaguehope.dlnatoad.util.Watcher;
 
 public final class Main {
 
-	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+	protected static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
 	private Main () {
 		throw new AssertionError();
@@ -45,7 +43,7 @@ public final class Main {
 		final CmdLineParser parser = new CmdLineParser(args);
 		try {
 			parser.parseArgument(rawArgs);
-			run(args.getDirs(), args.isRefresh());
+			run(args.getDirs());
 		}
 		catch (CmdLineException e) {
 			err.println(e.getMessage());
@@ -58,7 +56,7 @@ public final class Main {
 		}
 	}
 
-	private static void run (final List<File> dirs, final boolean autoRefresh) throws Exception { // NOSONAR
+	private static void run (final List<File> roots) throws Exception { // NOSONAR
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		final List<InetAddress> addresses = NetHelper.getIpAddresses();
 		final InetAddress address = addresses.iterator().next();
@@ -79,9 +77,12 @@ public final class Main {
 		server.start();
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
-		final MediaIndex index = new MediaIndex(dirs, contentTree, externalHttpContext);
-		index.refresh();
-		if (autoRefresh) scheduleRefresher(index);
+		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext);
+
+		final Thread watcherThread = new Thread(new RunWatcher(roots, index));
+		watcherThread.setName("watcher");
+		watcherThread.setDaemon(true);
+		watcherThread.start();
 
 		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
 		server.join(); // Keep app alive.
@@ -109,21 +110,6 @@ public final class Main {
 		return connector;
 	}
 
-	private static void scheduleRefresher (final MediaIndex index) {
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(new Runnable() {
-			@Override
-			public void run () {
-				try {
-					index.refresh();
-				}
-				catch (final IOException e) {
-					LOG.error("Error while refreshing media index: " + e.toString());
-				}
-			}
-		}, C.REFRESH_INTERVAL_MINUTES, C.REFRESH_INTERVAL_MINUTES, TimeUnit.MINUTES);
-		LOG.info("refresh timer: {} minutes.", C.REFRESH_INTERVAL_MINUTES);
-	}
-
 	private static void help (final CmdLineParser parser, final PrintStream ps) {
 		ps.print("Usage: ");
 		ps.print(C.APPNAME);
@@ -131,6 +117,28 @@ public final class Main {
 		ps.println();
 		parser.printUsage(ps);
 		ps.println();
+	}
+
+	private static class RunWatcher implements Runnable {
+
+		private final List<File> roots;
+		private final MediaIndex index;
+
+		public RunWatcher (final List<File> roots, final MediaIndex index) {
+			this.roots = roots;
+			this.index = index;}
+
+		@Override
+		public void run () {
+			try {
+				new Watcher(this.roots, this.index).run();
+				LOG.error("Watcher thread exited.");
+			}
+			catch (Exception e) { // NOSONAR
+				LOG.error("Watcher thread died.", e);
+			}
+		}
+
 	}
 
 }

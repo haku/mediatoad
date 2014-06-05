@@ -40,14 +40,16 @@ public class MediaIndexTest {
 		this.contentTree = new ContentTree();
 		List<File> roots = new ArrayList<File>();
 		roots.add(this.tmp.getRoot());
-		this.undertest = new MediaIndex(roots, this.contentTree, EXTERNAL_HTTP_CONTEXT);
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT);
 	}
 
 	@Test
 	public void itLinksRootToVideos () throws Exception {
 		List<File> expectedFiles = mockFiles(3, ".mkv");
 
-		this.undertest.refresh();
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(file, null);
+		}
 
 		Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
 		Container dirContainer = videoContainer.getContainers().get(0);
@@ -60,7 +62,9 @@ public class MediaIndexTest {
 	public void itIndexesAFewVideoRootFiles () throws Exception {
 		List<File> expectedFiles = mockFiles(3, ".mkv");
 
-		this.undertest.refresh();
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(file, null);
+		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
@@ -73,7 +77,12 @@ public class MediaIndexTest {
 		List<File> expectedVideos = mockFiles(3, ".mkv");
 		List<File> expectedImages = mockFiles(5, ".jpg");
 
-		this.undertest.refresh();
+		for (final File file : expectedVideos) {
+			this.undertest.fileFound(file, null);
+		}
+		for (final File file : expectedImages) {
+			this.undertest.fileFound(file, null);
+		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
@@ -93,7 +102,8 @@ public class MediaIndexTest {
 		File file1 = mockFile("file 1.mkv", dir1);
 		File file2 = mockFile("file 2.mkv", dir2);
 
-		this.undertest.refresh();
+		this.undertest.fileFound(file1, null);
+		this.undertest.fileFound(file2, null);
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(2, videoDirs.size());
@@ -107,8 +117,12 @@ public class MediaIndexTest {
 		File rootDir = this.tmp.getRoot();
 		List<File> expectedFiles = mockFiles(3, ".mkv", rootDir);
 
-		this.undertest.refresh();
-		this.undertest.refresh();
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(file, null);
+		}
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(file, null);
+		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
@@ -122,7 +136,8 @@ public class MediaIndexTest {
 		File file1 = mockFile(fileName);
 		File file2 = mockFile(fileName, new File(this.tmp.getRoot(), "dir"));
 
-		this.undertest.refresh();
+		this.undertest.fileFound(file1, null);
+		this.undertest.fileFound(file2, null);
 
 		List<File> actualFiles = new ArrayList<File>();
 		for (ContentNode node : this.contentTree.getNodes()) {
@@ -138,9 +153,10 @@ public class MediaIndexTest {
 		File dir = new File(this.tmp.getRoot(), "dir");
 		File file2 = mockFile("file_b.mkv", dir);
 
-		this.undertest.refresh();
+		this.undertest.fileFound(file1, null);
+		this.undertest.fileFound(file2, null);
 		FileUtils.deleteDirectory(dir);
-		this.undertest.refresh();
+		this.undertest.fileGone(file2);
 
 		List<File> actualFiles = getFiles(this.contentTree.getNodes());
 		assertThat(actualFiles, hasItem(file1));

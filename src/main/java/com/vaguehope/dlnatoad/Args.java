@@ -12,7 +12,6 @@ import org.kohsuke.args4j.Option;
 
 public class Args {
 
-	@Option(name = "-r", aliases = { "--refresh" }, usage = "refresh every " + C.REFRESH_INTERVAL_MINUTES + " minutes.") private boolean refresh;
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
@@ -41,10 +40,6 @@ public class Args {
 		if (dirs.size() < 1) dirs.add(new File("."));
 
 		return dirs;
-	}
-
-	public boolean isRefresh () {
-		return this.refresh;
 	}
 
 	private static List<File> pathsToFiles (final List<String> paths) {
