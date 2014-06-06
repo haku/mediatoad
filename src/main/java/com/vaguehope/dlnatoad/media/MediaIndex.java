@@ -1,6 +1,8 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
@@ -73,7 +75,7 @@ public class MediaIndex implements FileListener {
 			default:
 				throw new IllegalStateException();
 		}
-		final Container dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir.getName());
+		final Container dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir);
 		switch (format.getContentGroup()) {
 			case VIDEO:
 				makeVideoItemInContainer(dirContainer, file, file.getName(), format);
@@ -87,14 +89,19 @@ public class MediaIndex implements FileListener {
 			default:
 				throw new IllegalStateException();
 		}
+		Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
 	}
 
 	private Container makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
 		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
-	private Container makeDirContainerOnTree (final Container parentContainer, final String id, final String title) {
-		return makeContainerOnTree(this.contentTree.getNode(parentContainer.getId()), id, title);
+	private Container makeDirContainerOnTree (final Container parentContainer, final String id, final File dir) {
+		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
+		final Container dirContainer = makeContainerOnTree(parentNode, id, dir.getName());
+		dirContainer.setCreator(dir.getAbsolutePath());
+		Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
+		return dirContainer;
 	}
 
 	/**
@@ -131,7 +138,7 @@ public class MediaIndex implements FileListener {
 		res.setSize(file.length());
 		//res.setDuration(formatDuration(durationMillis));
 		//res.setResolution(resolutionXbyY);
-		final VideoItem videoItem = new VideoItem(id, parent, title, "", res);
+		final VideoItem videoItem = new VideoItem(id, parent, title, file.getAbsolutePath(), res);
 
 		// TODO tidy this hack.
 		// TODO handle upper case extension.
@@ -158,7 +165,7 @@ public class MediaIndex implements FileListener {
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		//res.setResolution(resolutionXbyY);
 		res.setSize(file.length());
-		final ImageItem imageItem = new ImageItem(id, parent, title, "", res);
+		final ImageItem imageItem = new ImageItem(id, parent, title, file.getAbsolutePath(), res);
 
 		parent.addItem(imageItem);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
@@ -174,7 +181,7 @@ public class MediaIndex implements FileListener {
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
 		//res.setDuration(formatDuration(durationMillis));
-		final AudioItem audioItem = new AudioItem(id, parent, title, "", res);
+		final AudioItem audioItem = new AudioItem(id, parent, title, file.getAbsolutePath(), res);
 
 		parent.addItem(audioItem);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
@@ -196,6 +203,30 @@ public class MediaIndex implements FileListener {
 			if (id.equals(item.getId())) return true;
 		}
 		return false;
+	}
+
+	private enum DIDLObjectOrder implements Comparator<DIDLObject> {
+		TITLE {
+			@Override
+			public int compare(final DIDLObject a, final DIDLObject b) {
+				return a.getTitle().compareToIgnoreCase(b.getTitle());
+			}
+		},
+		ID {
+			@Override
+			public int compare(final DIDLObject a, final DIDLObject b) {
+				return a.getId().compareTo(b.getId());
+			}
+		},
+		CREATOR {
+			@Override
+			public int compare(final DIDLObject a, final DIDLObject b) {
+				return a.getCreator().compareToIgnoreCase(b.getCreator());
+			}
+		};
+
+		@Override
+		public abstract int compare(DIDLObject a, DIDLObject b);
 	}
 
 }
