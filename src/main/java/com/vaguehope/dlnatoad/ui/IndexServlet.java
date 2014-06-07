@@ -47,21 +47,23 @@ public class IndexServlet extends HttpServlet {
 		for (final ContentNode node : this.contentTree.getNodes()) {
 			if (node.getFile() == null && !ContentGroup.incluesId(node.getId())) dirNodes.add(node);
 		}
-		Collections.sort(dirNodes, NodeNameSorter.INSTANCE);
+		Collections.sort(dirNodes, NodeOrder.TITLE_OR_NAME);
 
-		resp.setContentType("text/html");
+		resp.setContentType("text/html; charset=utf-8");
 		final PrintWriter w = resp.getWriter();
-		w.println("<html><body>");
+		w.print("<html><body><h3>DLNAtoad: ");
+		w.print(dirNodes.size());
+		w.println(" items</h3><ul>");
 		for (final ContentNode node : dirNodes) {
-			w.print("<p><a href=\"");
+			w.print("<li><a href=\"");
 			w.print(req.getRequestURI());
 			w.print("/");
 			w.print(node.getId());
 			w.print("\">");
 			w.print(node.getContainer().getTitle());
-			w.println("</a></p>");
+			w.println("</a></li>");
 		}
-		w.println("</html></body>");
+		w.println("</ul></html></body>");
 	}
 
 	private void printDir (final HttpServletResponse resp, final String path) throws IOException {
@@ -76,31 +78,43 @@ public class IndexServlet extends HttpServlet {
 		for (final Item item : dirNode.getContainer().getItems()) {
 			itemNodes.add(this.contentTree.getNode(item.getId()));
 		}
-		Collections.sort(itemNodes, NodeNameSorter.INSTANCE);
+		Collections.sort(itemNodes, NodeOrder.TITLE_OR_NAME);
 
-		resp.setContentType("text/html");
+		resp.setContentType("text/html; charset=utf-8");
 		final PrintWriter w = resp.getWriter();
-		w.println("<html><body>");
+		w.print("<html><body><h3>");
+		w.print(dirNode.getContainer().getTitle());
+		w.print(" (");
+		w.print(itemNodes.size());
+		w.println(" items)</h3><ul>");
 		for (final ContentNode node : itemNodes) {
-			w.print("<p><a href=\"/");
+			w.print("<li><a href=\"/");
 			w.print(node.getId());
 			w.print("\" download=\"");
 			w.print(node.getFile().getName());
 			w.print("\">");
 			w.print(node.getFile().getName());
-			w.println("</a></p>");
+			w.println("</a></li>");
 		}
-		w.println("</html></body>");
+		w.println("</ul></html></body>");
 	}
 
-	private enum NodeNameSorter implements Comparator<ContentNode> {
-		INSTANCE;
+	private enum NodeOrder implements Comparator<ContentNode> {
+		TITLE_OR_NAME {
+			@Override
+			public int compare(final ContentNode a, final ContentNode b) {
+				return nameOf(a).compareToIgnoreCase(nameOf(b));
+			}
+
+			private String nameOf(final ContentNode n) {
+				return n.getItem() != null ? n.getItem().getTitle() :
+					n.getContainer() != null ? n.getContainer().getTitle() :
+						n.getFile() != null ? n.getFile().getName() : "";
+			}
+		};
 
 		@Override
-		public int compare (final ContentNode o1, final ContentNode o2) {
-			if (o1.getFile() == null || o2.getFile() == null) return 0;
-			return o1.getFile().getName().toLowerCase().compareTo(o2.getFile().getName().toLowerCase());
-		}
+		public abstract int compare (final ContentNode o1, final ContentNode o2);
 	}
 
 	private static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {
