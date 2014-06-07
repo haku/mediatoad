@@ -138,7 +138,7 @@ public class MediaIndex implements FileListener {
 		res.setSize(file.length());
 		//res.setDuration(formatDuration(durationMillis));
 		//res.setResolution(resolutionXbyY);
-		final VideoItem videoItem = new VideoItem(id, parent, title, file.getAbsolutePath(), res);
+		final VideoItem videoItem = new VideoItem(id, parent, title, "", res);
 
 		// TODO tidy this hack.
 		// TODO handle upper case extension.
@@ -165,7 +165,7 @@ public class MediaIndex implements FileListener {
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		//res.setResolution(resolutionXbyY);
 		res.setSize(file.length());
-		final ImageItem imageItem = new ImageItem(id, parent, title, file.getAbsolutePath(), res);
+		final ImageItem imageItem = new ImageItem(id, parent, title, "", res);
 
 		parent.addItem(imageItem);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
@@ -181,7 +181,7 @@ public class MediaIndex implements FileListener {
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
 		//res.setDuration(formatDuration(durationMillis));
-		final AudioItem audioItem = new AudioItem(id, parent, title, file.getAbsolutePath(), res);
+		final AudioItem audioItem = new AudioItem(id, parent, title, "", res);
 
 		parent.addItem(audioItem);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
