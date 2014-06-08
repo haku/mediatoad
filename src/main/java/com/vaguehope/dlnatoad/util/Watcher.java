@@ -53,9 +53,11 @@ public class Watcher {
 
 	public void run () throws IOException {
 		try {
+			long totalFiles = 0L;
 			for (final File root : this.roots) {
-				registerRecursive(root);
+				totalFiles += registerRecursive(root);
 			}
+			LOG.info("Found {} media files.", totalFiles);
 			watch();
 		}
 		finally {
@@ -72,19 +74,14 @@ public class Watcher {
 		this.watchKeys.put(dir.register(this.watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE), dir);
 	}
 
-	private void registerRecursive (final File root) throws IOException {
+	/**
+	 * Returns number of files found during initial scan.
+	 */
+	private long registerRecursive (final File root) throws IOException {
 		if (!root.exists()) throw new FileNotFoundException("Unable to watch dir '" + root + "' as it does not exist.");
-		new TreeWalker(root, this.filter, new Hiker() {
-			@Override
-			public void onDir (final File dir) throws IOException {
-				register(dir.toPath());
-			}
-
-			@Override
-			public void onDirWithFiles (final File dir, final List<File> files) {
-				callListener(StandardWatchEventKinds.ENTRY_CREATE, files, EventType.SCAN);
-			}
-		}).walk();
+		final RegisterRecursiveHiker hiker = new RegisterRecursiveHiker(this);
+		new TreeWalker(root, this.filter, hiker).walk();
+		return hiker.getTotalFiles();
 	}
 
 	private void watch () {
@@ -165,6 +162,32 @@ public class Watcher {
 	@SuppressWarnings("unchecked")
 	private static <T> WatchEvent<T> cast (final WatchEvent<?> event) {
 		return (WatchEvent<T>) event;
+	}
+
+	private static class RegisterRecursiveHiker extends Hiker {
+
+		private final Watcher host;
+		private long totalFiles = 0L;
+
+		private RegisterRecursiveHiker (final Watcher host) {
+			this.host = host;
+		}
+
+		public long getTotalFiles () {
+			return this.totalFiles;
+		}
+
+		@Override
+		public void onDir (final File dir) throws IOException {
+			this.host.register(dir.toPath());
+		}
+
+		@Override
+		public void onDirWithFiles (final File dir, final List<File> files) {
+			this.host.callListener(StandardWatchEventKinds.ENTRY_CREATE, files, EventType.SCAN);
+			this.totalFiles += files.size();
+		}
+
 	}
 
 }
