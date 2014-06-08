@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -74,8 +75,7 @@ public final class Main {
 
 		final ContentTree contentTree = new ContentTree();
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName).getDevice());
-		final Server server = makeContentServer(contentTree);
-		server.start();
+		final Server server = startContentServer(contentTree);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext);
@@ -89,7 +89,30 @@ public final class Main {
 		server.join(); // Keep app alive.
 	}
 
-	private static Server makeContentServer (final ContentTree contentTree) {
+	private static Server startContentServer (final ContentTree contentTree) throws Exception {
+		int port = C.HTTP_PORT;
+		while (true) {
+			final HandlerList handler = makeContentHandler(contentTree);
+
+			final Server server = new Server();
+			server.setHandler(handler);
+			server.addConnector(createHttpConnector(port));
+			try {
+				server.start();
+				return server;
+			}
+			catch (final BindException e) {
+				if ("Address already in use".equals(e.getMessage())) {
+					port += 1;
+				}
+				else {
+					throw e;
+				}
+			}
+		}
+	}
+
+	private static HandlerList makeContentHandler(final ContentTree contentTree) {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
@@ -97,11 +120,7 @@ public final class Main {
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });
-
-		final Server server = new Server();
-		server.setHandler(handler);
-		server.addConnector(createHttpConnector(C.HTTP_PORT));
-		return server;
+		return handler;
 	}
 
 	private static SelectChannelConnector createHttpConnector (final int port) {
