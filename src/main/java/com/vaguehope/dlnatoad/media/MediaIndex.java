@@ -76,19 +76,7 @@ public class MediaIndex implements FileListener {
 				throw new IllegalStateException();
 		}
 		final Container dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir);
-		switch (format.getContentGroup()) {
-			case VIDEO:
-				makeVideoItemInContainer(dirContainer, file, file.getName(), format);
-				break;
-			case IMAGE:
-				makeImageItemInContainer(dirContainer, file, file.getName(), format);
-				break;
-			case AUDIO:
-				makeAudioItemInContainer(dirContainer, file, file.getName(), format);
-				break;
-			default:
-				throw new IllegalStateException();
-		}
+		makeItemInContainer(format, dirContainer, file, file.getName());
 		Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
 	}
 
@@ -128,7 +116,7 @@ public class MediaIndex implements FileListener {
 		return container;
 	}
 
-	private void makeVideoItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
+	private void makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title) {
 		final String id = contentId(format.getContentGroup(), file);
 		if (hasItemWithId(parent, id)) return;
 
@@ -136,10 +124,33 @@ public class MediaIndex implements FileListener {
 		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
-		//res.setDuration(formatDuration(durationMillis));
-		//res.setResolution(resolutionXbyY);
-		final VideoItem videoItem = new VideoItem(id, parent, title, "", res);
 
+		final Item item;
+		switch (format.getContentGroup()) {
+			case VIDEO:
+				//res.setDuration(formatDuration(durationMillis));
+				//res.setResolution(resolutionXbyY);
+				item = new VideoItem(id, parent, title, "", res);
+				findSubtitles(file, format, item);
+				break;
+			case IMAGE:
+				//res.setResolution(resolutionXbyY);
+				item = new ImageItem(id, parent, title, "", res);
+				break;
+			case AUDIO:
+				//res.setDuration(formatDuration(durationMillis));
+				item = new AudioItem(id, parent, title, "", res);
+				break;
+			default:
+				throw new IllegalArgumentException();
+		}
+
+		parent.addItem(item);
+		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
+		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
+	}
+
+	private void findSubtitles(final File file, final MediaFormat format, final Item item) {
 		// TODO tidy this hack.
 		// TODO handle upper case extension.
 		final File srtFile = new File(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".srt");
@@ -147,45 +158,9 @@ public class MediaIndex implements FileListener {
 			final String srtId = contentId(format.getContentGroup(), srtFile);
 			final MimeType srtMimeType = new MimeType("text", "srt");
 			final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
-			videoItem.addResource(srtRes);
+			item.addResource(srtRes);
 			this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
 		}
-
-		parent.addItem(videoItem);
-		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
-		this.contentTree.addNode(new ContentNode(videoItem.getId(), videoItem, file));
-	}
-
-	private void makeImageItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
-		final String id = contentId(format.getContentGroup(), file);
-		if (hasItemWithId(parent, id)) return;
-
-		final String mime = format.getMime();
-		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
-		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
-		//res.setResolution(resolutionXbyY);
-		res.setSize(file.length());
-		final ImageItem imageItem = new ImageItem(id, parent, title, "", res);
-
-		parent.addItem(imageItem);
-		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
-		this.contentTree.addNode(new ContentNode(imageItem.getId(), imageItem, file));
-	}
-
-	private void makeAudioItemInContainer (final Container parent, final File file, final String title, final MediaFormat format) {
-		final String id = contentId(format.getContentGroup(), file);
-		if (hasItemWithId(parent, id)) return;
-
-		final String mime = format.getMime();
-		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
-		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
-		res.setSize(file.length());
-		//res.setDuration(formatDuration(durationMillis));
-		final AudioItem audioItem = new AudioItem(id, parent, title, "", res);
-
-		parent.addItem(audioItem);
-		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
-		this.contentTree.addNode(new ContentNode(audioItem.getId(), audioItem, file));
 	}
 
 	private static String contentId (final ContentGroup type, final File file) {
