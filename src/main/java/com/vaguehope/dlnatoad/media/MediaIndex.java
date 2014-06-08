@@ -168,8 +168,9 @@ public class MediaIndex implements FileListener {
 		final String srtId = contentId(format.getContentGroup(), srtFile);
 		final MimeType srtMimeType = new MimeType("text", "srt");
 		final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
-		videoItem.addResource(srtRes);
 		this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
+
+		videoItem.addResource(srtRes);
 	}
 
 	private static String contentId (final ContentGroup type, final File file) {
