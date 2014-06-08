@@ -160,12 +160,13 @@ public final class Main {
 
 		public RunWatcher (final List<File> roots, final MediaIndex index) {
 			this.roots = roots;
-			this.index = index;}
+			this.index = index;
+		}
 
 		@Override
 		public void run () {
 			try {
-				new Watcher(this.roots, MediaFormat.FILE_FILTER, this.index).run();
+				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE, this.index).run();
 				LOG.error("Watcher thread exited.");
 			}
 			catch (Exception e) { // NOSONAR

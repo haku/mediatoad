@@ -27,8 +27,6 @@ public enum MediaFormat {
 	OGG("ogg", "audio/ogg", ContentGroup.AUDIO),
 	;
 
-	public static final FileFilter FILE_FILTER = new MediaFileFilter();
-
 	private static final Map<String, MediaFormat> EXT_TO_FORMAT;
 	static {
 		final Map<String, MediaFormat> t = new ConcurrentHashMap<String, MediaFormat>(MediaFormat.values().length);
@@ -57,12 +55,15 @@ public enum MediaFormat {
 	}
 
 	public static MediaFormat identify (final File file) {
-		return EXT_TO_FORMAT.get(FilenameUtils.getExtension(file.getName()).toLowerCase());
+		return identify(file.getName());
 	}
 
-	private static class MediaFileFilter implements FileFilter {
+	public static MediaFormat identify (final String name) {
+		return EXT_TO_FORMAT.get(FilenameUtils.getExtension(name).toLowerCase());
+	}
 
-		public MediaFileFilter () {}
+	public static enum MediaFileFilter implements FileFilter {
+		INSTANCE;
 
 		@Override
 		public boolean accept (final File file) {

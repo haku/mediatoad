@@ -1,9 +1,11 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -48,7 +50,7 @@ public class MediaIndex implements FileListener {
 	@Override
 	public void fileFound (final File file, final EventType eventType) {
 		if (!file.isFile()) return;
-		if (!MediaFormat.FILE_FILTER.accept(file)) return;
+		if (!MediaFormat.MediaFileFilter.INSTANCE.accept(file)) return;
 		putFileToContentTree(file);
 		if (eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
 	}
@@ -151,16 +153,23 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void findSubtitles(final File file, final MediaFormat format, final Item item) {
-		// TODO tidy this hack.
-		// TODO handle upper case extension.
-		final File srtFile = new File(file.getParentFile(), FilenameUtils.getBaseName(file.getName()) + ".srt");
-		if (srtFile.exists()) {
-			final String srtId = contentId(format.getContentGroup(), srtFile);
-			final MimeType srtMimeType = new MimeType("text", "srt");
-			final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
-			item.addResource(srtRes);
-			this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
+		for (final String name : file.getParentFile().list(new BasenameFilter(file))) {
+			if (MediaFormat.identify(name) != null) continue;
+			if (name.toLowerCase(Locale.UK).endsWith(".srt")) {
+				addSubtitlesSrt(format, item, new File(file.getParent(), name));
+			}
+			else {
+				LOG.warn("Unknown metadata file: {}", name);
+			}
 		}
+	}
+
+	private void addSubtitlesSrt (final MediaFormat format, final Item videoItem, final File srtFile) {
+		final String srtId = contentId(format.getContentGroup(), srtFile);
+		final MimeType srtMimeType = new MimeType("text", "srt");
+		final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
+		videoItem.addResource(srtRes);
+		this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
 	}
 
 	private static String contentId (final ContentGroup type, final File file) {
@@ -202,6 +211,20 @@ public class MediaIndex implements FileListener {
 
 		@Override
 		public abstract int compare(DIDLObject a, DIDLObject b);
+	}
+
+	private final class BasenameFilter implements FilenameFilter {
+
+		private final String baseName;
+
+		private BasenameFilter (final File file) {
+			this.baseName = FilenameUtils.getBaseName(file.getName());;
+		}
+
+		@Override
+		public boolean accept (final File dir, final String name) {
+			return name.startsWith(this.baseName);
+		}
 	}
 
 }
