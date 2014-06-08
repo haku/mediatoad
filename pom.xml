@@ -107,6 +107,12 @@
 			<version>${args4j.version}</version>
 		</dependency>
 
+		<dependency> <!-- https://github.com/kohsuke/akuma -->
+			<groupId>org.kohsuke</groupId>
+			<artifactId>akuma</artifactId>
+			<version>1.9</version>
+		</dependency>
+
 		<!-- Cling -->
 
 		<dependency>

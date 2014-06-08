@@ -13,6 +13,7 @@ import org.kohsuke.args4j.Option;
 public class Args {
 
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
+	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public List<File> getDirs () throws CmdLineException, IOException {
@@ -40,6 +41,10 @@ public class Args {
 		if (dirs.size() < 1) dirs.add(new File("."));
 
 		return dirs;
+	}
+
+	public boolean isDaemonise() {
+		return this.daemonise;
 	}
 
 	private static List<File> pathsToFiles (final List<String> paths) {

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.teleal.cling.UpnpService;
 import org.teleal.cling.UpnpServiceImpl;
 
+import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
@@ -45,7 +46,8 @@ public final class Main {
 		final CmdLineParser parser = new CmdLineParser(args);
 		try {
 			parser.parseArgument(rawArgs);
-			run(args.getDirs());
+			daemonise(args);
+			run(args);
 		}
 		catch (CmdLineException e) {
 			err.println(e.getMessage());
@@ -58,7 +60,19 @@ public final class Main {
 		}
 	}
 
-	private static void run (final List<File> roots) throws Exception { // NOSONAR
+	private static void daemonise(final Args args) throws Exception {
+		final Daemon d = new Daemon.WithoutChdir();
+		if (d.isDaemonized()) {
+			d.init(null); // No PID file for now.
+		}
+		else if (args.isDaemonise()) {
+			d.daemonize();
+			LOG.info("Daemon started.");
+			System.exit(0);
+		}
+	}
+
+	private static void run (final Args args) throws Exception { // NOSONAR
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		final List<InetAddress> addresses = NetHelper.getIpAddresses();
 		final InetAddress address = addresses.iterator().next();
@@ -80,7 +94,7 @@ public final class Main {
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext);
 
-		final Thread watcherThread = new Thread(new RunWatcher(roots, index));
+		final Thread watcherThread = new Thread(new RunWatcher(args.getDirs(), index));
 		watcherThread.setName("watcher");
 		watcherThread.setDaemon(true);
 		watcherThread.start();
