@@ -158,9 +158,6 @@ public class MediaIndex implements FileListener {
 			if (name.toLowerCase(Locale.UK).endsWith(".srt")) {
 				addSubtitlesSrt(format, item, new File(file.getParent(), name));
 			}
-			else {
-				LOG.warn("Unknown metadata file: {}", name);
-			}
 		}
 	}
 
