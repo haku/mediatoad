@@ -35,7 +35,7 @@ public class TreeWalker {
 	public void walk () throws IOException {
 		final Queue<File> dirs = new LinkedList<File>();
 		for (File root : this.roots) {
-			dirs.add(root.getCanonicalFile());
+			dirs.add(root);
 		}
 
 		while (!dirs.isEmpty()) {
@@ -47,16 +47,15 @@ public class TreeWalker {
 				Arrays.sort(listFiles, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
 				List<File> keepFiles = null;
 				for (final File file : listFiles) {
-					final File cFile = file.getCanonicalFile();
-					if (cFile.getName().startsWith(".")) {
+					if (file.getName().startsWith(".")) {
 						continue;
 					}
-					else if (cFile.isDirectory()) {
-						dirs.add(cFile);
+					else if (file.isDirectory()) {
+						dirs.add(file);
 					}
-					else if (cFile.isFile() && this.fileFilter.accept(cFile)) {
+					else if (file.isFile() && this.fileFilter.accept(file)) {
 						if (keepFiles == null) keepFiles = new ArrayList<File>();
-						keepFiles.add(cFile);
+						keepFiles.add(file);
 					}
 				}
 				if (keepFiles != null) {
