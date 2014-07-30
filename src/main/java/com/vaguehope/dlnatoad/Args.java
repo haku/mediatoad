@@ -14,6 +14,7 @@ public class Args {
 
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
+	@Option(name = "-p", aliases = { "--preserve" }, usage = "preserve directory hierarchy.") private boolean preserveHierarchy;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public List<File> getDirs () throws CmdLineException, IOException {
@@ -40,23 +41,32 @@ public class Args {
 
 		if (dirs.size() < 1) dirs.add(new File("."));
 
-		return dirs;
+		final List<File> cDirs = new ArrayList<File>();
+		for (final File dir : dirs) {
+			cDirs.add(dir.getCanonicalFile());
+		}
+
+		return cDirs;
 	}
 
 	public boolean isDaemonise() {
 		return this.daemonise;
 	}
 
+	public boolean isPreserveHierarchy () {
+		return this.preserveHierarchy;
+	}
+
 	private static List<File> pathsToFiles (final List<String> paths) {
-		List<File> files = new ArrayList<File>();
-		for (String path : paths) {
+		final List<File> files = new ArrayList<File>();
+		for (final String path : paths) {
 			files.add(new File(path));
 		}
 		return files;
 	}
 
 	private static void checkDirExist (final List<File> files) throws CmdLineException {
-		for (File file : files) {
+		for (final File file : files) {
 			if (!file.exists() || !file.isDirectory()) {
 				throw new CmdLineException(null, "Directory not found: " + file.getAbsolutePath());
 			}

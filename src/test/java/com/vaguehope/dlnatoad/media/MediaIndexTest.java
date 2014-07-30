@@ -25,6 +25,7 @@ import org.teleal.cling.support.model.item.Item;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 
 public class MediaIndexTest {
 
@@ -40,7 +41,7 @@ public class MediaIndexTest {
 		this.contentTree = new ContentTree();
 		List<File> roots = new ArrayList<File>();
 		roots.add(this.tmp.getRoot());
-		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT);
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN);
 	}
 
 	@Test
@@ -48,7 +49,7 @@ public class MediaIndexTest {
 		List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
 		Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
@@ -63,7 +64,7 @@ public class MediaIndexTest {
 		List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -78,10 +79,10 @@ public class MediaIndexTest {
 		List<File> expectedImages = mockFiles(5, ".jpg");
 
 		for (final File file : expectedVideos) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 		for (final File file : expectedImages) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -102,8 +103,8 @@ public class MediaIndexTest {
 		File file1 = mockFile("file 1.mkv", dir1);
 		File file2 = mockFile("file 2.mkv", dir2);
 
-		this.undertest.fileFound(file1, null);
-		this.undertest.fileFound(file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(2, videoDirs.size());
@@ -118,10 +119,10 @@ public class MediaIndexTest {
 		List<File> expectedFiles = mockFiles(3, ".mkv", rootDir);
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
 		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -136,8 +137,8 @@ public class MediaIndexTest {
 		File file1 = mockFile(fileName);
 		File file2 = mockFile(fileName, new File(this.tmp.getRoot(), "dir"));
 
-		this.undertest.fileFound(file1, null);
-		this.undertest.fileFound(file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 
 		List<File> actualFiles = new ArrayList<File>();
 		for (ContentNode node : this.contentTree.getNodes()) {
@@ -153,8 +154,8 @@ public class MediaIndexTest {
 		File dir = new File(this.tmp.getRoot(), "dir");
 		File file2 = mockFile("file_b.mkv", dir);
 
-		this.undertest.fileFound(file1, null);
-		this.undertest.fileFound(file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 		FileUtils.deleteDirectory(dir);
 		this.undertest.fileGone(file2);
 

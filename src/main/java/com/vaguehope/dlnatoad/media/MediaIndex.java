@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -29,18 +30,25 @@ import com.vaguehope.dlnatoad.util.Watcher.FileListener;
 
 public class MediaIndex implements FileListener {
 
+	public enum HierarchyMode {
+		FLATTERN,
+		PRESERVE
+	}
+
 	private static final Logger LOG = LoggerFactory.getLogger(MediaIndex.class);
 
 	private final ContentTree contentTree;
 	private final String externalHttpContext;
+	private final HierarchyMode hierarchyMode;
 
 	private final Container videoContainer;
 	private final Container imageContainer;
 	private final Container audioContainer;
 
-	public MediaIndex (final ContentTree contentTree, final String externalHttpContext) {
+	public MediaIndex (final ContentTree contentTree, final String externalHttpContext, final HierarchyMode hierarchyMode) {
 		this.contentTree = contentTree;
 		this.externalHttpContext = externalHttpContext;
+		this.hierarchyMode = hierarchyMode;
 
 		this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
 		this.imageContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
@@ -48,10 +56,11 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public void fileFound (final File file, final EventType eventType) {
+	public void fileFound (final File rootDir, final File file, final EventType eventType) {
+		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
 		if (!file.isFile()) return;
 		if (!MediaFormat.MediaFileFilter.INSTANCE.accept(file)) return;
-		putFileToContentTree(file);
+		putFileToContentTree(rootDir, file);
 		if (eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
 	}
 
@@ -60,7 +69,7 @@ public class MediaIndex implements FileListener {
 		this.contentTree.prune(); // FIXME be less lazy.
 	}
 
-	protected void putFileToContentTree (final File file) {
+	private void putFileToContentTree (final File rootDir, final File file) {
 		final MediaFormat format = MediaFormat.identify(file);
 		final File dir = file.getParentFile();
 		final Container formatContainer;
@@ -77,7 +86,17 @@ public class MediaIndex implements FileListener {
 			default:
 				throw new IllegalStateException();
 		}
-		final Container dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir);
+
+		final Container dirContainer;
+		switch (this.hierarchyMode) {
+			case PRESERVE:
+				dirContainer = makeDirAndParentDirsContianersOnTree(format, formatContainer, rootDir, dir);
+				break;
+			case FLATTERN:
+			default:
+				dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir);
+		}
+
 		makeItemInContainer(format, dirContainer, file, file.getName());
 		Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
 	}
@@ -92,6 +111,35 @@ public class MediaIndex implements FileListener {
 		dirContainer.setCreator(dir.getAbsolutePath());
 		Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
 		return dirContainer;
+	}
+
+	private Container makeDirAndParentDirsContianersOnTree (final MediaFormat format, final Container formatContainer, final File rootDir, final File dir) {
+		final List<File> dirsToCreate = new ArrayList<>();
+
+		File ittrDir = dir;
+		while (ittrDir != null) {
+			final ContentNode node = this.contentTree.getNode(contentId(format.getContentGroup(), ittrDir));
+			if (node != null) break;
+			dirsToCreate.add(ittrDir);
+			if (rootDir.equals(ittrDir)) break;
+			ittrDir = ittrDir.getParentFile();
+		}
+
+		Collections.reverse(dirsToCreate);
+
+		for (final File dirToCreate : dirsToCreate) {
+			final Container parentContainer;
+			if (rootDir.equals(dirToCreate)) {
+				parentContainer = formatContainer;
+			}
+			else {
+				final ContentNode parentNode = this.contentTree.getNode(contentId(format.getContentGroup(), dirToCreate.getParentFile()));
+				parentContainer = parentNode.getContainer();
+			}
+			makeDirContainerOnTree(parentContainer, contentId(format.getContentGroup(), dirToCreate), dirToCreate);
+		}
+
+		return this.contentTree.getNode(contentId(format.getContentGroup(), dir)).getContainer();
 	}
 
 	/**
@@ -152,7 +200,7 @@ public class MediaIndex implements FileListener {
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
 	}
 
-	private void findSubtitles(final File file, final MediaFormat format, final Item item) {
+	private void findSubtitles (final File file, final MediaFormat format, final Item item) {
 		for (final String name : file.getParentFile().list(new BasenameFilter(file))) {
 			if (MediaFormat.identify(name) != null) continue;
 			if (name.toLowerCase(Locale.UK).endsWith(".srt")) {
@@ -190,25 +238,25 @@ public class MediaIndex implements FileListener {
 	private enum DIDLObjectOrder implements Comparator<DIDLObject> {
 		TITLE {
 			@Override
-			public int compare(final DIDLObject a, final DIDLObject b) {
+			public int compare (final DIDLObject a, final DIDLObject b) {
 				return a.getTitle().compareToIgnoreCase(b.getTitle());
 			}
 		},
 		ID {
 			@Override
-			public int compare(final DIDLObject a, final DIDLObject b) {
+			public int compare (final DIDLObject a, final DIDLObject b) {
 				return a.getId().compareTo(b.getId());
 			}
 		},
 		CREATOR {
 			@Override
-			public int compare(final DIDLObject a, final DIDLObject b) {
+			public int compare (final DIDLObject a, final DIDLObject b) {
 				return a.getCreator().compareToIgnoreCase(b.getCreator());
 			}
 		};
 
 		@Override
-		public abstract int compare(DIDLObject a, DIDLObject b);
+		public abstract int compare (DIDLObject a, DIDLObject b);
 	}
 
 	private final class BasenameFilter implements FilenameFilter {

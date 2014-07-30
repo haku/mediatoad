@@ -28,7 +28,7 @@ public class Watcher {
 	}
 
 	public interface FileListener {
-		void fileFound (File file, EventType eventType);
+		void fileFound (File rootDir, File file, EventType eventType);
 
 		void fileGone (File file);
 	}
@@ -39,7 +39,8 @@ public class Watcher {
 	private final FileFilter filter;
 	private final FileListener listener;
 	private final WatchService watchService;
-	private final HashMap<WatchKey, Path> watchKeys;
+	private final HashMap<WatchKey, Path> watchKeys = new HashMap<>();
+	private final HashMap<WatchKey, File> watchKeyRoots = new HashMap<>();
 
 	private volatile boolean running = true;
 
@@ -48,14 +49,13 @@ public class Watcher {
 		this.filter = filter;
 		this.listener = listener;
 		this.watchService = FileSystems.getDefault().newWatchService();
-		this.watchKeys = new HashMap<WatchKey, Path>();
 	}
 
 	public void run () throws IOException {
 		try {
 			long totalFiles = 0L;
 			for (final File root : this.roots) {
-				totalFiles += registerRecursive(root);
+				totalFiles += registerRecursive(root, root);
 			}
 			LOG.info("Found {} media files.", totalFiles);
 			watch();
@@ -70,17 +70,19 @@ public class Watcher {
 		this.running = false;
 	}
 
-	protected void register (final Path dir) throws IOException {
-		this.watchKeys.put(dir.register(this.watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE), dir);
+	protected void register (final File rootDir, final Path dir) throws IOException {
+		final WatchKey watchKey = dir.register(this.watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE);
+		this.watchKeys.put(watchKey, dir);
+		this.watchKeyRoots.put(watchKey, rootDir);
 	}
 
 	/**
 	 * Returns number of files found during initial scan.
 	 */
-	private long registerRecursive (final File root) throws IOException {
-		if (!root.exists()) throw new FileNotFoundException("Unable to watch dir '" + root + "' as it does not exist.");
-		final RegisterRecursiveHiker hiker = new RegisterRecursiveHiker(this);
-		new TreeWalker(root, this.filter, hiker).walk();
+	private long registerRecursive (final File rootDir, final File dir) throws IOException {
+		if (!dir.exists()) throw new FileNotFoundException("Unable to watch dir '" + dir + "' as it does not exist.");
+		final RegisterRecursiveHiker hiker = new RegisterRecursiveHiker(this, rootDir);
+		new TreeWalker(dir, this.filter, hiker).walk();
 		return hiker.getTotalFiles();
 	}
 
@@ -102,8 +104,14 @@ public class Watcher {
 				continue;
 			}
 
+			final File rootDir = this.watchKeyRoots.get(key);
+			if (rootDir == null) {
+				LOG.error("WatchKey root not found: {}", key);
+				continue;
+			}
+
 			try {
-				readWatchKey(dir, key);
+				readWatchKey(rootDir, dir, key);
 			}
 			catch (final Exception e) { // NOSONAR
 				LOG.warn("Failed to process '{}': {}", key, e.toString());
@@ -112,6 +120,7 @@ public class Watcher {
 			if (!key.reset()) {
 				LOG.info("WatchKey no longer valid: {}", dir);
 				this.watchKeys.remove(key);
+				this.watchKeyRoots.remove(key);
 				if (this.watchKeys.isEmpty()) {
 					this.running = false;
 					return;
@@ -120,7 +129,7 @@ public class Watcher {
 		}
 	}
 
-	private void readWatchKey (final Path dir, final WatchKey key) throws IOException {
+	private void readWatchKey (final File rootDir, final Path dir, final WatchKey key) throws IOException {
 		for (final WatchEvent<?> event : key.pollEvents()) {
 			if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
 				LOG.warn("Overflow WatchEvent!");
@@ -132,23 +141,23 @@ public class Watcher {
 			LOG.debug("{} {}", ev.kind().name(), path);
 
 			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(path)) {
-				registerRecursive(path.toFile());
+				registerRecursive(rootDir, path.toFile());
 			}
 
-			callListener(ev.kind(), path.toFile(), EventType.NOTIFY);
+			callListener(ev.kind(), path.toFile(), rootDir, EventType.NOTIFY);
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final List<File> files, final EventType eventType) {
+	protected void callListener (final Kind<Path> kind, final List<File> files, final File rootDir, final EventType eventType) {
 		for (final File file : files) {
-			callListener(kind, file, eventType);
+			callListener(kind, file, rootDir, eventType);
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final File file, final EventType eventType) {
+	protected void callListener (final Kind<Path> kind, final File file, final File rootDir, final EventType eventType) {
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-				this.listener.fileFound(file, eventType);
+				this.listener.fileFound(rootDir, file, eventType);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
 				this.listener.fileGone(file);
@@ -167,10 +176,12 @@ public class Watcher {
 	private static class RegisterRecursiveHiker extends Hiker {
 
 		private final Watcher host;
+		private final File rootDir;
 		private long totalFiles = 0L;
 
-		private RegisterRecursiveHiker (final Watcher host) {
+		protected RegisterRecursiveHiker (final Watcher host, final File rootDir) {
 			this.host = host;
+			this.rootDir = rootDir;
 		}
 
 		public long getTotalFiles () {
@@ -179,12 +190,12 @@ public class Watcher {
 
 		@Override
 		public void onDir (final File dir) throws IOException {
-			this.host.register(dir.toPath());
+			this.host.register(this.rootDir, dir.toPath());
 		}
 
 		@Override
 		public void onDirWithFiles (final File dir, final List<File> files) {
-			this.host.callListener(StandardWatchEventKinds.ENTRY_CREATE, files, EventType.SCAN);
+			this.host.callListener(StandardWatchEventKinds.ENTRY_CREATE, files, this.rootDir, EventType.SCAN);
 			this.totalFiles += files.size();
 		}
 

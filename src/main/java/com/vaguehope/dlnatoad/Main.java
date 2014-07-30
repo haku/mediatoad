@@ -25,6 +25,7 @@ import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIndex;
+import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
@@ -92,7 +93,9 @@ public final class Main {
 		final Server server = startContentServer(contentTree);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
-		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext);
+		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
+		LOG.info("hierarchyMode: {}", hierarchyMode);
+		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode);
 
 		final Thread watcherThread = new Thread(new RunWatcher(args.getDirs(), index));
 		watcherThread.setName("watcher");
