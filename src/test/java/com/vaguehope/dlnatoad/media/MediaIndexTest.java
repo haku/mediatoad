@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -26,6 +27,8 @@ import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
+import com.vaguehope.dlnatoad.util.CollectionHelper;
+import com.vaguehope.dlnatoad.util.CollectionHelper.Function;
 
 public class MediaIndexTest {
 
@@ -39,44 +42,44 @@ public class MediaIndexTest {
 	@Before
 	public void before () throws Exception {
 		this.contentTree = new ContentTree();
-		List<File> roots = new ArrayList<File>();
+		final List<File> roots = new ArrayList<File>();
 		roots.add(this.tmp.getRoot());
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN);
 	}
 
 	@Test
 	public void itLinksRootToVideos () throws Exception {
-		List<File> expectedFiles = mockFiles(3, ".mkv");
+		final List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
-		Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
-		Container dirContainer = videoContainer.getContainers().get(0);
+		final Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
+		final Container dirContainer = videoContainer.getContainers().get(0);
 
-		List<File> actualFiles = getFiles(getNodes(getItemIds(dirContainer.getItems())));
+		final List<File> actualFiles = getFiles(getNodes(getItemIds(dirContainer.getItems())));
 		assertEquals(expectedFiles, actualFiles);
 	}
 
 	@Test
 	public void itIndexesAFewVideoRootFiles () throws Exception {
-		List<File> expectedFiles = mockFiles(3, ".mkv");
+		final List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
-		ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
+		final ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedFiles, node);
 	}
 
 	@Test
 	public void itSeparatesVideosAndImages () throws Exception {
-		List<File> expectedVideos = mockFiles(3, ".mkv");
-		List<File> expectedImages = mockFiles(5, ".jpg");
+		final List<File> expectedVideos = mockFiles(3, ".mkv");
+		final List<File> expectedImages = mockFiles(5, ".jpg");
 
 		for (final File file : expectedVideos) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null);
@@ -85,28 +88,28 @@ public class MediaIndexTest {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null);
 		}
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
-		ContentNode vidDirNode = this.contentTree.getNode(videoDirs.get(0).getId());
+		final ContentNode vidDirNode = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedVideos, vidDirNode);
 
-		List<Container> imageDirs = this.contentTree.getNode(ContentGroup.IMAGE.getId()).getContainer().getContainers();
+		final List<Container> imageDirs = this.contentTree.getNode(ContentGroup.IMAGE.getId()).getContainer().getContainers();
 		assertEquals(1, imageDirs.size());
-		ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
+		final ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedImages, imgDirNode);
 	}
 
 	@Test
 	public void itIndexesAFewVideoRootDirs () throws Exception {
-		File dir1 = new File(this.tmp.getRoot(), "dir 1");
-		File dir2 = new File(this.tmp.getRoot(), "dir 2");
-		File file1 = mockFile("file 1.mkv", dir1);
-		File file2 = mockFile("file 2.mkv", dir2);
+		final File dir1 = new File(this.tmp.getRoot(), "dir 1");
+		final File dir2 = new File(this.tmp.getRoot(), "dir 2");
+		final File file1 = mockFile("file 1.mkv", dir1);
+		final File file2 = mockFile("file 2.mkv", dir2);
 
 		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
 		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(2, videoDirs.size());
 
 		assertContainer(dir1, Arrays.asList(file1), videoDirs.get(0));
@@ -114,34 +117,62 @@ public class MediaIndexTest {
 	}
 
 	@Test
-	public void itIsCorrectAfterMultipleRefreshes () throws Exception {
-		File rootDir = this.tmp.getRoot();
-		List<File> expectedFiles = mockFiles(3, ".mkv", rootDir);
+	public void itCanPreserveDirStructure () throws Exception {
+		final File root = new File(this.tmp.getRoot(), "root");
+		final File dir1 = new File(root, "dir 1");
+		final File dir2 = new File(dir1, "dir 2");
+		final File dir3 = new File(dir2, "dir 3");
+		final File file1 = mockFile("file 1.mkv", dir1);
+		final File file3 = mockFile("file 3.mkv", dir3);
 
-		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
-		}
-		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
-		}
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE);
 
-		List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		this.undertest.fileFound(root, file1, null);
+		this.undertest.fileFound(root, file3, null);
+
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(1, videoDirs.size());
-		ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
+
+		final Container rootCont = videoDirs.get(0);
+		assertContainerContainsDirsAndFiles(rootCont,
+				Collections.singletonList(dir1), Collections.<File> emptyList());
+		assertContainerContainsDirsAndFiles(rootCont.getContainers().get(0),
+				Collections.singletonList(dir2), Collections.singletonList(file1));
+		assertContainerContainsDirsAndFiles(rootCont.getContainers().get(0).getContainers().get(0),
+				Collections.singletonList(dir3), Collections.<File> emptyList());
+		assertContainerContainsDirsAndFiles(rootCont.getContainers().get(0).getContainers().get(0).getContainers().get(0),
+				Collections.<File> emptyList(), Collections.singletonList(file3));
+	}
+
+	@Test
+	public void itIsCorrectAfterMultipleRefreshes () throws Exception {
+		final File rootDir = this.tmp.getRoot();
+		final List<File> expectedFiles = mockFiles(3, ".mkv", rootDir);
+
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+		}
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+		}
+
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		assertEquals(1, videoDirs.size());
+		final ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(rootDir, expectedFiles, node);
 	}
 
 	@Test
 	public void itDoesNotDuplcateWhenSameFileNameInTwoDirs () throws Exception {
-		String fileName = "file_a.mkv";
-		File file1 = mockFile(fileName);
-		File file2 = mockFile(fileName, new File(this.tmp.getRoot(), "dir"));
+		final String fileName = "file_a.mkv";
+		final File file1 = mockFile(fileName);
+		final File file2 = mockFile(fileName, new File(this.tmp.getRoot(), "dir"));
 
 		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
 		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 
-		List<File> actualFiles = new ArrayList<File>();
-		for (ContentNode node : this.contentTree.getNodes()) {
+		final List<File> actualFiles = new ArrayList<File>();
+		for (final ContentNode node : this.contentTree.getNodes()) {
 			if (node.isItem() && fileName.equals(node.getItem().getTitle())) actualFiles.add(node.getFile());
 		}
 		assertThat(actualFiles, hasItems(file1, file2));
@@ -150,20 +181,20 @@ public class MediaIndexTest {
 
 	@Test
 	public void itDoesNotLeaveAnyDeadEntriesInContentTree () throws Exception {
-		File file1 = mockFile("file_a.mkv");
-		File dir = new File(this.tmp.getRoot(), "dir");
-		File file2 = mockFile("file_b.mkv", dir);
+		final File file1 = mockFile("file_a.mkv");
+		final File dir = new File(this.tmp.getRoot(), "dir");
+		final File file2 = mockFile("file_b.mkv", dir);
 
 		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
 		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
 		FileUtils.deleteDirectory(dir);
 		this.undertest.fileGone(file2);
 
-		List<File> actualFiles = getFiles(this.contentTree.getNodes());
+		final List<File> actualFiles = getFiles(this.contentTree.getNodes());
 		assertThat(actualFiles, hasItem(file1));
 		assertThat(actualFiles, not(hasItem(file2)));
 
-		List<String> nodeTitles = getNodeTitles(getContaners(this.contentTree.getNodes()));
+		final List<String> nodeTitles = getNodeTitles(getContaners(this.contentTree.getNodes()));
 		assertThat(nodeTitles, not(hasItem(dir.getName())));
 	}
 
@@ -174,9 +205,9 @@ public class MediaIndexTest {
 	}
 
 	private static List<File> mockFiles (final int n, final String ext, final File parent) throws IOException {
-		List<File> ret = new ArrayList<File>();
+		final List<File> ret = new ArrayList<File>();
 		for (int i = 0; i < n; i++) {
-			File f = mockFile("file_" + i + ext, parent);
+			final File f = mockFile("file_" + i + ext, parent);
 			ret.add(f);
 		}
 		return ret;
@@ -187,72 +218,102 @@ public class MediaIndexTest {
 	}
 
 	private static File mockFile (final String name, final File parent) throws IOException {
-		File f = new File(parent, name);
+		final File f = new File(parent, name);
 		FileUtils.touch(f);
 		return f;
 	}
 
 	public static List<String> getItemIds (final List<Item> items) {
-		List<String> ids = new ArrayList<String>();
-		for (Item item : items) {
+		final List<String> ids = new ArrayList<String>();
+		for (final Item item : items) {
 			ids.add(item.getId());
 		}
 		return ids;
 	}
 
 	public static List<String> getNodeIds (final List<Container> list) {
-		List<String> ids = new ArrayList<String>();
-		for (Container i : list) {
+		final List<String> ids = new ArrayList<String>();
+		for (final Container i : list) {
 			ids.add(i.getId());
 		}
 		return ids;
 	}
 
 	public static List<String> getNodeTitles (final List<Container> list) {
-		List<String> ret = new ArrayList<String>();
-		for (Container i : list) {
+		final List<String> ret = new ArrayList<String>();
+		for (final Container i : list) {
 			ret.add(i.getTitle());
 		}
 		return ret;
 	}
 
 	private List<ContentNode> getNodes (final List<String> ids) {
-		List<ContentNode> nodes = new ArrayList<ContentNode>();
-		for (String id : ids) {
+		final List<ContentNode> nodes = new ArrayList<ContentNode>();
+		for (final String id : ids) {
 			nodes.add(this.contentTree.getNode(id));
 		}
 		return nodes;
 	}
 
 	private static List<File> getFiles (final Collection<ContentNode> nodes) {
-		List<File> files = new ArrayList<File>();
-		for (ContentNode node : nodes) {
+		final List<File> files = new ArrayList<File>();
+		for (final ContentNode node : nodes) {
 			if (node.isItem()) files.add(node.getFile());
 		}
 		return files;
 	}
 
 	private static List<Container> getContaners (final Collection<ContentNode> nodes) {
-		List<Container> cs = new ArrayList<Container>();
-		for (ContentNode node : nodes) {
+		final List<Container> cs = new ArrayList<Container>();
+		for (final ContentNode node : nodes) {
 			if (!node.isItem()) cs.add(node.getContainer());
 		}
 		return cs;
 	}
 
-	private void assertContainer (final File dir, final List<File> files, final Container cont1) {
-		assertEquals(dir.getName(), cont1.getTitle());
-		ContentNode node1 = this.contentTree.getNode(cont1.getId());
-		assertNodeWithItems(dir, files, node1);
+	private void assertContainer (final File dir, final List<File> files, final Container cont) {
+		assertEquals(dir.getName(), cont.getTitle());
+		final ContentNode node = this.contentTree.getNode(cont.getId());
+		assertNodeWithItems(dir, files, node);
 	}
 
 	private void assertNodeWithItems (final File rootDir, final List<File> expectedFiles, final ContentNode node) {
 		assertFalse(node.isItem());
-		Container container = node.getContainer();
+		final Container container = node.getContainer();
 		assertEquals(rootDir.getName(), container.getTitle());
 		assertEquals(expectedFiles.size(), container.getChildCount().intValue());
 
-		List<File> actualFiles = getFiles(getNodes(getItemIds(container.getItems())));
+		final List<File> actualFiles = getFiles(getNodes(getItemIds(container.getItems())));
+		assertEquals(expectedFiles, actualFiles);
+	}
+
+	private static void assertContainerContainsDirsAndFiles (final Container cont, final List<File> dirs, final List<File> files) {
+		final Collection<String> expectedDirs = CollectionHelper.map(dirs, new Function<File, String>() {
+			@Override
+			public String exec (final File input) {
+				return input.getName();
+			}
+		}, new ArrayList<String>());
+		final Collection<String> actualDirs = CollectionHelper.map(cont.getContainers(), new Function<Container, String>() {
+			@Override
+			public String exec (final Container input) {
+				return input.getTitle();
+			}
+		}, new ArrayList<String>());
+		assertEquals(expectedDirs, actualDirs);
+
+		final Collection<String> expectedFiles = CollectionHelper.map(files, new Function<File, String>() {
+			@Override
+			public String exec (final File input) {
+				return input.getName();
+			}
+		}, new ArrayList<String>());
+		final Collection<String> actualFiles = CollectionHelper.map(cont.getItems(), new Function<Item, String>() {
+			@Override
+			public String exec (final Item input) {
+				return input.getTitle();
+			}
+		}, new ArrayList<String>());
 		assertEquals(expectedFiles, actualFiles);
 	}
 
