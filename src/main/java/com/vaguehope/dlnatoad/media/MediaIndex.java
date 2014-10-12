@@ -263,8 +263,8 @@ public class MediaIndex implements FileListener {
 
 		private final String baseName;
 
-		private BasenameFilter (final File file) {
-			this.baseName = FilenameUtils.getBaseName(file.getName());;
+		public BasenameFilter (final File file) {
+			this.baseName = FilenameUtils.getBaseName(file.getName());
 		}
 
 		@Override
