@@ -48,7 +48,7 @@ public class MediaServer {
 		contDirSrv.setManager(new DefaultServiceManager<ContentDirectoryService>(contDirSrv, ContentDirectoryService.class) {
 			@Override
 			protected ContentDirectoryService createServiceInstance () {
-				return new ContentDirectoryService(contentTree);
+				return new ContentDirectoryService(contentTree, new SearchEngine());
 			}
 		});
 
