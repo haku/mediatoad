@@ -32,12 +32,12 @@ public class SearchEngineTest {
 	}
 
 	@Test
-	public void itSearchesUsingSearchEngine () throws Exception {
+	public void itSearchesByTitle () throws Exception {
 		final List<ContentNode> items = this.mockContent.givenMockItems(10);
-		when(items.get(3).getItem().getTitle()).thenReturn("some file fooBar song.mp4");
+		when(items.get(3).getItem().getTitle()).thenReturn("some file foo\"Bar song.mp4");
 
 		final List<Item> ret = this.undertest.search(this.contentTree.getRootNode(),
-				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foobar\")");
+				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")");
 
 		assertEquals(MockContent.listOfItems(items.subList(3, 4)), ret);
 	}
