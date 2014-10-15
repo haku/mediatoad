@@ -27,13 +27,21 @@ public class MockContent {
 	}
 
 	public List<ContentNode> givenMockItems (final int n) {
-		return givenMockItems(n, this.contentTree.getRootNode());
+		return givenMockItems(Item.class, n);
+	}
+
+	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n) {
+		return givenMockItems(cls, n, this.contentTree.getRootNode());
 	}
 
 	public List<ContentNode> givenMockItems (final int n, final ContentNode parent) {
+		return givenMockItems(Item.class, n, parent);
+	}
+
+	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n, final ContentNode parent) {
 		final List<ContentNode> ret = new ArrayList<ContentNode>();
 		for (int i = 0; i < n; i++) {
-			ret.add(addMockItem("item " + i, parent));
+			ret.add(addMockItem(cls, "item " + i, parent));
 		}
 		return ret;
 	}
@@ -55,7 +63,11 @@ public class MockContent {
 	}
 
 	public ContentNode addMockItem (final String id, final ContentNode parent) {
-		final Item item = mock(Item.class);
+		return addMockItem(Item.class, id, parent);
+	}
+
+	public ContentNode addMockItem (final Class<? extends Item> cls, final String id, final ContentNode parent) {
+		final Item item = mock(cls);
 		when(item.getTitle()).thenReturn("item " + id);
 		when(item.toString()).thenReturn("item " + id);
 		final ContentNode node = new ContentNode(id, item, mock(File.class));
