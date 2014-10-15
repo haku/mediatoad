@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -94,7 +95,7 @@ public class MediaIndex implements FileListener {
 				break;
 			case FLATTERN:
 			default:
-				dirContainer = makeDirContainerOnTree(formatContainer, contentId(format.getContentGroup(), dir), dir);
+				dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, contentId(format.getContentGroup(), dir), dir);
 		}
 
 		makeItemInContainer(format, dirContainer, file, file.getName());
@@ -105,11 +106,15 @@ public class MediaIndex implements FileListener {
 		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
-	private Container makeDirContainerOnTree (final Container parentContainer, final String id, final File dir) {
+	private Container makeDirContainerOnTree (final ContentGroup contentGroup,  final Container parentContainer, final String id, final File dir) {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final Container dirContainer = makeContainerOnTree(parentNode, id, dir.getName());
 		dirContainer.setCreator(dir.getAbsolutePath());
 		Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
+
+		final Res artRes = findArtRes(dir, contentGroup);
+		if (artRes != null) dirContainer.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
+
 		return dirContainer;
 	}
 
@@ -136,7 +141,7 @@ public class MediaIndex implements FileListener {
 				final ContentNode parentNode = this.contentTree.getNode(contentId(format.getContentGroup(), dirToCreate.getParentFile()));
 				parentContainer = parentNode.getContainer();
 			}
-			makeDirContainerOnTree(parentContainer, contentId(format.getContentGroup(), dirToCreate), dirToCreate);
+			makeDirContainerOnTree(format.getContentGroup(), parentContainer, contentId(format.getContentGroup(), dirToCreate), dirToCreate);
 		}
 
 		return this.contentTree.getNode(contentId(format.getContentGroup(), dir)).getContainer();
@@ -170,9 +175,7 @@ public class MediaIndex implements FileListener {
 		final String id = contentId(format.getContentGroup(), file);
 		if (hasItemWithId(parent, id)) return;
 
-		final String mime = format.getMime();
-		final MimeType extMimeType = new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
-		final Res res = new Res(extMimeType, Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
+		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
 
 		final Item item;
@@ -195,9 +198,33 @@ public class MediaIndex implements FileListener {
 				throw new IllegalArgumentException();
 		}
 
+		findArt(file, format, item);
+
 		parent.addItem(item);
 		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
+	}
+
+	private void findArt (final File mediaFile, final MediaFormat mediaFormat, final Item item) {
+		final Res artRes = findArtRes(mediaFile, mediaFormat.getContentGroup());
+		if (artRes == null) return;
+		item.addResource(artRes);
+	}
+
+	private Res findArtRes(final File mediaFile, final ContentGroup mediaContentGroup) {
+		final File artFile = CoverArtHelper.findCoverArt(mediaFile);
+		if (artFile == null) return null;
+
+		final MediaFormat artFormat = MediaFormat.identify(artFile);
+		if (artFormat == null) {
+			LOG.warn("Ignoring art file of unsupported type: {}", artFile);
+			return null;
+		}
+		final MimeType artMimeType = formatToMime(artFormat);
+
+		final String artId = contentId(mediaContentGroup, artFile);
+		this.contentTree.addNode(new ContentNode(artId, null, artFile));
+		return new Res(artMimeType, Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
 	}
 
 	private void findSubtitles (final File file, final MediaFormat format, final Item item) {
@@ -224,6 +251,11 @@ public class MediaIndex implements FileListener {
 
 	private static String getSafeName (final File file) {
 		return file.getName().replaceAll("[^a-zA-Z0-9]", "_");
+	}
+
+	private static MimeType formatToMime (final MediaFormat format) {
+		final String mime = format.getMime();
+		return new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 	}
 
 	private static boolean hasItemWithId (final Container parent, final String id) {
