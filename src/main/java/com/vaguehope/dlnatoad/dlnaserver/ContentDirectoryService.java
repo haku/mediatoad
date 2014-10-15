@@ -3,6 +3,7 @@ package com.vaguehope.dlnatoad.dlnaserver;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 	 */
 	@Override
 	public BrowseResult browse (final String objectID, final BrowseFlag browseFlag, final String filter, final long firstResult, final long maxResults, final SortCriterion[] orderby) throws ContentDirectoryException {
-		LOG.info("browse: {} ({}, {})", objectID, firstResult, maxResults);
+		final long startTime = System.nanoTime();
 		try {
 			final ContentNode contentNode = this.contentTree.getNode(objectID);
 			if (contentNode == null) return new BrowseResult("", 0, 0);
@@ -69,13 +70,18 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 					objectID, browseFlag, filter, firstResult, maxResults, Arrays.toString(orderby)), e);
 			throw new ContentDirectoryException(ContentDirectoryErrorCode.CANNOT_PROCESS, e.toString()); // NOSONAR
 		}
+		finally {
+			LOG.info("browse: {} ({}, {}) in {}ms.",
+					objectID, firstResult, maxResults,
+					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+		}
 	}
 
 	@Override
 	public BrowseResult search (final String containerId, final String searchCriteria,
 			final String filter, final long firstResult, final long maxResults,
 			final SortCriterion[] orderBy) throws ContentDirectoryException {
-		LOG.info("search: {}, {}, {} ({}, {}, {})", containerId, searchCriteria, filter, firstResult, maxResults, Arrays.toString(orderBy));
+		final long startTime = System.nanoTime();
 		try {
 			final ContentNode contentNode = this.contentTree.getNode(containerId);
 			if (contentNode == null) return new BrowseResult("", 0, 0);
@@ -94,6 +100,11 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 					" (containerId=%s, searchCriteria=%s, filter=%s, firstResult=%s, maxResults=%s, orderby=%s).",
 					containerId, searchCriteria, filter, firstResult, maxResults, Arrays.toString(orderBy)), e);
 			throw new ContentDirectoryException(ErrorCode.ACTION_FAILED, e.toString());
+		}
+		finally {
+			LOG.info("search: {}, {}, {} ({}, {}, {}) in {}ms.",
+					containerId, searchCriteria, filter, firstResult, maxResults, Arrays.toString(orderBy),
+					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 		}
 	}
 
