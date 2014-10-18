@@ -53,14 +53,6 @@ public class ContentTree {
 		return this.rootNode;
 	}
 
-	public int itemCount () {
-		int n = 0;
-		for (final ContentNode node : this.contentMap.values()) {
-			if (node.isItem()) n += 1;
-		}
-		return n;
-	}
-
 	public Collection<ContentNode> getNodes () {
 		return this.contentMap.values();
 	}
@@ -74,12 +66,12 @@ public class ContentTree {
 	}
 
 	public void prune () {
-		for (ContentNode node : this.contentMap.values()) {
+		for (final ContentNode node : this.contentMap.values()) {
 			if (node.isItem()) {
 				if (!isValidItem(node)) removeNode(node);
 			}
 			else {
-				Container c = node.getContainer();
+				final Container c = node.getContainer();
 				pruneItems(c);
 				if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) removeNode(node);
 			}
@@ -92,13 +84,15 @@ public class ContentTree {
 	}
 
 	private void pruneItems (final Container c) {
-		Iterator<Item> it = c.getItems().iterator();
-		while (it.hasNext()) {
-			Item item = it.next();
-			ContentNode itemNode = this.contentMap.get(item.getId());
-			if (itemNode == null || !isValidItem(itemNode)) it.remove();
+		synchronized (c) {
+			final Iterator<Item> it = c.getItems().iterator();
+			while (it.hasNext()) {
+				final Item item = it.next();
+				final ContentNode itemNode = this.contentMap.get(item.getId());
+				if (itemNode == null || !isValidItem(itemNode)) it.remove();
+			}
+			c.setChildCount(c.getContainers().size() + c.getItems().size());
 		}
-		c.setChildCount(c.getContainers().size() + c.getItems().size());
 	}
 
 }

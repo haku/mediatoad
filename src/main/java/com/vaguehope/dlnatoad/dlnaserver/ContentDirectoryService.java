@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -62,7 +63,15 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 				return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
 			}
 
-			return toRangedResult(contentContainer.getContainers(), contentContainer.getItems(), firstResult, maxResults);
+			// toRangedResult() uses List.sublist(),
+			// so make local copies.
+			final List<Container> containers;
+			final List<Item> items;
+			synchronized (contentContainer) {
+				containers = new ArrayList<Container>(contentContainer.getContainers());
+				items = new ArrayList<Item>(contentContainer.getItems());
+			}
+			return toRangedResult(containers, items, firstResult, maxResults);
 		}
 		catch (final Exception e) {
 			LOG.warn(String.format("Failed to generate directory listing" +

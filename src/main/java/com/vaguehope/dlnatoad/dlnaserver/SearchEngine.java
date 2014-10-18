@@ -123,10 +123,10 @@ public class SearchEngine {
 	 */
 	private static List<Item> filterItems (final Container container, final Predicate<Item> predicate) {
 		final List<Item> results = new ArrayList<>();
-		for (final Item ci : container.getItems()) {
-			if (predicate.matches(ci)) results.add(ci);
-		}
-		if (container.getContainers() != null) {
+		synchronized (container) {
+			for (final Item ci : container.getItems()) {
+				if (predicate.matches(ci)) results.add(ci);
+			}
 			for (final Container childContainer : container.getContainers()) {
 				results.addAll(filterItems(childContainer, predicate));
 			}

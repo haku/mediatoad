@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.teleal.cling.support.model.container.Container;
 import org.teleal.cling.support.model.item.Item;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
@@ -75,15 +76,18 @@ public class IndexServlet extends HttpServlet {
 		}
 
 		final List<ContentNode> itemNodes = new ArrayList<ContentNode>();
-		for (final Item item : dirNode.getContainer().getItems()) {
-			itemNodes.add(this.contentTree.getNode(item.getId()));
+		final Container dirNodeContainer = dirNode.getContainer();
+		synchronized (dirNodeContainer) {
+			for (final Item item : dirNodeContainer.getItems()) {
+				itemNodes.add(this.contentTree.getNode(item.getId()));
+			}
 		}
 		Collections.sort(itemNodes, NodeOrder.TITLE_OR_NAME);
 
 		resp.setContentType("text/html; charset=utf-8");
 		final PrintWriter w = resp.getWriter();
 		w.print("<html><body><h3>");
-		w.print(dirNode.getContainer().getTitle());
+		w.print(dirNodeContainer.getTitle());
 		w.print(" (");
 		w.print(itemNodes.size());
 		w.println(" items)</h3><ul>");
@@ -102,14 +106,14 @@ public class IndexServlet extends HttpServlet {
 	private enum NodeOrder implements Comparator<ContentNode> {
 		TITLE_OR_NAME {
 			@Override
-			public int compare(final ContentNode a, final ContentNode b) {
+			public int compare (final ContentNode a, final ContentNode b) {
 				return nameOf(a).compareToIgnoreCase(nameOf(b));
 			}
 
-			private String nameOf(final ContentNode n) {
+			private String nameOf (final ContentNode n) {
 				return n.getItem() != null ? n.getItem().getTitle() :
-					n.getContainer() != null ? n.getContainer().getTitle() :
-						n.getFile() != null ? n.getFile().getName() : "";
+						n.getContainer() != null ? n.getContainer().getTitle() :
+								n.getFile() != null ? n.getFile().getName() : "";
 			}
 		};
 

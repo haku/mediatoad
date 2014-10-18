@@ -99,21 +99,29 @@ public class MediaIndex implements FileListener {
 		}
 
 		makeItemInContainer(format, dirContainer, file, file.getName());
-		Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
+		synchronized (dirContainer) {
+			Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
+		}
 	}
 
 	private Container makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
 		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
-	private Container makeDirContainerOnTree (final ContentGroup contentGroup,  final Container parentContainer, final String id, final File dir) {
+	private Container makeDirContainerOnTree (final ContentGroup contentGroup, final Container parentContainer, final String id, final File dir) {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final Container dirContainer = makeContainerOnTree(parentNode, id, dir.getName());
 		dirContainer.setCreator(dir.getAbsolutePath());
-		Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
+		synchronized (parentContainer) {
+			Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
+		}
 
 		final Res artRes = findArtRes(dir, contentGroup);
-		if (artRes != null) dirContainer.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
+		if (artRes != null) {
+			synchronized (dirContainer) {
+				dirContainer.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
+			}
+		}
 
 		return dirContainer;
 	}
@@ -164,8 +172,10 @@ public class MediaIndex implements FileListener {
 		container.setChildCount(Integer.valueOf(0));
 
 		final Container parentContainer = parentNode.getContainer();
-		parentContainer.addContainer(container);
-		parentContainer.setChildCount(Integer.valueOf(parentContainer.getChildCount().intValue() + 1));
+		synchronized (parentContainer) {
+			parentContainer.addContainer(container);
+			parentContainer.setChildCount(Integer.valueOf(parentContainer.getChildCount().intValue() + 1));
+		}
 		this.contentTree.addNode(new ContentNode(id, container));
 
 		return container;
@@ -200,8 +210,10 @@ public class MediaIndex implements FileListener {
 
 		findArt(file, format, item);
 
-		parent.addItem(item);
-		parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
+		synchronized (parent) {
+			parent.addItem(item);
+			parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
+		}
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
 	}
 
@@ -211,7 +223,7 @@ public class MediaIndex implements FileListener {
 		item.addResource(artRes);
 	}
 
-	private Res findArtRes(final File mediaFile, final ContentGroup mediaContentGroup) {
+	private Res findArtRes (final File mediaFile, final ContentGroup mediaContentGroup) {
 		final File artFile = CoverArtHelper.findCoverArt(mediaFile);
 		if (artFile == null) return null;
 
@@ -261,8 +273,10 @@ public class MediaIndex implements FileListener {
 	private static boolean hasItemWithId (final Container parent, final String id) {
 		final List<Item> items = parent.getItems();
 		if (items == null) return false;
-		for (final Item item : items) {
-			if (id.equals(item.getId())) return true;
+		synchronized (items) {
+			for (final Item item : items) {
+				if (id.equals(item.getId())) return true;
+			}
 		}
 		return false;
 	}
