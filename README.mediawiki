@@ -2,7 +2,7 @@
 
 == What is this? ==
 
-A minimal DLNA video server in a single jar.  On start up it will index the working directory and make any videos found available via DLNA.
+A minimal DLNA media server in a single jar.  On start up it will index the working directory and make any media found available via DLNA.
 
 == Why? ==
 
@@ -26,7 +26,7 @@ Its a Maven project.
 
 == How does it work? ==
 
-It advertises its self on the LAN and provides simple directory listing service via UPnP (using the Cling library).  When the renderer wants to play a video file it fetches it via HTTP from the embedded Jetty server.  The RANGE header is used to fetch parts of files.
+It advertises its self on the LAN and provides simple directory listing service via UPnP (using the Cling library).  When the renderer wants to play a media file it fetches it via HTTP from the embedded Jetty server.  The RANGE header is used to fetch parts of files.
 
 == What does it use? ==
 
