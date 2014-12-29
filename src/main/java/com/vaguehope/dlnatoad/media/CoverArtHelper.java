@@ -13,10 +13,10 @@ public class CoverArtHelper {
 		throw new AssertionError();
 	}
 
-	public static File findCoverArt (final File mediaFile) {
-		final File dir = mediaFile.isDirectory() ? mediaFile : mediaFile.getParentFile();
+	public static File findCoverArt (final File file) {
+		final File dir = file.isDirectory() ? file : file.getParentFile();
 
-		final String baseName = mediaFile.isFile() ? fileBaseName(mediaFile) : null;
+		final String baseName = file.isFile() ? fileBaseName(file) : null;
 		final String[] imgNames = dir.list(ImgFilenameFilter.INSTANCE);
 		Arrays.sort(imgNames);
 
