@@ -1,10 +1,13 @@
 package com.vaguehope.dlnatoad;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.BindException;
 import java.net.InetAddress;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -18,11 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.UpnpService;
 import org.teleal.cling.UpnpServiceImpl;
+import org.teleal.cling.model.meta.Icon;
+import org.teleal.cling.model.resource.IconResource;
+import org.teleal.cling.model.resource.Resource;
+import org.teleal.cling.protocol.ProtocolFactory;
+import org.teleal.cling.registry.Registry;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
+import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
@@ -50,18 +59,18 @@ public final class Main {
 			daemonise(args);
 			run(args);
 		}
-		catch (CmdLineException e) {
+		catch (final CmdLineException e) {
 			err.println(e.getMessage());
 			help(parser, err);
 			return;
 		}
-		catch (Exception e) {
+		catch (final Exception e) {
 			err.println("An unhandled error occured.");
 			e.printStackTrace(err);
 		}
 	}
 
-	private static void daemonise(final Args args) throws Exception {
+	private static void daemonise (final Args args) throws Exception {
 		final Daemon d = new Daemon.WithoutChdir();
 		if (d.isDaemonized()) {
 			d.init(null); // No PID file for now.
@@ -80,7 +89,7 @@ public final class Main {
 		LOG.info("hostName: {}", hostName);
 		LOG.info("addresses: {} using address: {}", addresses, address);
 
-		final UpnpService upnpService = new UpnpServiceImpl();
+		final UpnpService upnpService = makeUpnpServer();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run () {
@@ -106,6 +115,21 @@ public final class Main {
 		server.join(); // Keep app alive.
 	}
 
+	private static UpnpService makeUpnpServer () throws IOException {
+		final Map<String, Resource<?>> pathToRes = new HashMap<>();
+
+		final Icon icon = MediaServer.createDeviceIcon();
+		final IconResource iconResource = new IconResource(icon.getUri(), icon);
+		pathToRes.put("/icon.png", iconResource);
+
+		return new UpnpServiceImpl() {
+			@Override
+			protected Registry createRegistry (final ProtocolFactory protocolFactory) {
+				return new RegistryImplWithOverrides(this, pathToRes);
+			}
+		};
+	}
+
 	private static Server startContentServer (final ContentTree contentTree) throws Exception {
 		int port = C.HTTP_PORT;
 		while (true) {
@@ -129,7 +153,7 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler(final ContentTree contentTree) {
+	private static HandlerList makeContentHandler (final ContentTree contentTree) {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
@@ -172,7 +196,7 @@ public final class Main {
 				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE, this.index).run();
 				LOG.error("Watcher thread exited.");
 			}
-			catch (Exception e) { // NOSONAR
+			catch (final Exception e) { // NOSONAR
 				LOG.error("Watcher thread died.", e);
 			}
 		}

@@ -62,11 +62,16 @@ public class MediaServer {
 		return this.localDevice;
 	}
 
-	private static Icon createDeviceIcon () throws IOException {
+	public static Icon createDeviceIcon () throws IOException {
 		final InputStream res = MediaServer.class.getResourceAsStream("/icon.png");
 		if (res == null) throw new IllegalStateException("Icon not found.");
-		final Icon icon = new Icon("image/png", 48, 48, 8, URI.create("icon.png"), res);
-		icon.validate();
-		return icon;
+		try {
+			final Icon icon = new Icon("image/png", 48, 48, 8, URI.create("icon.png"), res);
+			icon.validate();
+			return icon;
+		}
+		finally {
+			res.close();
+		}
 	}
 }
