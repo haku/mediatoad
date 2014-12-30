@@ -42,6 +42,22 @@ public class ContentDirectoryServiceTest {
 		this.undertest = new ContentDirectoryService(this.contentTree, this.searchEngine);
 	}
 
+	/**
+	 * ContentDirectory:4, 2.5.7.2:
+	 * RequestedCount = 0 indicates request all entries.
+	 */
+	@Test
+	public void itReturnsAllWhenMaxEntitiesZero () throws Exception {
+		final List<ContentNode> dirs = this.mockContent.givenMockDirs(3);
+		final List<ContentNode> items = this.mockContent.givenMockItems(3);
+		this.mockContent.addMockItem("item other", dirs.get(1));
+
+		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 0, null);
+
+		assertCorrectResult(ret, 6, 6);
+		assertParserMarshaled(dirs, items);
+	}
+
 	@Test
 	public void itReturnsAllItemsWhenTheyAreInsideTheRequetsRange () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(3);

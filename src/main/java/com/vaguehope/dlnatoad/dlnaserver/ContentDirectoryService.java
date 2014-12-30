@@ -117,7 +117,9 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 		}
 	}
 
-	private static BrowseResult toRangedResult (final List<Container> containers, final List<Item> items, final long firstResult, final long maxResults) throws Exception {
+	private static BrowseResult toRangedResult (final List<Container> containers, final List<Item> items, final long firstResult, final long maxResultsParam) throws Exception {
+		final long maxResults = maxResultsParam == 0 ? containers.size() + items.size() : maxResultsParam;
+
 		final DIDLContent didl = new DIDLContent();
 		if (containers.size() > firstResult) {
 			final int from = (int) firstResult;
