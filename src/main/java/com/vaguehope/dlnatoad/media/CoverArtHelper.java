@@ -16,11 +16,11 @@ public class CoverArtHelper {
 	public static File findCoverArt (final File file) {
 		final File dir = file.isDirectory() ? file : file.getParentFile();
 
-		final String baseName = file.isFile() ? fileBaseName(file) : null;
 		final String[] imgNames = dir.list(ImgFilenameFilter.INSTANCE);
+		if (imgNames == null || imgNames.length < 1) return null;
 		Arrays.sort(imgNames);
 
-		if (imgNames.length < 1) return null;
+		final String baseName = file.isFile() ? fileBaseName(file) : null;
 
 		// Same name but with different extension.
 		if (baseName != null) {
