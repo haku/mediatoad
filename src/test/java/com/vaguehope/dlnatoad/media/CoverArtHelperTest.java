@@ -68,6 +68,18 @@ public class CoverArtHelperTest {
 		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
 	}
 
+	/**
+	 * e.g.:
+	 * Album - Track.ogg
+	 * Album.jpg
+	 */
+	@Test
+	public void itFindsCoverWithShortenedNameStartAndJpgExt () throws Exception {
+		givenCoverNoise();
+		final File cover = this.tmp.newFile("testi.jpg");
+		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+	}
+
 	@Test
 	public void itFindsCoverWithSameNameButJpegExt () throws Exception {
 		givenCoverNoise();

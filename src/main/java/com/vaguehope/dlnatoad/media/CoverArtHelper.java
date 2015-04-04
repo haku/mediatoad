@@ -45,6 +45,10 @@ public class CoverArtHelper {
 			for (int i = 0; i < imgNames.length; i++) {
 				if (lcaseImgBaseNames[i].startsWith(lcaseBaseName)) return new File(dir, imgNames[i]);
 			}
+			// Track starts with same name as image.
+			for (int i = 0; i < imgNames.length; i++) {
+				if (lcaseBaseName.startsWith(lcaseImgBaseNames[i])) return new File(dir, imgNames[i]);
+			}
 		}
 
 		// Conventional name for entire directory.
