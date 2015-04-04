@@ -13,6 +13,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.support.model.DIDLObject;
+import org.teleal.cling.support.model.PersonWithRole;
 import org.teleal.cling.support.model.Res;
 import org.teleal.cling.support.model.WriteStatus;
 import org.teleal.cling.support.model.container.Container;
@@ -25,6 +26,7 @@ import org.teleal.common.util.MimeType;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
+import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.HashHelper;
 import com.vaguehope.dlnatoad.util.Watcher.EventType;
 import com.vaguehope.dlnatoad.util.Watcher.FileListener;
@@ -208,6 +210,7 @@ public class MediaIndex implements FileListener {
 				throw new IllegalArgumentException();
 		}
 
+		findMetadata(file, item);
 		findArt(file, format, item);
 
 		synchronized (parent) {
@@ -215,6 +218,13 @@ public class MediaIndex implements FileListener {
 			parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
 		}
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
+	}
+
+	private void findMetadata (final File file, final Item item) {
+		final Metadata md = MetadataReader.read(file);
+		if (md == null) return;
+		if (md.getArtist() != null) item.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(md.getArtist())));
+		if (md.getAlbum() != null) item.addProperty(new DIDLObject.Property.UPNP.ALBUM(md.getAlbum()));
 	}
 
 	private void findArt (final File mediaFile, final MediaFormat mediaFormat, final Item item) {
