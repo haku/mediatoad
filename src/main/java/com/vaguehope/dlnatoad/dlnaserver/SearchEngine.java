@@ -22,6 +22,8 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.teleal.cling.support.contentdirectory.ContentDirectoryException;
+import org.teleal.cling.support.model.DIDLObject;
+import org.teleal.cling.support.model.DIDLObject.Property;
 import org.teleal.cling.support.model.container.Container;
 import org.teleal.cling.support.model.item.AudioItem;
 import org.teleal.cling.support.model.item.ImageItem;
@@ -59,7 +61,10 @@ public class SearchEngine {
 	private static class CriteriaListener extends CDSCBaseListener {
 
 		private static final Set<String> TITLE_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-				"dc:title", "dc:creator", "upnp:artist")));
+				"dc:title")));
+
+		private static final Set<String> ARTIST_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+				"dc:creator", "upnp:artist")));
 
 		@SuppressWarnings("serial") private static final Map<String, Class<?>> UPNP_TO_CLING = Collections.unmodifiableMap(new HashMap<String, Class<?>>() {
 			{
@@ -95,6 +100,14 @@ public class SearchEngine {
 			else if (TITLE_FIELDS.contains(propertyName)) {
 				if ("=".equals(op) || "contains".equalsIgnoreCase(op)) {
 					this.allPredicates.add(new TitleContains(value));
+				}
+				else {
+					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
+				}
+			}
+			else if (ARTIST_FIELDS.contains(propertyName)) {
+				if ("=".equals(op) || "contains".equalsIgnoreCase(op)) {
+					this.allPredicates.add(new ArtistContains(value));
 				}
 				else {
 					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
@@ -254,6 +267,50 @@ public class SearchEngine {
 			if (obj == this) return true;
 			if (!(obj instanceof TitleContains)) return false;
 			final TitleContains that = (TitleContains) obj;
+			return Objects.equals(this.lcaseSubString, that.lcaseSubString);
+		}
+
+	}
+
+	private static class ArtistContains implements Predicate<Item> {
+
+		/**
+		 * See constructor of org.teleal.cling.support.model.DIDLObject.Property.
+		 */
+		private static final String ARTIST_DES_NAME = DIDLObject.Property.UPNP.ARTIST.class.getSimpleName().toLowerCase();
+
+		private final String lcaseSubString;
+
+		public ArtistContains (final String subString) {
+			this.lcaseSubString = subString.toLowerCase(Locale.ENGLISH);
+		}
+
+		@Override
+		public boolean matches (final Item item) {
+			for (Property<?> prop : item.getProperties()) {
+				if (ARTIST_DES_NAME.equals(prop.getDescriptorName())) {
+					if(prop.getValue().toString().toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString)) return true;
+				}
+			}
+			return false;
+		}
+
+		@Override
+		public String toString () {
+			return String.format("artistContains '%s'", this.lcaseSubString);
+		}
+
+		@Override
+		public int hashCode () {
+			return this.lcaseSubString.hashCode();
+		}
+
+		@Override
+		public boolean equals (final Object obj) {
+			if (obj == null) return false;
+			if (obj == this) return true;
+			if (!(obj instanceof ArtistContains)) return false;
+			final ArtistContains that = (ArtistContains) obj;
 			return Objects.equals(this.lcaseSubString, that.lcaseSubString);
 		}
 

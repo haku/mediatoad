@@ -51,7 +51,7 @@ public class SearchEngineTest {
 	@Test
 	public void itParsesAudioWithCreatorOrArtist () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.audioItem\" and (dc:creator contains \"daa\" or upnp:artist contains \"daa\"))"),
-				hasToString("instanceOf AudioItem and titleContains 'daa'"));
+				hasToString("instanceOf AudioItem and artistContains 'daa'"));
 	}
 
 	@Test
