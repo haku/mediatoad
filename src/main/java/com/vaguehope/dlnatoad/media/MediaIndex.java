@@ -220,7 +220,7 @@ public class MediaIndex implements FileListener {
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
 	}
 
-	private void findMetadata (final File file, final Item item) {
+	private static void findMetadata (final File file, final Item item) {
 		final Metadata md = MetadataReader.read(file);
 		if (md == null) return;
 		if (md.getArtist() != null) item.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(md.getArtist())));
