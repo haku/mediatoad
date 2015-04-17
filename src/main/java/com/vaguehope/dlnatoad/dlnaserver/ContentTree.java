@@ -66,21 +66,24 @@ public class ContentTree {
 	}
 
 	public void prune () {
-		for (final ContentNode node : this.contentMap.values()) {
+		final Iterator<ContentNode> ittr = this.contentMap.values().iterator();
+		while (ittr.hasNext()) {
+			final ContentNode node = ittr.next();
 			if (node.isItem()) {
-				if (!isValidItem(node)) removeNode(node);
+				if (!isValidItem(node)) {
+					ittr.remove();
+					LOG.info("unshared: {}", node.getFile().getAbsolutePath());
+				}
 			}
 			else {
 				final Container c = node.getContainer();
 				pruneItems(c);
-				if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) removeNode(node);
+				if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) {
+					removeContainerFromItsParent(c);
+					ittr.remove();
+				}
 			}
 		}
-	}
-
-	private void removeNode (final ContentNode node) {
-		this.contentMap.remove(node.getId());
-		LOG.info("unshared: {}", node);
 	}
 
 	private void pruneItems (final Container c) {
@@ -92,6 +95,24 @@ public class ContentTree {
 				if (itemNode == null || !isValidItem(itemNode)) it.remove();
 			}
 			c.setChildCount(c.getContainers().size() + c.getItems().size());
+		}
+	}
+
+	private void removeContainerFromItsParent (final Container c) {
+		final ContentNode parentNode = this.contentMap.get(c.getParentID());
+		if (parentNode != null) {
+			final Container parentC = parentNode.getContainer();
+			synchronized (parentC) {
+				if (parentC.getContainers().remove(c)) {
+					parentC.setChildCount(Integer.valueOf(parentC.getChildCount() - 1));
+				}
+				else {
+					LOG.error("Container '{}' not in its parent '{}'.", c.getId(), parentC.getId());
+				}
+			}
+		}
+		else {
+			LOG.error("Parent of container '{}' not found in contentMap: '{}'.", c.getId(), c.getParentID());
 		}
 	}
 
