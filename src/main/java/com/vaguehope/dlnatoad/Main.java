@@ -84,10 +84,18 @@ public final class Main {
 
 	private static void run (final Args args) throws Exception { // NOSONAR
 		final String hostName = InetAddress.getLocalHost().getHostName();
-		final List<InetAddress> addresses = NetHelper.getIpAddresses();
-		final InetAddress address = addresses.iterator().next();
 		LOG.info("hostName: {}", hostName);
-		LOG.info("addresses: {} using address: {}", addresses, address);
+
+		final InetAddress address;
+		if (args.getInterfaceIp() != null) {
+			address = InetAddress.getByName(args.getInterfaceIp());
+			LOG.info("using address: {}", address);
+		}
+		else {
+			final List<InetAddress> addresses = NetHelper.getIpAddresses();
+			address = addresses.iterator().next();
+			LOG.info("addresses: {} using address: {}", addresses, address);
+		}
 
 		final UpnpService upnpService = makeUpnpServer();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
