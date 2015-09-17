@@ -87,8 +87,8 @@ public final class Main {
 		LOG.info("hostName: {}", hostName);
 
 		final InetAddress address;
-		if (args.getInterfaceIp() != null) {
-			address = InetAddress.getByName(args.getInterfaceIp());
+		if (args.getInterface() != null) {
+			address = InetAddress.getByName(args.getInterface());
 			LOG.info("using address: {}", address);
 		}
 		else {
@@ -107,7 +107,7 @@ public final class Main {
 
 		final ContentTree contentTree = new ContentTree();
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName).getDevice());
-		final Server server = startContentServer(contentTree);
+		final Server server = startContentServer(contentTree, args.getInterface());
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
@@ -138,14 +138,14 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree) throws Exception {
+	private static Server startContentServer (final ContentTree contentTree, final String iface) throws Exception {
 		int port = C.HTTP_PORT;
 		while (true) {
 			final HandlerList handler = makeContentHandler(contentTree);
 
 			final Server server = new Server();
 			server.setHandler(handler);
-			server.addConnector(createHttpConnector(port));
+			server.addConnector(createHttpConnector(iface, port));
 			try {
 				server.start();
 				return server;
@@ -172,9 +172,10 @@ public final class Main {
 		return handler;
 	}
 
-	private static SelectChannelConnector createHttpConnector (final int port) {
+	private static SelectChannelConnector createHttpConnector (final String iface, final int port) {
 		final SelectChannelConnector connector = new SelectChannelConnector();
 		connector.setStatsOn(false);
+		connector.setHost(iface);
 		connector.setPort(port);
 		return connector;
 	}
