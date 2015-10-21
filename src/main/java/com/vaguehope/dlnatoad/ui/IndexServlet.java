@@ -31,67 +31,56 @@ public class IndexServlet extends HttpServlet {
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String path = req.getPathInfo();
+		String path = req.getPathInfo();
 		if (path == null || path.length() < 1 || "/".equals(path)) {
-			printIndex(req, resp);
+			path = ContentGroup.ROOT.getId();
 		}
 		else if (path.startsWith("/")) {
-			printDir(resp, path);
+			path = path.substring(1);
 		}
-		else {
+
+		final ContentNode contentNode = this.contentTree.getNode(path);
+		if (contentNode == null) {
 			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + path);
-		}
-	}
-
-	private void printIndex (final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final List<ContentNode> dirNodes = new ArrayList<ContentNode>();
-		for (final ContentNode node : this.contentTree.getNodes()) {
-			if (node.getFile() == null && !ContentGroup.incluesId(node.getId())) dirNodes.add(node);
-		}
-		Collections.sort(dirNodes, NodeOrder.TITLE_OR_NAME);
-
-		resp.setContentType("text/html; charset=utf-8");
-		final PrintWriter w = resp.getWriter();
-		w.print("<html><body><h3>DLNAtoad: ");
-		w.print(dirNodes.size());
-		w.println(" items</h3><ul>");
-		for (final ContentNode node : dirNodes) {
-			w.print("<li><a href=\"");
-			w.print(req.getRequestURI());
-			w.print("/");
-			w.print(node.getId());
-			w.print("\">");
-			w.print(node.getContainer().getTitle());
-			w.println("</a></li>");
-		}
-		w.println("</ul></html></body>");
-	}
-
-	private void printDir (final HttpServletResponse resp, final String path) throws IOException {
-		final String id = path.substring(1);
-		final ContentNode dirNode = this.contentTree.getNode(id);
-		if (dirNode == null) {
-			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Unknown ID: " + id);
 			return;
 		}
+		printDir(resp, contentNode);
+	}
 
-		final List<ContentNode> itemNodes = new ArrayList<ContentNode>();
-		final Container dirNodeContainer = dirNode.getContainer();
+	private void printDir (final HttpServletResponse resp, final ContentNode contentNode) throws IOException {
+		final List<Container> dirs = new ArrayList<Container>();
+		final List<ContentNode> items = new ArrayList<ContentNode>();
+		final Container dirNodeContainer = contentNode.getContainer();
 		synchronized (dirNodeContainer) {
+			for (final Container c : dirNodeContainer.getContainers()) {
+				dirs.add(c);
+			}
 			for (final Item item : dirNodeContainer.getItems()) {
-				itemNodes.add(this.contentTree.getNode(item.getId()));
+				items.add(this.contentTree.getNode(item.getId()));
 			}
 		}
-		Collections.sort(itemNodes, NodeOrder.TITLE_OR_NAME);
+		Collections.sort(items, NodeOrder.TITLE_OR_NAME);
 
 		resp.setContentType("text/html; charset=utf-8");
 		final PrintWriter w = resp.getWriter();
+
 		w.print("<html><body><h3>");
 		w.print(dirNodeContainer.getTitle());
 		w.print(" (");
-		w.print(itemNodes.size());
+		w.print(dirs.size());
+		w.println(" dirs, ");
+		w.print(items.size());
 		w.println(" items)</h3><ul>");
-		for (final ContentNode node : itemNodes) {
+
+		for (final Container dir : dirs) {
+			w.print("<li><a href=\"/index/");
+			w.print(dir.getId());
+			w.print("\">");
+			w.print(dir.getTitle());
+			w.println("</a></li>");
+		}
+
+		for (final ContentNode node : items) {
 			w.print("<li><a href=\"/");
 			w.print(node.getId());
 			w.print("\" download=\"");
@@ -100,6 +89,7 @@ public class IndexServlet extends HttpServlet {
 			w.print(node.getFile().getName());
 			w.println("</a></li>");
 		}
+
 		w.println("</ul></html></body>");
 	}
 
