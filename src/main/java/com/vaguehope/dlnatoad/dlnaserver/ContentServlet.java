@@ -15,7 +15,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public final class ContentServlet extends DefaultServlet {
 
 	private static final long serialVersionUID = -4819786280597656455L;
@@ -28,17 +27,17 @@ public final class ContentServlet extends DefaultServlet {
 	}
 
 	@Override
-	protected void doGet (HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		try {
 			super.doGet(req, resp);
 		}
 		finally {
 			String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
 			if (ranges != null) {
-				LOG.info("request: {} {} (r:{})", resp.getStatus(), req.getRequestURI(), ranges);
+				LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), req.getRequestURI(), ranges, req.getRemoteAddr());
 			}
 			else {
-				LOG.info("request: {} {}", resp.getStatus(), req.getRequestURI());
+				LOG.info("request: {} {} {}", resp.getStatus(), req.getRequestURI(), req.getRemoteAddr());
 			}
 		}
 	}
@@ -60,10 +59,10 @@ public final class ContentServlet extends DefaultServlet {
 		return null;
 	}
 
-	private static String join (Enumeration<String> en, String join) {
+	private static String join (final Enumeration<String> en, final String join) {
 		if (en == null || !en.hasMoreElements()) return null;
 		StringBuilder s = new StringBuilder(en.nextElement());
-		while(en.hasMoreElements()) {
+		while (en.hasMoreElements()) {
 			s.append(join).append(en.nextElement());
 		}
 		return s.toString();
