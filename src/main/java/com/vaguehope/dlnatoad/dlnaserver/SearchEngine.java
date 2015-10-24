@@ -287,7 +287,7 @@ public class SearchEngine {
 
 		@Override
 		public boolean matches (final Item item) {
-			for (Property<?> prop : item.getProperties()) {
+			for (final Property<?> prop : item.getProperties()) {
 				if (ARTIST_DES_NAME.equals(prop.getDescriptorName())) {
 					if(prop.getValue().toString().toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString)) return true;
 				}
