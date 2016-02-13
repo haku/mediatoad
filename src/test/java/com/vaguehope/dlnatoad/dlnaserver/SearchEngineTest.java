@@ -7,10 +7,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import org.fourthline.cling.support.model.item.Item;
+import org.fourthline.cling.support.model.item.VideoItem;
 import org.junit.Before;
 import org.junit.Test;
-import org.teleal.cling.support.model.item.Item;
-import org.teleal.cling.support.model.item.VideoItem;
 
 public class SearchEngineTest {
 

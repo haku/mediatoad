@@ -3,9 +3,9 @@ package com.vaguehope.dlnatoad.dlnaserver;
 import java.net.URI;
 import java.util.Map;
 
-import org.teleal.cling.UpnpService;
-import org.teleal.cling.model.resource.Resource;
-import org.teleal.cling.registry.RegistryImpl;
+import org.fourthline.cling.UpnpService;
+import org.fourthline.cling.model.resource.Resource;
+import org.fourthline.cling.registry.RegistryImpl;
 
 public class RegistryImplWithOverrides extends RegistryImpl {
 

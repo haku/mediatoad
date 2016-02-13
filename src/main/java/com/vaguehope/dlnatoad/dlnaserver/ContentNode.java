@@ -2,8 +2,8 @@ package com.vaguehope.dlnatoad.dlnaserver;
 
 import java.io.File;
 
-import org.teleal.cling.support.model.container.Container;
-import org.teleal.cling.support.model.item.Item;
+import org.fourthline.cling.support.model.container.Container;
+import org.fourthline.cling.support.model.item.Item;
 
 /**
  * Based on a class from WireMe and used under Apache 2 License. See

@@ -10,18 +10,18 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.io.FilenameUtils;
+import org.fourthline.cling.support.model.DIDLObject;
+import org.fourthline.cling.support.model.PersonWithRole;
+import org.fourthline.cling.support.model.Res;
+import org.fourthline.cling.support.model.WriteStatus;
+import org.fourthline.cling.support.model.container.Container;
+import org.fourthline.cling.support.model.item.AudioItem;
+import org.fourthline.cling.support.model.item.ImageItem;
+import org.fourthline.cling.support.model.item.Item;
+import org.fourthline.cling.support.model.item.VideoItem;
+import org.seamless.util.MimeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teleal.cling.support.model.DIDLObject;
-import org.teleal.cling.support.model.PersonWithRole;
-import org.teleal.cling.support.model.Res;
-import org.teleal.cling.support.model.WriteStatus;
-import org.teleal.cling.support.model.container.Container;
-import org.teleal.cling.support.model.item.AudioItem;
-import org.teleal.cling.support.model.item.ImageItem;
-import org.teleal.cling.support.model.item.Item;
-import org.teleal.cling.support.model.item.VideoItem;
-import org.teleal.common.util.MimeType;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;

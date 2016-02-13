@@ -2,24 +2,23 @@ package com.vaguehope.dlnatoad.dlnaserver;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 
+import org.fourthline.cling.binding.annotations.AnnotationLocalServiceBinder;
+import org.fourthline.cling.model.DefaultServiceManager;
+import org.fourthline.cling.model.ValidationException;
+import org.fourthline.cling.model.meta.DeviceDetails;
+import org.fourthline.cling.model.meta.DeviceIdentity;
+import org.fourthline.cling.model.meta.Icon;
+import org.fourthline.cling.model.meta.LocalDevice;
+import org.fourthline.cling.model.meta.LocalService;
+import org.fourthline.cling.model.meta.ManufacturerDetails;
+import org.fourthline.cling.model.meta.ModelDetails;
+import org.fourthline.cling.model.types.DeviceType;
+import org.fourthline.cling.model.types.UDADeviceType;
+import org.fourthline.cling.model.types.UDN;
+import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.teleal.cling.binding.annotations.AnnotationLocalServiceBinder;
-import org.teleal.cling.model.DefaultServiceManager;
-import org.teleal.cling.model.ValidationException;
-import org.teleal.cling.model.meta.DeviceDetails;
-import org.teleal.cling.model.meta.DeviceIdentity;
-import org.teleal.cling.model.meta.Icon;
-import org.teleal.cling.model.meta.LocalDevice;
-import org.teleal.cling.model.meta.LocalService;
-import org.teleal.cling.model.meta.ManufacturerDetails;
-import org.teleal.cling.model.meta.ModelDetails;
-import org.teleal.cling.model.types.DeviceType;
-import org.teleal.cling.model.types.UDADeviceType;
-import org.teleal.cling.model.types.UDN;
-import org.teleal.cling.support.connectionmanager.ConnectionManagerService;
 
 import com.vaguehope.dlnatoad.C;
 
@@ -66,7 +65,7 @@ public class MediaServer {
 		final InputStream res = MediaServer.class.getResourceAsStream("/icon.png");
 		if (res == null) throw new IllegalStateException("Icon not found.");
 		try {
-			final Icon icon = new Icon("image/png", 48, 48, 8, URI.create("icon.png"), res);
+			final Icon icon = new Icon("image/png", 48, 48, 8, "icon.png", res);
 			icon.validate();
 			return icon;
 		}

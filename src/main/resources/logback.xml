@@ -13,6 +13,9 @@
 	</appender>
 
 	<logger name="com.vaguehope.dlnatoad" level="INFO" />
+	<logger name="org.fourthline.cling.binding.xml.ServiceDescriptorBinder" level="ERROR" />
+	<logger name="org.fourthline.cling.protocol.RetrieveRemoteDescriptors" level="ERROR" />
+	<logger name="org.fourthline.cling.transport.spi.StreamClient" level="WARN" />
 
 	<root level="info">
 		<appender-ref ref="default" />
