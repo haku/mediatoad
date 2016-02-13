@@ -27,4 +27,17 @@ public final class StringHelper {
 		return s.toString();
 	}
 
+	public static String join (final String before, final String after, final Collection<?> arr, final String sep) {
+		final StringBuilder s = new StringBuilder();
+		s.append(before);
+		boolean first = true;
+		for (final Object obj : arr) {
+			if (!first) s.append(sep);
+			first = false;
+			s.append(obj.toString());
+		}
+		s.append(after);
+		return s.toString();
+	}
+
 }

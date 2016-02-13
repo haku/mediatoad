@@ -39,33 +39,45 @@ public class SearchEngineTest {
 	@Test
 	public void itParsesVideoWithTitle () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"daa\")"),
-				hasToString("instanceOf VideoItem and titleContains 'daa'"));
+				hasToString("(instanceOf VideoItem and titleContains 'daa')"));
 	}
 
 	@Test
 	public void itParsesAudioWithTitle () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.audioItem\" and dc:title contains \"daa\")"),
-				hasToString("instanceOf AudioItem and titleContains 'daa'"));
+				hasToString("(instanceOf AudioItem and titleContains 'daa')"));
 	}
 
 	@Test
 	public void itParsesAudioWithCreatorOrArtist () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.audioItem\" and (dc:creator contains \"daa\" or upnp:artist contains \"daa\"))"),
-				hasToString("instanceOf AudioItem and artistContains 'daa'"));
+				hasToString("(instanceOf AudioItem and (artistContains 'daa' or artistContains 'daa'))"));
 	}
 
 	@Test
 	public void itParsesAudioWithAlbumAndTitle () throws Exception {
 		// Note: album currently ignored.
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class = \"object.container.album.musicAlbum\" and dc:title contains \"daa\")"),
-				hasToString("titleContains 'daa'"));
+				hasToString("(TRUE and titleContains 'daa')"));
 	}
 
 	@Test
 	public void itParsesAudioWithArtistAndTitle () throws Exception {
 		// Note: person currently ignored.
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class = \"object.container.person.musicArtist\" and dc:title contains \"daa\")"),
-				hasToString("titleContains 'daa'"));
+				hasToString("(TRUE and titleContains 'daa')"));
+	}
+
+	@Test
+	public void itParsesVideoOrAudioWithTitle () throws Exception {
+		assertThat(SearchEngine.criteriaToPredicate("((upnp:class derivedfrom \"object.item.videoItem\" or upnp:class derivedfrom \"object.item.audioItem\") and dc:title contains \"foo\")"),
+				hasToString("((instanceOf VideoItem or instanceOf AudioItem) and titleContains 'foo')"));
+	}
+
+	@Test
+	public void itParsesTitleOrCreatorOrArtist () throws Exception {
+		assertThat(SearchEngine.criteriaToPredicate("(dc:title contains \"foo\" or dc:creator contains \"daa\" or upnp:artist contains \"daa\")"),
+				hasToString("((titleContains 'foo' or artistContains 'daa') or artistContains 'daa')"));
 	}
 
 }
