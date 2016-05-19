@@ -47,7 +47,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 		final long startTime = System.nanoTime();
 		try {
 			final ContentNode contentNode = this.contentTree.getNode(objectID);
-			if (contentNode == null) return new BrowseResult("", 0, 0);
+			if (contentNode == null) return new BrowseResult(new DIDLParser().generate(new DIDLContent()), 0, 0);
 
 			if (contentNode.isItem()) {
 				final DIDLContent didl = new DIDLContent();
