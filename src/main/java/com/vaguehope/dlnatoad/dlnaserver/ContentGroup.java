@@ -12,7 +12,8 @@ public enum ContentGroup {
 	ROOT("0", "-", "Root"), // Root id of '0' is in the spec.
 	VIDEO("1-videos", "video-", "Videos"),
 	IMAGE("2-images", "image-", "Images"),
-	AUDIO("3-audio", "audio-", "Audio");
+	AUDIO("3-audio", "audio-", "Audio"),
+	SUBTITLES("4-subtitles", "subtitles-", "Subtitles");
 
 	private static final Collection<String> IDS = Collections.unmodifiableCollection(
 			CollectionHelper.map(values(), new Function<ContentGroup, String>() {

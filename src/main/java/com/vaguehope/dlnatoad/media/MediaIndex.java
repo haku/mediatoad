@@ -6,8 +6,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.commons.io.FilenameUtils;
 import org.fourthline.cling.support.model.DIDLObject;
@@ -62,18 +62,38 @@ public class MediaIndex implements FileListener {
 	public void fileFound (final File rootDir, final File file, final EventType eventType) {
 		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
 		if (!file.isFile()) return;
-		if (!MediaFormat.MediaFileFilter.INSTANCE.accept(file)) return;
-		putFileToContentTree(rootDir, file);
-		if (eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
+
+		final MediaFormat format = MediaFormat.identify(file);
+		if (format == null) return;
+		switch (format.getContentGroup()) {
+			case AUDIO:
+			case IMAGE:
+			case VIDEO:
+				putFileToContentTree(rootDir, file, format);
+				if (eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
+				break;
+			case SUBTITLES:
+				attachSubtitlesToItem(file, format);
+				break;
+			default:
+		}
 	}
 
 	@Override
 	public void fileGone (final File file) {
 		this.contentTree.prune(); // FIXME be less lazy.
+
+		final MediaFormat format = MediaFormat.identify(file);
+		if (format == null) return;
+		switch (format.getContentGroup()) {
+			case SUBTITLES:
+				deattachSubtitles(file, format);
+				break;
+			default:
+		}
 	}
 
-	private void putFileToContentTree (final File rootDir, final File file) {
-		final MediaFormat format = MediaFormat.identify(file);
+	private void putFileToContentTree (final File rootDir, final File file, final MediaFormat format) {
 		final File dir = file.getParentFile();
 		final Container formatContainer;
 		switch (format.getContentGroup()) { // FIXME make hashmap.
@@ -196,7 +216,7 @@ public class MediaIndex implements FileListener {
 				//res.setDuration(formatDuration(durationMillis));
 				//res.setResolution(resolutionXbyY);
 				item = new VideoItem(id, parent, title, "", res);
-				findSubtitles(file, format, item);
+				findSubtitlesForItem(item, file);
 				break;
 			case IMAGE:
 				//res.setResolution(resolutionXbyY);
@@ -230,7 +250,10 @@ public class MediaIndex implements FileListener {
 	private void findArt (final File mediaFile, final MediaFormat mediaFormat, final Item item) {
 		final Res artRes = findArtRes(mediaFile, mediaFormat.getContentGroup());
 		if (artRes == null) return;
-		item.addResource(artRes);
+
+		synchronized (item) {
+			item.addResource(artRes);
+		}
 	}
 
 	private Res findArtRes (final File mediaFile, final ContentGroup mediaContentGroup) {
@@ -249,22 +272,80 @@ public class MediaIndex implements FileListener {
 		return new Res(artMimeType, Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
 	}
 
-	private void findSubtitles (final File file, final MediaFormat format, final Item item) {
-		for (final String name : file.getParentFile().list(new BasenameFilter(file))) {
-			if (MediaFormat.identify(name) != null) continue;
-			if (name.toLowerCase(Locale.UK).endsWith(".srt")) {
-				addSubtitlesSrt(format, item, new File(file.getParent(), name));
+	private void attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) {
+		final Container dirContainer = this.contentTree.getNode(contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile())).getContainer();
+		if (dirContainer == null) return;
+
+		synchronized (dirContainer) {
+			for (final Item item : dirContainer.getItems()) {
+				final File itemFile = this.contentTree.getNode(item.getId()).getFile();
+				if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
+					if (addSubtitles(item, subtitlesFile, subtitlesFormat)) {
+						LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
+					}
+				}
 			}
 		}
 	}
 
-	private void addSubtitlesSrt (final MediaFormat format, final Item videoItem, final File srtFile) {
-		final String srtId = contentId(format.getContentGroup(), srtFile);
-		final MimeType srtMimeType = new MimeType("text", "srt");
-		final Res srtRes = new Res(srtMimeType, Long.valueOf(srtFile.length()), this.externalHttpContext + "/" + srtId);
-		this.contentTree.addNode(new ContentNode(srtId, null, srtFile));
+	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) {
+		final Container dirContainer = this.contentTree.getNode(contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile())).getContainer();
+		if (dirContainer == null) return;
 
-		videoItem.addResource(srtRes);
+		synchronized (dirContainer) {
+			for (final Item item : dirContainer.getItems()) {
+				if (removeSubtitles(item, subtitlesFile, subtitlesFormat)) {
+					LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
+				}
+			}
+		}
+	}
+
+	private void findSubtitlesForItem (final Item item, final File itemFile) {
+		for (final String fName : itemFile.getParentFile().list(new BasenameFilter(itemFile))) {
+			final MediaFormat fFormat = MediaFormat.identify(fName);
+			if (fFormat != null && fFormat.getContentGroup() == ContentGroup.SUBTITLES) {
+				addSubtitles(item, new File(itemFile.getParentFile(), fName), fFormat);
+			}
+		}
+	}
+
+	private boolean addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) {
+		final String subtitlesId = contentId(subtitlesFormat.getContentGroup(), subtitlesFile);
+		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
+		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile));
+		return addResourceToItemIfNotPresent(item, subtitlesRes);
+	}
+
+	private boolean removeSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) {
+		final String subtitlesId = contentId(subtitlesFormat.getContentGroup(), subtitlesFile);
+		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
+		return removeResourceFromItem(item, subtitlesRes);
+	}
+
+	private static boolean addResourceToItemIfNotPresent (final Item item, final Res res) {
+		if (res.getValue() == null) throw new IllegalArgumentException("Resource value must not be null.");
+		synchronized (item) {
+			for (final Res r : item.getResources()) {
+				if (res.getValue().equals(r.getValue())) return false;
+			}
+			item.addResource(res);
+			return true;
+		}
+	}
+
+	private static boolean removeResourceFromItem (final Item item, final Res res) {
+		if (res.getValue() == null) throw new IllegalArgumentException("Resource value must not be null.");
+		synchronized (item) {
+			final Iterator<Res> resIttr = item.getResources().iterator();
+			while (resIttr.hasNext()) {
+				if (res.getValue().equals(resIttr.next().getValue())) {
+					resIttr.remove();
+					return true;
+				}
+			}
+			return false;
+		}
 	}
 
 	private static String contentId (final ContentGroup type, final File file) {
@@ -281,10 +362,8 @@ public class MediaIndex implements FileListener {
 	}
 
 	private static boolean hasItemWithId (final Container parent, final String id) {
-		final List<Item> items = parent.getItems();
-		if (items == null) return false;
-		synchronized (items) {
-			for (final Item item : items) {
+		synchronized (parent) {
+			for (final Item item : parent.getItems()) {
 				if (id.equals(item.getId())) return true;
 			}
 		}

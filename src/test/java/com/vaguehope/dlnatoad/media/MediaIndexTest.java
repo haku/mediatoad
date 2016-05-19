@@ -198,6 +198,46 @@ public class MediaIndexTest {
 		assertThat(nodeTitles, not(hasItem(dir.getName())));
 	}
 
+	@Test
+	public void itFindsSubtitlesForVideoFile () throws Exception {
+		mockFiles(1, ".foobar"); // Noise.
+
+		final List<File> expectedFiles = mockFiles(3, ".mkv");
+		final File videoFile = expectedFiles.get(1);
+		final File srtFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".srt"), videoFile.getParentFile());
+
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+		}
+
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).getContainer().getItems().get(1);
+		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(srtFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+	}
+
+	@Test
+	public void itAttachesOrDetachesSubtitlesWhenTheyAppearLaterOrDisappear () throws Exception {
+		final List<File> expectedFiles = mockFiles(3, ".mkv");
+
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+		}
+
+		final File videoFile = expectedFiles.get(1);
+		final File srtFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".srt"), videoFile.getParentFile());
+		this.undertest.fileFound(this.tmp.getRoot(), srtFile, null);
+
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).getContainer().getItems().get(1);
+		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(srtFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+
+		this.undertest.fileGone(srtFile);
+		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(1, item.getResources().size());
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private List<File> mockFiles (final int n, final String ext) throws IOException {
