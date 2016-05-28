@@ -16,6 +16,7 @@ public class Args {
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP address of interface to bind to.") private String iface;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
 	@Option(name = "-p", aliases = { "--preserve" }, usage = "preserve directory hierarchy.") private boolean preserveHierarchy;
+	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public List<File> getDirs () throws CmdLineException, IOException {
@@ -60,6 +61,10 @@ public class Args {
 
 	public boolean isPreserveHierarchy () {
 		return this.preserveHierarchy;
+	}
+
+	public File getDb () {
+		return this.db != null ? new File(this.db) : null;
 	}
 
 	private static List<File> pathsToFiles (final List<String> paths) {

@@ -28,9 +28,9 @@ public class Watcher {
 	}
 
 	public interface FileListener {
-		void fileFound (File rootDir, File file, EventType eventType);
+		void fileFound (File rootDir, File file, EventType eventType) throws IOException;
 
-		void fileGone (File file);
+		void fileGone (File file) throws IOException;
 	}
 
 	protected static final Logger LOG = LoggerFactory.getLogger(Watcher.class);
