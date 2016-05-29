@@ -36,7 +36,7 @@ public class FileData {
 	}
 
 	public static FileData forFile (final File file) throws IOException {
-		return new FileData(file.length(), file.lastModified(), HashHelper.md5(file).toString(16));
+		return new FileData(file.length(), file.lastModified(), HashHelper.sha1(file).toString(16));
 	}
 
 }

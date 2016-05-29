@@ -13,14 +13,25 @@ import java.security.NoSuchAlgorithmException;
 
 public final class HashHelper {
 
+	private static final int BUFFERSIZE = 1024 * 64;
+
 	private HashHelper () {
 		throw new AssertionError();
 	}
 
 	public static String sha1(final String s) {
-		final MessageDigest dig = getSha1Digest();
-		final byte[] bytes = dig.digest(getBytes(s));
+		final MessageDigest md = MD_SHA1_FACTORY.get();
+		md.reset();
+		final byte[] bytes = md.digest(getBytes(s));
 		return new BigInteger(1, bytes).toString(16); // NOSONAR Hex is not a magic number.
+	}
+
+	public static BigInteger sha1 (final File file) throws IOException {
+		return sha1(file, createByteBuffer());
+	}
+
+	public static BigInteger sha1 (final File file, final ByteBuffer buffer) throws IOException {
+		return hashFile(file, buffer, MD_SHA1_FACTORY);
 	}
 
 	private static byte[] getBytes (final String s) {
@@ -32,39 +43,24 @@ public final class HashHelper {
 		}
 	}
 
-	private static MessageDigest getSha1Digest () {
-		try {
-			return MessageDigest.getInstance("SHA1");
-		}
-		catch (final NoSuchAlgorithmException e) {
-			throw new IllegalStateException("JVM should always know about SHA1.", e);
-		}
+	private static ByteBuffer createByteBuffer () {
+		return ByteBuffer.allocateDirect(BUFFERSIZE);
 	}
 
-	public static ThreadLocal<MessageDigest> mdMd5Factory = new ThreadLocal<MessageDigest>() {
+	private static final ThreadLocal<MessageDigest> MD_SHA1_FACTORY = new ThreadLocal<MessageDigest>() {
 		@Override
 		protected MessageDigest initialValue () {
 			try {
-				return MessageDigest.getInstance("MD5");
+				return MessageDigest.getInstance("SHA1");
 			}
 			catch (final NoSuchAlgorithmException e) {
-				throw new IllegalStateException("JVM should always know about MD5.", e);
+				throw new IllegalStateException("JVM should always know about SHA1.", e);
 			}
 		}
 	};
 
-	private static final int BUFFERSIZE = 1024 * 64; // 64kb.
-
-	public static ByteBuffer createByteBuffer () {
-		return ByteBuffer.allocateDirect(BUFFERSIZE);
-	}
-
-	public static BigInteger md5 (final File file) throws IOException {
-		return md5(file, createByteBuffer());
-	}
-
-	public static BigInteger md5 (final File file, final ByteBuffer buffer) throws IOException {
-		final MessageDigest md = mdMd5Factory.get();
+	private static BigInteger hashFile (final File file, final ByteBuffer buffer, final ThreadLocal<MessageDigest> mdFactory) throws FileNotFoundException, IOException {
+		final MessageDigest md = mdFactory.get();
 		md.reset();
 
 		final FileInputStream is;
@@ -88,6 +84,5 @@ public final class HashHelper {
 			is.close();
 		}
 	}
-
 
 }
