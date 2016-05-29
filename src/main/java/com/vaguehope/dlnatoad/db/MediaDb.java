@@ -10,6 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -33,11 +36,23 @@ public class MediaDb {
 
 		FileData fileData = readFileData(file);
 		if (fileData == null) {
-			fileData = FileData.forFile(file, newUnusedId());
+			fileData = FileData.forFile(file);
+
+			final Collection<FileAndData> otherFiles = filesWithHash(fileData.getHash());
+			removeFilesThatStillExist(otherFiles);
+			final Set<String> otherIds = ids(otherFiles);
+			if (otherIds.size() == 1) {
+				fileData = fileData.withId(otherIds.iterator().next());
+			}
+			else {
+				fileData = fileData.withId(newUnusedId());
+			}
+
 			storeFileData(file, fileData);
+			removeFiles(otherFiles);
 		}
 		else if (!fileData.upToDate(file)) {
-			fileData = FileData.forFile(file, fileData.getId());
+			fileData = FileData.forFile(file).withId(fileData.getId());
 			updateFileData(file, fileData);
 		}
 
@@ -87,6 +102,30 @@ public class MediaDb {
 		}
 	}
 
+	private Collection<FileAndData> filesWithHash (final String hash) throws SQLException {
+		final PreparedStatement st = this.dbConn.prepareStatement(
+				"SELECT file, size, modified, hash, id FROM files WHERE hash=?;");
+		try {
+			st.setString(1, hash);
+			final ResultSet rs = st.executeQuery();
+			try {
+				final Collection<FileAndData> ret = new ArrayList<>();
+				while (rs.next()) {
+					ret.add(new FileAndData(
+							new File(rs.getString(1)),
+							new FileData(rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5))));
+				}
+				return ret;
+			}
+			finally {
+				rs.close();
+			}
+		}
+		finally {
+			st.close();
+		}
+	}
+
 	private void storeFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
 				"INSERT INTO files (file,size,modified,hash,id) VALUES (?,?,?,?,?);");
@@ -118,6 +157,25 @@ public class MediaDb {
 		}
 		finally {
 			st.close();
+		}
+	}
+
+	private void removeFile (final File file) throws SQLException {
+		final PreparedStatement st = this.dbConn.prepareStatement(
+				"DELETE FROM files WHERE file=?;");
+		try {
+			st.setString(1, file.getAbsolutePath());
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException("No update occured removing file '" + file.getAbsolutePath() + "'.");
+		}
+		finally {
+			st.close();
+		}
+	}
+
+	private void removeFiles (final Collection<FileAndData> files) throws SQLException {
+		for (final FileAndData file : files) {
+			removeFile(file.getFile());
 		}
 	}
 
@@ -185,6 +243,20 @@ public class MediaDb {
 			if (hashesForId(id).size() < 1) return id;
 			LOG.warn("Discarding colliding random UUID: {}", id);
 		}
+	}
+
+	private void removeFilesThatStillExist (final Collection<FileAndData> files) {
+		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+			if (i.next().getFile().exists()) i.remove();
+		}
+	}
+
+	private Set<String> ids (final Collection<FileAndData> files) {
+		final Set<String> ids = new HashSet<>();
+		for (final FileAndData f : files) {
+			ids.add(f.getData().getId());
+		}
+		return ids;
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

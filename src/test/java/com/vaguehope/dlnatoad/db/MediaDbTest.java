@@ -123,6 +123,20 @@ public class MediaDbTest {
 		assertEquals(id2, this.undertest.idForFile(f2));
 	}
 
+	@Test
+	public void itKeepsIdThroughMoveAndChange () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = this.undertest.idForFile(f1);
+
+		final File f2 = this.tmp.newFile("media-01.ext");
+		f2.delete();
+		FileUtils.moveFile(f1, f2);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		fillFile(f2);
+		assertEquals(id1, this.undertest.idForFile(f2));
+	}
+
 	private File mockMediaFile (final String name) throws IOException {
 		final File f = this.tmp.newFile(name);
 		fillFile(f);
