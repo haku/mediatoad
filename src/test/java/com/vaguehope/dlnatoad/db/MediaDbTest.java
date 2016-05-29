@@ -11,7 +11,6 @@ import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -79,7 +78,19 @@ public class MediaDbTest {
 		assertEquals(id1, this.undertest.idForFile(f2));
 	}
 
-	@Ignore("Not sure how to fix this one yet.")
+	@Test
+	public void itGivesNewIdWhenFilesDiverge () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = this.undertest.idForFile(f1);
+
+		final File f2 = this.tmp.newFile("media-2.ext");
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		fillFile(f2);
+		assertThat(id1, not(equalTo(this.undertest.idForFile(f2))));
+	}
+
 	@Test
 	public void itHandlesFileConvergingAndThenDiverging () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");

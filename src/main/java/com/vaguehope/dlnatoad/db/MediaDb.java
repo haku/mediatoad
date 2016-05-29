@@ -31,45 +31,20 @@ public class MediaDb {
 	public String idForFile (final File file) throws SQLException, IOException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 
-		String id = null;
-
 		FileData fileData = readFileData(file);
 		if (fileData == null) {
-			fileData = FileData.forFile(file);
+			fileData = FileData.forFile(file, newUnusedId());
 			storeFileData(file, fileData);
-
-			id = readId(fileData.getHash());
 		}
 		else if (!fileData.upToDate(file)) {
-			final String oldHash = fileData.getHash();
-			fileData = FileData.forFile(file);
-
-			id = readId(oldHash);
-			if (id != null && !oldHash.equals(fileData.getHash())) {
-				final String existingIdForNewHash = readId(fileData.getHash());
-				if (existingIdForNewHash == null) {
-					// FIXME what if file has diverged from another file it was a copy of, but now it should have a new ID?
-					storeId(fileData.getHash(), id);
-				}
-				else {
-					// FIXME handle files converging.  Perhaps alias old IDs?
-					LOG.warn("Abandoning {} -> {} in favour of {}.", fileData.getHash(), id, existingIdForNewHash);
-					id = existingIdForNewHash;
-				}
-			}
+			fileData = FileData.forFile(file, fileData.getId());
 			updateFileData(file, fileData);
 		}
-		else {
-			id = readId(fileData.getHash());
-		}
 
+		String id = canonicalIdForHash(fileData.getHash());
 		if (id == null) {
-			while (true) {
-				id = UUID.randomUUID().toString();
-				if (hashesForId(id).size() < 1) break;
-				LOG.warn("Discarding colliding random UUID: {}", id);
-			}
-			storeId(fileData.getHash(), id);
+			id = fileData.getId();
+			storeCanonicalId(fileData.getHash(), id);
 		}
 
 		return id;
@@ -80,7 +55,7 @@ public class MediaDb {
 	private void makeSchema () throws SQLException {
 		if (!tableExists("files")) {
 			executeSql("CREATE TABLE files ("
-					+ "file STRING NOT NULL PRIMARY KEY, size INT NOT NULL, modified INT NOT NULL, hash STRING NOT NULL);");
+					+ "file STRING NOT NULL PRIMARY KEY, size INT NOT NULL, modified INT NOT NULL, hash STRING NOT NULL, id STRING NOT NULL);");
 		}
 		if (!tableExists("hashes")) {
 			executeSql("CREATE TABLE hashes ("
@@ -91,7 +66,7 @@ public class MediaDb {
 
 	private FileData readFileData (final File file) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
-				"SELECT size, modified, hash FROM files WHERE file=?;");
+				"SELECT size, modified, hash, id FROM files WHERE file=?;");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);
@@ -99,7 +74,7 @@ public class MediaDb {
 			try {
 				if (!rs.next()) return null;
 				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3));
+						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4));
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return fileData;
 			}
@@ -114,12 +89,13 @@ public class MediaDb {
 
 	private void storeFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
-				"INSERT INTO files (file,size,modified,hash) VALUES (?,?,?,?);");
+				"INSERT INTO files (file,size,modified,hash,id) VALUES (?,?,?,?,?);");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setLong(2, fileData.getSize());
 			st.setLong(3, fileData.getModified());
 			st.setString(4, fileData.getHash());
+			st.setString(5, fileData.getId());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No insert occured inserting file '" + file.getAbsolutePath() + "'.");
 		}
@@ -130,12 +106,13 @@ public class MediaDb {
 
 	private void updateFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
-				"UPDATE files SET size=?,modified=?,hash=? WHERE file=?;");
+				"UPDATE files SET size=?,modified=?,hash=?,id=? WHERE file=?;");
 		try {
 			st.setLong(1, fileData.getSize());
 			st.setLong(2, fileData.getModified());
 			st.setString(3, fileData.getHash());
-			st.setString(4, file.getAbsolutePath());
+			st.setString(4, fileData.getId());
+			st.setString(5, file.getAbsolutePath());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured updating file '" + file.getAbsolutePath() + "'.");
 		}
@@ -144,7 +121,7 @@ public class MediaDb {
 		}
 	}
 
-	private String readId (final String hash) throws SQLException {
+	private String canonicalIdForHash (final String hash) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
 				"SELECT id FROM hashes WHERE hash=?;");
 		try {
@@ -166,7 +143,7 @@ public class MediaDb {
 		}
 	}
 
-	private void storeId (final String hash, final String id) throws SQLException {
+	private void storeCanonicalId (final String hash, final String id) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
 				"INSERT INTO hashes (hash,id) VALUES (?,?);");
 		try {
@@ -199,6 +176,14 @@ public class MediaDb {
 		}
 		finally {
 			st.close();
+		}
+	}
+
+	private String newUnusedId () throws SQLException {
+		while (true) {
+			final String id = UUID.randomUUID().toString();
+			if (hashesForId(id).size() < 1) return id;
+			LOG.warn("Discarding colliding random UUID: {}", id);
 		}
 	}
 
