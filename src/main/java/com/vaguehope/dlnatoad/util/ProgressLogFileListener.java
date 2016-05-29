@@ -12,7 +12,7 @@ import com.vaguehope.dlnatoad.util.Watcher.FileListener;
 
 public class ProgressLogFileListener implements FileListener {
 
-	private static final long LOG_EVERY_NANOS = TimeUnit.MINUTES.toNanos(1);
+	private static final long LOG_EVERY_NANOS = TimeUnit.MINUTES.toNanos(5);
 	private static final long DISCARD_AFTER_NANOS = TimeUnit.MINUTES.toNanos(20);
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProgressLogFileListener.class);
@@ -41,7 +41,7 @@ public class ProgressLogFileListener implements FileListener {
 	private void afterFileProcessed (final File file) {
 		final long nowNanos = System.nanoTime();
 		if (nowNanos - this.lastUpdateNanos > LOG_EVERY_NANOS) {
-				LOG.info("Indexed {} files ({} bytes) in {} minutes.",
+				LOG.info("Indexed {} files ({}) in {} minutes.",
 						this.fileCounter, FileHelper.readableFileSize(this.byteCounter),
 						TimeUnit.NANOSECONDS.toMinutes(nowNanos - this.startNanos));
 			this.lastUpdateNanos = nowNanos;
