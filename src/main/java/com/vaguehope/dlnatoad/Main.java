@@ -39,6 +39,7 @@ import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
+import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.Watcher;
 
 public final class Main {
@@ -209,7 +210,8 @@ public final class Main {
 		@Override
 		public void run () {
 			try {
-				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE, this.index).run();
+				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE,
+						new ProgressLogFileListener(this.index)).run();
 				LOG.error("Watcher thread exited.");
 			}
 			catch (final Exception e) { // NOSONAR
