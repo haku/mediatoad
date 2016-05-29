@@ -11,6 +11,7 @@ import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -53,7 +54,7 @@ public class MediaDbTest {
 	public void itReturnsSameIdForIdenticalFiles () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
 		final File f2 = this.tmp.newFile("media-2.ext");
-		FileUtils.copyFile(f1, f2);
+		FileUtils.copyFile(f1, f2, false);
 		assertEquals(
 				this.undertest.idForFile(f1),
 				this.undertest.idForFile(f2));
@@ -65,6 +66,50 @@ public class MediaDbTest {
 		final String id1 = this.undertest.idForFile(f1);
 		fillFile(f1);
 		assertEquals(id1, this.undertest.idForFile(f1));
+	}
+
+	@Test
+	public void itGivesSameIdWhenFileBecomesSameAsAnother () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final File f2 = mockMediaFile("media-2.ext");
+		final String id1 = this.undertest.idForFile(f1);
+		assertThat(id1, not(equalTo(this.undertest.idForFile(f2))));
+
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+	}
+
+	@Ignore("Not sure how to fix this one yet.")
+	@Test
+	public void itHandlesFileConvergingAndThenDiverging () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final File f2 = mockMediaFile("media-2.ext");
+		final String id1 = this.undertest.idForFile(f1);
+		assertThat(id1, not(equalTo(this.undertest.idForFile(f2))));
+
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		fillFile(f2);
+		assertThat(id1, not(equalTo(this.undertest.idForFile(f2))));
+	}
+
+	@Test
+	public void itRevertsIdWhenFileContentReverts () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final File f2 = mockMediaFile("media-2.ext");
+		final String id1 = this.undertest.idForFile(f1);
+		final String id2 = this.undertest.idForFile(f2);
+		assertThat(id1, not(equalTo(id2)));
+
+		final File backup = this.tmp.newFile("backup");
+		FileUtils.copyFile(f2, backup, false);
+
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		FileUtils.copyFile(backup, f2, false);
+		assertEquals(id2, this.undertest.idForFile(f2));
 	}
 
 	private File mockMediaFile (final String name) throws IOException {

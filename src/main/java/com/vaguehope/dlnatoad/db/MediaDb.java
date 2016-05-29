@@ -46,7 +46,16 @@ public class MediaDb {
 
 			id = readId(oldHash);
 			if (id != null && !oldHash.equals(fileData.getHash())) {
-				storeId(fileData.getHash(), id);
+				final String existingIdForNewHash = readId(fileData.getHash());
+				if (existingIdForNewHash == null) {
+					// FIXME what if file has diverged from another file it was a copy of, but now it should have a new ID?
+					storeId(fileData.getHash(), id);
+				}
+				else {
+					// FIXME handle files converging.  Perhaps alias old IDs?
+					LOG.warn("Abandoning {} -> {} in favour of {}.", fileData.getHash(), id, existingIdForNewHash);
+					id = existingIdForNewHash;
+				}
 			}
 			updateFileData(file, fileData);
 		}
