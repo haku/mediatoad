@@ -8,12 +8,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 
 public class MediaDb {
+
+	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
 
 	private final Connection dbConn;
 
@@ -49,7 +55,11 @@ public class MediaDb {
 		}
 
 		if (id == null) {
-			id = UUID.randomUUID().toString(); // FIXME Assumes this is always unique.
+			while (true) {
+				id = UUID.randomUUID().toString();
+				if (hashesForId(id).size() < 1) break;
+				LOG.warn("Discarding colliding random UUID: {}", id);
+			}
 			storeId(fileData.getHash(), id);
 		}
 
@@ -66,6 +76,7 @@ public class MediaDb {
 		if (!tableExists("hashes")) {
 			executeSql("CREATE TABLE hashes ("
 					+ "hash STRING NOT NULL PRIMARY KEY, id STRING NOT NULL);");
+			executeSql("CREATE INDEX hashes_idx ON hashes (id);");
 		}
 	}
 
@@ -154,6 +165,28 @@ public class MediaDb {
 			st.setString(2, id);
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured inserting hash '" + hash + "'.");
+		}
+		finally {
+			st.close();
+		}
+	}
+
+	private Collection<String> hashesForId (final String id) throws SQLException {
+		final PreparedStatement st = this.dbConn.prepareStatement(
+				"SELECT hash FROM hashes WHERE id=?;");
+		try {
+			st.setString(1, id);
+			final ResultSet rs = st.executeQuery();
+			try {
+				final Collection<String> ret = new ArrayList<>();
+				while(rs.next()) {
+					ret.add(rs.getString(1));
+				}
+				return ret;
+			}
+			finally {
+				rs.close();
+			}
 		}
 		finally {
 			st.close();
