@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -38,22 +39,39 @@ public class MediaDb {
 		if (fileData == null) {
 			fileData = FileData.forFile(file);
 
-			final Collection<FileAndData> otherFiles = filesWithHash(fileData.getHash());
-			removeFilesThatStillExist(otherFiles);
-			final Set<String> otherIds = ids(otherFiles);
+			final Collection<FileAndData> otherFiles = missingFilesWithHash(fileData.getHash());
+			final Set<String> otherIds = distinctIds(otherFiles);
 			if (otherIds.size() == 1) {
 				fileData = fileData.withId(otherIds.iterator().next());
 			}
 			else {
 				fileData = fileData.withId(newUnusedId());
+				otherFiles.clear(); // Did not merge, so do not remove.
 			}
 
 			storeFileData(file, fileData);
 			removeFiles(otherFiles);
 		}
 		else if (!fileData.upToDate(file)) {
+			final String prevHash = fileData.getHash();
+			final String prevHashCanonicalId = canonicalIdForHash(prevHash);
 			fileData = FileData.forFile(file).withId(fileData.getId());
+
+			Collection<FileAndData> otherFiles = Collections.emptySet();
+			if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(fileData.getId())) {
+				otherFiles = filesWithHash(prevHash);
+				excludeFile(otherFiles, file); // Remove self.
+
+				if (allMissing(otherFiles)) {
+					fileData = fileData.withNewId(prevHashCanonicalId);
+				}
+				else {
+					otherFiles.clear(); // Did not merge, so do not remove.
+				}
+			}
+
 			updateFileData(file, fileData);
+			removeFiles(otherFiles);
 		}
 
 		String id = canonicalIdForHash(fileData.getHash());
@@ -124,6 +142,12 @@ public class MediaDb {
 		finally {
 			st.close();
 		}
+	}
+
+	private Collection<FileAndData> missingFilesWithHash (final String hash) throws SQLException {
+		final Collection<FileAndData> files = filesWithHash(hash);
+		excludeFilesThatStillExist(files);
+		return files;
 	}
 
 	private void storeFileData (final File file, final FileData fileData) throws SQLException {
@@ -245,19 +269,35 @@ public class MediaDb {
 		}
 	}
 
-	private void removeFilesThatStillExist (final Collection<FileAndData> files) {
+	private void excludeFilesThatStillExist (final Collection<FileAndData> files) {
 		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
 			if (i.next().getFile().exists()) i.remove();
 		}
 	}
 
-	private Set<String> ids (final Collection<FileAndData> files) {
+	private void excludeFile (final Collection<FileAndData> files, final File file) {
+		final int startSize = files.size();
+		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+			if (file.equals(i.next().getFile())) i.remove();
+		}
+		if (files.size() != startSize - 1) throw new IllegalStateException("Expected to only remove one item from list.");
+	}
+
+	private Set<String> distinctIds (final Collection<FileAndData> files) {
 		final Set<String> ids = new HashSet<>();
 		for (final FileAndData f : files) {
 			ids.add(f.getData().getId());
 		}
 		return ids;
 	}
+
+	private boolean allMissing (final Collection<FileAndData> files) {
+		for (final FileAndData file : files) {
+			if (file.getFile().exists()) return false;
+		}
+		return true;
+	}
+
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

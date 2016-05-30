@@ -137,6 +137,48 @@ public class MediaDbTest {
 		assertEquals(id1, this.undertest.idForFile(f2));
 	}
 
+	@Test
+	public void itKeepsIdThroughCopyDeleteAndChange () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = this.undertest.idForFile(f1);
+
+		final File f2 = this.tmp.newFile("media-01.ext");
+		f2.delete();
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		f1.delete();
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		fillFile(f2);
+		assertEquals(id1, this.undertest.idForFile(f2));
+	}
+
+	@Test
+	public void itKeepsIdThroughCopyDeleteAndChangeMultiple () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = this.undertest.idForFile(f1);
+
+		final File f2 = this.tmp.newFile("media-01.ext");
+		f2.delete();
+		FileUtils.copyFile(f1, f2, false);
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		final File f3 = this.tmp.newFile("media-001.ext");
+		f3.delete();
+		FileUtils.copyFile(f1, f3, false);
+		assertEquals(id1, this.undertest.idForFile(f3));
+
+		f1.delete();
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		f3.delete();
+		assertEquals(id1, this.undertest.idForFile(f2));
+
+		fillFile(f2);
+		assertEquals(id1, this.undertest.idForFile(f2));
+	}
+
 	private File mockMediaFile (final String name) throws IOException {
 		final File f = this.tmp.newFile(name);
 		fillFile(f);

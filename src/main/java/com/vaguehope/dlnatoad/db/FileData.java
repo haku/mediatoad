@@ -57,6 +57,11 @@ public class FileData {
 		return new FileData(this.size, this.modified, this.hash, id);
 	}
 
+	public FileData withNewId (final String id) {
+		if (this.id == null) throw new IllegalStateException("ID not already set.");
+		return new FileData(this.size, this.modified, this.hash, id);
+	}
+
 	public static FileData forFile (final File file) throws IOException {
 		return new FileData(file.length(), file.lastModified(), HashHelper.sha1(file).toString(16));
 	}
