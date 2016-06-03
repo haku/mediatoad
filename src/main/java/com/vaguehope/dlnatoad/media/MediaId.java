@@ -47,14 +47,16 @@ public class MediaId {
 
 	private static class TransientIder implements Ider {
 
+		public TransientIder () {}
+
 		@Override
-		public String idForFile (final ContentGroup type, final File file) throws IOException {
+		public String idForFile (final ContentGroup type, final File file) {
 			return transientContentId(type, file);
 		}
 
 	}
 
-	private static String transientContentId (final ContentGroup type, final File file) throws IOException {
+	private static String transientContentId (final ContentGroup type, final File file) {
 		return type.getItemIdPrefix() + (HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file));
 	}
 
