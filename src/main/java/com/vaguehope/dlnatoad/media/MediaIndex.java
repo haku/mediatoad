@@ -107,8 +107,7 @@ public class MediaIndex implements FileListener {
 				putFileToContentTree(rootDir, file, format);
 				return true;
 			case SUBTITLES:
-				attachSubtitlesToItem(file, format);
-				return true;
+				return attachSubtitlesToItem(file, format);
 			default:
 				return false;
 		}
@@ -293,20 +292,23 @@ public class MediaIndex implements FileListener {
 		return new Res(artMimeType, Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
 	}
 
-	private void attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final Container dirContainer = this.contentTree.getNode(this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile())).getContainer();
-		if (dirContainer == null) return;
+	private boolean attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
+		final ContentNode dirNode = this.contentTree.getNode(this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile()));
+		if (dirNode == null) return false;
 
-		synchronized (dirContainer) {
-			for (final Item item : dirContainer.getItems()) {
+		boolean attached = false;
+		synchronized (dirNode.getContainer()) {
+			for (final Item item : dirNode.getContainer().getItems()) {
 				final File itemFile = this.contentTree.getNode(item.getId()).getFile();
 				if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
 					if (addSubtitles(item, subtitlesFile, subtitlesFormat)) {
 						LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
+						attached = true;
 					}
 				}
 			}
 		}
+		return attached;
 	}
 
 	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
