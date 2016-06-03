@@ -68,7 +68,7 @@ public class MediaDbTest {
 	}
 
 	@Test
-	public void itGivesSameIdWhenFileBecomesSameAsAnother () throws Exception {
+	public void itChangesToSameIdWhenFileBecomesSameAsAnother () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
 		final File f2 = mockMediaFile("media-2.ext");
 		final String id1 = this.undertest.idForFile(f1);
