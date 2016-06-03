@@ -1,8 +1,12 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.fourthline.cling.support.model.DIDLObject;
@@ -65,6 +69,41 @@ public class ContentTree {
 		this.contentMap.put(node.getId(), node);
 	}
 
+	/**
+	 * Returns number of items removed.
+	 */
+	public int removeFile (final File file) {
+		if (file == null) return 0;
+		// FIXME this is lazy and not efficient.
+		final List<ContentNode> toRemove = new ArrayList<>();
+		for (final Entry<String, ContentNode> e : this.contentMap.entrySet()) {
+			if (file.equals(e.getValue().getFile())) toRemove.add(e.getValue());
+		}
+		for (final ContentNode node : toRemove) {
+			removeNode(node);
+		}
+		return toRemove.size();
+	}
+
+	public void removeNode (final ContentNode node) {
+		if (node.isItem()) {
+			this.contentMap.remove(node.getId());
+			if (node.getItem() != null) {
+				final ContentNode parentNode = this.contentMap.get(node.getItem().getParentID());
+				if (parentNode != null) {
+					removeItemFromContainer(parentNode.getContainer(), node.getItem());
+					if (removeContainerFromItsParentIfEmpty(parentNode.getContainer())) this.contentMap.remove(parentNode.getId());
+				}
+			}
+		}
+		else if (node.getContainer() != null) {
+			removeContainerFromItsParent(node.getContainer());
+		}
+		else {
+			throw new IllegalArgumentException("Not an item or a container: " + node);
+		}
+	}
+
 	public void prune () {
 		final Iterator<ContentNode> ittr = this.contentMap.values().iterator();
 		while (ittr.hasNext()) {
@@ -78,10 +117,7 @@ public class ContentTree {
 			else {
 				final Container c = node.getContainer();
 				pruneItems(c);
-				if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) {
-					removeContainerFromItsParent(c);
-					ittr.remove();
-				}
+				if (removeContainerFromItsParentIfEmpty(c)) ittr.remove();
 			}
 		}
 	}
@@ -96,6 +132,14 @@ public class ContentTree {
 			}
 			c.setChildCount(c.getContainers().size() + c.getItems().size());
 		}
+	}
+
+	private boolean removeContainerFromItsParentIfEmpty (final Container c) {
+		if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) {
+			removeContainerFromItsParent(c);
+			return true;
+		}
+		return false;
 	}
 
 	private void removeContainerFromItsParent (final Container c) {
@@ -113,6 +157,17 @@ public class ContentTree {
 		}
 		else {
 			LOG.error("Parent of container '{}' not found in contentMap: '{}'.", c.getId(), c.getParentID());
+		}
+	}
+
+	private static void removeItemFromContainer (final Container c, final Item itemToRemove) {
+		synchronized (c) {
+			final Iterator<Item> it = c.getItems().iterator();
+			while (it.hasNext()) {
+				final Item item = it.next();
+				if (itemToRemove.getId().equals(item.getId())) it.remove();
+			}
+			c.setChildCount(c.getContainers().size() + c.getItems().size());
 		}
 	}
 

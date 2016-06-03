@@ -62,36 +62,55 @@ public class MediaIndex implements FileListener {
 
 	@Override
 	public void fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
-		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
+		if (addFile(rootDir, file) && eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
+	}
+
+	@Override
+	public void fileModified (final File rootDir, final File file) throws IOException {
 		if (!file.isFile()) return;
 
 		final MediaFormat format = MediaFormat.identify(file);
 		if (format == null) return;
-		switch (format.getContentGroup()) {
-			case AUDIO:
-			case IMAGE:
-			case VIDEO:
-				putFileToContentTree(rootDir, file, format);
-				if (eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
-				break;
-			case SUBTITLES:
-				attachSubtitlesToItem(file, format);
-				break;
-			default:
+
+		final String newId = this.mediaId.contentId(format.getContentGroup(), file);
+		if (this.contentTree.getNode(newId) == null) {
+			this.contentTree.removeFile(file);
+			if (addFile(rootDir, file)) LOG.info("modified: {}", file.getAbsolutePath());
 		}
 	}
 
 	@Override
 	public void fileGone (final File file) throws IOException {
-		this.contentTree.prune(); // FIXME be less lazy.
+		final MediaFormat format = MediaFormat.identify(file);
+		if (format != null) {
+			switch (format.getContentGroup()) {
+				case SUBTITLES:
+					deattachSubtitles(file, format);
+					break;
+				default:
+			}
+		}
+
+		if (this.contentTree.removeFile(file) > 0) LOG.info("unshared: {}", file.getAbsolutePath());
+	}
+
+	private boolean addFile (final File rootDir, final File file) throws IOException {
+		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
+		if (!file.isFile()) return false;
 
 		final MediaFormat format = MediaFormat.identify(file);
-		if (format == null) return;
+		if (format == null) return false;
 		switch (format.getContentGroup()) {
+			case AUDIO:
+			case IMAGE:
+			case VIDEO:
+				putFileToContentTree(rootDir, file, format);
+				return true;
 			case SUBTITLES:
-				deattachSubtitles(file, format);
-				break;
+				attachSubtitlesToItem(file, format);
+				return true;
 			default:
+				return false;
 		}
 	}
 

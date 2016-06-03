@@ -60,6 +60,17 @@ public class ProgressLogFileListener implements FileListener {
 	}
 
 	@Override
+	public void fileModified (final File rootDir, final File file) throws IOException {
+		beforeFileProcessed(file);
+		try {
+			this.deligate.fileModified(rootDir, file);
+		}
+		finally {
+			afterFileProcessed(file);
+		}
+	}
+
+	@Override
 	public void fileGone (final File file) throws IOException {
 		this.deligate.fileGone(file);
 	}

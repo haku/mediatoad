@@ -14,6 +14,10 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +33,14 @@ public class Watcher {
 
 	public interface FileListener {
 		void fileFound (File rootDir, File file, EventType eventType) throws IOException;
-
+		void fileModified (final File rootDir, File file) throws IOException;
 		void fileGone (File file) throws IOException;
 	}
+
+	/**
+	 * Do not fire modified event until file has stopped changing for this long.
+	 */
+	private static final long MODIFIED_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(10);
 
 	protected static final Logger LOG = LoggerFactory.getLogger(Watcher.class);
 
@@ -41,6 +50,7 @@ public class Watcher {
 	private final WatchService watchService;
 	private final HashMap<WatchKey, Path> watchKeys = new HashMap<>();
 	private final HashMap<WatchKey, File> watchKeyRoots = new HashMap<>();
+	private final Queue<ModifiedFile> modifiedFiles = new DelayQueue<>();
 
 	private volatile boolean running = true;
 
@@ -71,7 +81,10 @@ public class Watcher {
 	}
 
 	protected void register (final File rootDir, final Path dir) throws IOException {
-		final WatchKey watchKey = dir.register(this.watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE);
+		final WatchKey watchKey = dir.register(this.watchService,
+				StandardWatchEventKinds.ENTRY_CREATE,
+				StandardWatchEventKinds.ENTRY_MODIFY,
+				StandardWatchEventKinds.ENTRY_DELETE);
 		this.watchKeys.put(watchKey, dir);
 		this.watchKeyRoots.put(watchKey, rootDir);
 	}
@@ -88,14 +101,24 @@ public class Watcher {
 
 	private void watch () {
 		while (this.running) {
-			final WatchKey key;
-			try {
-				key = this.watchService.take();
+			ModifiedFile modFile;
+			while ((modFile = this.modifiedFiles.poll()) != null) {
+				if (modFile.isUnchanged()) {
+					callListener(modFile.getEventKind(), modFile.getFile(), modFile.getRootDir(), EventType.NOTIFY);
+				}
 			}
-			catch (final InterruptedException x) {
-				LOG.debug("Interrupted, terminating watcher...");
-				this.running = false;
-				return;
+
+			final WatchKey key = this.watchService.poll();
+			if (key == null) {
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				}
+				catch (final InterruptedException e) {
+					LOG.debug("Interrupted, terminating watcher...");
+					this.running = false;
+					return;
+				}
+				continue;
 			}
 
 			final Path dir = this.watchKeys.get(key);
@@ -140,11 +163,18 @@ public class Watcher {
 			final Path path = dir.resolve(ev.context());
 			LOG.debug("{} {}", ev.kind().name(), path);
 
-			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE && Files.isDirectory(path)) {
-				registerRecursive(rootDir, path.toFile());
-			}
+			final File file = path.toFile();
 
-			callListener(ev.kind(), path.toFile(), rootDir, EventType.NOTIFY);
+			if (Files.isRegularFile(path)
+					&& (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE || ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY)) {
+				this.modifiedFiles.add(new ModifiedFile(file, rootDir, ev.kind())); // Wait for the file to stop changing.
+			}
+			else if (Files.isDirectory(path) && ev.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+				registerRecursive(rootDir, file);
+			}
+			else {
+				callListener(ev.kind(), file, rootDir, EventType.NOTIFY);
+			}
 		}
 	}
 
@@ -158,6 +188,9 @@ public class Watcher {
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
 				this.listener.fileFound(rootDir, file, eventType);
+			}
+			else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
+				this.listener.fileModified(rootDir, file);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
 				this.listener.fileGone(file);
@@ -197,6 +230,60 @@ public class Watcher {
 		public void onDirWithFiles (final File dir, final List<File> files) {
 			this.host.callListener(StandardWatchEventKinds.ENTRY_CREATE, files, this.rootDir, EventType.SCAN);
 			this.totalFiles += files.size();
+		}
+
+	}
+
+	private static class ModifiedFile implements Delayed {
+
+		private final File file;
+		private final File rootDir;
+		private final Kind<Path> eventKind;
+
+		private final long lastModifiedMillis;
+		private final long time;
+
+		public ModifiedFile (final File file, final File rootDir, final Kind<Path> eventKind) {
+			this.file = file;
+			this.rootDir = rootDir;
+			this.eventKind = eventKind;
+
+			this.lastModifiedMillis = file.lastModified();
+			this.time = MODIFIED_TIMEOUT_NANOS + now();
+		}
+
+		public boolean isUnchanged () {
+			return this.file.lastModified() == this.lastModifiedMillis;
+		}
+
+		public File getFile () {
+			return this.file;
+		}
+
+		public File getRootDir () {
+			return this.rootDir;
+		}
+
+		public Kind<Path> getEventKind () {
+			return this.eventKind;
+		}
+
+		@Override
+		public int compareTo (final Delayed o) {
+			if (o == this) return 0;
+			final long d = (getDelay(TimeUnit.NANOSECONDS) - o.getDelay(TimeUnit.NANOSECONDS));
+			return (d == 0) ? 0 : ((d < 0) ? -1 : 1);
+		}
+
+		@Override
+		public long getDelay (final TimeUnit unit) {
+			return unit.convert(this.time - now(), TimeUnit.NANOSECONDS);
+		}
+
+		private static final long NANO_ORIGIN = System.nanoTime();
+
+		private static long now () {
+			return System.nanoTime() - NANO_ORIGIN;
 		}
 
 	}
