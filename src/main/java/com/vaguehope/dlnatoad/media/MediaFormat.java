@@ -45,6 +45,8 @@ public enum MediaFormat {
 	WMA("wma", "audio/x-ms-wma", ContentGroup.AUDIO),
 
 	SRT("srt", "text/srt", ContentGroup.SUBTITLES),
+	SSA("ssa", "text/x-ssa", ContentGroup.SUBTITLES),
+	ASS("ass", "text/x-ass", ContentGroup.SUBTITLES),
 	;
 
 	private static final Map<String, MediaFormat> EXT_TO_FORMAT;
