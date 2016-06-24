@@ -33,6 +33,8 @@ public class ProgressLogFileListener implements FileListener {
 		if (this.lastUpdateNanos == 0L || nowNanos - this.lastUpdateNanos > DISCARD_AFTER_NANOS) {
 			this.lastUpdateNanos = nowNanos;
 			this.startNanos = nowNanos;
+			this.fileCounter = 0;
+			this.byteCounter = 0;
 		}
 		this.fileCounter += 1;
 		this.byteCounter += file.length();
