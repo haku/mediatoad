@@ -38,7 +38,7 @@ public class Args {
 		if (this.dirPaths != null && this.dirPaths.size() > 0) {
 			final List<File> cliDirs = pathsToFiles(this.dirPaths);
 			checkDirExist(cliDirs);
-			dirs.addAll(dirs);
+			dirs.addAll(cliDirs);
 		}
 
 		if (dirs.size() < 1) dirs.add(new File("."));
