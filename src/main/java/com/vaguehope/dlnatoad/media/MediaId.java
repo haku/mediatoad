@@ -16,8 +16,8 @@ public class MediaId {
 
 	private final Ider impl;
 
-	public MediaId (final File dbFile) throws SQLException {
-		this.impl = dbFile != null ? new PersistentIder(new MediaDb(dbFile)) : new TransientIder();
+	public MediaId (final MediaDb mediaDb) {
+		this.impl = mediaDb != null ? new PersistentIder(mediaDb) : new TransientIder();
 	}
 
 	public String contentId (final ContentGroup type, final File file) throws IOException {

@@ -8,6 +8,10 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -28,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
+import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
@@ -36,7 +41,9 @@ import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
+import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
+import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
@@ -116,11 +123,21 @@ public final class Main {
 		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
+		final ExecutorService fsExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("fs"));
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				fsExSvc.shutdown();
+			}
+		});
+
 		final File dbFile = args.getDb();
 		if (dbFile != null) LOG.info("db: {}", dbFile.getAbsolutePath());
-		final MediaId mediaId = new MediaId(dbFile);
+		final MediaDb mediaDb = new MediaDb(dbFile);
+		final MediaId mediaId = new MediaId(mediaDb);
+		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
 
-		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId);
+		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId, mediaInfo);
 
 		final Thread watcherThread = new Thread(new RunWatcher(args.getDirs(), index));
 		watcherThread.setName("watcher");

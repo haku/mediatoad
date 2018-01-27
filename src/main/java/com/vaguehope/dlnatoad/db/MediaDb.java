@@ -83,6 +83,14 @@ public class MediaDb {
 		return id;
 	}
 
+	public long readFileDurationMillis (final File file) throws SQLException {
+		return readDuration(file.getAbsolutePath(), file.length());
+	}
+
+	public void storeFileDurationMillis (final File file, final long duration) throws SQLException {
+		storeDuration(file.getAbsolutePath(), file.length(), duration);
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private void makeSchema () throws SQLException {
@@ -94,6 +102,10 @@ public class MediaDb {
 			executeSql("CREATE TABLE hashes ("
 					+ "hash STRING NOT NULL PRIMARY KEY, id STRING NOT NULL);");
 			executeSql("CREATE INDEX hashes_idx ON hashes (id);");
+		}
+		if (!tableExists("durations")) {
+			executeSql("CREATE TABLE durations ("
+					+ "key STRING NOT NULL PRIMARY KEY, size INT NOT NULL, duration INT NOT NULL);");
 		}
 	}
 
@@ -298,6 +310,50 @@ public class MediaDb {
 		return true;
 	}
 
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	private void storeDuration (final String key, final long size, final long duration) throws SQLException {
+		final PreparedStatement st = this.dbConn.prepareStatement(
+				"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
+		try {
+			st.setString(1, key);
+			st.setLong(2, size);
+			st.setLong(3, duration);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException("No insert occured inserting key '" + key + "'.");
+		}
+		finally {
+			st.close();
+		}
+	}
+
+	private long readDuration (final String key, final long expectedSize) throws SQLException {
+		final PreparedStatement st = this.dbConn.prepareStatement(
+				"SELECT size, duration FROM durations WHERE key=?;");
+		try {
+			st.setString(1, key);
+			st.setMaxRows(2);
+			final ResultSet rs = st.executeQuery();
+			try {
+				if (!rs.next()) return 0;
+
+				final long storedSize = rs.getLong(1);
+				final long duration = rs.getLong(2);
+
+				if (rs.next()) throw new SQLException("Query for key '" + key + "' retured more than one result.");
+
+				if (expectedSize != storedSize) return 0;
+				return duration;
+			}
+			finally {
+				rs.close();
+			}
+		}
+		finally {
+			st.close();
+		}
+	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

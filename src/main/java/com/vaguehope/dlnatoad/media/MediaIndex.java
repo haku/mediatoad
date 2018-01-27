@@ -61,16 +61,18 @@ public class MediaIndex implements FileListener {
 	private final String externalHttpContext;
 	private final HierarchyMode hierarchyMode;
 	private final MediaId mediaId;
+	private final MediaInfo mediaInfo;
 
 	private final Container videoContainer;
 	private final Container imageContainer;
 	private final Container audioContainer;
 
-	public MediaIndex (final ContentTree contentTree, final String externalHttpContext, final HierarchyMode hierarchyMode, final MediaId mediaId) {
+	public MediaIndex (final ContentTree contentTree, final String externalHttpContext, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) {
 		this.contentTree = contentTree;
 		this.externalHttpContext = externalHttpContext;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
+		this.mediaInfo = mediaInfo;
 
 		this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
 		this.imageContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
@@ -254,6 +256,7 @@ public class MediaIndex implements FileListener {
 				//res.setResolution(resolutionXbyY);
 				item = new VideoItem(id, parent, title, "", res);
 				findSubtitlesForItem(item, file);
+				this.mediaInfo.readInfoAsync(file, res);
 				break;
 			case IMAGE:
 				//res.setResolution(resolutionXbyY);
@@ -262,6 +265,7 @@ public class MediaIndex implements FileListener {
 			case AUDIO:
 				//res.setDuration(formatDuration(durationMillis));
 				item = new AudioItem(id, parent, title, "", res);
+				this.mediaInfo.readInfoAsync(file, res);
 				break;
 			default:
 				throw new IllegalArgumentException();

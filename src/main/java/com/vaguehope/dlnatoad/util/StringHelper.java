@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.util;
 
 import java.util.Collection;
+import java.util.regex.Pattern;
 
 public final class StringHelper {
 
@@ -38,6 +39,21 @@ public final class StringHelper {
 		}
 		s.append(after);
 		return s.toString();
+	}
+
+	/**
+	 * Returns 2 element array or null.
+	 */
+	public static String[] splitOnce (final String s, final char sep) {
+		final int x = s.indexOf(sep);
+		if (x < 0) return null;
+		return new String[] { s.substring(0, x), s.substring(x + 1) };
+	}
+
+	private static final Pattern END_QUOTES = Pattern.compile("^['\"]+|['\"]+$");
+
+	public static String removeEndQuotes (final String s) {
+		return END_QUOTES.matcher(s).replaceAll("");
 	}
 
 }
