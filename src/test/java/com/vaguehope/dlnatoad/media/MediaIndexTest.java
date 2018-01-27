@@ -238,6 +238,26 @@ public class MediaIndexTest {
 		assertEquals(1, item.getResources().size());
 	}
 
+	@Test
+	public void itAddsItemThumbnail () throws Exception {
+		final List<File> expectedFiles = mockFiles(3, ".mkv");
+
+		final File videoFile = expectedFiles.get(1);
+		final File artFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".jpg"), videoFile.getParentFile());
+
+		for (final File file : expectedFiles) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+		}
+
+		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
+		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).getContainer().getItems().get(1);
+		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(artFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(
+				"http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_OP=01;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00d00000000000000000000000000000",
+				item.getResources().get(1).getProtocolInfo().toString());
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private List<File> mockFiles (final int n, final String ext) throws IOException {

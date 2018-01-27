@@ -5,17 +5,34 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 import org.fourthline.cling.support.model.DIDLObject;
 import org.fourthline.cling.support.model.PersonWithRole;
+import org.fourthline.cling.support.model.Protocol;
+import org.fourthline.cling.support.model.ProtocolInfo;
 import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.WriteStatus;
 import org.fourthline.cling.support.model.container.Container;
+import org.fourthline.cling.support.model.dlna.DLNAAttribute;
+import org.fourthline.cling.support.model.dlna.DLNAConversionIndicator;
+import org.fourthline.cling.support.model.dlna.DLNAConversionIndicatorAttribute;
+import org.fourthline.cling.support.model.dlna.DLNAFlags;
+import org.fourthline.cling.support.model.dlna.DLNAFlagsAttribute;
+import org.fourthline.cling.support.model.dlna.DLNAOperations;
+import org.fourthline.cling.support.model.dlna.DLNAOperationsAttribute;
+import org.fourthline.cling.support.model.dlna.DLNAProfileAttribute;
+import org.fourthline.cling.support.model.dlna.DLNAProfiles;
+import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
 import org.fourthline.cling.support.model.item.AudioItem;
 import org.fourthline.cling.support.model.item.ImageItem;
 import org.fourthline.cling.support.model.item.Item;
@@ -272,6 +289,7 @@ public class MediaIndex implements FileListener {
 		if (artRes == null) return;
 
 		synchronized (item) {
+			item.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
 			item.addResource(artRes);
 		}
 	}
@@ -289,7 +307,38 @@ public class MediaIndex implements FileListener {
 
 		final String artId = this.mediaId.contentId(mediaContentGroup, artFile);
 		this.contentTree.addNode(new ContentNode(artId, null, artFile));
-		return new Res(artMimeType, Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
+		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
+	}
+
+	private DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
+		final EnumMap<DLNAAttribute.Type, DLNAAttribute> attributes = new EnumMap<>(DLNAAttribute.Type.class);
+
+		final DLNAProfiles dlnaThumbnailProfile = findDlnaThumbnailProfile(artMimeType);
+		if (dlnaThumbnailProfile != null) {
+			attributes.put(DLNAAttribute.Type.DLNA_ORG_PN, new DLNAProfileAttribute(dlnaThumbnailProfile));
+		}
+		attributes.put(DLNAAttribute.Type.DLNA_ORG_OP, new DLNAOperationsAttribute(DLNAOperations.RANGE));
+		attributes.put(DLNAAttribute.Type.DLNA_ORG_CI, new DLNAConversionIndicatorAttribute(DLNAConversionIndicator.TRANSCODED));
+		attributes.put(DLNAAttribute.Type.DLNA_ORG_FLAGS, new DLNAFlagsAttribute(
+				DLNAFlags.INTERACTIVE_TRANSFERT_MODE, DLNAFlags.BACKGROUND_TRANSFERT_MODE, DLNAFlags.DLNA_V15));
+
+		return new DLNAProtocolInfo(Protocol.HTTP_GET, ProtocolInfo.WILDCARD, artMimeType.toString(), attributes);
+	}
+
+	private static final Collection<DLNAProfiles> DLNA_THUMBNAIL_TYPES = Collections.unmodifiableList(Arrays.asList(
+			DLNAProfiles.JPEG_TN, DLNAProfiles.PNG_TN));
+
+	private static final Map<String, DLNAProfiles> MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE;
+	static {
+		final Map<String, DLNAProfiles> m = new HashMap<>();
+		for (final DLNAProfiles p : DLNA_THUMBNAIL_TYPES) {
+			m.put(p.getContentFormat(), p);
+		}
+		MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE = Collections.unmodifiableMap(m);
+	}
+
+	private DLNAProfiles findDlnaThumbnailProfile (final MimeType mimeType) {
+		return MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE.get(mimeType.toString());
 	}
 
 	private boolean attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
