@@ -378,10 +378,19 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void findSubtitlesForItem (final Item item, final File itemFile) throws IOException {
-		for (final String fName : itemFile.getParentFile().list(new BasenameFilter(itemFile))) {
+		final File parentFile = itemFile.getParentFile();
+		if (parentFile == null) throw new NullPointerException("itemFile has null parent: " + itemFile);
+
+		final String[] fNames = parentFile.list(new BasenameFilter(itemFile));
+		if (fNames == null) {
+			LOG.warn("Failed to read directory: {}", parentFile.getAbsolutePath());
+			return;
+		}
+
+		for (final String fName : fNames) {
 			final MediaFormat fFormat = MediaFormat.identify(fName);
 			if (fFormat != null && fFormat.getContentGroup() == ContentGroup.SUBTITLES) {
-				addSubtitles(item, new File(itemFile.getParentFile(), fName), fFormat);
+				addSubtitles(item, new File(parentFile, fName), fFormat);
 			}
 		}
 	}
