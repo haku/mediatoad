@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
@@ -177,6 +178,28 @@ public class MediaDbTest {
 
 		fillFile(f2);
 		assertEquals(id1, this.undertest.idForFile(f2));
+	}
+
+	@Test
+	public void itStoresAndRetrivesDuration () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
+		assertEquals(1234567890123L, this.undertest.readFileDurationMillis(f1));
+	}
+
+	@Test
+	public void itReturnsZeroWhenFileSizeChangesUpdates () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
+		FileUtils.writeStringToFile(f1, "abc", Charset.forName("UTF-8"));
+		assertEquals(0L, this.undertest.readFileDurationMillis(f1));
+	}
+
+	@Test
+	public void itUpdatesStoredDuration () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
+		this.undertest.storeFileDurationMillis(f1, 12345678901234L);
 	}
 
 	private File mockMediaFile (final String name) throws IOException {

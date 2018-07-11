@@ -84,7 +84,7 @@ public class MediaDb {
 	}
 
 	public long readFileDurationMillis (final File file) throws SQLException {
-		return readDuration(file.getAbsolutePath(), file.length());
+		return readDurationCheckingFileSize(file.getAbsolutePath(), file.length());
 	}
 
 	public void storeFileDurationMillis (final File file, final long duration) throws SQLException {
@@ -314,21 +314,34 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private void storeDuration (final String key, final long size, final long duration) throws SQLException {
-		final PreparedStatement st = this.dbConn.prepareStatement(
-				"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
+		final PreparedStatement stUpdate = this.dbConn.prepareStatement(
+				"UPDATE durations SET size=?,duration=? WHERE key=?;");
 		try {
-			st.setString(1, key);
-			st.setLong(2, size);
-			st.setLong(3, duration);
-			final int n = st.executeUpdate();
-			if (n < 1) throw new SQLException("No insert occured inserting key '" + key + "'.");
+			stUpdate.setLong(1, size);
+			stUpdate.setLong(2, duration);
+			stUpdate.setString(3, key);
+			final int nUpdated = stUpdate.executeUpdate();
+			if (nUpdated < 1) {
+				final PreparedStatement stInsert = this.dbConn.prepareStatement(
+						"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
+				try {
+					stInsert.setString(1, key);
+					stInsert.setLong(2, size);
+					stInsert.setLong(3, duration);
+					final int nInserted = stInsert.executeUpdate();
+					if (nInserted < 1) throw new SQLException("No insert occured inserting key '" + key + "'.");
+				}
+				finally {
+					stInsert.close();
+				}
+			}
 		}
 		finally {
-			st.close();
+			stUpdate.close();
 		}
 	}
 
-	private long readDuration (final String key, final long expectedSize) throws SQLException {
+	private long readDurationCheckingFileSize (final String key, final long expectedSize) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
 				"SELECT size, duration FROM durations WHERE key=?;");
 		try {
