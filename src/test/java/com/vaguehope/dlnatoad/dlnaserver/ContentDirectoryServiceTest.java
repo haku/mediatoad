@@ -39,7 +39,7 @@ public class ContentDirectoryServiceTest {
 		this.mockContent = new MockContent(this.contentTree);
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);
-		this.undertest = new ContentDirectoryService(this.contentTree, this.searchEngine);
+		this.undertest = new ContentDirectoryService(this.contentTree, this.searchEngine, true);
 	}
 
 	/**

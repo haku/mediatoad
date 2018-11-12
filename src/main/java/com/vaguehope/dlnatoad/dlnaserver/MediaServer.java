@@ -34,7 +34,7 @@ public class MediaServer {
 
 	private final LocalDevice localDevice;
 
-	public MediaServer (final ContentTree contentTree, final String hostName) throws ValidationException, IOException {
+	public MediaServer (final ContentTree contentTree, final String hostName, final boolean printAccessLog) throws ValidationException, IOException {
 		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
 		LOG.info("uniqueSystemIdentifier: {}", usi);
 		final DeviceType type = new UDADeviceType(DEVICE_TYPE, VERSION);
@@ -47,7 +47,7 @@ public class MediaServer {
 		contDirSrv.setManager(new DefaultServiceManager<ContentDirectoryService>(contDirSrv, ContentDirectoryService.class) {
 			@Override
 			protected ContentDirectoryService createServiceInstance () {
-				return new ContentDirectoryService(contentTree, new SearchEngine());
+				return new ContentDirectoryService(contentTree, new SearchEngine(), printAccessLog);
 			}
 		});
 

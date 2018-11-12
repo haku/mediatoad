@@ -115,8 +115,8 @@ public final class Main {
 		});
 
 		final ContentTree contentTree = new ContentTree();
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName).getDevice());
-		final Server server = startContentServer(contentTree, args.getInterface());
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
+		final Server server = startContentServer(contentTree, args);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 
@@ -169,14 +169,14 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree, final String iface) throws Exception {
+	private static Server startContentServer (final ContentTree contentTree, final Args args) throws Exception {
 		int port = C.HTTP_PORT;
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree);
+			final HandlerList handler = makeContentHandler(contentTree, args);
 
 			final Server server = new Server();
 			server.setHandler(handler);
-			server.addConnector(createHttpConnector(iface, port));
+			server.addConnector(createHttpConnector(args.getInterface(), port));
 			try {
 				server.start();
 				return server;
@@ -192,10 +192,10 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler (final ContentTree contentTree) {
+	private static HandlerList makeContentHandler (final ContentTree contentTree, final Args args) {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
-		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree)), "/");
+		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, args.isPrintAccessLog())), "/");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree)), "/index/*");
 
 		final HandlerList handler = new HandlerList();

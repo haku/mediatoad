@@ -21,9 +21,11 @@ public final class ContentServlet extends DefaultServlet {
 	private static final Logger LOG = LoggerFactory.getLogger(ContentServlet.class);
 
 	private final ContentTree contentTree; // NOSONAR
+	private final boolean printAccessLog;
 
-	public ContentServlet (final ContentTree contentTree) {
+	public ContentServlet (final ContentTree contentTree, final boolean printAccessLog) {
 		this.contentTree = contentTree;
+		this.printAccessLog = printAccessLog;
 	}
 
 	@Override
@@ -32,12 +34,14 @@ public final class ContentServlet extends DefaultServlet {
 			super.doGet(req, resp);
 		}
 		finally {
-			String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
-			if (ranges != null) {
-				LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), req.getRequestURI(), ranges, req.getRemoteAddr());
-			}
-			else {
-				LOG.info("request: {} {} {}", resp.getStatus(), req.getRequestURI(), req.getRemoteAddr());
+			if (this.printAccessLog) {
+				final String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
+				if (ranges != null) {
+					LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), req.getRequestURI(), ranges, req.getRemoteAddr());
+				}
+				else {
+					LOG.info("request: {} {} {}", resp.getStatus(), req.getRequestURI(), req.getRemoteAddr());
+				}
 			}
 		}
 	}

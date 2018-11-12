@@ -17,7 +17,7 @@ public class ContentServletTest {
 	@Before
 	public void before () throws Exception {
 		this.contentTree = new ContentTree();
-		this.undertest = new ContentServlet(this.contentTree);
+		this.undertest = new ContentServlet(this.contentTree, true);
 	}
 
 	@Test

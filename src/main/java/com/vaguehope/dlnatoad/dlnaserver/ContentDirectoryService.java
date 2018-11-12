@@ -30,13 +30,15 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 
 	private final ContentTree contentTree;
 	private final SearchEngine searchEngine;
+	private final boolean printAccessLog;
 
-	public ContentDirectoryService (final ContentTree contentTree, final SearchEngine queryEngine) {
+	public ContentDirectoryService (final ContentTree contentTree, final SearchEngine queryEngine, final boolean printAccessLog) {
 		super(
 				Arrays.asList("dc:title", "upnp:class"), // also "dc:creator", "dc:date", "res@size"
 				Arrays.asList("dc:title")); // also "dc:creator", "dc:date", "res@size"
 		this.contentTree = contentTree;
 		this.searchEngine = queryEngine;
+		this.printAccessLog = printAccessLog;
 	}
 
 	/**
@@ -80,9 +82,11 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			throw new ContentDirectoryException(ContentDirectoryErrorCode.CANNOT_PROCESS, e.toString()); // NOSONAR
 		}
 		finally {
-			LOG.info("browse: {} ({}, {}) in {}ms.",
-					objectID, firstResult, maxResults,
-					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+			if (this.printAccessLog) {
+				LOG.info("browse: {} ({}, {}) in {}ms.",
+						objectID, firstResult, maxResults,
+						TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+			}
 		}
 	}
 
