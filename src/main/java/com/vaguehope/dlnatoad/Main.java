@@ -132,8 +132,14 @@ public final class Main {
 		});
 
 		final File dbFile = args.getDb();
-		if (dbFile != null) LOG.info("db: {}", dbFile.getAbsolutePath());
-		final MediaDb mediaDb = new MediaDb(dbFile);
+		final MediaDb mediaDb;
+		if (dbFile != null) {
+			LOG.info("db: {}", dbFile.getAbsolutePath());
+			mediaDb = new MediaDb(dbFile);
+		}
+		else {
+			mediaDb = null;
+		}
 		final MediaId mediaId = new MediaId(mediaDb);
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
 
