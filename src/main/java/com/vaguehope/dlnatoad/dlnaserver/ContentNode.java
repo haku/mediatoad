@@ -1,7 +1,9 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
 import java.io.File;
+import java.util.List;
 
+import org.fourthline.cling.support.model.DIDLObject;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 
@@ -63,8 +65,32 @@ public class ContentNode {
 			s.append("contaner{");
 		}
 		s.append("id=").append(this.id);
-		if (this.isItem) s.append(" file=").append(this.file);
+		if (this.isItem) {
+			s.append(" file=").append(this.file);
+		}
+
+		s.append(" containers=");
+		appendToString(s, this.container.getContainers());
+		s.append(" items=");
+		appendToString(s, this.container.getItems());
+
 		return s.append("}").toString();
+	}
+
+	private void appendToString(final StringBuilder s, final List<? extends DIDLObject> list) {
+		if (list == null) {
+			s.append("null");
+			return;
+		}
+
+		s.append("[");
+		boolean first = true;
+		for (final DIDLObject o : list) {
+			if (!first) s.append(", ");
+			s.append(o.getTitle());
+			first = false;
+		}
+		s.append("]");
 	}
 
 }
