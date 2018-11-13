@@ -10,6 +10,8 @@ import java.util.List;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 
+import com.vaguehope.dlnatoad.media.MediaFormat;
+
 public class MockContent {
 
 	private final ContentTree contentTree;
@@ -70,7 +72,7 @@ public class MockContent {
 		final Item item = mock(cls);
 		when(item.getTitle()).thenReturn("item " + id);
 		when(item.toString()).thenReturn("item " + id);
-		final ContentNode node = new ContentNode(id, item, mock(File.class));
+		final ContentNode node = new ContentNode(id, item, mock(File.class), MediaFormat.OGG);
 		this.contentTree.addNode(node);
 		parent.getContainer().addItem(node.getItem());
 		parent.getContainer().setChildCount(parent.getContainer().getChildCount() + 1);

@@ -18,6 +18,7 @@ public class Args {
 	@Option(name = "-p", aliases = { "--preserve" }, usage = "preserve directory hierarchy.") private boolean preserveHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
+	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public List<File> getDirs () throws CmdLineException, IOException {
@@ -70,6 +71,14 @@ public class Args {
 
 	public File getDb () {
 		return this.db != null ? new File(this.db) : null;
+	}
+
+	public File getThumbsDir() throws CmdLineException {
+		if (this.thumbsDir == null) return null;
+		final File f = new File(this.thumbsDir);
+		if (!f.exists()) throw new CmdLineException(null, "Not found: " + f.getAbsolutePath());
+		if (!f.isDirectory()) throw new CmdLineException(null, "Not directory: " + f.getAbsolutePath());
+		return f;
 	}
 
 	private static List<File> pathsToFiles (final List<String> paths) {

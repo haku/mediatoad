@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -18,15 +19,22 @@ import org.fourthline.cling.support.model.item.Item;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.media.MediaId;
+import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class IndexServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -8907271726001369264L;
 
 	private final ContentTree contentTree;
+	private final MediaId mediaId;
+	private final ImageResizer imageResizer;
 
-	public IndexServlet (final ContentTree contentTree) {
+	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer) {
 		this.contentTree = contentTree;
+		this.mediaId = mediaId;
+		this.imageResizer = imageResizer;
 	}
 
 	@Override
@@ -80,7 +88,14 @@ public class IndexServlet extends HttpServlet {
 			w.println("</a></li>");
 		}
 
+		final List<ContentNode> imagesToThumb = new ArrayList<ContentNode>();
+
 		for (final ContentNode node : items) {
+			if (this.imageResizer != null && node.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+				imagesToThumb.add(node);
+				continue;
+			}
+
 			w.print("<li><a href=\"/");
 			w.print(node.getId());
 			w.print("\" download=\"");
@@ -90,7 +105,24 @@ public class IndexServlet extends HttpServlet {
 			w.println("</a></li>");
 		}
 
-		w.println("</ul></html></body>");
+		w.println("</ul>");
+
+		for (final ContentNode node : imagesToThumb) {
+			final File thumbFile = this.imageResizer.resizeFile(node.getFile(), 200, 0.8f);
+			final String thumbId = this.mediaId.contentId(ContentGroup.THUMBNAIL, thumbFile);
+			this.contentTree.addNode(new ContentNode(thumbId, null, thumbFile, MediaFormat.JPEG));
+
+			w.print("<span><a href=\"/");
+			w.print(node.getId());
+			w.print("\">");
+			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"/");
+			w.print(thumbId);
+			w.print("\">");
+			w.println("</a></span>");
+
+		}
+
+		w.println("</html></body>");
 	}
 
 	private enum NodeOrder implements Comparator<ContentNode> {

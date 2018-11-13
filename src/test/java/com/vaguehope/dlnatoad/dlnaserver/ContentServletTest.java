@@ -9,6 +9,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.media.MediaFormat;
+
 public class ContentServletTest {
 
 	private ContentTree contentTree;
@@ -24,7 +26,7 @@ public class ContentServletTest {
 	public void itResolvesMediaResource () throws Exception {
 		String id = "some_id";
 		File file = new File(id);
-		this.contentTree.addNode(new ContentNode(id, null, file));
+		this.contentTree.addNode(new ContentNode(id, null, file, MediaFormat.OGG));
 
 		Resource res = this.undertest.getResource("/" + id);
 		assertEquals(file.getName(), res.getFile().getName());

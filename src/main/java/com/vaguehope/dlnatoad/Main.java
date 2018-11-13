@@ -44,6 +44,7 @@ import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
+import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
@@ -106,23 +107,6 @@ public final class Main {
 			LOG.info("addresses: {} using address: {}", addresses, address);
 		}
 
-		final UpnpService upnpService = makeUpnpServer();
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				upnpService.shutdown();
-			}
-		});
-
-		final ContentTree contentTree = new ContentTree();
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
-		final Server server = startContentServer(contentTree, args);
-
-		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
-
-		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
-		LOG.info("hierarchyMode: {}", hierarchyMode);
-
 		final ExecutorService fsExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("fs"));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -142,6 +126,24 @@ public final class Main {
 		}
 		final MediaId mediaId = new MediaId(mediaDb);
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
+
+
+		final UpnpService upnpService = makeUpnpServer();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				upnpService.shutdown();
+			}
+		});
+
+		final ContentTree contentTree = new ContentTree();
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
+		final Server server = startContentServer(contentTree, mediaId, args);
+
+		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
+
+		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
+		LOG.info("hierarchyMode: {}", hierarchyMode);
 
 		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId, mediaInfo);
 
@@ -169,10 +171,10 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree, final Args args) throws Exception {
+	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final Args args) throws Exception {
 		int port = C.HTTP_PORT;
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, args);
+			final HandlerList handler = makeContentHandler(contentTree, mediaId, args);
 
 			final Server server = new Server();
 			server.setHandler(handler);
@@ -192,11 +194,17 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler (final ContentTree contentTree, final Args args) {
+	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final Args args) throws CmdLineException {
+		final File thumbsDir = args.getThumbsDir();
+		final ImageResizer imageResizer =
+				thumbsDir != null
+				? new ImageResizer(thumbsDir)
+				: null;
+
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, args.isPrintAccessLog())), "/");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree)), "/index/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer)), "/index/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

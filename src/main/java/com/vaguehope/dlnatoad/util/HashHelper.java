@@ -21,7 +21,6 @@ public final class HashHelper {
 
 	public static String sha1(final String s) {
 		final MessageDigest md = MD_SHA1_FACTORY.get();
-		md.reset();
 		final byte[] bytes = md.digest(getBytes(s));
 		return new BigInteger(1, bytes).toString(16); // NOSONAR Hex is not a magic number.
 	}
@@ -32,6 +31,12 @@ public final class HashHelper {
 
 	public static BigInteger sha1 (final File file, final ByteBuffer buffer) throws IOException {
 		return hashFile(file, buffer, MD_SHA1_FACTORY);
+	}
+
+	public static String md5 (final String text) {
+		final MessageDigest md = MD_MD5_FACTORY.get();
+		md.update(text.getBytes(), 0, text.length());
+		return new BigInteger(1, md.digest()).toString(16);
 	}
 
 	private static byte[] getBytes (final String s) {
@@ -56,6 +61,32 @@ public final class HashHelper {
 			catch (final NoSuchAlgorithmException e) {
 				throw new IllegalStateException("JVM should always know about SHA1.", e);
 			}
+		}
+
+		@Override
+		public MessageDigest get () {
+			final MessageDigest md = super.get();
+			md.reset();
+			return md;
+		}
+	};
+
+	private static ThreadLocal<MessageDigest> MD_MD5_FACTORY = new ThreadLocal<MessageDigest>() {
+		@Override
+		protected MessageDigest initialValue () {
+			try {
+				return MessageDigest.getInstance("MD5");
+			}
+			catch (final NoSuchAlgorithmException e) {
+				throw new IllegalStateException("JVM should always know about MD5.", e);
+			}
+		}
+
+		@Override
+		public MessageDigest get () {
+			final MessageDigest md = super.get();
+			md.reset();
+			return md;
 		}
 	};
 

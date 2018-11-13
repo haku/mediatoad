@@ -289,7 +289,7 @@ public class MediaIndex implements FileListener {
 			parent.addItem(item);
 			parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
 		}
-		this.contentTree.addNode(new ContentNode(item.getId(), item, file));
+		this.contentTree.addNode(new ContentNode(item.getId(), item, file, format));
 	}
 
 	private static void findMetadata (final File file, final Item item) {
@@ -321,7 +321,7 @@ public class MediaIndex implements FileListener {
 		final MimeType artMimeType = formatToMime(artFormat);
 
 		final String artId = this.mediaId.contentId(mediaContentGroup, artFile);
-		this.contentTree.addNode(new ContentNode(artId, null, artFile));
+		this.contentTree.addNode(new ContentNode(artId, null, artFile, artFormat));
 		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
 	}
 
@@ -409,7 +409,7 @@ public class MediaIndex implements FileListener {
 	private boolean addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
 		final String subtitlesId = this.mediaId.contentId(subtitlesFormat.getContentGroup(), subtitlesFile);
 		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
-		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile));
+		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
 		return addResourceToItemIfNotPresent(item, subtitlesRes);
 	}
 
