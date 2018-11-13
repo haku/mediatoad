@@ -125,15 +125,16 @@ public class MediaIndexTest {
 		final File file1 = mockFile("file 1.mkv", dir1);
 		final File file3 = mockFile("file 3.mkv", dir3);
 
+		this.contentTree = new ContentTree();  // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null), new MediaInfo());
 
 		this.undertest.fileFound(root, file1, null);
 		this.undertest.fileFound(root, file3, null);
 
-		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
-		assertEquals(1, videoDirs.size());
+		final List<Container> rootDirs = this.contentTree.getNode(ContentGroup.ROOT.getId()).getContainer().getContainers();
+		assertEquals(1, rootDirs.size());
 
-		final Container rootCont = videoDirs.get(0);
+		final Container rootCont = rootDirs.get(0);
 		assertContainerContainsDirsAndFiles(rootCont,
 				Collections.singletonList(dir1), Collections.<File> emptyList());
 		assertContainerContainsDirsAndFiles(rootCont.getContainers().get(0),

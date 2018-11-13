@@ -74,9 +74,20 @@ public class MediaIndex implements FileListener {
 		this.mediaId = mediaId;
 		this.mediaInfo = mediaInfo;
 
-		this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
-		this.imageContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
-		this.audioContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.AUDIO);
+		switch (hierarchyMode) {
+			case PRESERVE:
+				this.videoContainer = contentTree.getRootNode().getContainer();
+				this.imageContainer = contentTree.getRootNode().getContainer();
+				this.audioContainer = contentTree.getRootNode().getContainer();
+				break;
+			case FLATTERN:
+				this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
+				this.imageContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
+				this.audioContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.AUDIO);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown mode.");
+		}
 	}
 
 	@Override
@@ -463,7 +474,9 @@ public class MediaIndex implements FileListener {
 		CREATOR {
 			@Override
 			public int compare (final DIDLObject a, final DIDLObject b) {
-				return a.getCreator().compareToIgnoreCase(b.getCreator());
+				final String l = a.getCreator() != null ? a.getCreator() : "";
+				final String r = b.getCreator() != null ? b.getCreator() : "";
+				return l.compareToIgnoreCase(r);
 			}
 		};
 
