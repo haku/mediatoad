@@ -57,7 +57,9 @@ public class MediaId {
 	}
 
 	private static String transientContentId (final ContentGroup type, final File file) {
-		return type.getItemIdPrefix() + (HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file));
+		final String hash = HashHelper.sha1(file.getAbsolutePath()) + "-" + getSafeName(file);
+		if (type == null) return hash;
+		return type.getItemIdPrefix() + hash;
 	}
 
 	private static String getSafeName (final File file) {

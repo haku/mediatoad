@@ -201,9 +201,15 @@ public class MediaIndex implements FileListener {
 	private Container makeDirAndParentDirsContianersOnTree (final MediaFormat format, final Container formatContainer, final File rootDir, final File dir) throws IOException {
 		final List<File> dirsToCreate = new ArrayList<>();
 
+		// When in PRESERVE mode do not prefix dir IDs with the type.
+		final ContentGroup groupForContainerId =
+				this.hierarchyMode == HierarchyMode.PRESERVE
+				? null
+				: format.getContentGroup();
+
 		File ittrDir = dir;
 		while (ittrDir != null) {
-			final ContentNode node = this.contentTree.getNode(this.mediaId.contentId(format.getContentGroup(), ittrDir));
+			final ContentNode node = this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, ittrDir));
 			if (node != null) break;
 			dirsToCreate.add(ittrDir);
 			if (rootDir.equals(ittrDir)) break;
@@ -218,13 +224,14 @@ public class MediaIndex implements FileListener {
 				parentContainer = formatContainer;
 			}
 			else {
-				final ContentNode parentNode = this.contentTree.getNode(this.mediaId.contentId(format.getContentGroup(), dirToCreate.getParentFile()));
+				final ContentNode parentNode = this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, dirToCreate.getParentFile()));
 				parentContainer = parentNode.getContainer();
 			}
-			makeDirContainerOnTree(format.getContentGroup(), parentContainer, this.mediaId.contentId(format.getContentGroup(), dirToCreate), dirToCreate);
+
+			makeDirContainerOnTree(format.getContentGroup(), parentContainer, this.mediaId.contentId(groupForContainerId, dirToCreate), dirToCreate);
 		}
 
-		return this.contentTree.getNode(this.mediaId.contentId(format.getContentGroup(), dir)).getContainer();
+		return this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, dir)).getContainer();
 	}
 
 	/**
