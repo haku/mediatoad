@@ -56,7 +56,7 @@ public class MediaInfo {
 				this.res.setDuration(ModelUtil.toTimeString(durationSeconds));
 			}
 			catch (final Exception e) {
-				LOG.warn("Failed to read duration: \"{}\" {}", this.file.getAbsolutePath(), e);
+				LOG.warn("Failed to read duration: \"{}\" {}", this.file.getAbsolutePath(), e.toString());
 			}
 		}
 
