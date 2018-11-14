@@ -4,17 +4,24 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Random;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.ArgumentCaptor;
 
 public class MediaDbTest {
 
@@ -22,18 +29,26 @@ public class MediaDbTest {
 
 	private Random rnd;
 	private File dbFile;
+	private ScheduledExecutorService schEx;
 	private MediaDb undertest;
+
+	private Runnable durationBatchWriter;
 
 	@Before
 	public void before () throws Exception {
 		this.rnd = new Random();
 		this.dbFile = this.tmp.newFile("id-db.db3");
-		this.undertest = new MediaDb(this.dbFile);
+		this.schEx = mock(ScheduledExecutorService.class);
+		this.undertest = new MediaDb(this.dbFile, this.schEx);
+
+		final ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
+		verify(this.schEx).scheduleWithFixedDelay(cap.capture(), anyLong(), anyLong(), any(TimeUnit.class));
+		this.durationBatchWriter = cap.getValue();
 	}
 
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
-		new MediaDb(this.dbFile);
+		new MediaDb(this.dbFile, this.schEx);
 	}
 
 	@Test
@@ -183,14 +198,16 @@ public class MediaDbTest {
 	@Test
 	public void itStoresAndRetrivesDuration () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
+		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.durationBatchWriter.run();
 		assertEquals(1234567890123L, this.undertest.readFileDurationMillis(f1));
 	}
 
 	@Test
 	public void itReturnsZeroWhenFileSizeChangesUpdates () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
+		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.durationBatchWriter.run();
 		FileUtils.writeStringToFile(f1, "abc", Charset.forName("UTF-8"));
 		assertEquals(0L, this.undertest.readFileDurationMillis(f1));
 	}
@@ -198,8 +215,10 @@ public class MediaDbTest {
 	@Test
 	public void itUpdatesStoredDuration () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillis(f1, 1234567890123L);
-		this.undertest.storeFileDurationMillis(f1, 12345678901234L);
+		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.durationBatchWriter.run();
+		this.undertest.storeFileDurationMillisAsync(f1, 12345678901234L);
+		this.durationBatchWriter.run();
 	}
 
 	private File mockMediaFile (final String name) throws IOException {

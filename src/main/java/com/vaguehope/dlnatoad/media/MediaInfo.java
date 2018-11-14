@@ -60,14 +60,14 @@ public class MediaInfo {
 			}
 		}
 
-		public long readDurationMillis (final File file) throws IOException, SQLException {
+		public long readDurationMillis (final File file) throws IOException, SQLException, InterruptedException {
 			final long storedDurationMillis = this.mediaDb.readFileDurationMillis(file);
 			if (storedDurationMillis > 0) return storedDurationMillis;
 
 			final FfprobeInfo info = Ffprobe.inspect(file);
 			final Long readDuration = info.getDurationMillis();
 			if (readDuration != null && readDuration > 0) {
-				this.mediaDb.storeFileDurationMillis(file, readDuration);
+				this.mediaDb.storeFileDurationMillisAsync(file, readDuration);
 				return readDuration;
 			}
 

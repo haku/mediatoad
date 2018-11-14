@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.db;
 
 import java.io.File;
 
-public class FileAndData {
+class FileAndData {
 
 	private final File file;
 	private final FileData data;

@@ -13,8 +13,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +28,21 @@ import org.sqlite.SQLiteConfig.Encoding;
 
 public class MediaDb {
 
+	private static final int COMMIT_DURATIONS_INTERVAL_SECONDS = 30;
+
 	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
 
 	private final Connection dbConn;
+	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<FileAndDuration>();
 
-	public MediaDb (final File dbFile) throws SQLException {
+	public MediaDb (final File dbFile, final ScheduledExecutorService exSvc) throws SQLException {
+		this(dbFile, exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
+	}
+
+	private MediaDb (final File dbFile, final ScheduledExecutorService exSvc, final int commitDelaySeconds) throws SQLException {
 		this.dbConn = makeDbConnection(dbFile);
 		makeSchema();
+		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
 	}
 
 	public String idForFile (final File file) throws SQLException, IOException {
@@ -87,8 +100,27 @@ public class MediaDb {
 		return readDurationCheckingFileSize(file.getAbsolutePath(), file.length());
 	}
 
-	public void storeFileDurationMillis (final File file, final long duration) throws SQLException {
-		storeDuration(file.getAbsolutePath(), file.length(), duration);
+	public void storeFileDurationMillisAsync (final File file, final long duration) throws SQLException, InterruptedException {
+		this.storeDuraionQueue.put(new FileAndDuration(file, duration));
+	}
+
+	private class DurationBatchWriter implements Runnable {
+
+		@Override
+		public void run() {
+			try {
+				final List<FileAndDuration> todo = new ArrayList<FileAndDuration>();
+				MediaDb.this.storeDuraionQueue.drainTo(todo);
+				if (todo.size() > 0) {
+					storeDurations(todo);
+					LOG.info("Batch duration write for {} files.", todo.size());
+				}
+			}
+			catch (final Exception e) {
+				LOG.error("Scheduled batch duration writer error.", e);
+			}
+		}
+
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -313,31 +345,49 @@ public class MediaDb {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	private void storeDuration (final String key, final long size, final long duration) throws SQLException {
+	private void storeDurations(final List<FileAndDuration> toStore) throws SQLException {
+		final List<FileAndDuration> toInsert = new ArrayList<FileAndDuration>();
+
 		final PreparedStatement stUpdate = this.dbConn.prepareStatement(
 				"UPDATE durations SET size=?,duration=? WHERE key=?;");
 		try {
-			stUpdate.setLong(1, size);
-			stUpdate.setLong(2, duration);
-			stUpdate.setString(3, key);
-			final int nUpdated = stUpdate.executeUpdate();
-			if (nUpdated < 1) {
-				final PreparedStatement stInsert = this.dbConn.prepareStatement(
-						"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
-				try {
-					stInsert.setString(1, key);
-					stInsert.setLong(2, size);
-					stInsert.setLong(3, duration);
-					final int nInserted = stInsert.executeUpdate();
-					if (nInserted < 1) throw new SQLException("No insert occured inserting key '" + key + "'.");
-				}
-				finally {
-					stInsert.close();
+			for (final FileAndDuration fad : toStore) {
+				stUpdate.setLong(1, fad.getFile().length());
+				stUpdate.setLong(2, fad.getDuration());
+				stUpdate.setString(3, fad.getFile().getAbsolutePath());
+				stUpdate.addBatch();
+			}
+			final int[] nUpdated = stUpdate.executeBatch();
+
+			for (int i = 0; i < nUpdated.length; i++) {
+				if (nUpdated[i] < 1) {
+					toInsert.add(toStore.get(i));
 				}
 			}
 		}
 		finally {
 			stUpdate.close();
+		}
+
+		final PreparedStatement stInsert = this.dbConn.prepareStatement(
+				"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
+		try {
+			for (final FileAndDuration fad : toInsert) {
+				stInsert.setString(1, fad.getFile().getAbsolutePath());
+				stInsert.setLong(2, fad.getFile().length());
+				stInsert.setLong(3, fad.getDuration());
+				stInsert.addBatch();
+			}
+			final int[] nInserted = stInsert.executeBatch();
+
+			for (int i = 0; i < nInserted.length; i++) {
+				if (nInserted[i] < 1) {
+					LOG.error("No insert occured inserting key '{}'.", toInsert.get(i).getFile().getAbsolutePath());
+				}
+			}
+		}
+		finally {
+			stInsert.close();
 		}
 	}
 

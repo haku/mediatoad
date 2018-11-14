@@ -8,11 +8,8 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -107,7 +104,7 @@ public final class Main {
 			LOG.info("addresses: {} using address: {}", addresses, address);
 		}
 
-		final ExecutorService fsExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("fs"));
+		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run () {
@@ -119,7 +116,7 @@ public final class Main {
 		final MediaDb mediaDb;
 		if (dbFile != null) {
 			LOG.info("db: {}", dbFile.getAbsolutePath());
-			mediaDb = new MediaDb(dbFile);
+			mediaDb = new MediaDb(dbFile, fsExSvc);
 		}
 		else {
 			mediaDb = null;
@@ -127,17 +124,7 @@ public final class Main {
 		final MediaId mediaId = new MediaId(mediaDb);
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
 
-
-		final UpnpService upnpService = makeUpnpServer();
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				upnpService.shutdown();
-			}
-		});
-
 		final ContentTree contentTree = new ContentTree();
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
 		final Server server = startContentServer(contentTree, mediaId, args);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
@@ -152,6 +139,14 @@ public final class Main {
 		watcherThread.setDaemon(true);
 		watcherThread.start();
 
+		final UpnpService upnpService = makeUpnpServer();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				upnpService.shutdown();
+			}
+		});
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
 		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
 		server.join(); // Keep app alive.
 	}
