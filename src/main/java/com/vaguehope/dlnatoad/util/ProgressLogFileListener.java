@@ -44,11 +44,6 @@ public class ProgressLogFileListener implements FileListener {
 
 	private void afterFileProcessed (final File file) {
 		final long nowNanos = System.nanoTime();
-
-		if (this.verboseLog) {
-			LOG.info("File indexed: {}", file.getAbsolutePath());
-		}
-
 		if (nowNanos - this.lastUpdateNanos > LOG_EVERY_NANOS) {
 				LOG.info("Indexed {} files ({}) in {} minutes.",
 						this.fileCounter, FileHelper.readableFileSize(this.byteCounter),
@@ -65,6 +60,9 @@ public class ProgressLogFileListener implements FileListener {
 		}
 		finally {
 			afterFileProcessed(file);
+			if (this.verboseLog) {
+				LOG.info("File indexed: {}", file.getAbsolutePath());
+			}
 		}
 	}
 
@@ -76,6 +74,9 @@ public class ProgressLogFileListener implements FileListener {
 		}
 		finally {
 			afterFileProcessed(file);
+			if (this.verboseLog) {
+				LOG.info("File re-indexed: {}", file.getAbsolutePath());
+			}
 		}
 	}
 
