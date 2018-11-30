@@ -8,7 +8,7 @@
 	<!-- http://logback.qos.ch/manual/layouts.html -->
 	<appender name="default" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
-			<pattern>%d{HH:mm:ss.SSS} [%10.10thread] %25.25logger{25} %.-1level %msg%n</pattern>
+			<pattern>%d{MMdd HH:mm:ss.SSS} [%10.10thread] %25.25logger{25} %.-1level %msg%n</pattern>
 		</encoder>
 	</appender>
 
