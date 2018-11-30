@@ -91,22 +91,30 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public void fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
-		if (addFile(rootDir, file) && eventType == EventType.NOTIFY) LOG.info("shared: {}", file.getAbsolutePath());
+	public boolean fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
+		final boolean added = addFile(rootDir, file);
+		if (added && eventType == EventType.NOTIFY) {
+			LOG.info("shared: {}", file.getAbsolutePath());
+		}
+		return added;
 	}
 
 	@Override
-	public void fileModified (final File rootDir, final File file) throws IOException {
-		if (!file.isFile()) return;
+	public boolean fileModified (final File rootDir, final File file) throws IOException {
+		if (!file.isFile()) return false;
 
 		final MediaFormat format = MediaFormat.identify(file);
-		if (format == null) return;
+		if (format == null) return false;
 
 		final String newId = this.mediaId.contentId(format.getContentGroup(), file);
 		if (this.contentTree.getNode(newId) == null) {
 			this.contentTree.removeFile(file);
-			if (addFile(rootDir, file)) LOG.info("modified: {}", file.getAbsolutePath());
+			final boolean added = addFile(rootDir, file);
+			if (added) LOG.info("modified: {}", file.getAbsolutePath());
+			return added;
 		}
+
+		return false;
 	}
 
 	@Override
@@ -134,8 +142,7 @@ public class MediaIndex implements FileListener {
 			case AUDIO:
 			case IMAGE:
 			case VIDEO:
-				putFileToContentTree(rootDir, file, format);
-				return true;
+				return putFileToContentTree(rootDir, file, format);
 			case SUBTITLES:
 				return attachSubtitlesToItem(file, format);
 			default:
@@ -143,7 +150,10 @@ public class MediaIndex implements FileListener {
 		}
 	}
 
-	private void putFileToContentTree (final File rootDir, final File file, final MediaFormat format) throws IOException {
+	/**
+	 * Return false if already present.
+	 */
+	private boolean putFileToContentTree (final File rootDir, final File file, final MediaFormat format) throws IOException {
 		final File dir = file.getParentFile();
 		final Container formatContainer;
 		switch (format.getContentGroup()) { // FIXME make hashmap.
@@ -170,10 +180,13 @@ public class MediaIndex implements FileListener {
 				dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, this.mediaId.contentId(format.getContentGroup(), dir), dir);
 		}
 
-		makeItemInContainer(format, dirContainer, file, file.getName());
+		final boolean added = makeItemInContainer(format, dirContainer, file, file.getName());
+		if (!added) return false;
+
 		synchronized (dirContainer) {
 			Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
 		}
+		return true;
 	}
 
 	private Container makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
@@ -260,9 +273,12 @@ public class MediaIndex implements FileListener {
 		return container;
 	}
 
-	private void makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title) throws IOException {
+	/**
+	 * Return false if already present.
+	 */
+	private boolean makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title) throws IOException {
 		final String id = this.mediaId.contentId(format.getContentGroup(), file);
-		if (hasItemWithId(parent, id)) return;
+		if (hasItemWithId(parent, id)) return false;
 
 		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
@@ -297,6 +313,7 @@ public class MediaIndex implements FileListener {
 			parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
 		}
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file, format));
+		return true;
 	}
 
 	private static void findMetadata (final File file, final Item item) {

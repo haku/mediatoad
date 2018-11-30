@@ -53,31 +53,27 @@ public class ProgressLogFileListener implements FileListener {
 	}
 
 	@Override
-	public void fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
+	public boolean fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
+		if (this.verboseLog) {
+			LOG.info("Found: {}", file.getAbsolutePath());
+		}
+
 		beforeFileProcessed(file);
-		try {
-			this.deligate.fileFound(rootDir, file, eventType);
-		}
-		finally {
-			afterFileProcessed(file);
-			if (this.verboseLog) {
-				LOG.info("File indexed: {}", file.getAbsolutePath());
-			}
-		}
+		final boolean added = this.deligate.fileFound(rootDir, file, eventType);
+		if (added) afterFileProcessed(file);
+		return added;
 	}
 
 	@Override
-	public void fileModified (final File rootDir, final File file) throws IOException {
+	public boolean fileModified (final File rootDir, final File file) throws IOException {
+		if (this.verboseLog) {
+			LOG.info("Modified: {}", file.getAbsolutePath());
+		}
+
 		beforeFileProcessed(file);
-		try {
-			this.deligate.fileModified(rootDir, file);
-		}
-		finally {
-			afterFileProcessed(file);
-			if (this.verboseLog) {
-				LOG.info("File re-indexed: {}", file.getAbsolutePath());
-			}
-		}
+		final boolean added = this.deligate.fileModified(rootDir, file);
+		if (added) afterFileProcessed(file);
+		return added;
 	}
 
 	@Override

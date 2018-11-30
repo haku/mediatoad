@@ -32,8 +32,8 @@ public class Watcher {
 	}
 
 	public interface FileListener {
-		void fileFound (File rootDir, File file, EventType eventType) throws IOException;
-		void fileModified (final File rootDir, File file) throws IOException;
+		boolean fileFound (File rootDir, File file, EventType eventType) throws IOException;
+		boolean fileModified (final File rootDir, File file) throws IOException;
 		void fileGone (File file) throws IOException;
 	}
 
