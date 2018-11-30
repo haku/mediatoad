@@ -134,7 +134,7 @@ public final class Main {
 
 		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId, mediaInfo);
 
-		final Thread watcherThread = new Thread(new RunWatcher(args.getDirs(), index));
+		final Thread watcherThread = new Thread(new RunWatcher(args, index));
 		watcherThread.setName("watcher");
 		watcherThread.setDaemon(true);
 		watcherThread.start();
@@ -226,10 +226,12 @@ public final class Main {
 	private static class RunWatcher implements Runnable {
 
 		private final List<File> roots;
+		private final boolean verboseLog;
 		private final MediaIndex index;
 
-		public RunWatcher (final List<File> roots, final MediaIndex index) {
-			this.roots = roots;
+		public RunWatcher (final Args args, final MediaIndex index) throws CmdLineException, IOException {
+			this.roots = args.getDirs();  // Trigger validation in main thread.
+			this.verboseLog = args.isVerboseLog();
 			this.index = index;
 		}
 
@@ -237,7 +239,7 @@ public final class Main {
 		public void run () {
 			try {
 				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE,
-						new ProgressLogFileListener(this.index)).run();
+						new ProgressLogFileListener(this.index, this.verboseLog)).run();
 				LOG.error("Watcher thread exited.");
 			}
 			catch (final Exception e) { // NOSONAR

@@ -17,6 +17,7 @@ public class Args {
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
 	@Option(name = "-p", aliases = { "--preserve" }, usage = "preserve directory hierarchy.") private boolean preserveHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "print access log line at end of each request.") private boolean printAccessLog;
+	@Option(name = "-v", aliases = { "--verbose" }, usage = "print log lines for various events.") private boolean verboseLog;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
@@ -67,6 +68,10 @@ public class Args {
 
 	public boolean isPrintAccessLog() {
 		return this.printAccessLog;
+	}
+
+	public boolean isVerboseLog() {
+		return this.verboseLog;
 	}
 
 	public File getDb () {

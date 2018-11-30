@@ -18,9 +18,11 @@ public class ProgressLogFileListener implements FileListener {
 	private static final Logger LOG = LoggerFactory.getLogger(ProgressLogFileListener.class);
 
 	private final FileListener deligate;
+	private final boolean verboseLog;
 
-	public ProgressLogFileListener (final FileListener deligate) {
+	public ProgressLogFileListener (final FileListener deligate, final boolean verboseLog) {
 		this.deligate = deligate;
+		this.verboseLog = verboseLog;
 	}
 
 	private volatile long startNanos = 0L;
@@ -42,6 +44,11 @@ public class ProgressLogFileListener implements FileListener {
 
 	private void afterFileProcessed (final File file) {
 		final long nowNanos = System.nanoTime();
+
+		if (this.verboseLog) {
+			LOG.info("File indexed: {}", file.getAbsolutePath());
+		}
+
 		if (nowNanos - this.lastUpdateNanos > LOG_EVERY_NANOS) {
 				LOG.info("Indexed {} files ({}) in {} minutes.",
 						this.fileCounter, FileHelper.readableFileSize(this.byteCounter),
