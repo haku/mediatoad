@@ -400,7 +400,11 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final Container dirContainer = this.contentTree.getNode(this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile())).getContainer();
+		final String parentId = this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile());
+		final ContentNode parent = this.contentTree.getNode(parentId);
+		if (parent == null) return;
+
+		final Container dirContainer = parent.getContainer();
 		if (dirContainer == null) return;
 
 		synchronized (dirContainer) {
