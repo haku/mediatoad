@@ -45,6 +45,7 @@ import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
+import com.vaguehope.dlnatoad.util.Watcher.EventResult;
 import com.vaguehope.dlnatoad.util.Watcher.EventType;
 import com.vaguehope.dlnatoad.util.Watcher.FileListener;
 
@@ -91,30 +92,48 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public boolean fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
-		final boolean added = addFile(rootDir, file);
-		if (added && eventType == EventType.NOTIFY) {
-			LOG.info("shared: {}", file.getAbsolutePath());
-		}
-		return added;
+	public EventResult fileFound (final File rootDir, final File file, final EventType eventType, final Runnable onUsed) throws IOException {
+		addFile(rootDir, file, new Runnable() {
+			@Override
+			public void run() {
+				if (eventType == EventType.NOTIFY) {
+					LOG.info("shared: {}", file.getAbsolutePath());
+				}
+				if (onUsed != null) onUsed.run();
+			}
+		});
+		return EventResult.NOT_SURE_YET;
 	}
 
 	@Override
-	public boolean fileModified (final File rootDir, final File file) throws IOException {
-		if (!file.isFile()) return false;
+	public EventResult fileModified (final File rootDir, final File file, final Runnable onUsed) throws IOException {
+		if (!file.isFile()) return EventResult.NOT_ADDED;
 
 		final MediaFormat format = MediaFormat.identify(file);
-		if (format == null) return false;
+		if (format == null) return EventResult.NOT_ADDED;
 
-		final String newId = this.mediaId.contentId(format.getContentGroup(), file);
-		if (this.contentTree.getNode(newId) == null) {
-			this.contentTree.removeFile(file);
-			final boolean added = addFile(rootDir, file);
-			if (added) LOG.info("modified: {}", file.getAbsolutePath());
-			return added;
-		}
+		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
+			@Override
+			public void onMediaId(final String mediaId) throws IOException {
+				if (MediaIndex.this.contentTree.getNode(mediaId) == null) {
+					MediaIndex.this.contentTree.removeFile(file);
+					addFile(rootDir, file, new Runnable() {
+						@Override
+						public void run() {
+							LOG.info("modified: {}", file.getAbsolutePath());
+							if (onUsed != null) onUsed.run();
+						}
+					});
+				}
+			}
 
-		return false;
+			@Override
+			public void onError(final Exception e) {
+				LOG.warn("Error processing file change.", e);
+			}
+		});
+
+		return EventResult.NOT_SURE_YET;
 	}
 
 	@Override
@@ -132,28 +151,28 @@ public class MediaIndex implements FileListener {
 		if (this.contentTree.removeFile(file) > 0) LOG.info("unshared: {}", file.getAbsolutePath());
 	}
 
-	private boolean addFile (final File rootDir, final File file) throws IOException {
+	private void addFile (final File rootDir, final File file, final Runnable onComplete) throws IOException {
 		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
-		if (!file.isFile()) return false;
+		if (!file.isFile()) return;
 
 		final MediaFormat format = MediaFormat.identify(file);
-		if (format == null) return false;
+		if (format == null) return;
+
 		switch (format.getContentGroup()) {
 			case AUDIO:
 			case IMAGE:
 			case VIDEO:
-				return putFileToContentTree(rootDir, file, format);
+				putFileToContentTree(rootDir, file, format, onComplete);
+				break;
 			case SUBTITLES:
-				return attachSubtitlesToItem(file, format);
+				final boolean added = attachSubtitlesToItem(file, format);
+				if (added) onComplete.run();
+				break;
 			default:
-				return false;
 		}
 	}
 
-	/**
-	 * Return false if already present.
-	 */
-	private boolean putFileToContentTree (final File rootDir, final File file, final MediaFormat format) throws IOException {
+	private void putFileToContentTree (final File rootDir, final File file, final MediaFormat format, final Runnable onComplete) throws IOException {
 		final File dir = file.getParentFile();
 		final Container formatContainer;
 		switch (format.getContentGroup()) { // FIXME make hashmap.
@@ -177,16 +196,19 @@ public class MediaIndex implements FileListener {
 				break;
 			case FLATTERN:
 			default:
-				dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, this.mediaId.contentId(format.getContentGroup(), dir), dir);
+			final String dirId = this.mediaId.contentIdSync(format.getContentGroup(), dir);
+			dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, dirId, dir);
 		}
 
-		final boolean added = makeItemInContainer(format, dirContainer, file, file.getName());
-		if (!added) return false;
-
-		synchronized (dirContainer) {
-			Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
-		}
-		return true;
+		makeItemInContainer(format, dirContainer, file, file.getName(), new Runnable() {
+			@Override
+			public void run() {
+				synchronized (dirContainer) {
+					Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
+				}
+				onComplete.run();
+			}
+		});
 	}
 
 	private Container makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
@@ -222,7 +244,8 @@ public class MediaIndex implements FileListener {
 
 		File ittrDir = dir;
 		while (ittrDir != null) {
-			final ContentNode node = this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, ittrDir));
+			final String ittrDirId = this.mediaId.contentIdSync(groupForContainerId, ittrDir);
+			final ContentNode node = this.contentTree.getNode(ittrDirId);
 			if (node != null) break;
 			dirsToCreate.add(ittrDir);
 			if (rootDir.equals(ittrDir)) break;
@@ -237,14 +260,17 @@ public class MediaIndex implements FileListener {
 				parentContainer = formatContainer;
 			}
 			else {
-				final ContentNode parentNode = this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, dirToCreate.getParentFile()));
+				final String parentContainerId = this.mediaId.contentIdSync(groupForContainerId, dirToCreate.getParentFile());
+				final ContentNode parentNode = this.contentTree.getNode(parentContainerId);
 				parentContainer = parentNode.getContainer();
 			}
 
-			makeDirContainerOnTree(format.getContentGroup(), parentContainer, this.mediaId.contentId(groupForContainerId, dirToCreate), dirToCreate);
+			final String dirToCreateId = this.mediaId.contentIdSync(groupForContainerId, dirToCreate);
+			makeDirContainerOnTree(format.getContentGroup(), parentContainer, dirToCreateId, dirToCreate);
 		}
 
-		return this.contentTree.getNode(this.mediaId.contentId(groupForContainerId, dir)).getContainer();
+		final String dirId = this.mediaId.contentIdSync(groupForContainerId, dir);
+		return this.contentTree.getNode(dirId).getContainer();
 	}
 
 	/**
@@ -273,11 +299,23 @@ public class MediaIndex implements FileListener {
 		return container;
 	}
 
-	/**
-	 * Return false if already present.
-	 */
-	private boolean makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title) throws IOException {
-		final String id = this.mediaId.contentId(format.getContentGroup(), file);
+	private void makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title, final Runnable onComplete) throws IOException {
+		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
+
+			@Override
+			public void onMediaId(final String mediaId) throws IOException {
+				final boolean added = makeItemInContainer(format, parent, file, title, mediaId);
+				if (added) onComplete.run();
+			}
+
+			@Override
+			public void onError(final Exception e) {
+				LOG.warn("Error adding item to media index.", e);
+			}
+		});
+	}
+
+	private boolean makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title, final String id) throws IOException {
 		if (hasItemWithId(parent, id)) return false;
 
 		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
@@ -344,7 +382,7 @@ public class MediaIndex implements FileListener {
 		}
 		final MimeType artMimeType = formatToMime(artFormat);
 
-		final String artId = this.mediaId.contentId(mediaContentGroup, artFile);
+		final String artId = this.mediaId.contentIdSync(mediaContentGroup, artFile);  // TODO convert to Async.
 		this.contentTree.addNode(new ContentNode(artId, null, artFile, artFormat));
 		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
 	}
@@ -381,7 +419,8 @@ public class MediaIndex implements FileListener {
 	}
 
 	private boolean attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final ContentNode dirNode = this.contentTree.getNode(this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile()));
+		final String dirNodeId = this.mediaId.contentIdSync(ContentGroup.VIDEO, subtitlesFile.getParentFile());
+		final ContentNode dirNode = this.contentTree.getNode(dirNodeId);
 		if (dirNode == null) return false;
 
 		boolean attached = false;
@@ -400,7 +439,7 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String parentId = this.mediaId.contentId(ContentGroup.VIDEO, subtitlesFile.getParentFile());
+		final String parentId = this.mediaId.contentIdSync(ContentGroup.VIDEO, subtitlesFile.getParentFile());
 		final ContentNode parent = this.contentTree.getNode(parentId);
 		if (parent == null) return;
 
@@ -435,14 +474,14 @@ public class MediaIndex implements FileListener {
 	}
 
 	private boolean addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String subtitlesId = this.mediaId.contentId(subtitlesFormat.getContentGroup(), subtitlesFile);
+		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
 		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
 		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
 		return addResourceToItemIfNotPresent(item, subtitlesRes);
 	}
 
 	private boolean removeSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String subtitlesId = this.mediaId.contentId(subtitlesFormat.getContentGroup(), subtitlesFile);
+		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
 		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
 		return removeResourceFromItem(item, subtitlesRes);
 	}

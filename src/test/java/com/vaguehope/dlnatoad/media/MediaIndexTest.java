@@ -6,6 +6,9 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +17,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.commons.io.FileUtils;
 import org.fourthline.cling.support.model.container.Container;
@@ -22,6 +27,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
@@ -37,14 +44,25 @@ public class MediaIndexTest {
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
 
 	private ContentTree contentTree;
+	private ScheduledExecutorService schEx;
 	private MediaIndex undertest;
 
 	@Before
 	public void before () throws Exception {
 		this.contentTree = new ContentTree();
+		this.schEx = mock(ScheduledExecutorService.class);
+		when(this.schEx.submit(any(Runnable.class))).thenAnswer(new Answer<Future<?>>() {
+			@Override
+			public Future<?> answer(final InvocationOnMock invocation) throws Throwable {
+				final Runnable task = (Runnable) invocation.getArguments()[0];
+				task.run();
+				return null;
+			}
+		});
+
 		final List<File> roots = new ArrayList<File>();
 		roots.add(this.tmp.getRoot());
-		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN, new MediaId(null), new MediaInfo());
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN, new MediaId(null, this.schEx), new MediaInfo());
 	}
 
 	@Test
@@ -52,7 +70,7 @@ public class MediaIndexTest {
 		final List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
@@ -67,7 +85,7 @@ public class MediaIndexTest {
 		final List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -82,10 +100,10 @@ public class MediaIndexTest {
 		final List<File> expectedImages = mockFiles(5, ".jpg");
 
 		for (final File file : expectedVideos) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 		for (final File file : expectedImages) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -106,8 +124,8 @@ public class MediaIndexTest {
 		final File file1 = mockFile("file 1.mkv", dir1);
 		final File file2 = mockFile("file 2.mkv", dir2);
 
-		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
-		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null, null);
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		assertEquals(2, videoDirs.size());
@@ -126,10 +144,10 @@ public class MediaIndexTest {
 		final File file3 = mockFile("file 3.mkv", dir3);
 
 		this.contentTree = new ContentTree();  // Reset it.
-		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null), new MediaInfo());
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null, this.schEx), new MediaInfo());
 
-		this.undertest.fileFound(root, file1, null);
-		this.undertest.fileFound(root, file3, null);
+		this.undertest.fileFound(root, file1, null, null);
+		this.undertest.fileFound(root, file3, null, null);
 
 		final List<Container> rootDirs = this.contentTree.getNode(ContentGroup.ROOT.getId()).getContainer().getContainers();
 		assertEquals(1, rootDirs.size());
@@ -151,10 +169,10 @@ public class MediaIndexTest {
 		final List<File> expectedFiles = mockFiles(3, ".mkv", rootDir);
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -169,8 +187,8 @@ public class MediaIndexTest {
 		final File file1 = mockFile(fileName);
 		final File file2 = mockFile(fileName, new File(this.tmp.getRoot(), "dir"));
 
-		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
-		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null, null);
 
 		final List<File> actualFiles = new ArrayList<File>();
 		for (final ContentNode node : this.contentTree.getNodes()) {
@@ -186,8 +204,8 @@ public class MediaIndexTest {
 		final File dir = new File(this.tmp.getRoot(), "dir");
 		final File file2 = mockFile("file_b.mkv", dir);
 
-		this.undertest.fileFound(this.tmp.getRoot(), file1, null);
-		this.undertest.fileFound(this.tmp.getRoot(), file2, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file1, null, null);
+		this.undertest.fileFound(this.tmp.getRoot(), file2, null, null);
 		FileUtils.deleteDirectory(dir);
 		this.undertest.fileGone(file2);
 
@@ -208,7 +226,7 @@ public class MediaIndexTest {
 		final File srtFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".srt"), videoFile.getParentFile());
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
@@ -222,12 +240,12 @@ public class MediaIndexTest {
 		final List<File> expectedFiles = mockFiles(3, ".mkv");
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final File videoFile = expectedFiles.get(1);
 		final File srtFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".srt"), videoFile.getParentFile());
-		this.undertest.fileFound(this.tmp.getRoot(), srtFile, null);
+		this.undertest.fileFound(this.tmp.getRoot(), srtFile, null, null);
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();
 		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).getContainer().getItems().get(1);
@@ -247,7 +265,7 @@ public class MediaIndexTest {
 		final File artFile = mockFile(videoFile.getName().replaceFirst("\\.mkv$", ".jpg"), videoFile.getParentFile());
 
 		for (final File file : expectedFiles) {
-			this.undertest.fileFound(this.tmp.getRoot(), file, null);
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
 		final List<Container> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getContainer().getContainers();

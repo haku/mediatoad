@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.util.Watcher.EventResult;
 import com.vaguehope.dlnatoad.util.Watcher.EventType;
 import com.vaguehope.dlnatoad.util.Watcher.FileListener;
 
@@ -25,55 +26,72 @@ public class ProgressLogFileListener implements FileListener {
 		this.verboseLog = verboseLog;
 	}
 
+	private final Object[] LOCK = new Object[]{};
 	private volatile long startNanos = 0L;
 	private volatile int fileCounter = 0;
 	private volatile long byteCounter = 0L;
 	private volatile long lastUpdateNanos = 0L;
 
 	private void beforeFileProcessed (final File file) {
-		final long nowNanos = System.nanoTime();
-		if (this.lastUpdateNanos == 0L || nowNanos - this.lastUpdateNanos > DISCARD_AFTER_NANOS) {
-			this.lastUpdateNanos = nowNanos;
-			this.startNanos = nowNanos;
-			this.fileCounter = 0;
-			this.byteCounter = 0;
+		synchronized (this.LOCK) {
+			final long nowNanos = System.nanoTime();
+			if (this.lastUpdateNanos == 0L || nowNanos - this.lastUpdateNanos > DISCARD_AFTER_NANOS) {
+				this.lastUpdateNanos = nowNanos;
+				this.startNanos = nowNanos;
+				this.fileCounter = 0;
+				this.byteCounter = 0;
+			}
+			this.fileCounter += 1;
+			this.byteCounter += file.length();
 		}
-		this.fileCounter += 1;
-		this.byteCounter += file.length();
 	}
 
 	private void afterFileProcessed (final File file) {
-		final long nowNanos = System.nanoTime();
-		if (nowNanos - this.lastUpdateNanos > LOG_EVERY_NANOS) {
-				LOG.info("Indexed {} files ({}) in {} minutes.",
-						this.fileCounter, FileHelper.readableFileSize(this.byteCounter),
-						TimeUnit.NANOSECONDS.toMinutes(nowNanos - this.startNanos));
-			this.lastUpdateNanos = nowNanos;
+		synchronized (this.LOCK) {
+			final long nowNanos = System.nanoTime();
+			if (nowNanos - this.lastUpdateNanos > LOG_EVERY_NANOS) {
+					LOG.info("Indexed {} files ({}) in {} minutes.",
+							this.fileCounter, FileHelper.readableFileSize(this.byteCounter),
+							TimeUnit.NANOSECONDS.toMinutes(nowNanos - this.startNanos));
+				this.lastUpdateNanos = nowNanos;
+			}
 		}
 	}
 
 	@Override
-	public boolean fileFound (final File rootDir, final File file, final EventType eventType) throws IOException {
+	public EventResult fileFound (final File rootDir, final File file, final EventType eventType, final Runnable onUsed) throws IOException {
 		if (this.verboseLog) {
 			LOG.info("Found: {}", file.getAbsolutePath());
 		}
 
 		beforeFileProcessed(file);
-		final boolean added = this.deligate.fileFound(rootDir, file, eventType);
-		if (added) afterFileProcessed(file);
-		return added;
+		final EventResult result = this.deligate.fileFound(rootDir, file, eventType, new Runnable() {
+			@Override
+			public void run() {
+				afterFileProcessed(file);
+				if (onUsed != null) onUsed.run();
+			}
+		});
+		if (result == EventResult.ADDED) afterFileProcessed(file);
+		return result;
 	}
 
 	@Override
-	public boolean fileModified (final File rootDir, final File file) throws IOException {
+	public EventResult fileModified (final File rootDir, final File file, final Runnable onUsed) throws IOException {
 		if (this.verboseLog) {
 			LOG.info("Modified: {}", file.getAbsolutePath());
 		}
 
 		beforeFileProcessed(file);
-		final boolean added = this.deligate.fileModified(rootDir, file);
-		if (added) afterFileProcessed(file);
-		return added;
+		final EventResult result = this.deligate.fileModified(rootDir, file, new Runnable() {
+			@Override
+			public void run() {
+				afterFileProcessed(file);
+				if (onUsed != null) onUsed.run();
+			}
+		});
+		if (result == EventResult.ADDED) afterFileProcessed(file);
+		return result;
 	}
 
 	@Override

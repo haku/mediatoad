@@ -109,7 +109,7 @@ public class IndexServlet extends HttpServlet {
 
 		for (final ContentNode node : imagesToThumb) {
 			final File thumbFile = this.imageResizer.resizeFile(node.getFile(), 200, 0.8f);
-			final String thumbId = this.mediaId.contentId(ContentGroup.THUMBNAIL, thumbFile);
+			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile);
 			this.contentTree.addNode(new ContentNode(thumbId, null, thumbFile, MediaFormat.JPEG));
 
 			w.print("<span><a href=\"/");

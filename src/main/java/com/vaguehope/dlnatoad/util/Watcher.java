@@ -31,9 +31,15 @@ public class Watcher {
 		NOTIFY,
 	}
 
+	public enum EventResult {
+		ADDED,
+		NOT_ADDED,
+		NOT_SURE_YET,  // If it is later used onUsed will be run.
+	}
+
 	public interface FileListener {
-		boolean fileFound (File rootDir, File file, EventType eventType) throws IOException;
-		boolean fileModified (final File rootDir, File file) throws IOException;
+		EventResult fileFound (File rootDir, File file, EventType eventType, Runnable onUsed) throws IOException;
+		EventResult fileModified (final File rootDir, File file, Runnable onUsed) throws IOException;
 		void fileGone (File file) throws IOException;
 	}
 
@@ -187,10 +193,10 @@ public class Watcher {
 	protected void callListener (final Kind<Path> kind, final File file, final File rootDir, final EventType eventType) {
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-				this.listener.fileFound(rootDir, file, eventType);
+				this.listener.fileFound(rootDir, file, eventType, null);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
-				this.listener.fileModified(rootDir, file);
+				this.listener.fileModified(rootDir, file, null);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
 				this.listener.fileGone(file);
