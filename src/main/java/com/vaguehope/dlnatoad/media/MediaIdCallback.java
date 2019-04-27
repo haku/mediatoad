@@ -6,6 +6,6 @@ public interface MediaIdCallback {
 
 	void onMediaId(String mediaId) throws IOException;
 
-	void onError(Exception e);
+	void onError(IOException e);
 
 }

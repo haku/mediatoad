@@ -62,7 +62,7 @@ public class MediaIndexTest {
 
 		final List<File> roots = new ArrayList<File>();
 		roots.add(this.tmp.getRoot());
-		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN, new MediaId(null, this.schEx), new MediaInfo());
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN, new MediaId(null), new MediaInfo());
 	}
 
 	@Test
@@ -144,7 +144,7 @@ public class MediaIndexTest {
 		final File file3 = mockFile("file 3.mkv", dir3);
 
 		this.contentTree = new ContentTree();  // Reset it.
-		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null, this.schEx), new MediaInfo());
+		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null), new MediaInfo());
 
 		this.undertest.fileFound(root, file1, null, null);
 		this.undertest.fileFound(root, file3, null, null);

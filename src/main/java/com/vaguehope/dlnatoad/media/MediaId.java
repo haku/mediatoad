@@ -3,8 +3,6 @@ package com.vaguehope.dlnatoad.media;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.util.HashHelper;
@@ -12,40 +10,23 @@ import com.vaguehope.dlnatoad.util.HashHelper;
 public class MediaId {
 
 	private interface Ider {
-		String idForFile (final ContentGroup type, final File file) throws IOException;
+		void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException;
 	}
 
 	private final Ider impl;
-	private final ScheduledExecutorService exSvc;
 
-	public MediaId (final MediaDb mediaDb, final ScheduledExecutorService exSvc) {
+	public MediaId (final MediaDb mediaDb) {
 		this.impl = mediaDb != null ? new PersistentIder(mediaDb) : new TransientIder();
-		this.exSvc = exSvc;
 	}
 
 	public String contentIdSync (final ContentGroup type, final File file) throws IOException {
-		return this.impl.idForFile(type, file);
+		StoringMediaIdCallback cb = new StoringMediaIdCallback();
+		this.impl.idForFile(type, file, cb);
+		return cb.getMediaId();
 	}
 
 	public void contentIdAsync (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
-		/*
-		 * TODO Currently this does not actually work, as slow requests will block quick requests.
-		 * The async-ness needs to be pushed down into MediaDb.idForFile() so that it returns
-		 * quickly for known files and does hashing on a background thread.
-		 */
-
-		// TODO async check futures for failures.
-		this.exSvc.submit(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					final String id = MediaId.this.impl.idForFile(type, file);
-					callback.onMediaId(id);
-				} catch (final Exception e) {
-					callback.onError(e);
-				}
-			}
-		});
+		MediaId.this.impl.idForFile(type, file, callback);
 	}
 
 	private static class PersistentIder implements Ider {
@@ -57,10 +38,14 @@ public class MediaId {
 		}
 
 		@Override
-		public String idForFile (final ContentGroup type, final File file) throws IOException {
+		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
 			try {
-				if (file.isFile()) return this.mediaDb.idForFile(file);
-				return transientContentId(type, file);
+				if (file.isFile()) {
+					this.mediaDb.idForFile(file, callback);
+				}
+				else {
+					callback.onMediaId(transientContentId(type, file));
+				}
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
@@ -74,8 +59,8 @@ public class MediaId {
 		public TransientIder () {}
 
 		@Override
-		public String idForFile (final ContentGroup type, final File file) {
-			return transientContentId(type, file);
+		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
+			callback.onMediaId(transientContentId(type, file));
 		}
 
 	}

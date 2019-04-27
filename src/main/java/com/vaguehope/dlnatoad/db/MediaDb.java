@@ -26,12 +26,15 @@ import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 
+import com.vaguehope.dlnatoad.media.MediaIdCallback;
+
 public class MediaDb {
 
 	private static final int COMMIT_DURATIONS_INTERVAL_SECONDS = 30;
 
 	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
 
+	private final ScheduledExecutorService exSvc;
 	private final Connection dbConn;
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<FileAndDuration>();
 
@@ -40,60 +43,109 @@ public class MediaDb {
 	}
 
 	private MediaDb (final File dbFile, final ScheduledExecutorService exSvc, final int commitDelaySeconds) throws SQLException {
+		this.exSvc = exSvc;
 		this.dbConn = makeDbConnection(dbFile);
 		makeSchema();
 		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
 	}
 
-	public String idForFile (final File file) throws SQLException, IOException {
+	public void idForFile (final File file, final MediaIdCallback callback) throws SQLException, IOException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 
-		FileData fileData = readFileData(file);
-		if (fileData == null) {
-			fileData = FileData.forFile(file);
-
-			final Collection<FileAndData> otherFiles = missingFilesWithHash(fileData.getHash());
-			final Set<String> otherIds = distinctIds(otherFiles);
-			if (otherIds.size() == 1) {
-				fileData = fileData.withId(otherIds.iterator().next());
-			}
-			else {
-				fileData = fileData.withId(newUnusedId());
-				otherFiles.clear(); // Did not merge, so do not remove.
-			}
-
-			storeFileData(file, fileData);
-			removeFiles(otherFiles);
-		}
-		else if (!fileData.upToDate(file)) {
-			final String prevHash = fileData.getHash();
-			final String prevHashCanonicalId = canonicalIdForHash(prevHash);
-			fileData = FileData.forFile(file).withId(fileData.getId());
-
-			Collection<FileAndData> otherFiles = Collections.emptySet();
-			if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(fileData.getId())) {
-				otherFiles = filesWithHash(prevHash);
-				excludeFile(otherFiles, file); // Remove self.
-
-				if (allMissing(otherFiles)) {
-					fileData = fileData.withNewId(prevHashCanonicalId);
+		final FileData oldFileData = readFileData(file);
+		if (oldFileData == null) {
+			this.exSvc.submit(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						final FileData newFileData = generateNewFileData(file);
+						final String id = canonicaliseAndStoreId(newFileData);
+						callback.onMediaId(id);
+					} catch (final Exception e) {
+						if (e instanceof IOException) {
+							callback.onError((IOException) e);
+						}
+						else {
+							callback.onError(new IOException(e));
+						}
+					}
 				}
-				else {
-					otherFiles.clear(); // Did not merge, so do not remove.
-				}
-			}
-
-			updateFileData(file, fileData);
-			removeFiles(otherFiles);
+			});
 		}
+		else if (!oldFileData.upToDate(file)) {
+			this.exSvc.submit(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						final FileData updatedFileData = generateUpdatedFileData(file, oldFileData);
+						final String id = canonicaliseAndStoreId(updatedFileData);
+						callback.onMediaId(id);
+					} catch (final Exception e) {
+						if (e instanceof IOException) {
+							callback.onError((IOException) e);
+						}
+						else {
+							callback.onError(new IOException(e));
+						}
+					}
+				}
+			});
+		}
+		else {
+			final String id = canonicaliseAndStoreId(oldFileData);
+			callback.onMediaId(id);
+		}
+	}
 
+	private String canonicaliseAndStoreId(final FileData fileData) throws SQLException {
 		String id = canonicalIdForHash(fileData.getHash());
 		if (id == null) {
 			id = fileData.getId();
 			storeCanonicalId(fileData.getHash(), id);
 		}
-
 		return id;
+	}
+
+	private FileData generateNewFileData(final File file) throws IOException, SQLException {
+		FileData fileData;
+		fileData = FileData.forFile(file);  // Slow.
+
+		final Collection<FileAndData> otherFiles = missingFilesWithHash(fileData.getHash());
+		final Set<String> otherIds = distinctIds(otherFiles);
+		if (otherIds.size() == 1) {
+			fileData = fileData.withId(otherIds.iterator().next());
+		}
+		else {
+			fileData = fileData.withId(newUnusedId());
+			otherFiles.clear(); // Did not merge, so do not remove.
+		}
+
+		storeFileData(file, fileData);
+		removeFiles(otherFiles);
+		return fileData;
+	}
+
+	private FileData generateUpdatedFileData(final File file, FileData fileData) throws SQLException, IOException {
+		final String prevHash = fileData.getHash();
+		final String prevHashCanonicalId = canonicalIdForHash(prevHash);
+		fileData = FileData.forFile(file).withId(fileData.getId());  // Slow.
+
+		Collection<FileAndData> otherFiles = Collections.emptySet();
+		if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(fileData.getId())) {
+			otherFiles = filesWithHash(prevHash);
+			excludeFile(otherFiles, file); // Remove self.
+
+			if (allMissing(otherFiles)) {
+				fileData = fileData.withNewId(prevHashCanonicalId);
+			}
+			else {
+				otherFiles.clear(); // Did not merge, so do not remove.
+			}
+		}
+
+		updateFileData(file, fileData);
+		removeFiles(otherFiles);
+		return fileData;
 	}
 
 	public long readFileDurationMillis (final File file) throws SQLException {

@@ -128,7 +128,7 @@ public class MediaIndex implements FileListener {
 			}
 
 			@Override
-			public void onError(final Exception e) {
+			public void onError(final IOException e) {
 				LOG.warn("Error processing file change.", e);
 			}
 		});
@@ -309,7 +309,7 @@ public class MediaIndex implements FileListener {
 			}
 
 			@Override
-			public void onError(final Exception e) {
+			public void onError(final IOException e) {
 				LOG.warn("Error adding item to media index.", e);
 			}
 		});

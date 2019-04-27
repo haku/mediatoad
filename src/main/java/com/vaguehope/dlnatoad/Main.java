@@ -121,7 +121,7 @@ public final class Main {
 		else {
 			mediaDb = null;
 		}
-		final MediaId mediaId = new MediaId(mediaDb, fsExSvc);
+		final MediaId mediaId = new MediaId(mediaDb);
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
 
 		final ContentTree contentTree = new ContentTree();
