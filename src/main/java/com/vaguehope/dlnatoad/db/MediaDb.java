@@ -53,34 +53,17 @@ public class MediaDb {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 
 		final FileData oldFileData = readFileData(file);
-		if (oldFileData == null) {
+		if (oldFileData == null || !oldFileData.upToDate(file)) {
+			// Whatever needs doing, it might take a while and oldFileData may be out of date by the time the work
+			// runs, so check everything closer to the time.  This is stall a check-and-set and not really thread
+			// safe, but given the executor is supposed to single threaded this should work out ok.
 			this.exSvc.submit(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						final FileData newFileData = generateNewFileData(file);
-						final String id = canonicaliseAndStoreId(newFileData);
-						callback.onMediaId(id);
-					} catch (final Exception e) {
-						if (e instanceof IOException) {
-							callback.onError((IOException) e);
-						}
-						else {
-							callback.onError(new IOException(e));
-						}
+						addOrUpdateFileData(file, callback);
 					}
-				}
-			});
-		}
-		else if (!oldFileData.upToDate(file)) {
-			this.exSvc.submit(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						final FileData updatedFileData = generateUpdatedFileData(file, oldFileData);
-						final String id = canonicaliseAndStoreId(updatedFileData);
-						callback.onMediaId(id);
-					} catch (final Exception e) {
+					catch (final Exception e) {
 						if (e instanceof IOException) {
 							callback.onError((IOException) e);
 						}
@@ -95,6 +78,23 @@ public class MediaDb {
 			final String id = canonicaliseAndStoreId(oldFileData);
 			callback.onMediaId(id);
 		}
+	}
+
+	private void addOrUpdateFileData(final File file, final MediaIdCallback callback) throws SQLException, IOException {
+		final FileData oldFileData = readFileData(file);
+		final String id;
+		if (oldFileData == null) {
+			final FileData newFileData = generateNewFileData(file);
+			id = canonicaliseAndStoreId(newFileData);
+		}
+		else if (!oldFileData.upToDate(file)) {
+			final FileData updatedFileData = generateUpdatedFileData(file, oldFileData);
+			id = canonicaliseAndStoreId(updatedFileData);
+		}
+		else {
+			id = canonicaliseAndStoreId(oldFileData);
+		}
+		callback.onMediaId(id);
 	}
 
 	private String canonicaliseAndStoreId(final FileData fileData) throws SQLException {
