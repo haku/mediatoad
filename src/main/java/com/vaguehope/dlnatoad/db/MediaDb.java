@@ -258,6 +258,9 @@ public class MediaDb {
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No insert occured inserting file '" + file.getAbsolutePath() + "'.");
 		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to store new data for file %s \"%s\".", file, fileData), e);
+		}
 		finally {
 			st.close();
 		}
@@ -275,6 +278,9 @@ public class MediaDb {
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured updating file '" + file.getAbsolutePath() + "'.");
 		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to update data for file %s to \"%s\".", file, fileData), e);
+		}
 		finally {
 			st.close();
 		}
@@ -287,6 +293,9 @@ public class MediaDb {
 			st.setString(1, file.getAbsolutePath());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured removing file '" + file.getAbsolutePath() + "'.");
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to remove file \"%s\".", file), e);
 		}
 		finally {
 			st.close();
@@ -329,6 +338,9 @@ public class MediaDb {
 			st.setString(2, id);
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured inserting hash '" + hash + "'.");
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to store canonical ID for hash %s \"%s\".", hash, id), e);
 		}
 		finally {
 			st.close();
@@ -499,6 +511,9 @@ public class MediaDb {
 		final Statement st = this.dbConn.createStatement();
 		try {
 			return st.executeUpdate(sql) > 0;
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to execute SQL \"%s\".", sql), e);
 		}
 		finally {
 			st.close();

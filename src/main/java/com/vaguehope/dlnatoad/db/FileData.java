@@ -66,4 +66,9 @@ public class FileData {
 		return new FileData(file.length(), file.lastModified(), HashHelper.sha1(file).toString(16));
 	}
 
+	@Override
+	public String toString() {
+		return String.format("FileData{%s, %s, %s, %s}", this.size, this.modified, this.hash, this.id);
+	}
+
 }
