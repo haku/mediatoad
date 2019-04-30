@@ -46,7 +46,12 @@ public class Watcher {
 	/**
 	 * Do not fire modified event until file has stopped changing for this long.
 	 */
-	private static final long MODIFIED_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(10);
+	private static final long MODIFIED_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30);
+
+	/**
+	 * Wait this long between checking if something is accessible.
+	 */
+	private static final long INACCESSABLE_TIMEOUT_NANOS = TimeUnit.MINUTES.toNanos(5);
 
 	protected static final Logger LOG = LoggerFactory.getLogger(Watcher.class);
 
@@ -56,7 +61,7 @@ public class Watcher {
 	private final WatchService watchService;
 	private final HashMap<WatchKey, Path> watchKeys = new HashMap<>();
 	private final HashMap<WatchKey, File> watchKeyRoots = new HashMap<>();
-	private final Queue<ModifiedFile> modifiedFiles = new DelayQueue<>();
+	private final Queue<WaitingFile> waitingFiles = new DelayQueue<>();
 
 	private volatile boolean running = true;
 
@@ -107,17 +112,26 @@ public class Watcher {
 
 	private void watch () {
 		while (this.running) {
-			ModifiedFile modFile;
-			while ((modFile = this.modifiedFiles.poll()) != null) {
-				if (modFile.isUnchanged()) {
-					callListener(modFile.getEventKind(), modFile.getFile(), modFile.getRootDir(), EventType.NOTIFY);
+			WaitingFile modFile;
+			while ((modFile = this.waitingFiles.poll()) != null) {
+				if (modFile.isReady()) {
+					try {
+						readReadyPath(modFile.getEventKind(), modFile.getPath(), modFile.getRootDir());
+					}
+					catch (final Exception e) {
+						LOG.warn("Failed to process waiting file that should have been ready: {} {}: {}",
+								modFile.getEventKind().name(), modFile.getFile().getAbsolutePath(), e);
+					}
+				}
+				else {
+					this.waitingFiles.add(modFile.renew());
 				}
 			}
 
 			final WatchKey key = this.watchService.poll();
 			if (key == null) {
 				try {
-					TimeUnit.SECONDS.sleep(1);
+					TimeUnit.SECONDS.sleep(5);
 				}
 				catch (final InterruptedException e) {
 					LOG.debug("Interrupted, terminating watcher...");
@@ -169,18 +183,26 @@ public class Watcher {
 			final Path path = dir.resolve(ev.context());
 			LOG.debug("{} {}", ev.kind().name(), path);
 
-			final File file = path.toFile();
-
-			if (Files.isRegularFile(path)
-					&& (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE || ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY)) {
-				this.modifiedFiles.add(new ModifiedFile(file, rootDir, ev.kind())); // Wait for the file to stop changing.
+			if (!Files.isReadable(path)) {
+				this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind())); // Wait for file to be accessible.
 			}
-			else if (Files.isDirectory(path) && ev.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-				registerRecursive(rootDir, file);
+			else if (Files.isRegularFile(path)
+					&& (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE
+					|| ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY)) {
+				this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind())); // Wait for the file to stop changing.
 			}
 			else {
-				callListener(ev.kind(), file, rootDir, EventType.NOTIFY);
+				readReadyPath(ev.kind(), path, rootDir);
 			}
+		}
+	}
+
+	private void readReadyPath(final Kind<Path> kind, final Path path, final File rootDir) throws IOException {
+		if (Files.isDirectory(path) && kind == StandardWatchEventKinds.ENTRY_CREATE) {
+			registerRecursive(rootDir, path.toFile());
+		}
+		else {
+			callListener(kind, path.toFile(), rootDir, EventType.NOTIFY);
 		}
 	}
 
@@ -240,8 +262,9 @@ public class Watcher {
 
 	}
 
-	private static class ModifiedFile implements Delayed {
+	private static class WaitingFile implements Delayed {
 
+		private final Path path;
 		private final File file;
 		private final File rootDir;
 		private final Kind<Path> eventKind;
@@ -249,17 +272,30 @@ public class Watcher {
 		private final long lastModifiedMillis;
 		private final long time;
 
-		public ModifiedFile (final File file, final File rootDir, final Kind<Path> eventKind) {
-			this.file = file;
+		public WaitingFile (final Path path, final File rootDir, final Kind<Path> eventKind) {
+			this.path = path;
+			this.file = path.toFile();
 			this.rootDir = rootDir;
 			this.eventKind = eventKind;
 
-			this.lastModifiedMillis = file.lastModified();
-			this.time = MODIFIED_TIMEOUT_NANOS + now();
+			this.lastModifiedMillis = this.file.lastModified();
+
+			final long delay = Files.isReadable(path)
+					? MODIFIED_TIMEOUT_NANOS
+					: INACCESSABLE_TIMEOUT_NANOS;
+			this.time = delay + now();
 		}
 
-		public boolean isUnchanged () {
-			return this.file.lastModified() == this.lastModifiedMillis;
+		public WaitingFile renew() {
+			return new WaitingFile(this.path, this.rootDir, this.eventKind);
+		}
+
+		public boolean isReady () {
+			return Files.isReadable(this.path) && this.file.lastModified() == this.lastModifiedMillis;
+		}
+
+		public Path getPath() {
+			return this.path;
 		}
 
 		public File getFile () {
