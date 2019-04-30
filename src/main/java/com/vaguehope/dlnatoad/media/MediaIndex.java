@@ -129,7 +129,7 @@ public class MediaIndex implements FileListener {
 
 			@Override
 			public void onError(final IOException e) {
-				LOG.warn("Error processing file change.", e);
+				LOG.warn(String.format("Error processing file modified event for \"%s\"", file.getAbsolutePath()), e);
 			}
 		});
 
