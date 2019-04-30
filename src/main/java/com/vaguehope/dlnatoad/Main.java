@@ -125,7 +125,7 @@ public final class Main {
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
 
 		final ContentTree contentTree = new ContentTree();
-		final Server server = startContentServer(contentTree, mediaId, args);
+		final Server server = startContentServer(contentTree, mediaId, args, hostName);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 
@@ -166,10 +166,10 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final Args args) throws Exception {
+	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final Args args, final String hostName) throws Exception {
 		int port = C.HTTP_PORT;
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, mediaId, args);
+			final HandlerList handler = makeContentHandler(contentTree, mediaId, args, hostName);
 
 			final Server server = new Server();
 			server.setHandler(handler);
@@ -189,7 +189,7 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final Args args) throws CmdLineException {
+	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final Args args, final String hostName) throws CmdLineException {
 		final File thumbsDir = args.getThumbsDir();
 		final ImageResizer imageResizer =
 				thumbsDir != null
@@ -199,7 +199,7 @@ public final class Main {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, args.isPrintAccessLog())), "/");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer)), "/index/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName)), "/index/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -16,11 +15,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
+import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class IndexServlet extends HttpServlet {
@@ -30,11 +31,13 @@ public class IndexServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final MediaId mediaId;
 	private final ImageResizer imageResizer;
+	private final String hostName;
 
-	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer) {
+	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer, final String hostName) {
 		this.contentTree = contentTree;
 		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
+		this.hostName = hostName;
 	}
 
 	@Override
@@ -72,7 +75,20 @@ public class IndexServlet extends HttpServlet {
 		resp.setContentType("text/html; charset=utf-8");
 		final PrintWriter w = resp.getWriter();
 
-		w.print("<html><body><h3>");
+		w.println("<html>");
+		w.println("<head>");
+		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
+
+		w.print("<title>");
+		w.print(C.METADATA_MODEL_NAME);
+		w.print(" (");
+		w.print(this.hostName);
+		w.print(")");
+		w.println("</title>");
+
+		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0, maximum-scale=1.0\">");
+		w.println("</head>");
+		w.println("<body><h3>");
 		w.print(dirNodeContainer.getTitle());
 		w.print(" (");
 		w.print(dirs.size());
@@ -98,11 +114,16 @@ public class IndexServlet extends HttpServlet {
 
 			w.print("<li><a href=\"/");
 			w.print(node.getId());
+			w.print("\">");
+			w.print(node.getFile().getName());
+			w.print("</a> [<a href=\"");
+			w.print(node.getId());
 			w.print("\" download=\"");
 			w.print(node.getFile().getName());
 			w.print("\">");
-			w.print(node.getFile().getName());
-			w.println("</a></li>");
+			w.print(FileHelper.readableFileSize(node.getItem().getFirstResource().getSize()));
+			w.print("</a>]");
+			w.println("</li>");
 		}
 
 		w.println("</ul>");
