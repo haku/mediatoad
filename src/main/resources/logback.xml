@@ -16,7 +16,9 @@
 	<logger name="org.fourthline.cling.binding.xml.ServiceDescriptorBinder" level="ERROR" />
 	<logger name="org.fourthline.cling.protocol.RetrieveRemoteDescriptors" level="ERROR" />
 	<logger name="org.fourthline.cling.transport.spi.StreamClient" level="WARN" />
-
+	<logger name="org.fourthline.cling.binding.xml.DeviceDescriptorBinder" level="ERROR" />
+	<logger name="org.fourthline.cling.model.meta.Service" level="ERROR" />
+	
 	<root level="info">
 		<appender-ref ref="default" />
 	</root>
