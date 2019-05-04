@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,12 @@ public class Watcher {
 	private final List<File> roots;
 	private final FileFilter filter;
 	private final FileListener listener;
+	private final Time time;
+	private final long pollIntervalMillis;
+
 	private final CountDownLatch prescanComplete = new CountDownLatch(1);
+	private final AtomicLong watchEvents = new AtomicLong(0);
+
 	private final WatchService watchService;
 	private final HashMap<WatchKey, Path> watchKeys = new HashMap<>();
 	private final HashMap<WatchKey, File> watchKeyRoots = new HashMap<>();
@@ -68,9 +74,15 @@ public class Watcher {
 	private volatile boolean running = true;
 
 	public Watcher (final List<File> roots, final FileFilter filter, final FileListener listener) throws IOException {
+		this(roots, filter, listener, Time.DEFAULT, TimeUnit.SECONDS.toMillis(5));
+	}
+
+	Watcher (final List<File> roots, final FileFilter filter, final FileListener listener, final Time time, final long pollIntervalMillis) throws IOException {
 		this.roots = roots;
 		this.filter = filter;
 		this.listener = listener;
+		this.time = time;
+		this.pollIntervalMillis = pollIntervalMillis;
 		this.watchService = FileSystems.getDefault().newWatchService();
 	}
 
@@ -92,6 +104,10 @@ public class Watcher {
 
 	public void waitForPrescan(final long timeout, final TimeUnit unit) throws InterruptedException {
 		this.prescanComplete.await(timeout, unit);
+	}
+
+	public long getWatchEventCount() {
+		return this.watchEvents.get();
 	}
 
 	public void shutdown () {
@@ -131,6 +147,7 @@ public class Watcher {
 					}
 				}
 				else {
+					LOG.info("File not ready: {}", modFile.getFile());
 					this.waitingFiles.add(modFile.renew());
 				}
 			}
@@ -138,7 +155,7 @@ public class Watcher {
 			final WatchKey key = this.watchService.poll();
 			if (key == null) {
 				try {
-					TimeUnit.SECONDS.sleep(5);
+					TimeUnit.MILLISECONDS.sleep(this.pollIntervalMillis);
 				}
 				catch (final InterruptedException e) {
 					LOG.debug("Interrupted, terminating watcher...");
@@ -190,17 +207,27 @@ public class Watcher {
 			final Path path = dir.resolve(ev.context());
 			LOG.debug("{} {}", ev.kind().name(), path);
 
-			if (!Files.isReadable(path)) {
-				this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind())); // Wait for file to be accessible.
+			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE
+				|| ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+				if (!Files.isReadable(path)) {
+					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for file to be accessible.
+				}
+				else if (Files.isDirectory(path)) {
+					readReadyPath(ev.kind(), path, rootDir);
+				}
+				else {
+					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for the file to stop changing.
+				}
 			}
-			else if (Files.isRegularFile(path)
-					&& (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE
-					|| ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY)) {
-				this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind())); // Wait for the file to stop changing.
-			}
-			else {
+			else if (ev.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
 				readReadyPath(ev.kind(), path, rootDir);
 			}
+			else {
+				LOG.error("Unexpected event type: {}", ev.kind());
+				return;
+			}
+
+			this.watchEvents.incrementAndGet();
 		}
 	}
 
@@ -275,26 +302,28 @@ public class Watcher {
 		private final File file;
 		private final File rootDir;
 		private final Kind<Path> eventKind;
+		private final Time time;
 
 		private final long lastModifiedMillis;
-		private final long time;
+		private final long readyAtTime;
 
-		public WaitingFile (final Path path, final File rootDir, final Kind<Path> eventKind) {
+		public WaitingFile (final Path path, final File rootDir, final Kind<Path> eventKind, final Time time) {
 			this.path = path;
 			this.file = path.toFile();
 			this.rootDir = rootDir;
 			this.eventKind = eventKind;
+			this.time = time;
 
 			this.lastModifiedMillis = this.file.lastModified();
 
 			final long delay = Files.isReadable(path)
 					? MODIFIED_TIMEOUT_NANOS
 					: INACCESSABLE_TIMEOUT_NANOS;
-			this.time = delay + now();
+			this.readyAtTime = delay + time.now();
 		}
 
 		public WaitingFile renew() {
-			return new WaitingFile(this.path, this.rootDir, this.eventKind);
+			return new WaitingFile(this.path, this.rootDir, this.eventKind, this.time);
 		}
 
 		public boolean isReady () {
@@ -326,13 +355,7 @@ public class Watcher {
 
 		@Override
 		public long getDelay (final TimeUnit unit) {
-			return unit.convert(this.time - now(), TimeUnit.NANOSECONDS);
-		}
-
-		private static final long NANO_ORIGIN = System.nanoTime();
-
-		private static long now () {
-			return System.nanoTime() - NANO_ORIGIN;
+			return unit.convert(this.readyAtTime - this.time.now(), TimeUnit.NANOSECONDS);
 		}
 
 	}
