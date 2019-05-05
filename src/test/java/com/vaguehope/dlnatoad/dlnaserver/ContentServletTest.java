@@ -33,6 +33,16 @@ public class ContentServletTest {
 	}
 
 	@Test
+	public void itResolvesMediaResourceWithFileExtension () throws Exception {
+		String id = "some_id";
+		File file = new File(id);
+		this.contentTree.addNode(new ContentNode(id, null, file, MediaFormat.OGG));
+
+		Resource res = this.undertest.getResource("/" + id + ".foo");
+		assertEquals(file.getName(), res.getFile().getName());
+	}
+
+	@Test
 	public void itReturnsNullForNotFound () throws Exception {
 		assertNull(this.undertest.getResource("/some_id"));
 	}

@@ -49,7 +49,16 @@ public final class ContentServlet extends DefaultServlet {
 	@Override
 	public Resource getResource (final String pathInContext) {
 		try {
-			final ContentNode node = this.contentTree.getNode(URLDecoder.decode(pathInContext.replaceFirst("/", ""), "UTF-8"));
+			String id = URLDecoder.decode(pathInContext, "UTF-8");
+			id = id.replaceFirst("/", "");
+
+			// Remove everything after first dot.
+			int firstDot = id.indexOf('.');
+			if (firstDot > 0) {
+				id = id.substring(0, firstDot);
+			}
+
+			final ContentNode node = this.contentTree.getNode(id);
 			if (node != null && node.isItem()) {
 				return Resource.newResource(node.getFile());
 			}

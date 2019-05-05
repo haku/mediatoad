@@ -114,10 +114,14 @@ public class IndexServlet extends HttpServlet {
 
 			w.print("<li><a href=\"/");
 			w.print(node.getId());
+			w.print(".");
+			w.print(node.getFormat().getExt());
 			w.print("\">");
 			w.print(node.getFile().getName());
-			w.print("</a> [<a href=\"");
+			w.print("</a> [<a href=\"/");
 			w.print(node.getId());
+			w.print(".");
+			w.print(node.getFormat().getExt());
 			w.print("\" download=\"");
 			w.print(node.getFile().getName());
 			w.print("\">");
@@ -135,6 +139,8 @@ public class IndexServlet extends HttpServlet {
 
 			w.print("<span><a href=\"/");
 			w.print(node.getId());
+			w.print(".");
+			w.print(node.getFormat().getExt());
 			w.print("\">");
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"/");
 			w.print(thumbId);

@@ -68,6 +68,10 @@ public enum MediaFormat {
 		this.contentGroup = type;
 	}
 
+	public String getExt() {
+		return this.ext;
+	}
+
 	public String getMime () {
 		return this.mime;
 	}
