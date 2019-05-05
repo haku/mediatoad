@@ -8,17 +8,18 @@
 	<!-- http://logback.qos.ch/manual/layouts.html -->
 	<appender name="default" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
-			<pattern>%d{MMdd HH:mm:ss.SSS} [%10.10thread] %25.25logger{25} %.-1level %msg%n</pattern>
+			<pattern>%.-1level%d{MMdd HH:mm:ss.SSS} [%10.10thread] %25.25logger{25} %msg%n</pattern>
 		</encoder>
 	</appender>
 
 	<logger name="com.vaguehope.dlnatoad" level="INFO" />
+	<logger name="org.fourthline.cling.binding.xml.DeviceDescriptorBinder" level="ERROR" />
 	<logger name="org.fourthline.cling.binding.xml.ServiceDescriptorBinder" level="ERROR" />
+	<logger name="org.fourthline.cling.model.meta.Service" level="ERROR" />
 	<logger name="org.fourthline.cling.protocol.RetrieveRemoteDescriptors" level="ERROR" />
 	<logger name="org.fourthline.cling.transport.spi.StreamClient" level="WARN" />
-	<logger name="org.fourthline.cling.binding.xml.DeviceDescriptorBinder" level="ERROR" />
-	<logger name="org.fourthline.cling.model.meta.Service" level="ERROR" />
-	
+	<logger name="org.fourthline.cling.transport.spi.UpnpStream" level="ERROR" />
+
 	<root level="info">
 		<appender-ref ref="default" />
 	</root>
