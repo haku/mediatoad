@@ -54,6 +54,8 @@ public final class ContentServlet extends DefaultServlet {
 
 	@Override
 	public Resource getResource (final String pathInContext) {
+		if (pathInContext.endsWith(".gz")) return null;
+
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
 			id = id.replaceFirst("/", "");
