@@ -59,9 +59,14 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private void printDir (final HttpServletResponse resp, final ContentNode contentNode) throws IOException {
+		final Container dirNodeContainer = contentNode.getContainer();
+		if (dirNodeContainer == null) {
+			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Item is a not a directory: " + contentNode.getId());
+			return;
+		}
+
 		final List<Container> dirs = new ArrayList<Container>();
 		final List<ContentNode> items = new ArrayList<ContentNode>();
-		final Container dirNodeContainer = contentNode.getContainer();
 		synchronized (dirNodeContainer) {
 			for (final Container c : dirNodeContainer.getContainers()) {
 				dirs.add(c);
