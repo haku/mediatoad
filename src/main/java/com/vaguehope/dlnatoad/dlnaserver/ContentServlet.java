@@ -37,9 +37,9 @@ public final class ContentServlet extends DefaultServlet {
 		try {
 			this.contentServingHistory.recordStart(remoteAddr, requestURI);
 			super.doGet(req, resp);
-			this.contentServingHistory.recordEnd(remoteAddr, requestURI);
 		}
 		finally {
+			this.contentServingHistory.recordEnd(remoteAddr, requestURI);
 			if (this.printAccessLog) {
 				final String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
 				if (ranges != null) {
