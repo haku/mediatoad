@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jetty.http.MimeTypes;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 
@@ -95,7 +96,12 @@ public enum MediaFormat {
 		public boolean accept (final File file) {
 			return identify(file) != null;
 		}
+	}
 
+	public static void addTo(final MimeTypes mimeTypes) {
+		for (final MediaFormat mf : values()) {
+			mimeTypes.addMimeMapping(mf.getExt(), mf.getMime());
+		}
 	}
 
 }

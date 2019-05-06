@@ -198,6 +198,7 @@ public final class Main {
 				: null;
 
 		final ServletContextHandler servletHandler = new ServletContextHandler();
+		MediaFormat.addTo(servletHandler.getMimeTypes());
 		servletHandler.setContextPath("/");
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog())), "/");

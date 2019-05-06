@@ -4,20 +4,28 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
+import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.dlnatoad.media.MediaFormat;
 
 public class MockContent {
 
 	private final ContentTree contentTree;
+	private final TemporaryFolder tmp;
 
 	public MockContent (final ContentTree contentTree) {
+		this(contentTree, null);
+	}
+
+	public MockContent (final ContentTree contentTree, final TemporaryFolder tmp) {
 		this.contentTree = contentTree;
+		this.tmp = tmp;
 	}
 
 	public List<ContentNode> givenMockDirs (final int n) {
@@ -28,19 +36,19 @@ public class MockContent {
 		return ret;
 	}
 
-	public List<ContentNode> givenMockItems (final int n) {
+	public List<ContentNode> givenMockItems (final int n) throws IOException {
 		return givenMockItems(Item.class, n);
 	}
 
-	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n) {
+	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n) throws IOException {
 		return givenMockItems(cls, n, this.contentTree.getRootNode());
 	}
 
-	public List<ContentNode> givenMockItems (final int n, final ContentNode parent) {
+	public List<ContentNode> givenMockItems (final int n, final ContentNode parent) throws IOException {
 		return givenMockItems(Item.class, n, parent);
 	}
 
-	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n, final ContentNode parent) {
+	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n, final ContentNode parent) throws IOException {
 		final List<ContentNode> ret = new ArrayList<ContentNode>();
 		for (int i = 0; i < n; i++) {
 			ret.add(addMockItem(cls, "item " + i, parent));
@@ -64,15 +72,17 @@ public class MockContent {
 		return node;
 	}
 
-	public ContentNode addMockItem (final String id, final ContentNode parent) {
+	public ContentNode addMockItem (final String id, final ContentNode parent) throws IOException {
 		return addMockItem(Item.class, id, parent);
 	}
 
-	public ContentNode addMockItem (final Class<? extends Item> cls, final String id, final ContentNode parent) {
+	public ContentNode addMockItem (final Class<? extends Item> cls, final String id, final ContentNode parent) throws IOException {
 		final Item item = mock(cls);
 		when(item.getTitle()).thenReturn("item " + id);
 		when(item.toString()).thenReturn("item " + id);
-		final ContentNode node = new ContentNode(id, item, mock(File.class), MediaFormat.OGG);
+
+		final File file = this.tmp != null ? this.tmp.newFile(id + ".mp4") : mock(File.class);
+		final ContentNode node = new ContentNode(id, item, file, MediaFormat.OGG);
 		this.contentTree.addNode(node);
 		parent.getContainer().addItem(node.getItem());
 		parent.getContainer().setChildCount(parent.getContainer().getChildCount() + 1);
