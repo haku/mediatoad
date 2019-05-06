@@ -19,7 +19,7 @@ public class ContentServletTest {
 	@Before
 	public void before () throws Exception {
 		this.contentTree = new ContentTree();
-		this.undertest = new ContentServlet(this.contentTree, true);
+		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory(), true);
 	}
 
 	@Test

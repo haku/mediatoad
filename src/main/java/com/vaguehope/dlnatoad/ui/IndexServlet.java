@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,6 +20,7 @@ import org.fourthline.cling.support.model.item.Item;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
+import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
@@ -32,12 +35,14 @@ public class IndexServlet extends HttpServlet {
 	private final MediaId mediaId;
 	private final ImageResizer imageResizer;
 	private final String hostName;
+	private final ContentServingHistory contentServingHistory;
 
-	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer, final String hostName) {
+	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer, final String hostName, final ContentServingHistory contentServingHistory) {
 		this.contentTree = contentTree;
 		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
+		this.contentServingHistory = contentServingHistory;
 	}
 
 	@Override
@@ -151,8 +156,14 @@ public class IndexServlet extends HttpServlet {
 			w.print(thumbId);
 			w.print("\">");
 			w.println("</a></span>");
-
 		}
+
+		w.print("<p>");
+		w.print(this.contentServingHistory.getActiveCount());
+		w.print(" active, ");
+		w.print(this.contentServingHistory.getRecentlyActiveCount(TimeUnit.MINUTES.toSeconds(15)));
+		w.print(" active in last 15 minutes.");
+		w.println("</p>");
 
 		w.println("</html></body>");
 	}

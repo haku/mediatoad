@@ -12,6 +12,7 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
+import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MockContent;
 import com.vaguehope.dlnatoad.media.MediaId;
@@ -25,6 +26,7 @@ public class IndexServletTest {
 	private MockContent mockContent;
 	private MediaId mediaId;
 	private ImageResizer imageResizer;
+	private ContentServingHistory contentServingHistory;
 	private IndexServlet undertest;
 
 	private MockHttpServletRequest req;
@@ -36,7 +38,8 @@ public class IndexServletTest {
 		this.mockContent = new MockContent(this.contentTree);
 		this.mediaId = new MediaId(null);
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
-		this.undertest = new IndexServlet(this.contentTree, this.mediaId, this.imageResizer, "hostName");
+		this.contentServingHistory = new ContentServingHistory();
+		this.undertest = new IndexServlet(this.contentTree, this.mediaId, this.imageResizer, "hostName", this.contentServingHistory);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

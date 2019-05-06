@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
@@ -198,8 +199,9 @@ public final class Main {
 
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		servletHandler.setContextPath("/");
-		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, args.isPrintAccessLog())), "/");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName)), "/index/*");
+		final ContentServingHistory contentServingHistory = new ContentServingHistory();
+		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog())), "/");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory)), "/index/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

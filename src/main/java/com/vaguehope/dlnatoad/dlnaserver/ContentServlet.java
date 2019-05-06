@@ -21,26 +21,32 @@ public final class ContentServlet extends DefaultServlet {
 	private static final Logger LOG = LoggerFactory.getLogger(ContentServlet.class);
 
 	private final ContentTree contentTree; // NOSONAR
+	private final ContentServingHistory contentServingHistory;
 	private final boolean printAccessLog;
 
-	public ContentServlet (final ContentTree contentTree, final boolean printAccessLog) {
+	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory, final boolean printAccessLog) {
 		this.contentTree = contentTree;
+		this.contentServingHistory = contentServingHistory;
 		this.printAccessLog = printAccessLog;
 	}
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final String remoteAddr = req.getRemoteAddr();
+		final String requestURI = req.getRequestURI();
 		try {
+			this.contentServingHistory.recordStart(remoteAddr, requestURI);
 			super.doGet(req, resp);
+			this.contentServingHistory.recordEnd(remoteAddr, requestURI);
 		}
 		finally {
 			if (this.printAccessLog) {
 				final String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
 				if (ranges != null) {
-					LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), req.getRequestURI(), ranges, req.getRemoteAddr());
+					LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), requestURI, ranges, remoteAddr);
 				}
 				else {
-					LOG.info("request: {} {} {}", resp.getStatus(), req.getRequestURI(), req.getRemoteAddr());
+					LOG.info("request: {} {} {}", resp.getStatus(), requestURI, remoteAddr);
 				}
 			}
 		}
