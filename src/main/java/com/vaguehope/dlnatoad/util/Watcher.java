@@ -146,7 +146,7 @@ public class Watcher {
 								modFile.getEventKind().name(), modFile.getFile().getAbsolutePath(), e);
 					}
 				}
-				else {
+				else if (modFile.exists()) {
 					LOG.info("File not ready: {}", modFile.getFile());
 					this.waitingFiles.add(modFile.renew());
 				}
@@ -206,6 +206,10 @@ public class Watcher {
 			final WatchEvent<Path> ev = cast(event);
 			final Path path = dir.resolve(ev.context());
 			LOG.debug("{} {}", ev.kind().name(), path);
+
+			if (!this.filter.accept(path.toFile())) {
+				continue;
+			}
 
 			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE
 				|| ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
@@ -328,6 +332,10 @@ public class Watcher {
 
 		public boolean isReady () {
 			return Files.isReadable(this.path) && this.file.lastModified() == this.lastModifiedMillis;
+		}
+
+		public boolean exists () {
+			return Files.exists(this.path);
 		}
 
 		public Path getPath() {
