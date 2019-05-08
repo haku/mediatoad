@@ -1,0 +1,21 @@
+[Unit]
+Description=DLNAtoad
+After=network.target
+
+[Service]
+Environment="PATH=/usr/bin:/bin"
+Type=simple
+User=librarian
+ExecStart=/usr/bin/java \
+          -jar /home/librarian/dlnatoad/dlnatoad.jar \
+          --preserve \
+          --tree /home/librarian/dlnatoad/tree \
+          --db /home/librarian/dlnatoad/db \
+          --thumbs /home/librarian/dlnatoad/thumbs
+Restart=always
+RestartSec=60
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
