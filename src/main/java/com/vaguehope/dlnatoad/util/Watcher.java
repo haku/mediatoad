@@ -121,6 +121,7 @@ public class Watcher {
 				StandardWatchEventKinds.ENTRY_DELETE);
 		this.watchKeys.put(watchKey, dir);
 		this.watchKeyRoots.put(watchKey, rootDir);
+		LOG.debug("Watching: {}", dir);
 	}
 
 	/**
@@ -205,21 +206,25 @@ public class Watcher {
 
 			final WatchEvent<Path> ev = cast(event);
 			final Path path = dir.resolve(ev.context());
-			LOG.debug("{} {}", ev.kind().name(), path);
+			LOG.debug("Event: {} {}", ev.kind().name(), path);
 
-			if (!this.filter.accept(path.toFile())) {
+			if (!Files.isDirectory(path) && !this.filter.accept(path.toFile())) {
+				LOG.debug("Ignoring: {}", path);
+				this.watchEvents.incrementAndGet();
 				continue;
 			}
 
 			if (ev.kind() == StandardWatchEventKinds.ENTRY_CREATE
 				|| ev.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
 				if (!Files.isReadable(path)) {
+					LOG.debug("Waiting for access: {}", path);
 					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for file to be accessible.
 				}
 				else if (Files.isDirectory(path)) {
 					readReadyPath(ev.kind(), path, rootDir);
 				}
 				else {
+					LOG.debug("Waiting for ready: {}", path);
 					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for the file to stop changing.
 				}
 			}
@@ -251,6 +256,7 @@ public class Watcher {
 	}
 
 	protected void callListener (final Kind<Path> kind, final File file, final File rootDir, final EventType eventType) {
+		LOG.debug("Calling listener: {}", file.getAbsolutePath());
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
 				this.listener.fileFound(rootDir, file, eventType, null);

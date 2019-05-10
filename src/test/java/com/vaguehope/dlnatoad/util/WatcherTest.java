@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.util;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -93,6 +94,7 @@ public class WatcherTest {
 	private void waitForTotalWatchEventCount(final int count, final int timeoutSeconds) throws InterruptedException {
 		final long startTime = System.nanoTime();
 		while (this.undertest.getWatchEventCount() < count) {
+			System.out.println(String.format("Waiting for events: %s of %s", this.undertest.getWatchEventCount(), count));
 			if (System.nanoTime() - startTime > TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
 				fail("Timeout waiting for watch event count.");
 			}
@@ -114,6 +116,38 @@ public class WatcherTest {
 
 		final File f1 = this.tmp.newFile("file1.mp4");
 		waitForTotalWatchEventCount(1, 10);
+
+		this.time.advance(29, TimeUnit.SECONDS);
+		verifyZeroInteractions(this.listener);
+
+		this.time.advance(2, TimeUnit.SECONDS);
+		waitForWatcher(10);
+		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.NOTIFY, null);
+	}
+
+	@Test
+	public void itFindsNewDirAndThenANewFileViaScan() throws Exception {
+		startWatcher(1, 10);
+
+		final File d1 = this.tmp.newFolder("dir1");
+		final File f1 = new File(d1, "file1.mp4");
+		assertTrue(f1.createNewFile());
+		waitForTotalWatchEventCount(1, 10);
+
+		waitForWatcher(10);
+		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
+	}
+
+	@Test
+	public void itFindsNewDirAndThenANewFileViaWatcher() throws Exception {
+		startWatcher(1, 10);
+
+		final File d1 = this.tmp.newFolder("dir1");
+		waitForTotalWatchEventCount(1, 10);
+
+		final File f1 = new File(d1, "file1.mp4");
+		assertTrue(f1.createNewFile());
+		waitForTotalWatchEventCount(2, 10);
 
 		this.time.advance(29, TimeUnit.SECONDS);
 		verifyZeroInteractions(this.listener);
