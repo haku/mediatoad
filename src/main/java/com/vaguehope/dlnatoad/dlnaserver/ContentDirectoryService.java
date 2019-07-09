@@ -115,9 +115,11 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			throw new ContentDirectoryException(ErrorCode.ACTION_FAILED, e.toString());
 		}
 		finally {
-			LOG.info("search: {}, {}, {} ({}, {}, {}) in {}ms.",
-					containerId, searchCriteria, filter, firstResult, maxResults, Arrays.toString(orderBy),
-					TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+			if (this.printAccessLog) {
+				LOG.info("search: {}, {}, {} ({}, {}, {}) in {}ms.",
+						containerId, searchCriteria, filter, firstResult, maxResults, Arrays.toString(orderBy),
+						TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+			}
 		}
 	}
 
