@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 
@@ -137,6 +138,20 @@ public class IndexServlet extends HttpServlet {
 			w.print("\">");
 			w.print(FileHelper.readableFileSize(node.getItem().getFirstResource().getSize()));
 			w.print("</a>]");
+
+			final List<Res> ress = node.getItem().getResources();
+			if (ress != null) {
+				for (final Res res : ress) {
+					final String duration = res.getDuration();
+					if (duration != null && duration.length() > 0) {
+						w.print(" (");
+						w.print(duration);
+						w.print(")");
+						break;
+					}
+				}
+			}
+
 			w.println("</li>");
 		}
 
