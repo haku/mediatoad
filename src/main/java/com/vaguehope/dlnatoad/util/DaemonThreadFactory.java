@@ -8,9 +8,15 @@ public class DaemonThreadFactory implements ThreadFactory {
 	private final String prefix;
 	private final LoggingThreadGroup threadGroup;
 	private final AtomicInteger counter = new AtomicInteger(0);
+	private final int priorityOffset;
 
 	public DaemonThreadFactory (final String prefix) {
+		this(prefix, -1);
+	}
+
+	public DaemonThreadFactory (final String prefix, final int priorityOffset) {
 		this.prefix = prefix;
+		this.priorityOffset = priorityOffset;
 		this.threadGroup = new LoggingThreadGroup(Thread.currentThread().getThreadGroup(), prefix);
 	}
 
@@ -20,7 +26,7 @@ public class DaemonThreadFactory implements ThreadFactory {
 				"t-" + this.prefix + this.counter.getAndIncrement(),
 				0);
 		if (!t.isDaemon()) t.setDaemon(true);
-		t.setPriority(Thread.NORM_PRIORITY - 1);
+		t.setPriority(Thread.NORM_PRIORITY + this.priorityOffset);
 		return t;
 	}
 

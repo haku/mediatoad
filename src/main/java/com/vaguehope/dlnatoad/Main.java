@@ -8,8 +8,13 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -105,11 +110,20 @@ public final class Main {
 			LOG.info("addresses: {} using address: {}", addresses, address);
 		}
 
-		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
+		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs", -2));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run () {
 				fsExSvc.shutdown();
+			}
+		});
+
+		final ExecutorService miExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("mi", -1));
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				miExSvc.shutdown();
 			}
 		});
 
@@ -123,7 +137,7 @@ public final class Main {
 			mediaDb = null;
 		}
 		final MediaId mediaId = new MediaId(mediaDb);
-		final MediaInfo mediaInfo = new MediaInfo(mediaDb, fsExSvc);
+		final MediaInfo mediaInfo = new MediaInfo(mediaDb, miExSvc);
 
 		final ContentTree contentTree = new ContentTree();
 		final Server server = startContentServer(contentTree, mediaId, args, hostName);
