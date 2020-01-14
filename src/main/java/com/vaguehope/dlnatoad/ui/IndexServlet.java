@@ -180,6 +180,10 @@ public class IndexServlet extends HttpServlet {
 		w.print(" active in last 15 minutes.");
 		w.println("</p>");
 
+		w.print("<p>");
+		w.print(this.contentTree.getNodeCount());
+		w.println(" content nodes.</p>");
+
 		w.println("</html></body>");
 	}
 

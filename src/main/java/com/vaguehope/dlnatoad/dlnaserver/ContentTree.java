@@ -53,6 +53,10 @@ public class ContentTree {
 		return node.getFile() != null && node.getFile().exists();
 	}
 
+	public int getNodeCount() {
+		return this.contentMap.size();
+	}
+
 	public ContentNode getRootNode () {
 		return this.rootNode;
 	}
