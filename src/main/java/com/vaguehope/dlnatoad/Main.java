@@ -144,7 +144,7 @@ public final class Main {
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
 
-		final HierarchyMode hierarchyMode = args.isPreserveHierarchy() ? HierarchyMode.PRESERVE : HierarchyMode.FLATTERN;
+		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
 		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId, mediaInfo);

@@ -15,7 +15,7 @@ public class Args {
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP address of interface to bind to.") private String iface;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
-	@Option(name = "-p", aliases = { "--preserve" }, usage = "preserve directory hierarchy.") private boolean preserveHierarchy;
+	@Option(name = "-s", aliases = { "--simplify" }, usage = "simplify directory structure.") private boolean simplifyHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "print log lines for various events.") private boolean verboseLog;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
@@ -62,8 +62,8 @@ public class Args {
 		return this.daemonise;
 	}
 
-	public boolean isPreserveHierarchy () {
-		return this.preserveHierarchy;
+	public boolean isSimplifyHierarchy () {
+		return this.simplifyHierarchy;
 	}
 
 	public boolean isPrintAccessLog() {
