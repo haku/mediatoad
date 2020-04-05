@@ -334,6 +334,7 @@ public class MediaIndex implements FileListener {
 				item = new VideoItem(id, parent, title, "", res);
 				findSubtitlesForItem(item, file);
 				this.mediaInfo.readInfoAsync(file, res);
+				findArt(file, format, item);
 				break;
 			case IMAGE:
 				//res.setResolution(resolutionXbyY);
@@ -343,13 +344,13 @@ public class MediaIndex implements FileListener {
 				//res.setDuration(formatDuration(durationMillis));
 				item = new AudioItem(id, parent, title, "", res);
 				this.mediaInfo.readInfoAsync(file, res);
+				findArt(file, format, item);
 				break;
 			default:
 				throw new IllegalArgumentException();
 		}
 
 		findMetadata(file, item);
-		findArt(file, format, item);
 
 		synchronized (parent) {
 			parent.addItem(item);

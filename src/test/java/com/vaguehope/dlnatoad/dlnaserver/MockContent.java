@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -23,6 +24,8 @@ public class MockContent {
 	private final ContentTree contentTree;
 	private final TemporaryFolder tmp;
 
+	private boolean shuffle = true;
+
 	public MockContent (final ContentTree contentTree) {
 		this(contentTree, null);
 	}
@@ -30,6 +33,10 @@ public class MockContent {
 	public MockContent (final ContentTree contentTree, final TemporaryFolder tmp) {
 		this.contentTree = contentTree;
 		this.tmp = tmp;
+	}
+
+	public void setShuffle(boolean shuffle) {
+		this.shuffle = shuffle;
 	}
 
 	public List<ContentNode> givenMockDirs (final int n) {
@@ -57,10 +64,19 @@ public class MockContent {
 	}
 
 	public List<ContentNode> givenMockItems (final Class<? extends Item> cls, final int n, final ContentNode parent, Consumer<File> modifier) throws IOException {
-		final List<ContentNode> ret = new ArrayList<ContentNode>();
+		final List<Integer> ids = new ArrayList<Integer>();
 		for (int i = 0; i < n; i++) {
-			ret.add(addMockItem(cls, "id" + i, parent, modifier));
+			ids.add(i);
 		}
+		if (this.shuffle) Collections.shuffle(ids);
+
+		final List<ContentNode> ret = new ArrayList<ContentNode>();
+		for (final Integer i : ids) {
+			final String id = "id" + String.format("%0" + String.valueOf(n).length() + "d", i);
+			ret.add(addMockItem(cls, id, parent, modifier));
+		}
+		Collections.sort(ret, ContentNode.Order.ID);
+
 		return ret;
 	}
 

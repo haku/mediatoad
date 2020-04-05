@@ -2,10 +2,12 @@ package com.vaguehope.dlnatoad.dlnaserver;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,11 +49,11 @@ public class ContentTreeTest {
 	@Test
 	public void itRemovesOldItemsFromRecent() throws Exception {
 		final List<ContentNode> mockItems = this.mockContent.givenMockItems(100, sequentialTimeStamps());
+		final List<ContentNode> expected = mockItems.subList(mockItems.size() - 50, mockItems.size());
+		Collections.reverse(expected);
 
-		final Collection<ContentNode> recent = this.undertest.getRecent();
-		assertThat(recent, hasSize(50));
-
-		assertThat(recent.iterator().next().getId(), equalTo(mockItems.get(mockItems.size() - 1).getId()));
+		final Collection<ContentNode> actual = this.undertest.getRecent();
+		assertEquals(expected, new ArrayList<ContentNode>(actual));
 	}
 
 	@Test
@@ -66,11 +68,10 @@ public class ContentTreeTest {
 
 	private Consumer<File> sequentialTimeStamps() {
 		return new Consumer<File>() {
-			long time = 0L;
 			@Override
 			public void accept(File f) {
-				time += 1;
-				when(f.lastModified()).thenReturn(time);
+				int n = Integer.parseInt(f.getName().substring(0, f.getName().indexOf(".")).replace("id", ""));
+				when(f.lastModified()).thenReturn(n * 1000L);
 			}
 		};
 	}

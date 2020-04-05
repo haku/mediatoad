@@ -37,6 +37,7 @@ public class ContentDirectoryServiceTest {
 	public void before () throws Exception {
 		this.contentTree = new ContentTree(false);
 		this.mockContent = new MockContent(this.contentTree);
+		this.mockContent.setShuffle(false);  // FIXME make tests less brittle.
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);
 		this.undertest = new ContentDirectoryService(this.contentTree, this.searchEngine, true);

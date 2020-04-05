@@ -42,7 +42,7 @@ public class ContentTree {
 		this(true);
 	}
 
-	public ContentTree (boolean trackRecent) {
+	public ContentTree (final boolean trackRecent) {
 		this.rootNode = createRootNode();
 		this.contentMap.put(ContentGroup.ROOT.getId(), this.rootNode);
 
@@ -220,27 +220,30 @@ public class ContentTree {
 	}
 
 	private void maybeAddToRecent(final ContentNode node) {
-		if (recentContainer == null) return;
+		if (this.recentContainer == null) return;
+		if (!node.hasItem()) return;
 
-		final long t = node.getLastModified();
-		if (t < oldestRecentItem) return;
+		if (node.getLastModified() < this.oldestRecentItem) return;
 
-		synchronized (recentLock) {
+		synchronized (this.recentLock) {
 			this.recent.add(node);
-			if (recent.size() > MAX_RECENT_ITEMS) {
-				recent.pollLast();
-				this.oldestRecentItem = recent.last().getLastModified();
+			if (this.recent.size() > MAX_RECENT_ITEMS) {
+				this.recent.pollLast();
+				this.oldestRecentItem = this.recent.last().getLastModified();
+			}
+			else {
+				this.oldestRecentItem = 0L;
 			}
 			recentContainer.reload();
 		}
 	}
 
 	private void removeFromRecent(final ContentNode node) {
-		if (recentContainer == null) return;
+		if (this.recentContainer == null) return;
 
-		if (recent.remove(node)) {
-			synchronized (recentLock) {
-				recentContainer.reload();
+		synchronized (this.recentLock) {
+			if (this.recent.remove(node)) {
+				this.recentContainer.reload();
 			}
 		}
 	}
