@@ -256,7 +256,7 @@ public class Watcher {
 	}
 
 	protected void callListener (final Kind<Path> kind, final File file, final File rootDir, final EventType eventType) {
-		LOG.debug("Calling listener: {}", file.getAbsolutePath());
+		LOG.debug("Calling listener: {} {}", file.getAbsolutePath(), kind);
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
 				this.listener.fileFound(rootDir, file, eventType, null);

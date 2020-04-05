@@ -2,11 +2,11 @@ package com.vaguehope.dlnatoad.util;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -73,10 +73,9 @@ public class WatcherTest {
 				return null;
 			}
 		};
-		doAnswer(answer).when(this.listener).fileFound(any(File.class), any(File.class), any(EventType.class),
-				any(Runnable.class));
-		doAnswer(answer).when(this.listener).fileModified(any(File.class), any(File.class), any(Runnable.class));
-		doAnswer(answer).when(this.listener).fileGone(any(File.class));
+		doAnswer(answer).when(this.listener).fileFound(nullable(File.class), nullable(File.class), nullable(EventType.class), nullable(Runnable.class));
+		doAnswer(answer).when(this.listener).fileModified(nullable(File.class), nullable(File.class), nullable(Runnable.class));
+		doAnswer(answer).when(this.listener).fileGone(nullable(File.class));
 		this.undertestRunFuture = this.schEx.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -118,7 +117,7 @@ public class WatcherTest {
 		waitForTotalWatchEventCount(1, 10);
 
 		this.time.advance(29, TimeUnit.SECONDS);
-		verifyZeroInteractions(this.listener);
+		verifyNoInteractions(this.listener);
 
 		this.time.advance(2, TimeUnit.SECONDS);
 		waitForWatcher(10);
@@ -150,7 +149,7 @@ public class WatcherTest {
 		waitForTotalWatchEventCount(2, 10);
 
 		this.time.advance(29, TimeUnit.SECONDS);
-		verifyZeroInteractions(this.listener);
+		verifyNoInteractions(this.listener);
 
 		this.time.advance(2, TimeUnit.SECONDS);
 		waitForWatcher(10);
