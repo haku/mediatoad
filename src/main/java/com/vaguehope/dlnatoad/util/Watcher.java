@@ -224,7 +224,7 @@ public class Watcher {
 					readReadyPath(ev.kind(), path, rootDir);
 				}
 				else {
-					LOG.debug("Waiting for ready: {}", path);
+					LOG.debug("Waiting for ready: {} {}", path, ev.kind());
 					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for the file to stop changing.
 				}
 			}

@@ -2,11 +2,13 @@ package com.vaguehope.dlnatoad.util;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,17 +68,25 @@ public class WatcherTest {
 		final Answer<EventResult> answer = new Answer<EventResult>() {
 			@Override
 			public EventResult answer(final InvocationOnMock invocation) throws Throwable {
-				System.out.println(String.format("Event: %s %s", invocation.getMethod().getName(),
+				final int invocationNumber = calls.incrementAndGet();
+				System.out.println(String.format(
+						"Event %s: %s %s",
+						invocationNumber,
+						invocation.getMethod().getName(),
 						Arrays.toString(invocation.getArguments())));
-				if (calls.incrementAndGet() >= waitForEventCount) {
+				if (invocationNumber >= waitForEventCount) {
+					System.out.println(String.format(
+							"All %cs of %s expected events received, shutting down watcher.",
+							invocationNumber,
+							waitForEventCount));
 					WatcherTest.this.undertest.shutdown();
 				}
 				return null;
 			}
 		};
-		doAnswer(answer).when(this.listener).fileFound(nullable(File.class), nullable(File.class), nullable(EventType.class), nullable(Runnable.class));
-		doAnswer(answer).when(this.listener).fileModified(nullable(File.class), nullable(File.class), nullable(Runnable.class));
-		doAnswer(answer).when(this.listener).fileGone(nullable(File.class));
+		doAnswer(answer).when(this.listener).fileFound(any(File.class), any(File.class), any(EventType.class), nullable(Runnable.class));
+		doAnswer(answer).when(this.listener).fileModified(any(File.class), any(File.class), nullable(Runnable.class));
+		doAnswer(answer).when(this.listener).fileGone(any(File.class));
 		this.undertestRunFuture = this.schEx.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -139,10 +150,10 @@ public class WatcherTest {
 
 	@Test
 	public void itFindsNewDirAndThenANewFileViaWatcher() throws Exception {
-		startWatcher(1, 10);
+		startWatcher(1, 10);  // Event count excludes dirs.
 
 		final File d1 = this.tmp.newFolder("dir1");
-		waitForTotalWatchEventCount(1, 10);
+		waitForTotalWatchEventCount(1, 10);  // Event count includes dirs.
 
 		final File f1 = new File(d1, "file1.mp4");
 		assertTrue(f1.createNewFile());
@@ -154,6 +165,23 @@ public class WatcherTest {
 		this.time.advance(2, TimeUnit.SECONDS);
 		waitForWatcher(10);
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.NOTIFY, null);
+	}
+
+	@Test
+	public void itDetectsModify() throws Exception {
+		final File f1 = this.tmp.newFile("file1.mp4");
+		startWatcher(2, 10);  // Overall, wait for 2 file callbacks.
+		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
+
+		FileUtils.write(f1, "data", "UTF-8");
+		waitForTotalWatchEventCount(1, 10);  // Event count does not include existing files.
+
+		this.time.advance(29, TimeUnit.SECONDS);
+		verifyNoMoreInteractions(this.listener);
+
+		this.time.advance(2, TimeUnit.SECONDS);
+		waitForWatcher(10);
+		verify(this.listener).fileModified(tmpRoot, f1, null);
 	}
 
 	@Test
