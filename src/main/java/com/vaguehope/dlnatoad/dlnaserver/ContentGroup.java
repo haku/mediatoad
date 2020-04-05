@@ -10,6 +10,7 @@ import com.vaguehope.dlnatoad.util.CollectionHelper.Function;
 public enum ContentGroup {
 
 	ROOT("0", "-", "Root"), // Root id of '0' is in the spec.
+	RECENT("0-recent", null, "Recent"),
 	VIDEO("1-videos", "video-", "Videos"),
 	IMAGE("2-images", "image-", "Images"),
 	AUDIO("3-audio", "audio-", "Audio"),

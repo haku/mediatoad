@@ -136,7 +136,12 @@ public class IndexServlet extends HttpServlet {
 			w.print("\" download=\"");
 			w.print(node.getFile().getName());
 			w.print("\">");
-			w.print(FileHelper.readableFileSize(node.getItem().getFirstResource().getSize()));
+
+			final Res firstResource = node.getItem().getFirstResource();
+			if (firstResource != null) {
+				w.print(FileHelper.readableFileSize(firstResource.getSize()));
+			}
+
 			w.print("</a>]");
 
 			final List<Res> ress = node.getItem().getResources();
@@ -172,6 +177,8 @@ public class IndexServlet extends HttpServlet {
 			w.print("\">");
 			w.println("</a></span>");
 		}
+
+		// Debug footer.
 
 		w.print("<p>");
 		w.print(this.contentServingHistory.getActiveCount());

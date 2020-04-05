@@ -11,6 +11,7 @@ import org.junit.rules.TemporaryFolder;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
@@ -51,7 +52,15 @@ public class IndexServletTest {
 		this.req.setPathInfo("/" + mockItems.get(0).getId());
 		this.undertest.doGet(this.req, this.resp);
 		assertEquals(404, this.resp.getStatus());
-		assertEquals("Item is a not a directory: item 0\n", this.resp.getContentAsString());
+		assertEquals("Item is a not a directory: id0\n", this.resp.getContentAsString());
+	}
+
+	@Test
+	public void itServesRecent() throws Exception {
+		this.mockContent.givenMockItems(1);
+		this.req.setPathInfo("/" + ContentGroup.RECENT.getId());
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals(200, this.resp.getStatus());
 	}
 
 }

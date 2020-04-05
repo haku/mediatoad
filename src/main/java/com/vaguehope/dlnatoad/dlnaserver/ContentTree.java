@@ -7,7 +7,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.fourthline.cling.support.model.DIDLObject;
 import org.fourthline.cling.support.model.WriteStatus;
@@ -26,13 +29,33 @@ public class ContentTree {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentTree.class);
 
-	private final Map<String, ContentNode> contentMap;
+	private final Map<String, ContentNode> contentMap = new ConcurrentHashMap<String, ContentNode>();
 	private final ContentNode rootNode;
 
+	private static final int MAX_RECENT_ITEMS = 50;
+	private final SetBackedContainer recentContainer;
+	private final NavigableSet<ContentNode> recent = new ConcurrentSkipListSet<ContentNode>(ContentNode.Order.MODIFIED_DESC);
+	private final Object[] recentLock = new Object[] {};
+	private volatile long oldestRecentItem = 0L;
+
 	public ContentTree () {
-		this.contentMap = new ConcurrentHashMap<String, ContentNode>();
+		this(true);
+	}
+
+	public ContentTree (boolean trackRecent) {
 		this.rootNode = createRootNode();
 		this.contentMap.put(ContentGroup.ROOT.getId(), this.rootNode);
+
+		if (trackRecent) {
+			this.recentContainer = createRecentContainer();
+			this.contentMap.put(this.recentContainer.getId(), new ContentNode(this.recentContainer.getId(), this.recentContainer));
+			final Container rc = rootNode.getContainer();
+			rc.addContainer(recentContainer);
+			rc.setChildCount(Integer.valueOf(rc.getChildCount().intValue() + 1));
+		}
+		else {
+			this.recentContainer = null;
+		}
 	}
 
 	private static ContentNode createRootNode () {
@@ -47,6 +70,18 @@ public class ContentTree {
 		root.setWriteStatus(WriteStatus.NOT_WRITABLE);
 		root.setChildCount(Integer.valueOf(0));
 		return new ContentNode(ContentGroup.ROOT.getId(), root);
+	}
+
+	private SetBackedContainer createRecentContainer () {
+		final SetBackedContainer c = new SetBackedContainer(this.recent);
+		c.setClazz(new DIDLObject.Class("object.container"));
+		c.setId(ContentGroup.RECENT.getId());
+		c.setParentID(rootNode.getId());
+		c.setTitle(ContentGroup.RECENT.getHumanName());
+		c.setRestricted(true);
+		c.setWriteStatus(WriteStatus.NOT_WRITABLE);
+		c.setChildCount(Integer.valueOf(0));
+		return c;
 	}
 
 	private static boolean isValidItem (final ContentNode node) {
@@ -71,6 +106,7 @@ public class ContentTree {
 
 	public void addNode (final ContentNode node) {
 		this.contentMap.put(node.getId(), node);
+		maybeAddToRecent(node);
 	}
 
 	/**
@@ -96,7 +132,9 @@ public class ContentTree {
 				final ContentNode parentNode = this.contentMap.get(node.getItem().getParentID());
 				if (parentNode != null) {
 					removeItemFromContainer(parentNode.getContainer(), node.getItem());
-					if (removeContainerFromItsParentIfEmpty(parentNode.getContainer())) this.contentMap.remove(parentNode.getId());
+					if (removeContainerFromItsParentIfEmpty(parentNode.getContainer())) {
+						this.contentMap.remove(parentNode.getId());
+					}
 				}
 			}
 		}
@@ -106,6 +144,7 @@ public class ContentTree {
 		else {
 			throw new IllegalArgumentException("Not an item or a container: " + node);
 		}
+		removeFromRecent(node);
 	}
 
 	public void prune () {
@@ -115,6 +154,7 @@ public class ContentTree {
 			if (node.isItem()) {
 				if (!isValidItem(node)) {
 					ittr.remove();
+					removeFromRecent(node);
 					LOG.info("unshared: {}", node.getFile().getAbsolutePath());
 				}
 			}
@@ -173,6 +213,66 @@ public class ContentTree {
 			}
 			c.setChildCount(c.getContainers().size() + c.getItems().size());
 		}
+	}
+
+	public Collection<ContentNode> getRecent () {
+		return this.recent;
+	}
+
+	private void maybeAddToRecent(final ContentNode node) {
+		if (recentContainer == null) return;
+
+		final long t = node.getLastModified();
+		if (t < oldestRecentItem) return;
+
+		synchronized (recentLock) {
+			this.recent.add(node);
+			if (recent.size() > MAX_RECENT_ITEMS) {
+				recent.pollLast();
+				this.oldestRecentItem = recent.last().getLastModified();
+			}
+			recentContainer.reload();
+		}
+	}
+
+	private void removeFromRecent(final ContentNode node) {
+		if (recentContainer == null) return;
+
+		if (recent.remove(node)) {
+			synchronized (recentLock) {
+				recentContainer.reload();
+			}
+		}
+	}
+
+	private static class SetBackedContainer extends Container {
+
+		private final Set<ContentNode> set;
+
+		public SetBackedContainer(final Set<ContentNode> set) {
+			this.set = set;
+		}
+
+		public void reload () {
+			final List<Item> newItems = new ArrayList<Item>(set.size());
+			for (final ContentNode cn : this.set) {
+				if (cn.hasItem()) {
+					newItems.add(cn.getItem());
+				}
+			}
+			this.items = newItems;
+		}
+
+	    @Override
+		public void setItems(final List<Item> items) {
+	        throw new UnsupportedOperationException();
+	    }
+
+	    @Override
+		public Container addItem(final Item item) {
+	    	throw new UnsupportedOperationException();
+	    }
+
 	}
 
 }

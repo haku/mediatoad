@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -73,9 +74,17 @@ public class MediaIndexTest {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 
-		final Container videoContainer = this.contentTree.getRootNode().getContainer().getContainers().get(0);
-		final Container dirContainer = videoContainer.getContainers().get(0);
+		final List<Container> toplevelContainers = this.contentTree.getRootNode().getContainer().getContainers();
+		Container videoContainer = null;
+		for (Container tlc : toplevelContainers) {
+			if (ContentGroup.VIDEO.getId().equals(tlc.getId())) {
+				videoContainer = tlc;
+				break;
+			}
+		}
+		if (videoContainer == null) fail("Video container not found.");
 
+		final Container dirContainer = videoContainer.getContainers().get(0);
 		final List<File> actualFiles = getFiles(getNodes(getItemIds(dirContainer.getItems())));
 		assertEquals(expectedFiles, actualFiles);
 	}
@@ -136,8 +145,8 @@ public class MediaIndexTest {
 
 	@Test
 	public void itCanPreserveDirStructure () throws Exception {
-		final File root = new File(this.tmp.getRoot(), "root");
-		final File dir1 = new File(root, "dir 1");
+		final File topdir = new File(this.tmp.getRoot(), "topdir");
+		final File dir1 = new File(topdir, "dir 1");
 		final File dir2 = new File(dir1, "dir 2");
 		final File dir3 = new File(dir2, "dir 3");
 		final File file1 = mockFile("file 1.mkv", dir1);
@@ -146,13 +155,13 @@ public class MediaIndexTest {
 		this.contentTree = new ContentTree();  // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE, new MediaId(null), new MediaInfo());
 
-		this.undertest.fileFound(root, file1, null, null);
-		this.undertest.fileFound(root, file3, null, null);
+		this.undertest.fileFound(topdir, file1, null, null);
+		this.undertest.fileFound(topdir, file3, null, null);
 
 		final List<Container> rootDirs = this.contentTree.getNode(ContentGroup.ROOT.getId()).getContainer().getContainers();
-		assertEquals(1, rootDirs.size());
 
-		final Container rootCont = rootDirs.get(0);
+		final Container rootCont = rootDirs.get(rootDirs.size() - 1);
+		assertEquals("topdir", rootCont.getTitle());
 		assertContainerContainsDirsAndFiles(rootCont,
 				Collections.singletonList(dir1), Collections.<File> emptyList());
 		assertContainerContainsDirsAndFiles(rootCont.getContainers().get(0),

@@ -1,7 +1,7 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,7 +35,7 @@ public class ContentDirectoryServiceTest {
 
 	@Before
 	public void before () throws Exception {
-		this.contentTree = new ContentTree();
+		this.contentTree = new ContentTree(false);
 		this.mockContent = new MockContent(this.contentTree);
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);

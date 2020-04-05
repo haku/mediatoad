@@ -115,7 +115,9 @@ public class MediaIndex implements FileListener {
 		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
 			@Override
 			public void onMediaId(final String mediaId) throws IOException {
-				if (MediaIndex.this.contentTree.getNode(mediaId) == null) {
+				// If ID has changed, remove and re-add.
+				final ContentNode itemInTree = MediaIndex.this.contentTree.getNode(mediaId);
+				if (itemInTree == null) {
 					MediaIndex.this.contentTree.removeFile(file);
 					addFile(rootDir, file, new Runnable() {
 						@Override
@@ -124,6 +126,9 @@ public class MediaIndex implements FileListener {
 							if (onUsed != null) onUsed.run();
 						}
 					});
+				}
+				else {
+					itemInTree.reload();
 				}
 			}
 

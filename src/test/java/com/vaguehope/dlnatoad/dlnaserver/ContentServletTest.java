@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import java.io.File;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -52,22 +52,16 @@ public class ContentServletTest {
 
 	@Test
 	public void itResolvesMediaResource() throws Exception {
-		final String id = "some_id";
-		final File file = new File(id);
-		this.contentTree.addNode(new ContentNode(id, null, file, MediaFormat.OGG));
-
-		final Resource res = this.undertest.getResource("/" + id);
-		assertEquals(file.getName(), res.getFile().getName());
+		final ContentNode item = mockContent.givenMockItems(1).get(0);
+		final Resource res = this.undertest.getResource("/" + item.getId());
+		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
 
 	@Test
-	public void itResolvesMediaResourceWithFileExtension() throws Exception {
-		final String id = "some_id";
-		final File file = new File(id);
-		this.contentTree.addNode(new ContentNode(id, null, file, MediaFormat.OGG));
-
-		final Resource res = this.undertest.getResource("/" + id + ".foo");
-		assertEquals(file.getName(), res.getFile().getName());
+	public void itResolvesMediaResourceWithAnyFileExtension() throws Exception {
+		final ContentNode item = mockContent.givenMockItems(1).get(0);
+		final Resource res = this.undertest.getResource("/" + item.getId() + ".foo");
+		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
 
 	@Test

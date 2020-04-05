@@ -239,6 +239,7 @@ public class SearchEngine {
 				if (predicate.matches(ci)) results.add(ci);
 			}
 			for (final Container childContainer : container.getContainers()) {
+				if (ContentGroup.RECENT.getId().equals(childContainer.getId())) continue;  // Do not search in recent.
 				results.addAll(filterItems(childContainer, predicate));
 			}
 		}
