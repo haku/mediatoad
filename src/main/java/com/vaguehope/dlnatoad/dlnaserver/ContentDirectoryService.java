@@ -52,28 +52,29 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			if (contentNode == null) return new BrowseResult(new DIDLParser().generate(new DIDLContent()), 0, 0);
 
 			if (contentNode.isItem()) {
-				final DIDLContent didl = new DIDLContent();
-				didl.addItem(contentNode.getItem());
-				return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+				return contentNode.applyItem(i -> {
+					final DIDLContent didl = new DIDLContent();
+					didl.addItem(i);
+					return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+				});
 			}
-
-			final Container contentContainer = contentNode.getContainer();
 
 			if (browseFlag == BrowseFlag.METADATA) {
-				final DIDLContent didl = new DIDLContent();
-				didl.addContainer(contentContainer);
-				return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+				return contentNode.applyContainer(c -> {
+					final DIDLContent didl = new DIDLContent();
+					didl.addContainer(c);
+					return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+				});
 			}
 
-			// toRangedResult() uses List.sublist(),
-			// so make local copies.
-			final List<Container> containers;
-			final List<Item> items;
-			synchronized (contentContainer) {
-				containers = new ArrayList<Container>(contentContainer.getContainers());
-				items = new ArrayList<Item>(contentContainer.getItems());
-			}
-			return toRangedResult(containers, items, firstResult, maxResults);
+			return contentNode.applyContainer(c -> {
+				// toRangedResult() uses List.sublist(),
+				// so make local copies.
+				final List<Container> containers = new ArrayList<Container>(c.getContainers());
+				final List<Item> items = new ArrayList<Item>(c.getItems());
+				// FIXME should also acquire locks on each item's ContentNode? 
+				return toRangedResult(containers, items, firstResult, maxResults);
+			});
 		}
 		catch (final Exception e) {
 			LOG.warn(String.format("Failed to generate directory listing" +
@@ -99,8 +100,13 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			final ContentNode contentNode = this.contentTree.getNode(containerId);
 			if (contentNode == null) return new BrowseResult("", 0, 0);
 			if (contentNode.isItem()) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CONTAINER, "Can not seach inside in an item.");
+
 			// TODO cache search results to make pagination faster.
-			return toRangedResult(Collections.<Container> emptyList(), this.searchEngine.search(contentNode, searchCriteria), firstResult, maxResults);
+			// FIXME since search engine operates on / leaks Container and Item objects,
+			// marshaling search results is done without a lock.
+
+			final List<Item> searchMatches = this.searchEngine.search(contentNode, searchCriteria);
+			return toRangedResult(Collections.<Container> emptyList(), searchMatches, firstResult, maxResults);
 		}
 		catch (final ContentDirectoryException e) {
 			LOG.warn(String.format("Failed to parse search request" +

@@ -48,7 +48,12 @@ public class SearchEngine {
 		final Predicate<Item> predicate = criteriaToPredicate(searchCriteria);
 		if (predicate == null) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CRITERIA, "Do not know how to parse: " + searchCriteria);
 		LOG.debug("'{}' => {} in {}ms.", searchCriteria, predicate, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
-		return filterItems(contentNode.getContainer(), predicate);
+
+		// FIXME TODO This breaks the locking inside ContentNode and only works because
+		// filterItems() does its own locking on the container object.
+		final Container container = contentNode.applyContainer(c -> c);
+
+		return filterItems(container, predicate);
 	}
 
 	protected static Predicate<Item> criteriaToPredicate (final String searchCriteria) {

@@ -91,8 +91,7 @@ public class MockContent {
 
 		final ContentNode node = new ContentNode(id, container);
 		this.contentTree.addNode(node);
-		parent.getContainer().addContainer(node.getContainer());
-		parent.getContainer().setChildCount(parent.getContainer().getChildCount() + 1);
+		parent.addChild(node);
 		return node;
 	}
 
@@ -123,28 +122,48 @@ public class MockContent {
 		if (modifier != null) modifier.accept(file);
 		final ContentNode node = new ContentNode(id, item, file, MediaFormat.OGG);
 		this.contentTree.addNode(node);
-		parent.getContainer().addItem(node.getItem());
-		parent.getContainer().setChildCount(parent.getContainer().getChildCount() + 1);
+		parent.addChild(node);
 		return node;
 	}
 
-	public static List<Container> listOfContainers (final Collection<ContentNode> nodes) {
+	/**
+	 * Collect up containers from nodes (not child containers).
+	 */
+	public static List<Container> nodeContainers (final Collection<ContentNode> nodes) {
 		final List<Container> l = new ArrayList<Container>();
 		if (nodes != null) {
 			for (final ContentNode cn : nodes) {
-				final Container container = cn.getContainer();
-				if (container != null) l.add(container);
+				// This breaks the locking, but (probably) not important in unit tests.
+				if (cn.hasContainer()) cn.withContainer(c -> l.add(c));
 			}
 		}
 		return l;
 	}
 
-	public static List<Item> listOfItems (final Collection<ContentNode> nodes) {
+	public static List<Container> childContainers (final ContentNode... nodes) {
+		return childContainers(Arrays.asList(nodes));
+	}
+
+	/**
+	 * Collect up child containers from nodes.
+	 */
+	public static List<Container> childContainers (final Collection<ContentNode> nodes) {
+		final List<Container> l = new ArrayList<Container>();
+		if (nodes != null) {
+			for (final ContentNode cn : nodes) {
+				// This breaks the locking, but (probably) not important in unit tests.
+				cn.withEachChildContainer(c -> l.add(c));
+			}
+		}
+		return l;
+	}
+
+	public static List<Item> nodeItems (final Collection<ContentNode> nodes) {
 		final List<Item> l = new ArrayList<Item>();
 		if (nodes != null) {
 			for (final ContentNode cn : nodes) {
-				final Item item = cn.getItem();
-				if (item != null) l.add(item);
+				// This breaks the locking, but (probably) not important in unit tests.
+				if (cn.hasItem()) cn.withItem(i -> l.add(i));
 			}
 		}
 		return l;

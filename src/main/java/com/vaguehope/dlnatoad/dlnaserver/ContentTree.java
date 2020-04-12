@@ -33,7 +33,7 @@ public class ContentTree {
 	private final ContentNode rootNode;
 
 	private static final int MAX_RECENT_ITEMS = 50;
-	private final SetBackedContainer recentContainer;
+	private final ContentNode recentContentNode;
 	private final NavigableSet<ContentNode> recent = new ConcurrentSkipListSet<ContentNode>(ContentNode.Order.MODIFIED_DESC);
 	private final Object[] recentLock = new Object[] {};
 	private volatile long oldestRecentItem = 0L;
@@ -47,14 +47,13 @@ public class ContentTree {
 		this.contentMap.put(ContentGroup.ROOT.getId(), this.rootNode);
 
 		if (trackRecent) {
-			this.recentContainer = createRecentContainer();
-			this.contentMap.put(this.recentContainer.getId(), new ContentNode(this.recentContainer.getId(), this.recentContainer));
-			final Container rc = rootNode.getContainer();
-			rc.addContainer(recentContainer);
-			rc.setChildCount(Integer.valueOf(rc.getChildCount().intValue() + 1));
+			final SetBackedContainer recentContainer = createRecentContainer();
+			this.recentContentNode = new ContentNode(recentContainer.getId(), recentContainer);
+			this.contentMap.put(recentContainer.getId(), this.recentContentNode);
+			this.rootNode.addChildContainer(recentContainer);
 		}
 		else {
-			this.recentContainer = null;
+			this.recentContentNode = null;
 		}
 	}
 
@@ -76,16 +75,12 @@ public class ContentTree {
 		final SetBackedContainer c = new SetBackedContainer(this.recent);
 		c.setClazz(new DIDLObject.Class("object.container"));
 		c.setId(ContentGroup.RECENT.getId());
-		c.setParentID(rootNode.getId());
+		c.setParentID(this.rootNode.getId());
 		c.setTitle(ContentGroup.RECENT.getHumanName());
 		c.setRestricted(true);
 		c.setWriteStatus(WriteStatus.NOT_WRITABLE);
 		c.setChildCount(Integer.valueOf(0));
 		return c;
-	}
-
-	private static boolean isValidItem (final ContentNode node) {
-		return node.getFile() != null && node.getFile().exists();
 	}
 
 	public int getNodeCount() {
@@ -128,18 +123,18 @@ public class ContentTree {
 	public void removeNode (final ContentNode node) {
 		if (node.isItem()) {
 			this.contentMap.remove(node.getId());
-			if (node.getItem() != null) {
-				final ContentNode parentNode = this.contentMap.get(node.getItem().getParentID());
+			if (node.hasItem()) {
+				final ContentNode parentNode = this.contentMap.get(node.getParentId());
 				if (parentNode != null) {
-					removeItemFromContainer(parentNode.getContainer(), node.getItem());
-					if (removeContainerFromItsParentIfEmpty(parentNode.getContainer())) {
+					parentNode.removeChild(node);
+					if (removeContainerFromItsParentIfEmpty(parentNode)) {
 						this.contentMap.remove(parentNode.getId());
 					}
 				}
 			}
 		}
-		else if (node.getContainer() != null) {
-			removeContainerFromItsParent(node.getContainer());
+		else if (node.hasContainer()) {
+			removeContainerFromItsParent(node);
 		}
 		else {
 			throw new IllegalArgumentException("Not an item or a container: " + node);
@@ -152,66 +147,43 @@ public class ContentTree {
 		while (ittr.hasNext()) {
 			final ContentNode node = ittr.next();
 			if (node.isItem()) {
-				if (!isValidItem(node)) {
+				if (!node.hasExistantFile()) {
 					ittr.remove();
 					removeFromRecent(node);
 					LOG.info("unshared: {}", node.getFile().getAbsolutePath());
 				}
 			}
 			else {
-				final Container c = node.getContainer();
-				pruneItems(c);
-				if (removeContainerFromItsParentIfEmpty(c)) ittr.remove();
+				pruneItems(node);
+				if (removeContainerFromItsParentIfEmpty(node)) ittr.remove();
 			}
 		}
 	}
 
-	private void pruneItems (final Container c) {
-		synchronized (c) {
-			final Iterator<Item> it = c.getItems().iterator();
-			while (it.hasNext()) {
-				final Item item = it.next();
-				final ContentNode itemNode = this.contentMap.get(item.getId());
-				if (itemNode == null || !isValidItem(itemNode)) it.remove();
-			}
-			c.setChildCount(c.getContainers().size() + c.getItems().size());
-		}
+	private void pruneItems (final ContentNode node) {
+		node.maybeRemoveChildItems(i -> {
+			final ContentNode n = this.contentMap.get(i.getId());
+			return n != null && n.hasExistantFile();  // Return true to keep.
+		});
 	}
 
-	private boolean removeContainerFromItsParentIfEmpty (final Container c) {
-		if (c.getChildCount() < 1 && !ContentGroup.incluesId(c.getId())) {
-			removeContainerFromItsParent(c);
+	private boolean removeContainerFromItsParentIfEmpty (final ContentNode node) {
+		if (node.getChildCount() < 1 && !ContentGroup.incluesId(node.getId())) {
+			removeContainerFromItsParent(node);
 			return true;
 		}
 		return false;
 	}
 
-	private void removeContainerFromItsParent (final Container c) {
-		final ContentNode parentNode = this.contentMap.get(c.getParentID());
+	private void removeContainerFromItsParent (final ContentNode node) {
+		final ContentNode parentNode = this.contentMap.get(node.getParentId());
 		if (parentNode != null) {
-			final Container parentC = parentNode.getContainer();
-			synchronized (parentC) {
-				if (parentC.getContainers().remove(c)) {
-					parentC.setChildCount(Integer.valueOf(parentC.getChildCount() - 1));
-				}
-				else {
-					LOG.error("Container '{}' not in its parent '{}'.", c.getId(), parentC.getId());
-				}
+			if (!parentNode.removeChild(node)) {
+				LOG.error("Container '{}' not in its parent '{}'.", node.getId(), parentNode.getId());
 			}
 		}
 		else {
-			LOG.error("Parent of container '{}' not found in contentMap: '{}'.", c.getId(), c.getParentID());
-		}
-	}
-
-	private static void removeItemFromContainer (final Container c, final Item itemToRemove) {
-		synchronized (c) {
-			final Iterator<Item> it = c.getItems().iterator();
-			while (it.hasNext()) {
-				final Item item = it.next();
-				if (itemToRemove.getId().equals(item.getId())) it.remove();
-			}
-			c.setChildCount(c.getContainers().size() + c.getItems().size());
+			LOG.error("Parent of container '{}' not found in contentMap: '{}'.", node.getId(), node.getParentId());
 		}
 	}
 
@@ -220,7 +192,7 @@ public class ContentTree {
 	}
 
 	private void maybeAddToRecent(final ContentNode node) {
-		if (this.recentContainer == null) return;
+		if (this.recentContentNode == null) return;
 		if (!node.hasItem()) return;
 
 		if (node.getLastModified() < this.oldestRecentItem) return;
@@ -234,18 +206,25 @@ public class ContentTree {
 			else {
 				this.oldestRecentItem = 0L;
 			}
-			recentContainer.reload();
+			reloadRecentContainer();
 		}
 	}
 
 	private void removeFromRecent(final ContentNode node) {
-		if (this.recentContainer == null) return;
+		if (this.recentContentNode == null) return;
 
 		synchronized (this.recentLock) {
 			if (this.recent.remove(node)) {
-				this.recentContainer.reload();
+				reloadRecentContainer();
 			}
 		}
+	}
+
+	private void reloadRecentContainer() {
+		this.recentContentNode.withContainer(c -> {
+			if (!(c instanceof SetBackedContainer)) throw new IllegalStateException();
+			((SetBackedContainer) c).reload();
+		});
 	}
 
 	private static class SetBackedContainer extends Container {
@@ -257,10 +236,12 @@ public class ContentTree {
 		}
 
 		public void reload () {
-			final List<Item> newItems = new ArrayList<Item>(set.size());
+			final List<Item> newItems = new ArrayList<Item>(this.set.size());
 			for (final ContentNode cn : this.set) {
 				if (cn.hasItem()) {
-					newItems.add(cn.getItem());
+					// This leaks the item away from its lock, but it is never retrieved
+					// from this context, so this should not be an issue.
+					cn.applyItem(i -> newItems.add(i));
 				}
 			}
 			this.items = newItems;

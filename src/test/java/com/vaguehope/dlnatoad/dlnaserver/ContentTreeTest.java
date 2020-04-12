@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,18 +31,17 @@ public class ContentTreeTest {
 	@Test
 	public void itHasItems() throws Exception {
 		this.mockContent.givenMockItems(10);
-		assertThat(MockContent.listOfItems(this.undertest.getNodes()), hasSize(10));
+		assertThat(MockContent.nodeItems(this.undertest.getNodes()), hasSize(10));
 	}
 
 	@Test
 	public void itMakesRecentContainer() throws Exception {
 		final List<ContentNode> mockItems = this.mockContent.givenMockItems(100, sequentialTimeStamps());
-		final List<Item> expected = MockContent.listOfItems(mockItems).subList(mockItems.size() - 50, mockItems.size());
+		final List<Item> expected = MockContent.nodeItems(mockItems).subList(mockItems.size() - 50, mockItems.size());
 		Collections.reverse(expected);
 
-		final ContentNode cn = undertest.getNode(ContentGroup.RECENT.getId());
-		final Container c = cn.getContainer();
-		assertThat(c.getItems(), equalTo(expected));
+		final ContentNode cn = this.undertest.getNode(ContentGroup.RECENT.getId());
+		cn.withContainer(c -> assertThat(c.getItems(), equalTo(expected)));
 	}
 
 	@Test
@@ -62,7 +60,7 @@ public class ContentTreeTest {
 		assertThat(this.undertest.getRecent(), hasSize(1));
 
 		when(items.get(0).getFile().exists()).thenReturn(false);
-		undertest.prune();
+		this.undertest.prune();
 		assertThat(this.undertest.getRecent(), hasSize(0));
 	}
 

@@ -8,12 +8,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.FilenameUtils;
 import org.fourthline.cling.support.model.DIDLObject;
@@ -64,9 +64,9 @@ public class MediaIndex implements FileListener {
 	private final MediaId mediaId;
 	private final MediaInfo mediaInfo;
 
-	private final Container videoContainer;
-	private final Container imageContainer;
-	private final Container audioContainer;
+	private final ContentNode videoContainer;
+	private final ContentNode imageContainer;
+	private final ContentNode audioContainer;
 
 	public MediaIndex (final ContentTree contentTree, final String externalHttpContext, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) {
 		this.contentTree = contentTree;
@@ -77,9 +77,9 @@ public class MediaIndex implements FileListener {
 
 		switch (hierarchyMode) {
 			case PRESERVE:
-				this.videoContainer = contentTree.getRootNode().getContainer();
-				this.imageContainer = contentTree.getRootNode().getContainer();
-				this.audioContainer = contentTree.getRootNode().getContainer();
+				this.videoContainer = contentTree.getRootNode();
+				this.imageContainer = contentTree.getRootNode();
+				this.audioContainer = contentTree.getRootNode();
 				break;
 			case FLATTERN:
 				this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
@@ -179,7 +179,7 @@ public class MediaIndex implements FileListener {
 
 	private void putFileToContentTree (final File rootDir, final File file, final MediaFormat format, final Runnable onComplete) throws IOException {
 		final File dir = file.getParentFile();
-		final Container formatContainer;
+		final ContentNode formatContainer;
 		switch (format.getContentGroup()) { // FIXME make hashmap.
 			case VIDEO:
 				formatContainer = this.videoContainer;
@@ -194,7 +194,7 @@ public class MediaIndex implements FileListener {
 				throw new IllegalStateException();
 		}
 
-		final Container dirContainer;
+		final ContentNode dirContainer;
 		switch (this.hierarchyMode) {
 			case PRESERVE:
 				dirContainer = makeDirAndParentDirsContianersOnTree(format, formatContainer, rootDir, dir);
@@ -205,40 +205,26 @@ public class MediaIndex implements FileListener {
 			dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, dirId, dir);
 		}
 
-		makeItemInContainer(format, dirContainer, file, file.getName(), new Runnable() {
-			@Override
-			public void run() {
-				synchronized (dirContainer) {
-					Collections.sort(dirContainer.getItems(), DIDLObjectOrder.TITLE);
-				}
-				onComplete.run();
-			}
-		});
+		makeItemInContainer(format, dirContainer, file, file.getName(), onComplete);
 	}
 
-	private Container makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
+	private ContentNode makeFormatContainerOnTree (final ContentNode parentNode, final ContentGroup group) {
 		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
-	private Container makeDirContainerOnTree (final ContentGroup contentGroup, final Container parentContainer, final String id, final File dir) throws IOException {
+	private ContentNode makeDirContainerOnTree (final ContentGroup contentGroup, final ContentNode parentContainer, final String id, final File dir) throws IOException {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
-		final Container dirContainer = makeContainerOnTree(parentNode, id, dir.getName());
-		dirContainer.setCreator(dir.getAbsolutePath());
-		synchronized (parentContainer) {
-			Collections.sort(parentNode.getContainer().getContainers(), DIDLObjectOrder.CREATOR);
-		}
+		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath());
 
 		final Res artRes = findArtRes(dir, contentGroup);
 		if (artRes != null) {
-			synchronized (dirContainer) {
-				dirContainer.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
-			}
+			dirContainer.addContainerProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
 		}
 
 		return dirContainer;
 	}
 
-	private Container makeDirAndParentDirsContianersOnTree (final MediaFormat format, final Container formatContainer, final File rootDir, final File dir) throws IOException {
+	private ContentNode makeDirAndParentDirsContianersOnTree (final MediaFormat format, final ContentNode formatContainer, final File rootDir, final File dir) throws IOException {
 		final List<File> dirsToCreate = new ArrayList<>();
 
 		// When in PRESERVE mode do not prefix dir IDs with the type.
@@ -260,14 +246,13 @@ public class MediaIndex implements FileListener {
 		Collections.reverse(dirsToCreate);
 
 		for (final File dirToCreate : dirsToCreate) {
-			final Container parentContainer;
+			final ContentNode parentContainer;
 			if (rootDir.equals(dirToCreate)) {
 				parentContainer = formatContainer;
 			}
 			else {
 				final String parentContainerId = this.mediaId.contentIdSync(groupForContainerId, dirToCreate.getParentFile());
-				final ContentNode parentNode = this.contentTree.getNode(parentContainerId);
-				parentContainer = parentNode.getContainer();
+				parentContainer = this.contentTree.getNode(parentContainerId);
 			}
 
 			final String dirToCreateId = this.mediaId.contentIdSync(groupForContainerId, dirToCreate);
@@ -275,15 +260,19 @@ public class MediaIndex implements FileListener {
 		}
 
 		final String dirId = this.mediaId.contentIdSync(groupForContainerId, dir);
-		return this.contentTree.getNode(dirId).getContainer();
+		return this.contentTree.getNode(dirId);
+	}
+
+	private ContentNode makeContainerOnTree (final ContentNode parentNode, final String id, final String title) {
+		return makeContainerOnTree(parentNode, id, title, null);
 	}
 
 	/**
 	 * If it already exists it will return the existing instance.
 	 */
-	private Container makeContainerOnTree (final ContentNode parentNode, final String id, final String title) {
+	private ContentNode makeContainerOnTree (final ContentNode parentNode, final String id, final String title, final String sortName) {
 		final ContentNode node = this.contentTree.getNode(id);
-		if (node != null) return node.getContainer();
+		if (node != null) return node;
 
 		final Container container = new Container();
 		container.setClazz(new DIDLObject.Class("object.container"));
@@ -294,17 +283,17 @@ public class MediaIndex implements FileListener {
 		container.setWriteStatus(WriteStatus.NOT_WRITABLE);
 		container.setChildCount(Integer.valueOf(0));
 
-		final Container parentContainer = parentNode.getContainer();
-		synchronized (parentContainer) {
-			parentContainer.addContainer(container);
-			parentContainer.setChildCount(Integer.valueOf(parentContainer.getChildCount().intValue() + 1));
-		}
-		this.contentTree.addNode(new ContentNode(id, container));
+		final ContentNode contentNode = new ContentNode(id, container);
+		if (sortName != null) contentNode.setSortName(sortName);
 
-		return container;
+		// Sorting happens during add, so sort name must already be set.
+		parentNode.addChildContainer(container);
+
+		this.contentTree.addNode(contentNode);
+		return contentNode;
 	}
 
-	private void makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title, final Runnable onComplete) throws IOException {
+	private void makeItemInContainer (final MediaFormat format, final ContentNode parent, final File file, final String title, final Runnable onComplete) throws IOException {
 		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
 
 			@Override
@@ -320,8 +309,8 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private boolean makeItemInContainer (final MediaFormat format, final Container parent, final File file, final String title, final String id) throws IOException {
-		if (hasItemWithId(parent, id)) return false;
+	private boolean makeItemInContainer (final MediaFormat format, final ContentNode parent, final File file, final String title, final String id) throws IOException {
+		if (parent.hasChildWithId(id)) return false;
 
 		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
 		res.setSize(file.length());
@@ -331,18 +320,18 @@ public class MediaIndex implements FileListener {
 			case VIDEO:
 				//res.setDuration(formatDuration(durationMillis));
 				//res.setResolution(resolutionXbyY);
-				item = new VideoItem(id, parent, title, "", res);
+				item = new VideoItem(id, parent.getId(), title, "", res);
 				findSubtitlesForItem(item, file);
 				this.mediaInfo.readInfoAsync(file, res);
 				findArt(file, format, item);
 				break;
 			case IMAGE:
 				//res.setResolution(resolutionXbyY);
-				item = new ImageItem(id, parent, title, "", res);
+				item = new ImageItem(id, parent.getId(), title, "", res);
 				break;
 			case AUDIO:
 				//res.setDuration(formatDuration(durationMillis));
-				item = new AudioItem(id, parent, title, "", res);
+				item = new AudioItem(id, parent.getId(), title, "", res);
 				this.mediaInfo.readInfoAsync(file, res);
 				findArt(file, format, item);
 				break;
@@ -352,14 +341,14 @@ public class MediaIndex implements FileListener {
 
 		findMetadata(file, item);
 
-		synchronized (parent) {
-			parent.addItem(item);
-			parent.setChildCount(Integer.valueOf(parent.getChildCount().intValue() + 1));
-		}
+		parent.addChildItem(item);
 		this.contentTree.addNode(new ContentNode(item.getId(), item, file, format));
 		return true;
 	}
 
+	/**
+	 * Not synchronised because item should only by visible to caller.
+	 */
 	private static void findMetadata (final File file, final Item item) {
 		final Metadata md = MetadataReader.read(file);
 		if (md == null) return;
@@ -367,14 +356,14 @@ public class MediaIndex implements FileListener {
 		if (md.getAlbum() != null) item.addProperty(new DIDLObject.Property.UPNP.ALBUM(md.getAlbum()));
 	}
 
+	/**
+	 * Not synchronised because item should only by visible to caller.
+	 */
 	private void findArt (final File mediaFile, final MediaFormat mediaFormat, final Item item) throws IOException {
 		final Res artRes = findArtRes(mediaFile, mediaFormat.getContentGroup());
 		if (artRes == null) return;
-
-		synchronized (item) {
-			item.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
-			item.addResource(artRes);
-		}
+		item.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
+		item.addResource(artRes);
 	}
 
 	private Res findArtRes (final File mediaFile, final ContentGroup mediaContentGroup) throws IOException {
@@ -429,19 +418,17 @@ public class MediaIndex implements FileListener {
 		final ContentNode dirNode = this.contentTree.getNode(dirNodeId);
 		if (dirNode == null) return false;
 
-		boolean attached = false;
-		synchronized (dirNode.getContainer()) {
-			for (final Item item : dirNode.getContainer().getItems()) {
-				final File itemFile = this.contentTree.getNode(item.getId()).getFile();
-				if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
-					if (addSubtitles(item, subtitlesFile, subtitlesFormat)) {
-						LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
-						attached = true;
-					}
+		final AtomicBoolean attached = new AtomicBoolean(false);
+		dirNode.withEachChildItem(i -> {
+			final File itemFile = this.contentTree.getNode(i.getId()).getFile();
+			if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
+				if (addSubtitles(i, subtitlesFile, subtitlesFormat)) {
+					LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
+					attached.set(true);
 				}
 			}
-		}
-		return attached;
+		});
+		return attached.get();
 	}
 
 	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
@@ -449,16 +436,11 @@ public class MediaIndex implements FileListener {
 		final ContentNode parent = this.contentTree.getNode(parentId);
 		if (parent == null) return;
 
-		final Container dirContainer = parent.getContainer();
-		if (dirContainer == null) return;
-
-		synchronized (dirContainer) {
-			for (final Item item : dirContainer.getItems()) {
-				if (removeSubtitles(item, subtitlesFile, subtitlesFormat)) {
-					LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
-				}
+		parent.withEachChildItem(i -> {
+			if (removeSubtitles(i, subtitlesFile, subtitlesFormat)) {
+				LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
 			}
-		}
+		});
 	}
 
 	private void findSubtitlesForItem (final Item item, final File itemFile) throws IOException {
@@ -520,41 +502,6 @@ public class MediaIndex implements FileListener {
 	private static MimeType formatToMime (final MediaFormat format) {
 		final String mime = format.getMime();
 		return new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
-	}
-
-	private static boolean hasItemWithId (final Container parent, final String id) {
-		synchronized (parent) {
-			for (final Item item : parent.getItems()) {
-				if (id.equals(item.getId())) return true;
-			}
-		}
-		return false;
-	}
-
-	private enum DIDLObjectOrder implements Comparator<DIDLObject> {
-		TITLE {
-			@Override
-			public int compare (final DIDLObject a, final DIDLObject b) {
-				return a.getTitle().compareToIgnoreCase(b.getTitle());
-			}
-		},
-		ID {
-			@Override
-			public int compare (final DIDLObject a, final DIDLObject b) {
-				return a.getId().compareTo(b.getId());
-			}
-		},
-		CREATOR {
-			@Override
-			public int compare (final DIDLObject a, final DIDLObject b) {
-				final String l = a.getCreator() != null ? a.getCreator() : "";
-				final String r = b.getCreator() != null ? b.getCreator() : "";
-				return l.compareToIgnoreCase(r);
-			}
-		};
-
-		@Override
-		public abstract int compare (DIDLObject a, DIDLObject b);
 	}
 
 	private final class BasenameFilter implements FilenameFilter {

@@ -13,6 +13,7 @@ import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.model.BrowseFlag;
 import org.fourthline.cling.support.model.BrowseResult;
 import org.fourthline.cling.support.model.DIDLContent;
+import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -172,7 +173,8 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itSearchesUsingSearchEngine () throws Exception {
 		final List<ContentNode> items = this.mockContent.givenMockItems(10);
-		when(this.searchEngine.search(this.contentTree.getRootNode(), "some search query")).thenReturn(Collections.singletonList(items.get(3).getItem()));
+		final Item item3 = items.get(3).applyItem(i -> i);
+		when(this.searchEngine.search(this.contentTree.getRootNode(), "some search query")).thenReturn(Collections.singletonList(item3));
 
 		final BrowseResult ret = this.undertest.search(this.contentTree.getRootNode().getId(), "some search query", "*", 0, 3, null);
 
@@ -198,8 +200,8 @@ public class ContentDirectoryServiceTest {
 	private void assertParserMarshaled (final List<ContentNode> dirs, final List<ContentNode> items) throws Exception {
 		final ArgumentCaptor<DIDLContent> cap = ArgumentCaptor.forClass(DIDLContent.class);
 		verify(this.didlParser).generate(cap.capture());
-		assertEquals(MockContent.listOfContainers(dirs), cap.getValue().getContainers());
-		assertEquals(MockContent.listOfItems(items), cap.getValue().getItems());
+		assertEquals(MockContent.nodeContainers(dirs), cap.getValue().getContainers());
+		assertEquals(MockContent.nodeItems(items), cap.getValue().getItems());
 	}
 
 }
