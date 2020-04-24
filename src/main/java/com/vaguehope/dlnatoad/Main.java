@@ -80,6 +80,7 @@ public final class Main {
 		catch (final Exception e) {
 			err.println("An unhandled error occured.");
 			e.printStackTrace(err);
+			System.exit(1);
 		}
 	}
 
@@ -142,7 +143,8 @@ public final class Main {
 		final ContentTree contentTree = new ContentTree();
 		final Server server = startContentServer(contentTree, mediaId, args, hostName);
 
-		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + C.HTTP_PORT;
+		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + server.getConnectors()[0].getPort();
+		LOG.info("Self: {}", externalHttpContext);
 
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
@@ -182,7 +184,16 @@ public final class Main {
 	}
 
 	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final Args args, final String hostName) throws Exception {
-		int port = C.HTTP_PORT;
+		int port = args.getPort();
+		final boolean defaultPort;
+		if (port < 1) {
+			port = C.HTTP_PORT;
+			defaultPort = true;
+		}
+		else {
+			defaultPort = false;
+		}
+
 		while (true) {
 			final HandlerList handler = makeContentHandler(contentTree, mediaId, args, hostName);
 
@@ -194,7 +205,9 @@ public final class Main {
 				return server;
 			}
 			catch (final BindException e) {
+				if (!defaultPort) throw e;
 				if ("Address already in use".equals(e.getMessage())) {
+					LOG.info("Retrying with higher port...");
 					port += 1;
 				}
 				else {

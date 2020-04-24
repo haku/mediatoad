@@ -13,6 +13,7 @@ import org.kohsuke.args4j.Option;
 public class Args {
 
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
+	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP address of interface to bind to.") private String iface;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
 	@Option(name = "-s", aliases = { "--simplify" }, usage = "simplify directory structure.") private boolean simplifyHierarchy;
@@ -52,6 +53,10 @@ public class Args {
 		}
 
 		return cDirs;
+	}
+
+	public int getPort() {
+		return this.port;
 	}
 
 	public String getInterface () {
