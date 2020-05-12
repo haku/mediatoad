@@ -41,6 +41,7 @@ import org.seamless.util.MimeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
@@ -312,7 +313,7 @@ public class MediaIndex implements FileListener {
 	private boolean makeItemInContainer (final MediaFormat format, final ContentNode parent, final File file, final String title, final String id) throws IOException {
 		if (parent.hasChildWithId(id)) return false;
 
-		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), this.externalHttpContext + "/" + id);
+		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), contentServletPathForId(id));
 		res.setSize(file.length());
 
 		final Item item;
@@ -379,7 +380,7 @@ public class MediaIndex implements FileListener {
 
 		final String artId = this.mediaId.contentIdSync(mediaContentGroup, artFile);  // TODO convert to Async.
 		this.contentTree.addNode(new ContentNode(artId, null, artFile, artFormat));
-		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), this.externalHttpContext + "/" + artId);
+		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), contentServletPathForId(artId));
 	}
 
 	private DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
@@ -463,15 +464,19 @@ public class MediaIndex implements FileListener {
 
 	private boolean addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
 		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
-		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
+		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
 		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
 		return addResourceToItemIfNotPresent(item, subtitlesRes);
 	}
 
 	private boolean removeSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
 		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
-		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), this.externalHttpContext + "/" + subtitlesId);
+		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
 		return removeResourceFromItem(item, subtitlesRes);
+	}
+
+	private String contentServletPathForId(final String id) {
+		return this.externalHttpContext + "/" + C.CONTENT_PATH_PREFIX + id;
 	}
 
 	private static boolean addResourceToItemIfNotPresent (final Item item, final Res res) {

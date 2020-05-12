@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.commons.io.FileUtils;
+import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
@@ -31,6 +32,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
@@ -241,8 +243,8 @@ public class MediaIndexTest {
 
 		final List<Container> videoDirs = MockContent.childContainers(this.contentTree.getNode(ContentGroup.VIDEO.getId()));
 		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).applyContainer(c -> c.getItems().get(1));
-		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
-		assertEquals(srtFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(videoFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(0))).getFile());
+		assertEquals(srtFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(1))).getFile());
 	}
 
 	@Test
@@ -259,11 +261,11 @@ public class MediaIndexTest {
 
 		final List<Container> videoDirs = MockContent.childContainers(this.contentTree.getNode(ContentGroup.VIDEO.getId()));
 		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).applyContainer(c -> c.getItems().get(1));
-		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
-		assertEquals(srtFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(videoFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(0))).getFile());
+		assertEquals(srtFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(1))).getFile());
 
 		this.undertest.fileGone(srtFile);
-		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(videoFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(0))).getFile());
 		assertEquals(1, item.getResources().size());
 	}
 
@@ -280,8 +282,8 @@ public class MediaIndexTest {
 
 		final List<Container> videoDirs = MockContent.childContainers(this.contentTree.getNode(ContentGroup.VIDEO.getId()));
 		final Item item = this.contentTree.getNode(videoDirs.get(0).getId()).applyContainer(c -> c.getItems().get(1));
-		assertEquals(videoFile, this.contentTree.getNode(item.getResources().get(0).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
-		assertEquals(artFile, this.contentTree.getNode(item.getResources().get(1).getValue().replace(EXTERNAL_HTTP_CONTEXT + "/", "")).getFile());
+		assertEquals(videoFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(0))).getFile());
+		assertEquals(artFile, this.contentTree.getNode(pathWithoutPrefix(item.getResources().get(1))).getFile());
 		assertEquals(
 				"http-get:*:image/jpeg:DLNA.ORG_PN=JPEG_TN;DLNA.ORG_OP=01;DLNA.ORG_CI=1;DLNA.ORG_FLAGS=00d00000000000000000000000000000",
 				item.getResources().get(1).getProtocolInfo().toString());
@@ -399,6 +401,10 @@ public class MediaIndexTest {
 			}
 		}, new ArrayList<String>());
 		assertEquals(expectedFiles, actualFiles);
+	}
+
+	private static String pathWithoutPrefix(Res res) {
+		return res.getValue().replace(EXTERNAL_HTTP_CONTEXT + "/" + C.CONTENT_PATH_PREFIX, "");
 	}
 
 }

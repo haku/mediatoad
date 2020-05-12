@@ -52,14 +52,21 @@ public class ContentServletTest {
 
 	@Test
 	public void itResolvesMediaResource() throws Exception {
-		final ContentNode item = mockContent.givenMockItems(1).get(0);
+		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
 		final Resource res = this.undertest.getResource("/" + item.getId());
 		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
 
 	@Test
+	public void itResolvesMediaResourceWithContentDir() throws Exception {
+		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
+		final Resource res = this.undertest.getResource("/c/" + item.getId());
+		assertEquals(item.getFile().getName(), res.getFile().getName());
+	}
+
+	@Test
 	public void itResolvesMediaResourceWithAnyFileExtension() throws Exception {
-		final ContentNode item = mockContent.givenMockItems(1).get(0);
+		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
 		final Resource res = this.undertest.getResource("/" + item.getId() + ".foo");
 		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}

@@ -87,6 +87,7 @@ public class MockContent {
 	public ContentNode addMockDir (final String id, final ContentNode parent) {
 		final Container container = new Container();
 		container.setId(id);
+		container.setTitle(id);
 		container.setChildCount(Integer.valueOf(0));
 
 		final ContentNode node = new ContentNode(id, container);

@@ -19,6 +19,7 @@ import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
+import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
@@ -34,30 +35,40 @@ public class IndexServlet extends HttpServlet {
 	private final ImageResizer imageResizer;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
+	private final ContentServlet contentServlet;
 
-	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer, final String hostName, final ContentServingHistory contentServingHistory) {
+	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer,
+			final String hostName, final ContentServingHistory contentServingHistory, ContentServlet contentServlet) {
 		this.contentTree = contentTree;
 		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
+		this.contentServlet = contentServlet;
 	}
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		String path = req.getPathInfo();
-		if (path == null || path.length() < 1 || "/".equals(path)) {
-			path = ContentGroup.ROOT.getId();
+		String nodeId = req.getPathInfo();
+		if (nodeId == null || nodeId.length() < 1 || "/".equals(nodeId)) {
+			nodeId = ContentGroup.ROOT.getId();
 		}
-		else if (path.startsWith("/")) {
-			path = path.substring(1);
+		else if (nodeId.startsWith("/")) {
+			nodeId = nodeId.substring(1);
 		}
 
-		final ContentNode contentNode = this.contentTree.getNode(path);
+		final ContentNode contentNode = this.contentTree.getNode(nodeId);
 		if (contentNode == null) {
-			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + path);
+			// ContentServlet does extra parsing.
+			this.contentServlet.service(req, resp);
 			return;
 		}
+		if (!contentNode.hasContainer()) {
+			// Index only handles directories anyway.
+			this.contentServlet.service(req, resp);
+			return;
+		}
+
 		printDir(resp, contentNode);
 	}
 
@@ -84,11 +95,11 @@ public class IndexServlet extends HttpServlet {
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0, maximum-scale=1.0\">");
 		w.println("</head>");
-		w.println("<body><h3>");
+		w.print("<body><h3>");
 		w.print(contentNode.getTitle());
 		w.print(" (");
 		w.print(contentNode.getChildContainerCount());
-		w.println(" dirs, ");
+		w.print(" dirs, ");
 		w.print(contentNode.getChildItemCount());
 		w.println(" items)</h3><ul>");
 
@@ -113,7 +124,7 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private void appendDirectory(final PrintWriter w, final Container dir) {
-		w.print("<li><a href=\"/index/");
+		w.print("<li><a href=\"/");
 		w.print(dir.getId());
 		w.print("\">");
 		w.print(dir.getTitle());

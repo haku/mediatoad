@@ -21,4 +21,6 @@ public interface C {
 	 */
 	int MIN_ADVERTISEMENT_AGE_SECONDS = 300;
 
+	String CONTENT_PATH_PREFIX = "c/";
+
 }

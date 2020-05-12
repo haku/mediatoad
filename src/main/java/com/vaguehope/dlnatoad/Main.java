@@ -228,8 +228,11 @@ public final class Main {
 		MediaFormat.addTo(servletHandler.getMimeTypes());
 		servletHandler.setContextPath("/");
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		servletHandler.addServlet(new ServletHolder(new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog())), "/");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory)), "/index/*");
+
+		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
+		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
+
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory, contentServlet)), "/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

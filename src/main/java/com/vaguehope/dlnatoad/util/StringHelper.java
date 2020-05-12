@@ -56,4 +56,12 @@ public final class StringHelper {
 		return END_QUOTES.matcher(s).replaceAll("");
 	}
 
+	public static String removePrefix(String s, String prefix) {
+		if (s == null) return null;
+		if (s.startsWith(prefix)) {
+			return s.substring(prefix.length());
+		}
+		return s;
+	}
+
 }

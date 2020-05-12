@@ -15,7 +15,10 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ContentServlet extends DefaultServlet {
+import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.util.StringHelper;
+
+public class ContentServlet extends DefaultServlet {
 
 	private static final long serialVersionUID = -4819786280597656455L;
 	private static final Logger LOG = LoggerFactory.getLogger(ContentServlet.class);
@@ -58,7 +61,8 @@ public final class ContentServlet extends DefaultServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = id.replaceFirst("/", "");
+			id = StringHelper.removePrefix(id, "/");
+			id = StringHelper.removePrefix(id, C.CONTENT_PATH_PREFIX);
 
 			// Remove everything after first dot.
 			int firstDot = id.indexOf('.');
