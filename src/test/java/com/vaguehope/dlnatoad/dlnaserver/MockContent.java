@@ -39,7 +39,7 @@ public class MockContent {
 		this.shuffle = shuffle;
 	}
 
-	public List<ContentNode> givenMockDirs (final int n) {
+	public List<ContentNode> givenMockDirs (final int n) throws IOException {
 		final List<ContentNode> ret = new ArrayList<ContentNode>();
 		for (int i = 0; i < n; i++) {
 			ret.add(addMockDir("dir " + i));
@@ -80,17 +80,25 @@ public class MockContent {
 		return ret;
 	}
 
-	public ContentNode addMockDir (final String id) {
+	public ContentNode addMockDir (final String id) throws IOException {
 		return addMockDir(id, this.contentTree.getRootNode());
 	}
 
-	public ContentNode addMockDir (final String id, final ContentNode parent) {
+	public ContentNode addMockDir (final String id, final ContentNode parent) throws IOException {
 		final Container container = new Container();
 		container.setId(id);
 		container.setTitle(id);
 		container.setChildCount(Integer.valueOf(0));
 
-		final ContentNode node = new ContentNode(id, container);
+		final File dir;
+		if (this.tmp != null) {
+			dir = this.tmp.newFolder(id);
+		}
+		else {
+			dir = null;
+		}
+
+		final ContentNode node = new ContentNode(id, container, dir);
 		this.contentTree.addNode(node);
 		parent.addChild(node);
 		return node;
@@ -101,6 +109,7 @@ public class MockContent {
 	}
 
 	public ContentNode addMockItem (final Class<? extends Item> cls, final String id, final ContentNode parent, Consumer<File> modifier) throws IOException {
+		final MediaFormat format = MediaFormat.MP4;
 		final Res res = mock(Res.class);
 
 		final Item item = mock(cls);
@@ -109,7 +118,7 @@ public class MockContent {
 		when(item.toString()).thenReturn("item " + id);
 		when(item.getResources()).thenReturn(Arrays.asList(res));
 
-		final String fileName = id + ".mp4";
+		final String fileName = id + "." + format.getExt();
 		final File file;
 		if (this.tmp != null) {
 			file = this.tmp.newFile(fileName);
@@ -121,7 +130,7 @@ public class MockContent {
 			when(file.getAbsolutePath()).thenReturn("/mock/path/" + fileName);
 		}
 		if (modifier != null) modifier.accept(file);
-		final ContentNode node = new ContentNode(id, item, file, MediaFormat.OGG);
+		final ContentNode node = new ContentNode(id, item, file, format);
 		this.contentTree.addNode(node);
 		parent.addChild(node);
 		return node;

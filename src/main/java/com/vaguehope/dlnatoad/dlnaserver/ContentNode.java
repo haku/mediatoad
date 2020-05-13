@@ -35,18 +35,23 @@ public class ContentNode {
 	private volatile long lastModified = 0L;
 
 	public ContentNode (final String id, final Container container) {
+		this(id, container, null);
+	}
+
+	public ContentNode (final String id, final Container container, File dir) {
 		if (id == null) throw new IllegalArgumentException("id must not be null.");
 		if (container == null) throw new IllegalArgumentException("container must not be null.");
 		if (container.getId() == null)  throw new IllegalArgumentException("container must not have null id.");
 		this.id = id;
 		this.item = null;
 		this.container = container;
-		this.file = null;
+		this.file = dir;
 		this.format = null;
 		this.isItem = false;
 		synchronized (this.container) {
 			updateContainerSize();
 		}
+		reload();
 	}
 
 	public ContentNode (final String id, final Item item, final File file, final MediaFormat format) {

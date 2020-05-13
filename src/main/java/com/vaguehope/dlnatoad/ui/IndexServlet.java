@@ -294,6 +294,12 @@ public class IndexServlet extends HttpServlet {
 		w.print(StringEscapeUtils.escapeXml11(node.getTitle()));
 		w.println("</D:displayname>");
 
+		if (node.getFormat() != null) {
+			w.print("<D:getcontenttype>");
+			w.print(node.getFormat().getMime());
+			w.println("</D:getcontenttype>");
+		}
+
 		final long fileLength = node.getFileLength();
 		if (fileLength > 0) {
 			w.print("<D:getcontentlength>");

@@ -215,7 +215,7 @@ public class MediaIndex implements FileListener {
 
 	private ContentNode makeDirContainerOnTree (final ContentGroup contentGroup, final ContentNode parentContainer, final String id, final File dir) throws IOException {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
-		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath());
+		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath(), dir);
 
 		final Res artRes = findArtRes(dir, contentGroup);
 		if (artRes != null) {
@@ -268,10 +268,14 @@ public class MediaIndex implements FileListener {
 		return makeContainerOnTree(parentNode, id, title, null);
 	}
 
+	private ContentNode makeContainerOnTree (final ContentNode parentNode, final String id, final String title, final String sortName) {
+		return makeContainerOnTree(parentNode, id, title, sortName, null);
+	}
+
 	/**
 	 * If it already exists it will return the existing instance.
 	 */
-	private ContentNode makeContainerOnTree (final ContentNode parentNode, final String id, final String title, final String sortName) {
+	private ContentNode makeContainerOnTree (final ContentNode parentNode, final String id, final String title, final String sortName, final File file) {
 		final ContentNode node = this.contentTree.getNode(id);
 		if (node != null) return node;
 
@@ -284,7 +288,7 @@ public class MediaIndex implements FileListener {
 		container.setWriteStatus(WriteStatus.NOT_WRITABLE);
 		container.setChildCount(Integer.valueOf(0));
 
-		final ContentNode contentNode = new ContentNode(id, container);
+		final ContentNode contentNode = new ContentNode(id, container, file);
 		if (sortName != null) contentNode.setSortName(sortName);
 
 		// Sorting happens during add, so sort name must already be set.

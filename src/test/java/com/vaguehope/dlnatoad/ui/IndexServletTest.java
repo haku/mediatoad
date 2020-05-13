@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -61,7 +62,7 @@ public class IndexServletTest {
 	@Before
 	public void before() throws Exception {
 		this.contentTree = new ContentTree();
-		this.mockContent = new MockContent(this.contentTree);
+		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.mediaId = new MediaId(null);
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
@@ -141,6 +142,8 @@ public class IndexServletTest {
 	public void itHandlesWebdavPropfindSubdirDepth0() throws Exception {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode dir = mockDirs.get(0);
+		assertTrue(dir.getFile().setLastModified(1234567890000L));
+		dir.reload();
 
 		this.req.setMethod("PROPFIND");
 		this.req.setPathInfo("/" + dir.getId() + "/");
@@ -150,6 +153,7 @@ public class IndexServletTest {
 
 		assertThat(this.resp.getStatus(), equalTo(207));
 		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Fri, 13 Feb 2009 23:31:30 GMT</D:getlastmodified>"));
 	}
 
 	@Test
@@ -173,7 +177,10 @@ public class IndexServletTest {
 	public void itHandlesWebdavPropfindSubdirItem() throws Exception {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode dir = mockDirs.get(0);
-		ContentNode item = this.mockContent.addMockItem("i", dir);
+
+		final ContentNode item = this.mockContent.addMockItem("i", dir);
+		assertTrue(item.getFile().setLastModified(1034567890000L));
+		item.reload();
 
 		this.req.setMethod("PROPFIND");
 		this.req.setPathInfo("/" + dir.getId() + "/" + item.getId());
@@ -183,6 +190,8 @@ public class IndexServletTest {
 
 		assertThat(this.resp.getStatus(), equalTo(207));
 		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/i</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:getcontenttype>video/mp4</D:getcontenttype>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 04:58:10 BST</D:getlastmodified>"));
 	}
 
 }
