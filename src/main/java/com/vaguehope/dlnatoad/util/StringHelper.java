@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.util;
 
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.regex.Pattern;
 
 public final class StringHelper {
@@ -41,6 +42,15 @@ public final class StringHelper {
 		return s.toString();
 	}
 
+	public static String join (final Enumeration<String> en, final String join) {
+		if (en == null || !en.hasMoreElements()) return null;
+		StringBuilder s = new StringBuilder(en.nextElement());
+		while (en.hasMoreElements()) {
+			s.append(join).append(en.nextElement());
+		}
+		return s.toString();
+	}
+
 	/**
 	 * Returns 2 element array or null.
 	 */
@@ -60,6 +70,14 @@ public final class StringHelper {
 		if (s == null) return null;
 		if (s.startsWith(prefix)) {
 			return s.substring(prefix.length());
+		}
+		return s;
+	}
+
+	public static String removeSuffix(String s, String suffix) {
+		if (s == null) return null;
+		if (s.endsWith(suffix)) {
+			return s.substring(0, s.length() - suffix.length());
 		}
 		return s;
 	}

@@ -31,6 +31,7 @@ public class ContentNode {
 	private final boolean isItem;
 	private final MediaFormat format;
 
+	private volatile long fileLength = 0L;
 	private volatile long lastModified = 0L;
 
 	public ContentNode (final String id, final Container container) {
@@ -156,6 +157,10 @@ public class ContentNode {
 			}
 		}
 		return null;
+	}
+
+	public long getFileLength() {
+		return this.fileLength;
 	}
 
 	public long getLastModified() {
@@ -310,7 +315,8 @@ public class ContentNode {
 	}
 
 	public void reload() {
-		if (this.file == null) return;
+		if (this.file == null || !this.file.exists()) return;
+		this.fileLength = this.file.length();
 		this.lastModified = this.file.lastModified();
 	}
 

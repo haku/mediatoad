@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
@@ -12,8 +14,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.container.Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
@@ -25,9 +30,14 @@ import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.util.StringHelper;
+import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 
 public class IndexServlet extends HttpServlet {
 
+	private static final String DO_NOT_LOG_ATTR = "do_not_log";
+	private static final ThreadSafeDateFormatter RFC1123_DATE = new ThreadSafeDateFormatter("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+	private static final Logger LOG = LoggerFactory.getLogger(IndexServlet.class);
 	private static final long serialVersionUID = -8907271726001369264L;
 
 	private final ContentTree contentTree;
@@ -36,35 +46,60 @@ public class IndexServlet extends HttpServlet {
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
 	private final ContentServlet contentServlet;
+	private final boolean printAccessLog;
 
 	public IndexServlet (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer,
-			final String hostName, final ContentServingHistory contentServingHistory, ContentServlet contentServlet) {
+			final String hostName, final ContentServingHistory contentServingHistory,
+			final ContentServlet contentServlet, boolean printAccessLog) {
 		this.contentTree = contentTree;
 		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
 		this.contentServlet = contentServlet;
+		this.printAccessLog = printAccessLog;
+	}
+
+	@Override
+	protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		try {
+			if ("PROPFIND".equals(req.getMethod())) {
+				doPropfind(req, resp);
+				return;
+			}
+			super.service(req, resp);
+		}
+		finally {
+			if (this.printAccessLog && req.getAttribute(DO_NOT_LOG_ATTR) == null) {
+				// TODO should log getRequestURI() instead?
+				LOG.info("{} {} {} {}", resp.getStatus(), req.getMethod(), req.getPathInfo(), req.getRemoteAddr());
+			}
+		}
+	}
+
+	@Override
+	protected void doOptions(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		resp.setHeader("Allow", "GET,HEAD,PROPFIND");
+		resp.setHeader("DAV", "1");
+	}
+
+	private ContentNode contentNodeFromPath(final HttpServletRequest req) {
+		String id = req.getPathInfo();
+		if (id == null || id.length() < 1 || "/".equals(id)) {
+			id = ContentGroup.ROOT.getId();
+		}
+		else {
+			id = ContentServlet.contentNodeIdFromPath(id);
+		}
+		return this.contentTree.getNode(id);
 	}
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		String nodeId = req.getPathInfo();
-		if (nodeId == null || nodeId.length() < 1 || "/".equals(nodeId)) {
-			nodeId = ContentGroup.ROOT.getId();
-		}
-		else if (nodeId.startsWith("/")) {
-			nodeId = nodeId.substring(1);
-		}
-
-		final ContentNode contentNode = this.contentTree.getNode(nodeId);
-		if (contentNode == null) {
-			// ContentServlet does extra parsing.
-			this.contentServlet.service(req, resp);
-			return;
-		}
-		if (!contentNode.hasContainer()) {
-			// Index only handles directories anyway.
+		final ContentNode contentNode = contentNodeFromPath(req);
+		// ContentServlet does extra parsing and Index only handles directories anyway.
+		if (contentNode == null || !contentNode.hasContainer()) {
+			req.setAttribute(DO_NOT_LOG_ATTR, Boolean.TRUE);
 			this.contentServlet.service(req, resp);
 			return;
 		}
@@ -200,6 +235,83 @@ public class IndexServlet extends HttpServlet {
 		w.print("<p>");
 		w.print(this.contentTree.getNodeCount());
 		w.println(" content nodes.</p>");
+	}
+
+	// http://www.webdav.org/specs/rfc4918.html
+	protected void doPropfind(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final ContentNode contentNode = contentNodeFromPath(req);
+		if (contentNode == null) {
+			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
+			return;
+		}
+
+		final String depth = req.getHeader("Depth");
+		if (depth == null) {
+			returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Missing depth header.");
+			return;
+		}
+		if (!"0".equals(depth) && !"1".equals(depth)) {
+			returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unsupported depth: " + depth);
+			return;
+		}
+
+		resp.setStatus(207);
+		resp.setCharacterEncoding("UTF-8");
+		resp.setContentType("application/xml");
+		final PrintWriter w = resp.getWriter();
+		w.println("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
+		w.println("<D:multistatus xmlns:D=\"DAV:\">");
+		appendPropfindItem(req, w, contentNode, false);
+		if ("1".equals(depth) && contentNode.hasContainer()) {
+			contentNode.withEachChildContainer(c -> {
+				appendPropfindItem(req, w, this.contentTree.getNode(c.getId()), true);
+			});
+			contentNode.withEachChildItem(i -> {
+				appendPropfindItem(req, w, this.contentTree.getNode(i.getId()), true);
+			});
+		}
+		w.println("</D:multistatus>");
+	}
+
+	private static void appendPropfindItem(final HttpServletRequest req, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
+		String path = req.getPathInfo();
+		if (appendIdToPath) {
+			path = StringHelper.removeSuffix(path, "/") + "/" + node.getId();
+		}
+
+		w.println("<D:response>");
+		w.println("<D:href>" + path + "</D:href>");
+		w.println("<D:propstat>");
+		w.println("<D:prop>");
+		if (node.hasContainer()) {
+			w.println("<D:resourcetype><D:collection/></D:resourcetype>");
+		}
+		else {
+			w.println("<D:resourcetype/>");
+		}
+
+		w.print("<D:displayname>");
+		w.print(StringEscapeUtils.escapeXml11(node.getTitle()));
+		w.println("</D:displayname>");
+
+		final long fileLength = node.getFileLength();
+		if (fileLength > 0) {
+			w.print("<D:getcontentlength>");
+			w.print(fileLength);
+			w.println("</D:getcontentlength>");
+		}
+
+		final long lastModified = node.getLastModified();
+		if (lastModified > 0) {
+			w.print("<D:getlastmodified>");
+			w.print(RFC1123_DATE.get().format(new Date(lastModified)));
+			w.print("</D:getlastmodified>");
+		}
+
+		w.println("</D:prop>");
+		w.println("<D:status>HTTP/1.1 200 OK</D:status>");
+		w.println("</D:propstat>");
+		w.println("</D:response>");
 	}
 
 	private static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {

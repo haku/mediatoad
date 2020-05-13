@@ -232,7 +232,8 @@ public final class Main {
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory, contentServlet)), "/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory,
+				contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

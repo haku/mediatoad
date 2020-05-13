@@ -44,12 +44,12 @@ public class ContentServlet extends DefaultServlet {
 		finally {
 			this.contentServingHistory.recordEnd(remoteAddr, requestURI);
 			if (this.printAccessLog) {
-				final String ranges = join(req.getHeaders(HttpHeaders.RANGE), ",");
+				final String ranges = StringHelper.join(req.getHeaders(HttpHeaders.RANGE), ",");
 				if (ranges != null) {
-					LOG.info("request: {} {} (r:{}) {}", resp.getStatus(), requestURI, ranges, remoteAddr);
+					LOG.info("{} {} {} (r:{}) {}", resp.getStatus(), req.getMethod(), requestURI, ranges, remoteAddr);
 				}
 				else {
-					LOG.info("request: {} {} {}", resp.getStatus(), requestURI, remoteAddr);
+					LOG.info("{} {} {} {}", resp.getStatus(), req.getMethod(), requestURI, remoteAddr);
 				}
 			}
 		}
@@ -61,15 +61,7 @@ public class ContentServlet extends DefaultServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = StringHelper.removePrefix(id, "/");
-			id = StringHelper.removePrefix(id, C.CONTENT_PATH_PREFIX);
-
-			// Remove everything after first dot.
-			int firstDot = id.indexOf('.');
-			if (firstDot > 0) {
-				id = id.substring(0, firstDot);
-			}
-
+			id = contentNodeIdFromPath(id);
 			final ContentNode node = this.contentTree.getNode(id);
 			if (node != null && node.isItem()) {
 				return Resource.newResource(node.getFile());
@@ -84,13 +76,21 @@ public class ContentServlet extends DefaultServlet {
 		return null;
 	}
 
-	private static String join (final Enumeration<String> en, final String join) {
-		if (en == null || !en.hasMoreElements()) return null;
-		StringBuilder s = new StringBuilder(en.nextElement());
-		while (en.hasMoreElements()) {
-			s.append(join).append(en.nextElement());
+	public static String contentNodeIdFromPath(String id) {
+		id = StringHelper.removePrefix(id, "/");
+		id = StringHelper.removePrefix(id, C.CONTENT_PATH_PREFIX);
+		id = StringHelper.removeSuffix(id, "/");
+		// Remove everything before the last slash.
+		final int lastSlash = id.lastIndexOf("/");
+		if (lastSlash >= 0 && lastSlash < id.length() - 1) {
+			id = id.substring(lastSlash + 1);
 		}
-		return s.toString();
+		// Remove everything after first dot.
+		final int firstDot = id.indexOf('.');
+		if (firstDot > 0) {
+			id = id.substring(0, firstDot);
+		}
+		return id;
 	}
 
 }

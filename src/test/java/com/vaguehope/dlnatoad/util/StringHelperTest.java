@@ -24,4 +24,14 @@ public class StringHelperTest {
 		assertEquals(null, StringHelper.removePrefix(null, "/"));
 	}
 
+	@Test
+	public void itRemovesTrailingString() throws Exception {
+		assertEquals("foobar", StringHelper.removeSuffix("foobar/", "/"));
+		assertEquals("", StringHelper.removeSuffix("/", "/"));
+		assertEquals("foobar", StringHelper.removeSuffix("foobar/c", "/c"));
+
+		assertEquals("", StringHelper.removeSuffix("", "/"));
+		assertEquals(null, StringHelper.removeSuffix(null, "/"));
+	}
+
 }

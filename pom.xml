@@ -185,7 +185,13 @@
 			<artifactId>commons-io</artifactId>
 			<version>${commonsio.version}</version>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.8</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
