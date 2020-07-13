@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.dlnaserver;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 
 import org.fourthline.cling.binding.annotations.AnnotationLocalServiceBinder;
 import org.fourthline.cling.model.DefaultServiceManager;
@@ -34,13 +35,15 @@ public class MediaServer {
 
 	private final LocalDevice localDevice;
 
-	public MediaServer (final ContentTree contentTree, final String hostName, final boolean printAccessLog) throws ValidationException, IOException {
+	public MediaServer (final ContentTree contentTree, final String hostName, final boolean printAccessLog, final URI presentationUri) throws ValidationException, IOException {
 		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
 		LOG.info("uniqueSystemIdentifier: {}", usi);
 		final DeviceType type = new UDADeviceType(DEVICE_TYPE, VERSION);
-		final DeviceDetails details = new DeviceDetails(C.METADATA_MODEL_NAME + " (" + hostName + ")",
+		final DeviceDetails details = new DeviceDetails(
+				C.METADATA_MODEL_NAME + " (" + hostName + ")",
 				new ManufacturerDetails(C.METADATA_MANUFACTURER),
-				new ModelDetails(C.METADATA_MODEL_NAME, C.METADATA_MODEL_DESCRIPTION, C.METADATA_MODEL_NUMBER));
+				new ModelDetails(C.METADATA_MODEL_NAME, C.METADATA_MODEL_DESCRIPTION, C.METADATA_MODEL_NUMBER),
+				presentationUri);
 		final Icon icon = createDeviceIcon();
 
 		final LocalService<ContentDirectoryService> contDirSrv = new AnnotationLocalServiceBinder().read(ContentDirectoryService.class);

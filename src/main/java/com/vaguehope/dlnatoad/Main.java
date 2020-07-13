@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.BindException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +145,7 @@ public final class Main {
 		final Server server = startContentServer(contentTree, mediaId, args, hostName);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + server.getConnectors()[0].getPort();
+		final URI selfUri = new URI(externalHttpContext);
 		LOG.info("Self: {}", externalHttpContext);
 
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
@@ -163,7 +165,7 @@ public final class Main {
 				upnpService.shutdown();
 			}
 		});
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog()).getDevice());
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog(), selfUri).getDevice());
 		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
 		server.join(); // Keep app alive.
 	}
