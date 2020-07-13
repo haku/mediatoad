@@ -26,11 +26,11 @@ public interface Time {
 
 		@Override
 		public long now() {
-			return time.get();
+			return this.time.get();
 		}
 
 		public void advance(final long amount, final TimeUnit unit) {
-			time.addAndGet(unit.toNanos(amount));
+			this.time.addAndGet(unit.toNanos(amount));
 		}
 
 	}
