@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.FilenameUtils;
 import org.fourthline.cling.support.model.DIDLObject;
@@ -115,9 +114,9 @@ public class MediaIndex implements FileListener {
 
 		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
 			@Override
-			public void onMediaId(final String mediaId) throws IOException {
+			public void onMediaId(final String itemId) throws IOException {
 				// If ID has changed, remove and re-add.
-				final ContentNode itemInTree = MediaIndex.this.contentTree.getNode(mediaId);
+				final ContentNode itemInTree = MediaIndex.this.contentTree.getNode(itemId);
 				if (itemInTree == null) {
 					MediaIndex.this.contentTree.removeFile(file);
 					addFile(rootDir, file, new Runnable() {
@@ -171,8 +170,7 @@ public class MediaIndex implements FileListener {
 				putFileToContentTree(rootDir, file, format, onComplete);
 				break;
 			case SUBTITLES:
-				final boolean added = attachSubtitlesToItem(file, format);
-				if (added) onComplete.run();
+				attachSubtitlesToItem(file, format, onComplete);
 				break;
 			default:
 		}
@@ -302,8 +300,8 @@ public class MediaIndex implements FileListener {
 		this.mediaId.contentIdAsync(format.getContentGroup(), file, new MediaIdCallback() {
 
 			@Override
-			public void onMediaId(final String mediaId) throws IOException {
-				final boolean added = makeItemInContainer(format, parent, file, title, mediaId);
+			public void onMediaId(final String itemId) throws IOException {
+				final boolean added = makeItemInContainer(format, parent, file, title, itemId);
 				if (added) onComplete.run();
 			}
 
@@ -387,7 +385,8 @@ public class MediaIndex implements FileListener {
 		return new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), contentServletPathForId(artId));
 	}
 
-	private DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
+	private static DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
+		@SuppressWarnings("rawtypes")
 		final EnumMap<DLNAAttribute.Type, DLNAAttribute> attributes = new EnumMap<>(DLNAAttribute.Type.class);
 
 		final DLNAProfiles dlnaThumbnailProfile = findDlnaThumbnailProfile(artMimeType);
@@ -414,36 +413,52 @@ public class MediaIndex implements FileListener {
 		MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE = Collections.unmodifiableMap(m);
 	}
 
-	private DLNAProfiles findDlnaThumbnailProfile (final MimeType mimeType) {
+	private static DLNAProfiles findDlnaThumbnailProfile (final MimeType mimeType) {
 		return MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE.get(mimeType.toString());
 	}
 
-	private boolean attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String dirNodeId = this.mediaId.contentIdSync(ContentGroup.VIDEO, subtitlesFile.getParentFile());
-		final ContentNode dirNode = this.contentTree.getNode(dirNodeId);
-		if (dirNode == null) return false;
+	private void attachSubtitlesToItem (final File subtitlesFile, final MediaFormat subtitlesFormat, final Runnable onComplete) throws IOException {
+		this.mediaId.contentIdAsync(ContentGroup.VIDEO, subtitlesFile.getParentFile(), new MediaIdCallback() {
+			@Override
+			public void onMediaId(final String dirNodeId) throws IOException {
+				final ContentNode dirNode = MediaIndex.this.contentTree.getNode(dirNodeId);
+				if (dirNode == null) return;
 
-		final AtomicBoolean attached = new AtomicBoolean(false);
-		dirNode.withEachChildItem(i -> {
-			final File itemFile = this.contentTree.getNode(i.getId()).getFile();
-			if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
-				if (addSubtitles(i, subtitlesFile, subtitlesFormat)) {
-					LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
-					attached.set(true);
-				}
+				dirNode.withEachChildItem(i -> {
+					final File itemFile = MediaIndex.this.contentTree.getNode(i.getId()).getFile();
+					if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
+						addSubtitles(i, subtitlesFile, subtitlesFormat, () -> {
+							LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(), subtitlesFile.getAbsolutePath());
+							if (onComplete != null) onComplete.run();
+						});
+					}
+				});
+			}
+
+			@Override
+			public void onError(final IOException e) {
+				LOG.warn("Failed to attach subtitles, error getting dirNodeId.", e);
 			}
 		});
-		return attached.get();
 	}
 
 	private void deattachSubtitles (final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String parentId = this.mediaId.contentIdSync(ContentGroup.VIDEO, subtitlesFile.getParentFile());
-		final ContentNode parent = this.contentTree.getNode(parentId);
-		if (parent == null) return;
+		this.mediaId.contentIdAsync(ContentGroup.VIDEO, subtitlesFile.getParentFile(), new MediaIdCallback() {
+			@Override
+			public void onMediaId(final String parentId) throws IOException {
+				final ContentNode parent = MediaIndex.this.contentTree.getNode(parentId);
+				if (parent == null) return;
 
-		parent.withEachChildItem(i -> {
-			if (removeSubtitles(i, subtitlesFile, subtitlesFormat)) {
-				LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
+				parent.withEachChildItem(i -> {
+					removeSubtitles(i, subtitlesFile, subtitlesFormat, () -> {
+						LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
+					});
+				});
+			}
+
+			@Override
+			public void onError(final IOException e) {
+				LOG.warn("Failed to deattach subtitles, error getting parentId.", e);
 			}
 		});
 	}
@@ -461,22 +476,44 @@ public class MediaIndex implements FileListener {
 		for (final String fName : fNames) {
 			final MediaFormat fFormat = MediaFormat.identify(fName);
 			if (fFormat != null && fFormat.getContentGroup() == ContentGroup.SUBTITLES) {
-				addSubtitles(item, new File(parentFile, fName), fFormat);
+				addSubtitles(item, new File(parentFile, fName), fFormat, null);
 			}
 		}
 	}
 
-	private boolean addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
-		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
-		this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
-		return addResourceToItemIfNotPresent(item, subtitlesRes);
+	private void addSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat, final Runnable onComplete) throws IOException {
+		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, new MediaIdCallback() {
+			@Override
+			public void onMediaId(final String subtitlesId) throws IOException {
+				final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
+				MediaIndex.this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
+				if (addResourceToItemIfNotPresent(item, subtitlesRes)) {
+					if (onComplete != null) onComplete.run();
+				}
+			}
+
+			@Override
+			public void onError(final IOException e) {
+				LOG.warn("Failed to add subtitles, error getting subtitlesId.", e);
+			}
+		});
 	}
 
-	private boolean removeSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		final String subtitlesId = this.mediaId.contentIdSync(subtitlesFormat.getContentGroup(), subtitlesFile);  // TODO Convert to Async.
-		final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
-		return removeResourceFromItem(item, subtitlesRes);
+	private void removeSubtitles (final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat, final Runnable onComplete) throws IOException {
+		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, new MediaIdCallback() {
+			@Override
+			public void onMediaId(String subtitlesId) throws IOException {
+				final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()), contentServletPathForId(subtitlesId));
+				if (removeResourceFromItem(item, subtitlesRes)) {
+					if (onComplete != null) onComplete.run();
+				}
+			}
+
+			@Override
+			public void onError(IOException e) {
+				LOG.warn("Failed to remove subtitles, error getting subtitlesId.", e);
+			}
+		});
 	}
 
 	private String contentServletPathForId(final String id) {
