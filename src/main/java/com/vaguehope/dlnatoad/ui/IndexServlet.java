@@ -85,7 +85,10 @@ public class IndexServlet extends HttpServlet {
 
 	private ContentNode contentNodeFromPath(final HttpServletRequest req) {
 		String id = req.getPathInfo();
-		if (id == null || id.length() < 1 || "/".equals(id)) {
+		if (id == null || id.length() < 1
+				|| "/".equals(id)
+				|| "/dlnatoad".equals(id)
+				|| "/dlnatoad/".equals(id)) {
 			id = ContentGroup.ROOT.getId();
 		}
 		else {
@@ -159,7 +162,7 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private void appendDirectory(final PrintWriter w, final Container dir) {
-		w.print("<li><a href=\"/");
+		w.print("<li><a href=\"");
 		w.print(dir.getId());
 		w.print("\">");
 		w.print(dir.getTitle());
@@ -167,13 +170,13 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private void appendItem(final PrintWriter w, final ContentNode node) throws IOException {
-		w.print("<li><a href=\"/");
+		w.print("<li><a href=\"");
 		w.print(node.getId());
 		w.print(".");
 		w.print(node.getFormat().getExt());
 		w.print("\">");
 		w.print(node.getFile().getName());
-		w.print("</a> [<a href=\"/");
+		w.print("</a> [<a href=\"");
 		w.print(node.getId());
 		w.print(".");
 		w.print(node.getFormat().getExt());
@@ -212,7 +215,7 @@ public class IndexServlet extends HttpServlet {
 			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile);
 			this.contentTree.addNode(new ContentNode(thumbId, null, thumbFile, MediaFormat.JPEG));
 
-			w.print("<span><a href=\"/");
+			w.print("<span><a href=\"");
 			w.print(node.getId());
 			w.print(".");
 			w.print(node.getFormat().getExt());
