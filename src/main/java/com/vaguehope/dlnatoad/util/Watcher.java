@@ -115,13 +115,20 @@ public class Watcher {
 	}
 
 	protected void register (final File rootDir, final Path dir) throws IOException {
+		if (!Files.isReadable(dir)) {
+			LOG.debug("Waiting for access to register: {}", dir);
+			this.waitingFiles.add(new WaitingFile(dir, rootDir, StandardWatchEventKinds.ENTRY_CREATE, this.time));
+			return;
+		}
+
+		LOG.debug("Registering: {}", dir);
 		final WatchKey watchKey = dir.register(this.watchService,
 				StandardWatchEventKinds.ENTRY_CREATE,
 				StandardWatchEventKinds.ENTRY_MODIFY,
 				StandardWatchEventKinds.ENTRY_DELETE);
 		this.watchKeys.put(watchKey, dir);
 		this.watchKeyRoots.put(watchKey, rootDir);
-		LOG.debug("Watching: {}", dir);
+		LOG.debug("Register complete: {}", dir);
 	}
 
 	/**
