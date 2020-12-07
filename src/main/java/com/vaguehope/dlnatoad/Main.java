@@ -51,6 +51,7 @@ import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
+import com.vaguehope.dlnatoad.util.NetHelper.IfaceAndAddr;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.Watcher;
 
@@ -107,8 +108,8 @@ public final class Main {
 			LOG.info("using address: {}", address);
 		}
 		else {
-			final List<InetAddress> addresses = NetHelper.getIpAddresses();
-			address = addresses.iterator().next();
+			final List<IfaceAndAddr> addresses = NetHelper.getIpAddresses();
+			address = addresses.iterator().next().getAddr();
 			LOG.info("addresses: {} using address: {}", addresses, address);
 		}
 
