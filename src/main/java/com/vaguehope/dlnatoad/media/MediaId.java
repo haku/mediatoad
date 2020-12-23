@@ -44,7 +44,7 @@ public class MediaId {
 					this.mediaDb.idForFile(file, callback);
 				}
 				else {
-					callback.onMediaId(transientContentId(type, file));
+					callback.onResult(transientContentId(type, file));
 				}
 			}
 			catch (final SQLException e) {
@@ -60,7 +60,7 @@ public class MediaId {
 
 		@Override
 		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
-			callback.onMediaId(transientContentId(type, file));
+			callback.onResult(transientContentId(type, file));
 		}
 
 	}

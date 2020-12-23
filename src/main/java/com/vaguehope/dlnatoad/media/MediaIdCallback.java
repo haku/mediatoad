@@ -2,10 +2,14 @@ package com.vaguehope.dlnatoad.media;
 
 import java.io.IOException;
 
-public interface MediaIdCallback {
+import com.vaguehope.dlnatoad.util.AsyncCallback;
 
-	void onMediaId(String mediaId) throws IOException;
+public interface MediaIdCallback extends AsyncCallback<String, IOException> {
 
+	@Override
+	void onResult(String mediaId) throws IOException;
+
+	@Override
 	void onError(IOException e);
 
 }

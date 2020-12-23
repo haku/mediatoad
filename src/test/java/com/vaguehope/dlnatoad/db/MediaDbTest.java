@@ -57,6 +57,7 @@ public class MediaDbTest {
 		return cb.getMediaId();
 	}
 
+	@SuppressWarnings("unused")
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
 		new MediaDb(this.dbFile, this.schEx);

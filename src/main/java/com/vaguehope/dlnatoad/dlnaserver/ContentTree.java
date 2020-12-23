@@ -50,7 +50,7 @@ public class ContentTree {
 			final SetBackedContainer recentContainer = createRecentContainer();
 			this.recentContentNode = new ContentNode(recentContainer.getId(), recentContainer);
 			this.contentMap.put(recentContainer.getId(), this.recentContentNode);
-			this.rootNode.addChildContainer(recentContainer);
+			this.rootNode.addChildContainerIfAbsent(recentContainer);
 		}
 		else {
 			this.recentContentNode = null;

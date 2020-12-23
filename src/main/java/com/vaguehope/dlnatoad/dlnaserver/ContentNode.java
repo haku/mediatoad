@@ -229,30 +229,36 @@ public class ContentNode {
 		}
 	}
 
-	public void addChild(final ContentNode child) {
+	public boolean addChild(final ContentNode child) {
 		if (child.isItem()) {
-			addChildItem(child.item);
+			return addChildItemIfAbsent(child.item);
 		}
 		else if (child.hasContainer()) {
-			addChildContainer(child.container);
+			return addChildContainerIfAbsent(child.container);
 		}
 		else {
 			throw new IllegalStateException();
 		}
 	}
 
-	public void addChildContainer(final Container childContainer) {
+	public boolean addChildContainerIfAbsent(final Container childContainer) {
 		synchronized (this.container) {
+			if (hasChildContainerWithId(childContainer.getId())) return false;
+
 			this.container.addContainer(childContainer);
 			Collections.sort(this.container.getContainers(), DIDLObjectOrder.CREATOR);
 			updateContainerSize();
+			return true;
 		}
 	}
 
-	public void addChildItem(final Item childItem) {
+	public boolean addChildItemIfAbsent(final Item childItem) {
 		synchronized (this.container) {
+			if (hasChildItemWithId(childItem.getId())) return false;
+
 			this.container.addItem(childItem);
 			updateContainerSize();
+			return true;
 		}
 	}
 
@@ -310,10 +316,19 @@ public class ContentNode {
 		this.container.setChildCount(this.container.getContainers().size() + this.container.getItems().size());
 	}
 
-	public boolean hasChildWithId(String childId) {
+	public boolean hasChildContainerWithId(String childId) {
 		synchronized (this.container) {
-			for (final Item item : this.container.getItems()) {
-				if (childId.equals(item.getId())) return true;
+			for (final Container c : this.container.getContainers()) {
+				if (childId.equals(c.getId())) return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean hasChildItemWithId(String childId) {
+		synchronized (this.container) {
+			for (final Item i : this.container.getItems()) {
+				if (childId.equals(i.getId())) return true;
 			}
 		}
 		return false;

@@ -36,15 +36,19 @@ public class MediaDb {
 
 	private final ScheduledExecutorService exSvc;
 	private final Connection dbConn;
-	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<FileAndDuration>();
+	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
 
-	public MediaDb (final File dbFile, final ScheduledExecutorService exSvc) throws SQLException {
-		this(dbFile, exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
+	public MediaDb (final String dbPath, final ScheduledExecutorService exSvc) throws SQLException {
+		this("jdbc:sqlite:" + dbPath, exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
 	}
 
-	private MediaDb (final File dbFile, final ScheduledExecutorService exSvc, final int commitDelaySeconds) throws SQLException {
+	public MediaDb (final File dbFile, final ScheduledExecutorService exSvc) throws SQLException {
+		this("jdbc:sqlite:" + dbFile.getAbsolutePath(), exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
+	}
+
+	private MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final int commitDelaySeconds) throws SQLException {
 		this.exSvc = exSvc;
-		this.dbConn = makeDbConnection(dbFile);
+		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();
 		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
 	}
@@ -76,7 +80,7 @@ public class MediaDb {
 		}
 		else {
 			final String id = canonicaliseAndStoreId(oldFileData);
-			callback.onMediaId(id);
+			callback.onResult(id);
 		}
 	}
 
@@ -94,7 +98,7 @@ public class MediaDb {
 		else {
 			id = canonicaliseAndStoreId(oldFileData);
 		}
-		callback.onMediaId(id);
+		callback.onResult(id);
 	}
 
 	private String canonicaliseAndStoreId(final FileData fileData) throws SQLException {
@@ -161,7 +165,7 @@ public class MediaDb {
 		@Override
 		public void run() {
 			try {
-				final List<FileAndDuration> todo = new ArrayList<FileAndDuration>();
+				final List<FileAndDuration> todo = new ArrayList<>();
 				MediaDb.this.storeDuraionQueue.drainTo(todo);
 				if (todo.size() > 0) {
 					storeDurations(todo);
@@ -377,13 +381,13 @@ public class MediaDb {
 		}
 	}
 
-	private void excludeFilesThatStillExist (final Collection<FileAndData> files) {
+	private static void excludeFilesThatStillExist (final Collection<FileAndData> files) {
 		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
 			if (i.next().getFile().exists()) i.remove();
 		}
 	}
 
-	private void excludeFile (final Collection<FileAndData> files, final File file) {
+	private static void excludeFile (final Collection<FileAndData> files, final File file) {
 		final int startSize = files.size();
 		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
 			if (file.equals(i.next().getFile())) i.remove();
@@ -391,7 +395,7 @@ public class MediaDb {
 		if (files.size() != startSize - 1) throw new IllegalStateException("Expected to only remove one item from list.");
 	}
 
-	private Set<String> distinctIds (final Collection<FileAndData> files) {
+	private static Set<String> distinctIds (final Collection<FileAndData> files) {
 		final Set<String> ids = new HashSet<>();
 		for (final FileAndData f : files) {
 			ids.add(f.getData().getId());
@@ -399,7 +403,7 @@ public class MediaDb {
 		return ids;
 	}
 
-	private boolean allMissing (final Collection<FileAndData> files) {
+	private static boolean allMissing (final Collection<FileAndData> files) {
 		for (final FileAndData file : files) {
 			if (file.getFile().exists()) return false;
 		}
@@ -410,7 +414,7 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private void storeDurations(final List<FileAndDuration> toStore) throws SQLException {
-		final List<FileAndDuration> toInsert = new ArrayList<FileAndDuration>();
+		final List<FileAndDuration> toInsert = new ArrayList<>();
 
 		final PreparedStatement stUpdate = this.dbConn.prepareStatement(
 				"UPDATE durations SET size=?,duration=? WHERE key=?;");
@@ -484,11 +488,11 @@ public class MediaDb {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	private static Connection makeDbConnection (final File dbFile) throws SQLException {
+	private static Connection makeDbConnection (final String dbPath) throws SQLException {
 		final SQLiteConfig config = new SQLiteConfig();
 		config.setEncoding(Encoding.UTF8);
 //		config.setUserVersion(version); // TODO
-		return DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath(), config.toProperties());
+		return DriverManager.getConnection(dbPath, config.toProperties());
 	}
 
 	private boolean tableExists (final String tableName) throws SQLException {
