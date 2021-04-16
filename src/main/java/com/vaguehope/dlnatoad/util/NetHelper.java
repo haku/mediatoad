@@ -61,6 +61,7 @@ public final class NetHelper {
 		if (name == null) return false;
 		if (name.startsWith("docker")) return false;
 		if (name.startsWith("br-")) return false;
+		if (name.startsWith("tailscale")) return false;
 
 		return true;
 	}
