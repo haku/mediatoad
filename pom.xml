@@ -18,7 +18,7 @@
 		<teleal.version>1.0.14</teleal.version>
 		<jetty.version>8.1.19.v20160209</jetty.version>
 		<antlr.version>4.5.3</antlr.version>
-		<commonsio.version>2.5</commonsio.version>
+		<commonsio.version>2.7</commonsio.version>
 		<slf4j.version>1.7.21</slf4j.version>
 		<junit.version>4.12</junit.version>
 	</properties>
