@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URI;
@@ -327,7 +328,12 @@ public class MediaIndex implements FileListener {
 
 			@Override
 			public void onError(final IOException e) {
-				LOG.warn("Error adding item to media index.", e);
+				if (e instanceof FileNotFoundException) {
+					LOG.warn("File disappeared: {}", file.getAbsolutePath());
+				}
+				else {
+					LOG.warn("Error adding item to media index.", e);
+				}
 			}
 		});
 	}
