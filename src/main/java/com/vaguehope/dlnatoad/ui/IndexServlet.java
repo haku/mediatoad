@@ -220,7 +220,7 @@ public class IndexServlet extends HttpServlet {
 			w.print(".");
 			w.print(node.getFormat().getExt());
 			w.print("\">");
-			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"/");
+			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
 			w.print(thumbId);
 			w.print("\">");
 			w.println("</a></span>");
