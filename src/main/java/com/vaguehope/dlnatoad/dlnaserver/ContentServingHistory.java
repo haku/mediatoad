@@ -29,6 +29,7 @@ public class ContentServingHistory {
 
 	public void recordEnd(final String remoteAddr, final String requestURI) {
 		this.active.remove(remoteAddr);
+		this.lastActivity.put(remoteAddr, this.time.now());
 	}
 
 	public int getActiveCount() {
