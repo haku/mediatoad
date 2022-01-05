@@ -44,7 +44,7 @@ public class MediaDbTest {
 		this.rnd = new Random();
 		this.dbFile = this.tmp.newFile("id-db.db3");
 		this.schEx = spy(new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs")));
-		this.undertest = new MediaDb(this.dbFile, this.schEx);
+		this.undertest = new MediaDb(this.dbFile, this.schEx, true);
 
 		final ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
 		verify(this.schEx).scheduleWithFixedDelay(cap.capture(), anyLong(), anyLong(), any(TimeUnit.class));
@@ -60,7 +60,7 @@ public class MediaDbTest {
 	@SuppressWarnings("unused")
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
-		new MediaDb(this.dbFile, this.schEx);
+		new MediaDb(this.dbFile, this.schEx, true);
 	}
 
 	@Test
@@ -85,6 +85,14 @@ public class MediaDbTest {
 		assertEquals(
 				callUndertest(f1),
 				callUndertest(f2));
+	}
+
+	@Test
+	public void itReturnsSameIdWhenFileContentStaysTheSame () throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = callUndertest(f1);
+		FileUtils.touch(f1);
+		assertEquals(id1, callUndertest(f1));
 	}
 
 	@Test

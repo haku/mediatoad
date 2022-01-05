@@ -134,7 +134,7 @@ public final class Main {
 		final MediaDb mediaDb;
 		if (dbFile != null) {
 			LOG.info("db: {}", dbFile.getAbsolutePath());
-			mediaDb = new MediaDb(dbFile, fsExSvc);
+			mediaDb = new MediaDb(dbFile, fsExSvc, args.isVerboseLog());
 		}
 		else {
 			mediaDb = null;

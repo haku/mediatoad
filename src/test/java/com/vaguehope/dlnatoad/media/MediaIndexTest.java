@@ -60,7 +60,7 @@ public class MediaIndexTest {
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
-		this.mediaDb = new MediaDb("file:testdb?mode=memory&cache=shared", this.schEx);
+		this.mediaDb = new MediaDb("file:testdb?mode=memory&cache=shared", this.schEx, true);
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN,
 				new MediaId(this.mediaDb), new MediaInfo());
 	}

@@ -36,18 +36,20 @@ public class MediaDb {
 
 	private final ScheduledExecutorService exSvc;
 	private final Connection dbConn;
+	private boolean verboseLog;
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
 
-	public MediaDb (final String dbPath, final ScheduledExecutorService exSvc) throws SQLException {
-		this("jdbc:sqlite:" + dbPath, exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
+	public MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final boolean verboseLog) throws SQLException {
+		this("jdbc:sqlite:" + dbPath, exSvc, verboseLog, COMMIT_DURATIONS_INTERVAL_SECONDS);
 	}
 
-	public MediaDb (final File dbFile, final ScheduledExecutorService exSvc) throws SQLException {
-		this("jdbc:sqlite:" + dbFile.getAbsolutePath(), exSvc, COMMIT_DURATIONS_INTERVAL_SECONDS);
+	public MediaDb (final File dbFile, final ScheduledExecutorService exSvc, final boolean verboseLog) throws SQLException {
+		this("jdbc:sqlite:" + dbFile.getAbsolutePath(), exSvc, verboseLog, COMMIT_DURATIONS_INTERVAL_SECONDS);
 	}
 
-	private MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final int commitDelaySeconds) throws SQLException {
+	private MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final boolean verboseLog, final int commitDelaySeconds) throws SQLException {
 		this.exSvc = exSvc;
+		this.verboseLog = verboseLog;
 		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();
 		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
@@ -126,10 +128,18 @@ public class MediaDb {
 
 		storeFileData(file, fileData);
 		removeFiles(otherFiles);
+
+		if (this.verboseLog) {
+			LOG.info("New [merged={}]: {}",
+					otherFiles.size(),
+					file.getAbsolutePath());
+		}
+
 		return fileData;
 	}
 
 	private FileData generateUpdatedFileData(final File file, FileData fileData) throws SQLException, IOException {
+		final long prevModified = fileData.getModified();
 		final String prevHash = fileData.getHash();
 		final String prevHashCanonicalId = canonicalIdForHash(prevHash);
 		fileData = FileData.forFile(file).withId(fileData.getId());  // Slow.
@@ -149,6 +159,15 @@ public class MediaDb {
 
 		updateFileData(file, fileData);
 		removeFiles(otherFiles);
+
+		if (this.verboseLog) {
+			LOG.info("Updated [merged={} hash={} mod={}]: {}",
+					otherFiles.size(),
+					prevHash.equals(fileData.getHash()) ? "same" : "changed",
+					prevModified == fileData.getModified() ? "same" : prevModified + "-->" + fileData.getModified(),
+					file.getAbsolutePath());
+		}
+
 		return fileData;
 	}
 
