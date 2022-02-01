@@ -1,6 +1,8 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -174,7 +177,7 @@ public class ContentDirectoryServiceTest {
 	public void itSearchesUsingSearchEngine () throws Exception {
 		final List<ContentNode> items = this.mockContent.givenMockItems(10);
 		final Item item3 = items.get(3).applyItem(i -> i);
-		when(this.searchEngine.search(this.contentTree.getRootNode(), "some search query", 200)).thenReturn(Collections.singletonList(item3));
+		when(this.searchEngine.search(eq(this.contentTree.getRootNode()), ArgumentMatchers.eq("some search query"), anyInt())).thenReturn(Collections.singletonList(item3));
 
 		final BrowseResult ret = this.undertest.search(this.contentTree.getRootNode().getId(), "some search query", "*", 0, 3, null);
 
