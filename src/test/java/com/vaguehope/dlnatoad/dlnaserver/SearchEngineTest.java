@@ -31,9 +31,24 @@ public class SearchEngineTest {
 		when(items.get(3).getTitle()).thenReturn("some file foo\"Bar song.mp4");
 
 		final List<Item> ret = this.undertest.search(this.contentTree.getRootNode(),
-				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")");
+				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
+				10);
 
 		assertEquals(MockContent.nodeItems(items.subList(3, 4)), ret);
+	}
+
+	@Test
+	public void itLimitsResults () throws Exception {
+		final List<ContentNode> items = this.mockContent.givenMockItems(VideoItem.class, 10);
+		for (ContentNode cn : items) {
+			when(cn.getTitle()).thenReturn("some file foo\"Bar song.mp4");
+		}
+
+		final List<Item> ret = this.undertest.search(this.contentTree.getRootNode(),
+				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
+				5);
+
+		assertEquals(5, ret.size());
 	}
 
 	@Test

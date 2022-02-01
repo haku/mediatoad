@@ -174,7 +174,7 @@ public class ContentDirectoryServiceTest {
 	public void itSearchesUsingSearchEngine () throws Exception {
 		final List<ContentNode> items = this.mockContent.givenMockItems(10);
 		final Item item3 = items.get(3).applyItem(i -> i);
-		when(this.searchEngine.search(this.contentTree.getRootNode(), "some search query")).thenReturn(Collections.singletonList(item3));
+		when(this.searchEngine.search(this.contentTree.getRootNode(), "some search query", 200)).thenReturn(Collections.singletonList(item3));
 
 		final BrowseResult ret = this.undertest.search(this.contentTree.getRootNode().getId(), "some search query", "*", 0, 3, null);
 

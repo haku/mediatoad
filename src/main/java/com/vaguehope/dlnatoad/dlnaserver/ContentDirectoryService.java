@@ -28,16 +28,18 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentDirectoryService.class);
 
+	private static final int MAX_RESULTS = 500;
+
 	private final ContentTree contentTree;
 	private final SearchEngine searchEngine;
 	private final boolean printAccessLog;
 
-	public ContentDirectoryService (final ContentTree contentTree, final SearchEngine queryEngine, final boolean printAccessLog) {
+	public ContentDirectoryService (final ContentTree contentTree, final SearchEngine searchEngine, final boolean printAccessLog) {
 		super(
 				Arrays.asList("dc:title", "upnp:class"), // also "dc:creator", "dc:date", "res@size"
 				Arrays.asList("dc:title")); // also "dc:creator", "dc:date", "res@size"
 		this.contentTree = contentTree;
-		this.searchEngine = queryEngine;
+		this.searchEngine = searchEngine;
 		this.printAccessLog = printAccessLog;
 	}
 
@@ -72,7 +74,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 				// so make local copies.
 				final List<Container> containers = new ArrayList<Container>(c.getContainers());
 				final List<Item> items = new ArrayList<Item>(c.getItems());
-				// FIXME should also acquire locks on each item's ContentNode? 
+				// FIXME should also acquire locks on each item's ContentNode?
 				return toRangedResult(containers, items, firstResult, maxResults);
 			});
 		}
@@ -105,7 +107,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			// FIXME since search engine operates on / leaks Container and Item objects,
 			// marshaling search results is done without a lock.
 
-			final List<Item> searchMatches = this.searchEngine.search(contentNode, searchCriteria);
+			final List<Item> searchMatches = this.searchEngine.search(contentNode, searchCriteria, MAX_RESULTS);
 			return toRangedResult(Collections.<Container> emptyList(), searchMatches, firstResult, maxResults);
 		}
 		catch (final ContentDirectoryException e) {

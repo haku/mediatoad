@@ -43,7 +43,7 @@ public class SearchEngine {
 
 	public SearchEngine () {}
 
-	public List<Item> search (final ContentNode contentNode, final String searchCriteria) throws ContentDirectoryException {
+	public List<Item> search (final ContentNode contentNode, final String searchCriteria, final int maxResults) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
 		final Predicate<Item> predicate = criteriaToPredicate(searchCriteria);
 		if (predicate == null) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CRITERIA, "Do not know how to parse: " + searchCriteria);
@@ -53,7 +53,9 @@ public class SearchEngine {
 		// filterItems() does its own locking on the container object.
 		final Container container = contentNode.applyContainer(c -> c);
 
-		return filterItems(container, predicate);
+		final List<Item> results = new ArrayList<>();
+		filterItems(container, predicate, maxResults, results);
+		return results;
 	}
 
 	protected static Predicate<Item> criteriaToPredicate (final String searchCriteria) {
@@ -237,18 +239,21 @@ public class SearchEngine {
 	/**
 	 * Lazy recursive impl.
 	 */
-	private static List<Item> filterItems (final Container container, final Predicate<Item> predicate) {
-		final List<Item> results = new ArrayList<>();
+	private static void filterItems (final Container container, final Predicate<Item> predicate, final int maxResults, final List<Item> results) {
+		if (results.size() >= maxResults) return;
+
 		synchronized (container) {
 			for (final Item ci : container.getItems()) {
-				if (predicate.matches(ci)) results.add(ci);
+				if (predicate.matches(ci)) {
+					results.add(ci);
+					if (results.size() >= maxResults) return;
+				}
 			}
 			for (final Container childContainer : container.getContainers()) {
 				if (ContentGroup.RECENT.getId().equals(childContainer.getId())) continue;  // Do not search in recent.
-				results.addAll(filterItems(childContainer, predicate));
+				filterItems(childContainer, predicate, maxResults, results);
 			}
 		}
-		return results;
 	}
 
 	private enum LogOp {
