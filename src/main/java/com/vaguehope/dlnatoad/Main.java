@@ -47,6 +47,8 @@ import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
+import com.vaguehope.dlnatoad.ui.SearchServlet;
+import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
@@ -180,7 +182,7 @@ public final class Main {
 
 		return new UpnpServiceImpl() {
 			@Override
-			protected Registry createRegistry (final ProtocolFactory protocolFactory) {
+			protected Registry createRegistry (final ProtocolFactory pf) {
 				return new RegistryImplWithOverrides(this, pathToRes);
 			}
 		};
@@ -235,8 +237,9 @@ public final class Main {
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, mediaId, imageResizer, hostName, contentServingHistory,
-				contentServlet, args.isPrintAccessLog())), "/*");
+		final ServletCommon servletCommon = new ServletCommon(contentTree, mediaId, imageResizer, hostName, contentServingHistory);
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree)), "/search");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

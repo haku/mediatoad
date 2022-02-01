@@ -1,9 +1,9 @@
 package com.vaguehope.dlnatoad.ui;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -67,7 +67,8 @@ public class IndexServletTest {
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
 		this.contentServlet = mock(ContentServlet.class);
-		this.undertest = new IndexServlet(this.contentTree, this.mediaId, this.imageResizer, "hostName", this.contentServingHistory, this.contentServlet, true);
+		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.mediaId, this.imageResizer, "hostName", this.contentServingHistory),
+				this.contentTree, this.contentServlet, true);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
