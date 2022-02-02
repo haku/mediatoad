@@ -91,7 +91,7 @@ public class ServletCommon {
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w) {
 		final String query = StringUtils.trimToEmpty(req.getParameter("query"));
 		w.println("<a href=\"/\">Home</a>");
-		w.println("<form style=\"display:inline;\" action=\"/search\" method=\"GET\">");
+		w.println("<form style=\"display:inline;\" action=\"search\" method=\"GET\">");
 		w.println("<input type=\"text\" id=\"query\" name=\"query\" value=\"" + query + "\">");
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
