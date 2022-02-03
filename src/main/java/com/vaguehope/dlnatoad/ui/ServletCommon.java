@@ -89,11 +89,16 @@ public class ServletCommon {
 	}
 
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w) {
-		final String query = StringUtils.trimToEmpty(req.getParameter("query"));
+		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
+		final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
+		final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
+
 		w.println("<a href=\"/\">Home</a>");
 		w.println("<a href=\"upnp\">UPNP</a>");
 		w.println("<form style=\"display:inline;\" action=\"search\" method=\"GET\">");
 		w.println("<input type=\"text\" id=\"query\" name=\"query\" value=\"" + query + "\">");
+		w.print("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
+		w.println("<label for=\"remote\">remote</label>");
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
 	}
@@ -117,9 +122,9 @@ public class ServletCommon {
 	}
 
 	public void printItemsAndImages(final PrintWriter w, final List<Item> items) throws IOException {
-		w.print("<h3>");
+		w.print("<h3>Local items: ");
 		w.print(items.size());
-		w.println(" items</h3><ul>");
+		w.println("</h3><ul>");
 		appendItemsAndImages(w, items);
 		w.println("</ul>");
 	}

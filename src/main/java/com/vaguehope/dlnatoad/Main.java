@@ -240,7 +240,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
 		final ServletCommon servletCommon = new ServletCommon(contentTree, mediaId, imageResizer, hostName, contentServingHistory);
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree)), "/search");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, contentServlet, args.isPrintAccessLog())), "/*");
 
