@@ -49,6 +49,7 @@ import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
+import com.vaguehope.dlnatoad.ui.UpnpServlet;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
@@ -144,8 +145,16 @@ public final class Main {
 		final MediaId mediaId = new MediaId(mediaDb);
 		final MediaInfo mediaInfo = new MediaInfo(mediaDb, miExSvc);
 
+		final UpnpService upnpService = makeUpnpServer();
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				upnpService.shutdown();
+			}
+		});
+
 		final ContentTree contentTree = new ContentTree();
-		final Server server = startContentServer(contentTree, mediaId, args, hostName);
+		final Server server = startContentServer(contentTree, mediaId, upnpService, args, hostName);
 
 		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + server.getConnectors()[0].getPort();
 		final URI selfUri = new URI(externalHttpContext);
@@ -161,13 +170,6 @@ public final class Main {
 		watcherThread.setDaemon(true);
 		watcherThread.start();
 
-		final UpnpService upnpService = makeUpnpServer();
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				upnpService.shutdown();
-			}
-		});
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog(), selfUri).getDevice());
 		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
 		server.join(); // Keep app alive.
@@ -188,7 +190,7 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final Args args, final String hostName) throws Exception {
+	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final UpnpService upnpService, final Args args, final String hostName) throws Exception {
 		int port = args.getPort();
 		final boolean defaultPort;
 		if (port < 1) {
@@ -200,7 +202,7 @@ public final class Main {
 		}
 
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, mediaId, args, hostName);
+			final HandlerList handler = makeContentHandler(contentTree, mediaId, upnpService, args, hostName);
 
 			final Server server = new Server();
 			server.setHandler(handler);
@@ -222,7 +224,7 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final Args args, final String hostName) throws CmdLineException {
+	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final UpnpService upnpService, final Args args, final String hostName) throws CmdLineException {
 		final File thumbsDir = args.getThumbsDir();
 		final ImageResizer imageResizer =
 				thumbsDir != null
@@ -239,6 +241,7 @@ public final class Main {
 
 		final ServletCommon servletCommon = new ServletCommon(contentTree, mediaId, imageResizer, hostName, contentServingHistory);
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree)), "/search");
+		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();
