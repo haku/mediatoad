@@ -71,15 +71,16 @@ public class UpnpServlet extends HttpServlet {
 		if (StringUtils.isBlank(title)) title = d.getDisplayString();
 		w.println("<li>" + title);
 		w.println("<br>UDN: " + d.getIdentity().getUdn());
+		w.println("<br>Max Age: " + d.getIdentity().getMaxAgeSeconds() + " seconds");
 		w.println("<br>Type: " + d.getType());
 		w.println("<br>Version: " + d.getVersion().getMajor() + "." + d.getVersion().getMinor());
 
 		final DeviceIdentity identity = d.getIdentity();
 		if (identity instanceof RemoteDeviceIdentity) {
 			final RemoteDeviceIdentity rdi = (RemoteDeviceIdentity) identity;
-			w.print("<br>DescriptorURL: ");
+			w.print("<br>Descriptor URL: ");
 			printUrl(w, rdi.getDescriptorURL());
-			w.println("<br>DiscoveredOn: " + rdi.getDiscoveredOnLocalAddress());
+			w.println("<br>Discovered On: " + rdi.getDiscoveredOnLocalAddress());
 		}
 
 		if (d.getDetails().getPresentationURI() != null) {
