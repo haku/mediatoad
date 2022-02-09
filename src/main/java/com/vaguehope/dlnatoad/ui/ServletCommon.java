@@ -59,6 +59,7 @@ public class ServletCommon {
 	}
 
 	public void headerAndStartBody(final PrintWriter w, String title) {
+		w.println("<!DOCTYPE html>");
 		w.println("<html>");
 		w.println("<head>");
 		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
