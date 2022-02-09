@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -16,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.ThreadUtils;
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.model.meta.Action;
 import org.fourthline.cling.model.meta.Device;
@@ -26,6 +29,8 @@ import org.fourthline.cling.model.meta.RemoteService;
 import org.fourthline.cling.model.meta.Service;
 
 public class UpnpServlet extends HttpServlet {
+
+	private static final int SEARCH_TIMEOUT_SECONDS = 5;
 
 	private static final long serialVersionUID = 8519141492915099699L;
 
@@ -39,11 +44,41 @@ public class UpnpServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		printPage(req, resp, null);
+	}
+
+	@Override
+	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		if ("scan".equalsIgnoreCase(req.getParameter("action"))) {
+			final int devCountBefore = this.upnpService.getRegistry().getRemoteDevices().size();
+			this.upnpService.getControlPoint().search(SEARCH_TIMEOUT_SECONDS);
+			try {
+				Thread.sleep(TimeUnit.SECONDS.toMillis(SEARCH_TIMEOUT_SECONDS));
+			}
+			catch (final InterruptedException e) {}
+			final int devCountAfter = this.upnpService.getRegistry().getRemoteDevices().size();
+			printPage(req, resp, "Scan complete, remote device count: " + devCountBefore + " --> " + devCountAfter);
+		}
+		else {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");
+		}
+	}
+
+	private void printPage(final HttpServletRequest req, final HttpServletResponse resp, final String message) throws IOException {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, "UPNP");
 		this.servletCommon.printLinkRow(req, w);
+
+		w.println("<form style=\"padding: 0.5em;\" action=\"\" method=\"POST\">");
+		w.println("<input type=\"hidden\" name=\"action\" value=\"scan\">");
+		w.println("<input type=\"submit\" value=\"Scan for Devices\">");
+		w.println("</form>");
+
+		if (message != null) {
+			w.println("<p>" + message + "</p>");
+		}
 
 		w.println("<h3>Local Devices</h3>");
 		printDevices(w, this.upnpService.getRegistry().getLocalDevices());
@@ -73,7 +108,7 @@ public class UpnpServlet extends HttpServlet {
 		w.println("<br>UDN: " + d.getIdentity().getUdn());
 		w.println("<br>Max Age: " + d.getIdentity().getMaxAgeSeconds() + " seconds");
 		w.println("<br>Type: " + d.getType());
-		w.println("<br>Version: " + d.getVersion().getMajor() + "." + d.getVersion().getMinor());
+		w.println("<br>Model / Version: " + d.getDetails().getModelDetails().getModelName() + " / " + d.getVersion().getMajor() + "." + d.getVersion().getMinor());
 
 		final DeviceIdentity identity = d.getIdentity();
 		if (identity instanceof RemoteDeviceIdentity) {
