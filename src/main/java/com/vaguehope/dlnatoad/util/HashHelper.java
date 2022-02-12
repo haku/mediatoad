@@ -94,25 +94,19 @@ public final class HashHelper {
 		final MessageDigest md = mdFactory.get();
 		md.reset();
 
-		final FileInputStream is;
-		try {
-			is = new FileInputStream(file);
+		try (final FileInputStream is = new FileInputStream(file)) {
+			try (final FileChannel fc = is.getChannel()) {
+				while (fc.position() < fc.size()) {
+					buffer.clear();
+					fc.read(buffer);
+					buffer.flip();
+					md.update(buffer);
+				}
+				return new BigInteger(1, md.digest());
+			}
 		}
 		catch (final FileNotFoundException e) {
 			throw new FileNotFoundException("Not found: " + file.getAbsolutePath());
-		}
-		try {
-			final FileChannel fc = is.getChannel();
-			while (fc.position() < fc.size()) {
-				buffer.clear();
-				fc.read(buffer);
-				buffer.flip();
-				md.update(buffer);
-			}
-			return new BigInteger(1, md.digest());
-		}
-		finally {
-			is.close();
 		}
 	}
 
