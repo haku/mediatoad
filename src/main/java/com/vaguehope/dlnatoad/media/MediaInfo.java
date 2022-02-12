@@ -51,7 +51,7 @@ public class MediaInfo {
 		@Override
 		public void run () {
 			try {
-				final long durationMillis = readDurationMillis(this.file);
+				final long durationMillis = readDurationMillis();
 				final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis);
 				this.res.setDuration(ModelUtil.toTimeString(durationSeconds));
 			}
@@ -60,18 +60,18 @@ public class MediaInfo {
 			}
 		}
 
-		public long readDurationMillis (final File file) throws IOException, SQLException, InterruptedException {
-			final long storedDurationMillis = this.mediaDb.readFileDurationMillis(file);
+		private long readDurationMillis () throws IOException, SQLException, InterruptedException {
+			final long storedDurationMillis = this.mediaDb.readFileDurationMillis(this.file);
 			if (storedDurationMillis > 0) return storedDurationMillis;
 
-			final FfprobeInfo info = Ffprobe.inspect(file);
+			final FfprobeInfo info = Ffprobe.inspect(this.file);
 			final Long readDuration = info.getDurationMillis();
 			if (readDuration != null && readDuration > 0) {
-				this.mediaDb.storeFileDurationMillisAsync(file, readDuration);
+				this.mediaDb.storeFileDurationMillisAsync(this.file, readDuration);
 				return readDuration;
 			}
 
-			LOG.warn("Failed to read duration: {}", file.getAbsolutePath());
+			LOG.warn("Failed to read duration: {}", this.file.getAbsolutePath());
 			return 0;
 		}
 
