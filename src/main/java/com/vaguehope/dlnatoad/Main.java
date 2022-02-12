@@ -116,7 +116,7 @@ public final class Main {
 			LOG.info("addresses: {} using address: {}", addresses, address);
 		}
 
-		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs", -2));
+		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs", Thread.MIN_PRIORITY));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run () {
@@ -125,7 +125,7 @@ public final class Main {
 		});
 
 		final ExecutorService miExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("mi", -1));
+				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("mi", Thread.MIN_PRIORITY));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run () {

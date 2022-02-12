@@ -3,21 +3,29 @@ package com.vaguehope.dlnatoad.util;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DaemonThreadFactory implements ThreadFactory {
+
+	private static final Logger LOG = LoggerFactory.getLogger(DaemonThreadFactory.class);
 
 	private final String prefix;
 	private final LoggingThreadGroup threadGroup;
 	private final AtomicInteger counter = new AtomicInteger(0);
-	private final int priorityOffset;
+	private final int priority;
 
 	public DaemonThreadFactory (final String prefix) {
-		this(prefix, -1);
+		this(prefix, Thread.NORM_PRIORITY - 1);
 	}
 
-	public DaemonThreadFactory (final String prefix, final int priorityOffset) {
+	public DaemonThreadFactory (final String prefix, final int priority) {
 		this.prefix = prefix;
-		this.priorityOffset = priorityOffset;
+		this.priority = priority;
 		this.threadGroup = new LoggingThreadGroup(Thread.currentThread().getThreadGroup(), prefix);
+		this.threadGroup.setDaemon(true);
+		this.threadGroup.setMaxPriority(priority);
+		LOG.debug("Thread group '{}' has priority: {}", prefix, priority);
 	}
 
 	@Override
@@ -26,7 +34,7 @@ public class DaemonThreadFactory implements ThreadFactory {
 				"t-" + this.prefix + this.counter.getAndIncrement(),
 				0);
 		if (!t.isDaemon()) t.setDaemon(true);
-		t.setPriority(Thread.NORM_PRIORITY + this.priorityOffset);
+		t.setPriority(this.priority);
 		return t;
 	}
 
