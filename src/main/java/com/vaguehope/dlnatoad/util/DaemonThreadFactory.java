@@ -23,7 +23,6 @@ public class DaemonThreadFactory implements ThreadFactory {
 		this.prefix = prefix;
 		this.priority = priority;
 		this.threadGroup = new LoggingThreadGroup(Thread.currentThread().getThreadGroup(), prefix);
-		this.threadGroup.setDaemon(true);
 		this.threadGroup.setMaxPriority(priority);
 		LOG.debug("Thread group '{}' has priority: {}", prefix, priority);
 	}
