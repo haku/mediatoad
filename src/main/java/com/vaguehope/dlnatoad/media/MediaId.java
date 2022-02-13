@@ -3,6 +3,8 @@ package com.vaguehope.dlnatoad.media;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutorService;
+
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.util.HashHelper;
@@ -10,23 +12,30 @@ import com.vaguehope.dlnatoad.util.HashHelper;
 public class MediaId {
 
 	private interface Ider {
-		void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException;
+		void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws IOException;
 	}
 
 	private final Ider impl;
+	private final ExecutorService defExSvc;
 
-	public MediaId (final MediaDb mediaDb) {
+	public MediaId (final MediaDb mediaDb, final ExecutorService exSvc) {
 		this.impl = mediaDb != null ? new PersistentIder(mediaDb) : new TransientIder();
+		this.defExSvc = exSvc;
 	}
 
-	public String contentIdSync (final ContentGroup type, final File file) throws IOException {
-		StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.impl.idForFile(type, file, cb);
+	public String contentIdForDirectory (final ContentGroup type, final File file) throws IOException {
+		if (!file.isDirectory()) throw new IllegalArgumentException("Not a directory: " + file.getAbsolutePath());
+		return transientContentId(type, file);
+	}
+
+	public String contentIdSync (final ContentGroup type, final File file, final ExecutorService altExSvc) throws IOException {
+		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
+		this.impl.idForFile(type, file, cb, altExSvc);
 		return cb.getMediaId();
 	}
 
 	public void contentIdAsync (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
-		MediaId.this.impl.idForFile(type, file, callback);
+		this.impl.idForFile(type, file, callback, this.defExSvc);
 	}
 
 	private static class PersistentIder implements Ider {
@@ -38,10 +47,10 @@ public class MediaId {
 		}
 
 		@Override
-		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
+		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws IOException {
 			try {
 				if (file.isFile()) {
-					this.mediaDb.idForFile(file, callback);
+					this.mediaDb.idForFile(file, callback, exSvc);
 				}
 				else {
 					callback.onResult(transientContentId(type, file));
@@ -59,7 +68,7 @@ public class MediaId {
 		public TransientIder () {}
 
 		@Override
-		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
+		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws IOException {
 			callback.onResult(transientContentId(type, file));
 		}
 

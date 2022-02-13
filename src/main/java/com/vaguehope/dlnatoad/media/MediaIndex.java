@@ -205,7 +205,7 @@ public class MediaIndex implements FileListener {
 				break;
 			case FLATTERN:
 			default:
-			final String dirId = this.mediaId.contentIdSync(format.getContentGroup(), dir);
+			final String dirId = this.mediaId.contentIdForDirectory(format.getContentGroup(), dir);
 			dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, dirId, dir);
 		}
 
@@ -248,7 +248,7 @@ public class MediaIndex implements FileListener {
 
 		File ittrDir = dir;
 		while (ittrDir != null) {
-			final String ittrDirId = this.mediaId.contentIdSync(groupForContainerId, ittrDir);
+			final String ittrDirId = this.mediaId.contentIdForDirectory(groupForContainerId, ittrDir);
 			final ContentNode node = this.contentTree.getNode(ittrDirId);
 			if (node != null) break;
 			dirsToCreate.add(ittrDir);
@@ -264,16 +264,16 @@ public class MediaIndex implements FileListener {
 				parentContainer = formatContainer;
 			}
 			else {
-				final String parentContainerId = this.mediaId.contentIdSync(groupForContainerId,
+				final String parentContainerId = this.mediaId.contentIdForDirectory(groupForContainerId,
 						dirToCreate.getParentFile());
 				parentContainer = this.contentTree.getNode(parentContainerId);
 			}
 
-			final String dirToCreateId = this.mediaId.contentIdSync(groupForContainerId, dirToCreate);
+			final String dirToCreateId = this.mediaId.contentIdForDirectory(groupForContainerId, dirToCreate);
 			makeDirContainerOnTree(format.getContentGroup(), parentContainer, dirToCreateId, dirToCreate);
 		}
 
-		final String dirId = this.mediaId.contentIdSync(groupForContainerId, dir);
+		final String dirId = this.mediaId.contentIdForDirectory(groupForContainerId, dir);
 		return this.contentTree.getNode(dirId);
 	}
 

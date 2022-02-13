@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,6 @@ public class MediaDb {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
 
-	private final ScheduledExecutorService exSvc;
 	private final Connection dbConn;
 	private boolean verboseLog;
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
@@ -48,22 +48,21 @@ public class MediaDb {
 	}
 
 	private MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final boolean verboseLog, final int commitDelaySeconds) throws SQLException {
-		this.exSvc = exSvc;
 		this.verboseLog = verboseLog;
 		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();
 		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
 	}
 
-	public void idForFile (final File file, final MediaIdCallback callback) throws SQLException, IOException {
+	public void idForFile (final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws SQLException, IOException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 
 		final FileData oldFileData = readFileData(file);
 		if (oldFileData == null || !oldFileData.upToDate(file)) {
 			// Whatever needs doing, it might take a while and oldFileData may be out of date by the time the work
-			// runs, so check everything closer to the time.  This is stall a check-and-set and not really thread
+			// runs, so check everything closer to the time.  This is still a check-and-set and not really thread
 			// safe, but given the executor is supposed to single threaded this should work out ok.
-			this.exSvc.submit(new Runnable() {
+			exSvc.submit(new Runnable() {
 				@Override
 				public void run() {
 					try {

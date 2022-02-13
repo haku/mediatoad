@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -32,14 +33,16 @@ public class ServletCommon {
 	private final ImageResizer imageResizer;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
+	private final ExecutorService exSvc;
 
 	public ServletCommon (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer,
-			final String hostName, final ContentServingHistory contentServingHistory) {
+			final String hostName, final ContentServingHistory contentServingHistory, final ExecutorService exSvc) {
 		this.contentTree = contentTree;
 		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
+		this.exSvc = exSvc;
 	}
 
 	@SuppressWarnings("resource")
@@ -58,7 +61,7 @@ public class ServletCommon {
 		this.headerAndStartBody(w, null);
 	}
 
-	public void headerAndStartBody(final PrintWriter w, String title) {
+	public void headerAndStartBody(final PrintWriter w, final String title) {
 		w.println("<!DOCTYPE html>");
 		w.println("<html>");
 		w.println("<head>");
@@ -137,7 +140,7 @@ public class ServletCommon {
 
 	private List<ContentNode> appendItemsAndImagesAndGetImagesToThumb(final PrintWriter w, final List<Item> items) throws IOException {
 		final List<ContentNode> imagesToThumb = new ArrayList<>();
-		for (Item i : items) {
+		for (final Item i : items) {
 			final ContentNode node = this.contentTree.getNode(i.getId());
 			if (this.imageResizer != null && node.getFormat().getContentGroup() == ContentGroup.IMAGE) {
 				imagesToThumb.add(node);
@@ -200,7 +203,7 @@ public class ServletCommon {
 	private void appendImageThumbnails(final PrintWriter w, final List<ContentNode> imagesToThumb) throws IOException {
 		for (final ContentNode node : imagesToThumb) {
 			final File thumbFile = this.imageResizer.resizeFile(node.getFile(), 200, 0.8f);
-			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile);
+			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile, this.exSvc);
 			this.contentTree.addNode(new ContentNode(thumbId, null, thumbFile, MediaFormat.JPEG));
 
 			w.print("<span><a href=\"");

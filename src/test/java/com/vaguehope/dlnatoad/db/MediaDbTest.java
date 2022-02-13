@@ -53,7 +53,7 @@ public class MediaDbTest {
 
 	private String callUndertest(final File file) throws SQLException, IOException {
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.undertest.idForFile(file, cb);
+		this.undertest.idForFile(file, cb, this.schEx);
 		return cb.getMediaId();
 	}
 

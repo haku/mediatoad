@@ -62,7 +62,7 @@ public class MediaIndexTest {
 		roots.add(this.tmp.getRoot());
 		this.mediaDb = new MediaDb("file:testdb?mode=memory&cache=shared", this.schEx, true);
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.FLATTERN,
-				new MediaId(this.mediaDb), new MediaInfo());
+				new MediaId(this.mediaDb, this.schEx), new MediaInfo());
 	}
 
 	public void after() {
@@ -165,7 +165,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, EXTERNAL_HTTP_CONTEXT, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaDb), new MediaInfo());
+				new MediaId(this.mediaDb, this.schEx), new MediaInfo());
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);
