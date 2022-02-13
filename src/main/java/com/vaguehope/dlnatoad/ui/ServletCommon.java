@@ -114,10 +114,14 @@ public class ServletCommon {
 		w.println(" items)</h3><ul>");
 
 		contentNode.withEachChildContainer(c -> appendDirectory(w, c));
+		final List<ContentNode> imagesToThumb = new ArrayList<>();
 		contentNode.applyContainer(c -> {
-			appendItemsAndImages(w, c.getItems());
+			imagesToThumb.addAll(appendItemsAndImagesAndGetImagesToThumb(w, c.getItems()));
 			return null;
 		});
+
+		// This needs to be done OUTSIDE the contentNode lock held by applyContainer().
+		appendImageThumbnails(w, imagesToThumb);
 
 		w.println("</ul>");
 	}
@@ -126,11 +130,12 @@ public class ServletCommon {
 		w.print("<h3>Local items: ");
 		w.print(items.size());
 		w.println("</h3><ul>");
-		appendItemsAndImages(w, items);
+		final List<ContentNode> imagesToThumb = appendItemsAndImagesAndGetImagesToThumb(w, items);
+		appendImageThumbnails(w, imagesToThumb);
 		w.println("</ul>");
 	}
 
-	private void appendItemsAndImages(final PrintWriter w, final List<Item> items) throws IOException {
+	private List<ContentNode> appendItemsAndImagesAndGetImagesToThumb(final PrintWriter w, final List<Item> items) throws IOException {
 		final List<ContentNode> imagesToThumb = new ArrayList<>();
 		for (Item i : items) {
 			final ContentNode node = this.contentTree.getNode(i.getId());
@@ -141,7 +146,7 @@ public class ServletCommon {
 				appendItem(w, node);
 			}
 		}
-		appendImageThumbnails(w, imagesToThumb);
+		return imagesToThumb;
 	}
 
 	private static void appendDirectory(final PrintWriter w, final Container dir) {
