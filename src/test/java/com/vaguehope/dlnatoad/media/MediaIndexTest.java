@@ -195,6 +195,7 @@ public class MediaIndexTest {
 		for (final File file : expectedFiles) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
+		waitForEmptyQueue();
 		for (final File file : expectedFiles) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
