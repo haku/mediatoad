@@ -36,8 +36,8 @@ public class ContentTreeTest {
 
 	@Test
 	public void itMakesRecentContainer() throws Exception {
-		final List<ContentNode> mockItems = this.mockContent.givenMockItems(100, sequentialTimeStamps());
-		final List<Item> expected = MockContent.nodeItems(mockItems).subList(mockItems.size() - 50, mockItems.size());
+		final List<ContentNode> mockItems = this.mockContent.givenMockItems(300, sequentialTimeStamps());
+		final List<Item> expected = MockContent.nodeItems(mockItems).subList(mockItems.size() - 200, mockItems.size());
 		Collections.reverse(expected);
 
 		final ContentNode cn = this.undertest.getNode(ContentGroup.RECENT.getId());
@@ -46,8 +46,8 @@ public class ContentTreeTest {
 
 	@Test
 	public void itRemovesOldItemsFromRecent() throws Exception {
-		final List<ContentNode> mockItems = this.mockContent.givenMockItems(100, sequentialTimeStamps());
-		final List<ContentNode> expected = mockItems.subList(mockItems.size() - 50, mockItems.size());
+		final List<ContentNode> mockItems = this.mockContent.givenMockItems(300, sequentialTimeStamps());
+		final List<ContentNode> expected = mockItems.subList(mockItems.size() - 200, mockItems.size());
 		Collections.reverse(expected);
 
 		final Collection<ContentNode> actual = this.undertest.getRecent();

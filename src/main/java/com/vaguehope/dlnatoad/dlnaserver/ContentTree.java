@@ -32,7 +32,7 @@ public class ContentTree {
 	private final Map<String, ContentNode> contentMap = new ConcurrentHashMap<String, ContentNode>();
 	private final ContentNode rootNode;
 
-	private static final int MAX_RECENT_ITEMS = 50;
+	private static final int MAX_RECENT_ITEMS = 200;
 	private final ContentNode recentContentNode;
 	private final NavigableSet<ContentNode> recent = new ConcurrentSkipListSet<ContentNode>(ContentNode.Order.MODIFIED_DESC);
 	private final Object[] recentLock = new Object[] {};
