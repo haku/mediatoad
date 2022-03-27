@@ -23,4 +23,6 @@ public interface C {
 
 	String CONTENT_PATH_PREFIX = "c/";
 
+	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
+
 }

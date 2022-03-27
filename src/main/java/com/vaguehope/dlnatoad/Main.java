@@ -171,7 +171,21 @@ public final class Main {
 		watcherThread.start();
 
 		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog(), selfUri).getDevice());
-		upnpService.getControlPoint().search(); // In case this helps announce our presence.  Untested.
+
+		// Periodic rescan to catch missed devices.
+		final ScheduledExecutorService upnpExSvc = new ScheduledThreadPoolExecutor(1,
+				new DaemonThreadFactory("up", Thread.MIN_PRIORITY));
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run () {
+				upnpExSvc.shutdown();
+			}
+		});
+		upnpExSvc.scheduleWithFixedDelay(() -> {
+			upnpService.getControlPoint().search();
+			if (args.isVerboseLog()) LOG.info("Scanning for devices.");
+		}, 0, C.DEVICE_SEARCH_INTERVAL_MINUTES, TimeUnit.MINUTES);
+
 		server.join(); // Keep app alive.
 	}
 
