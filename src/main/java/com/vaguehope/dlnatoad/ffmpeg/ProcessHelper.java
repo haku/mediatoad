@@ -13,10 +13,9 @@ import org.apache.commons.io.IOUtils;
 public class ProcessHelper {
 
 	private static final int SHUTDOWN_TIMEOUT_SECONDS = 5;
-	private static final long EXIT_POLL_INTERVAL_MILLIS = 200L;
 
 	public static List<String> runAndWait (final String... cmd) throws IOException {
-		final List<String> ret = new ArrayList<String>();
+		final List<String> ret = new ArrayList<>();
 		runAndWait(cmd, new Listener<String>() {
 			@Override
 			public void onAnswer (final String line) {
@@ -48,16 +47,28 @@ public class ProcessHelper {
 			exception = e;
 		}
 		finally {
-			p.destroy();
 			try {
-				final int result = waitFor(p, SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-				if (result != 0 && exception == null) {
-					throw new IOException("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + result);
+				if (p.waitFor(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+					final int result = p.exitValue();
+					if (result != 0 && exception == null) {
+						throw new IOException("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + result);
+					}
+				}
+				else {
+					p.destroyForcibly();
+					if (exception == null) {
+						if (p.waitFor(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+							throw new IOException("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + p.exitValue());
+						}
+						else {
+							throw new IOException("Process has not exited and did not shutdown when requested: " + Arrays.toString(cmd));
+						}
+					}
 				}
 			}
-			catch (final IllegalThreadStateException e) {
+			catch (InterruptedException e1) {
 				if (exception == null) {
-					throw new IOException("Process did not stop when requested: " + Arrays.toString(cmd));
+					throw new IOException("Interupted waiting for process: " + Arrays.toString(cmd));
 				}
 			}
 		}
@@ -66,24 +77,6 @@ public class ProcessHelper {
 			if (exception instanceof RuntimeException) throw (RuntimeException) exception;
 			if (exception instanceof IOException) throw (IOException) exception;
 			throw new IOException(exception.toString(), exception);
-		}
-	}
-
-	public static int waitFor (final Process p, final int timeout, final TimeUnit unit) {
-		final long startNanos = System.nanoTime();
-		while (true) {
-			try {
-				return p.exitValue();
-			}
-			catch (final IllegalThreadStateException e) {
-				if (TimeUnit.NANOSECONDS.convert(timeout, unit) < System.nanoTime() - startNanos) {
-					throw e; // Timed out.
-				}
-				try {
-					Thread.sleep(EXIT_POLL_INTERVAL_MILLIS);
-				}
-				catch (final InterruptedException e1) {/* Ignore. */}
-			}
 		}
 	}
 
