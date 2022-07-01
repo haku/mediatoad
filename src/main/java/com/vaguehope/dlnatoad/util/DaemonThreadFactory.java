@@ -46,7 +46,7 @@ public class DaemonThreadFactory implements ThreadFactory {
 		@Override
 		public void uncaughtException (final Thread t, final Throwable e) {
 			e.printStackTrace(System.err);
-			System.err.println("That was an uncaught exception in: " + t);
+			LOG.error("Uncaught exception in thread: " + t, e);
 		}
 
 	}
