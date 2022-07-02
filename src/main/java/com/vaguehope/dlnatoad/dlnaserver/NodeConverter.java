@@ -35,9 +35,9 @@ import org.fourthline.cling.support.model.item.Item;
 import org.fourthline.cling.support.model.item.VideoItem;
 import org.seamless.util.MimeType;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ExternalUrls;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 
 /**
@@ -45,10 +45,10 @@ import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
  */
 public class NodeConverter {
 
-	private final String externalHttpContext;
+	private final ExternalUrls externalUrls;
 
-	public NodeConverter(final String externalHttpContext) {
-		this.externalHttpContext = externalHttpContext;
+	public NodeConverter(final ExternalUrls externalUrls) {
+		this.externalUrls = externalUrls;
 	}
 
 	public List<Container> makeSubContainersWithoutTheirSubContainers(final ContentNode n) {
@@ -70,7 +70,7 @@ public class NodeConverter {
 
 		final ContentItem art = n.getArt();
 		if (art != null) {
-			final String artUri = contentServletPathForId(art.getId());
+			final String artUri = this.externalUrls.contentUrl(art.getId());
 			c.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artUri)));
 		}
 
@@ -92,7 +92,7 @@ public class NodeConverter {
 	}
 
 	public Item makeItem(final ContentItem c) {
-		final Res res = new Res(c.getFormat().asMimetype(), Long.valueOf(c.getFileLength()), contentServletPathForId(c.getId()));
+		final Res res = new Res(c.getFormat().asMimetype(), Long.valueOf(c.getFileLength()), this.externalUrls.contentUrl(c.getId()));
 
 		final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(c.getDurationMillis());
 		if (durationSeconds > 0) {
@@ -116,14 +116,14 @@ public class NodeConverter {
 
 		final ContentItem art = c.getArt();
 		if (art != null) {
-			final String artUri = contentServletPathForId(art.getId());
+			final String artUri = this.externalUrls.contentUrl(art.getId());
 			i.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artUri)));
 			i.addResource(makeArtRes(art, artUri));
 		}
 
 		if (c.hasAttachments()) {  // TODO is this premature optimisation?
 			c.withEachAttachment(a -> {
-				i.addResource(new Res(a.getFormat().asMimetype(), Long.valueOf(a.getFileLength()), contentServletPathForId(a.getId())));
+				i.addResource(new Res(a.getFormat().asMimetype(), Long.valueOf(a.getFileLength()), this.externalUrls.contentUrl(a.getId())));
 			});
 		}
 
@@ -134,10 +134,6 @@ public class NodeConverter {
 		}
 
 		return i;
-	}
-
-	private String contentServletPathForId(final String id) {
-		return this.externalHttpContext + "/" + C.CONTENT_PATH_PREFIX + id;
 	}
 
 	private static Res makeArtRes(final ContentItem art, final String artUri) {

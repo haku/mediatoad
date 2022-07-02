@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ContentServlet extends DefaultServlet {
@@ -60,7 +61,7 @@ public class ContentServlet extends DefaultServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = contentNodeIdFromPath(id);
+			id = ServletCommon.idFromPath(id, C.CONTENT_PATH_PREFIX, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				return Resource.newResource(item.getFile());
@@ -73,23 +74,6 @@ public class ContentServlet extends DefaultServlet {
 			LOG.warn("Failed to serve resource '{}': {}", pathInContext, e.getMessage());
 		}
 		return null;
-	}
-
-	public static String contentNodeIdFromPath(String id) {
-		id = StringHelper.removePrefix(id, "/");
-		id = StringHelper.removePrefix(id, C.CONTENT_PATH_PREFIX);
-		id = StringHelper.removeSuffix(id, "/");
-		// Remove everything before the last slash.
-		final int lastSlash = id.lastIndexOf("/");
-		if (lastSlash >= 0 && lastSlash < id.length() - 1) {
-			id = id.substring(lastSlash + 1);
-		}
-		// Remove everything after first dot.
-		final int firstDot = id.indexOf('.');
-		if (firstDot > 0) {
-			id = id.substring(0, firstDot);
-		}
-		return id;
 	}
 
 }

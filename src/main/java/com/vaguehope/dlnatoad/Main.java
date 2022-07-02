@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.BindException;
 import java.net.InetAddress;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +41,7 @@ import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.ExternalUrls;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
@@ -50,6 +50,7 @@ import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
+import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
@@ -155,13 +156,12 @@ public final class Main {
 		});
 
 		final ContentTree contentTree = new ContentTree();
-		final Server server = startContentServer(contentTree, mediaId, upnpService, args, hostName);
+		final Server server = startContentServer(contentTree, mediaId, upnpService, args, address, hostName);
 
-		final String externalHttpContext = "http://" + address.getHostAddress() + ":" + server.getConnectors()[0].getPort();
-		final URI selfUri = new URI(externalHttpContext);
-		LOG.info("Self: {}", externalHttpContext);
+		final ExternalUrls externalUrls = new ExternalUrls(address, server.getConnectors()[0].getPort());
+		LOG.info("Self: {}", externalUrls.getSelfUri());
 
-		final NodeConverter nodeConverter = new NodeConverter(externalHttpContext);
+		final NodeConverter nodeConverter = new NodeConverter(externalUrls);
 
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
@@ -173,7 +173,7 @@ public final class Main {
 		watcherThread.setDaemon(true);
 		watcherThread.start();
 
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, nodeConverter, hostName, args.isPrintAccessLog(), selfUri).getDevice());
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, nodeConverter, hostName, args.isPrintAccessLog(), externalUrls.getSelfUri()).getDevice());
 
 		// Periodic rescan to catch missed devices.
 		final ScheduledExecutorService upnpExSvc = new ScheduledThreadPoolExecutor(1,
@@ -207,7 +207,13 @@ public final class Main {
 		};
 	}
 
-	private static Server startContentServer (final ContentTree contentTree, final MediaId mediaId, final UpnpService upnpService, final Args args, final String hostName) throws Exception {
+	private static Server startContentServer(
+			final ContentTree contentTree,
+			final MediaId mediaId,
+			final UpnpService upnpService,
+			final Args args,
+			final InetAddress address,
+			final String hostName) throws Exception {
 		int port = args.getPort();
 		final boolean defaultPort;
 		if (port < 1) {
@@ -241,7 +247,12 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler (final ContentTree contentTree, final MediaId mediaId, final UpnpService upnpService, final Args args, final String hostName) throws CmdLineException {
+	private static HandlerList makeContentHandler(
+			final ContentTree contentTree,
+			final MediaId mediaId,
+			final UpnpService upnpService,
+			final Args args,
+			final String hostName) throws CmdLineException {
 		final File thumbsDir = args.getThumbsDir();
 		final ImageResizer imageResizer =
 				thumbsDir != null
@@ -268,6 +279,7 @@ public final class Main {
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
+		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();

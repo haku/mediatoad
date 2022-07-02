@@ -21,7 +21,9 @@ public interface C {
 	 */
 	int MIN_ADVERTISEMENT_AGE_SECONDS = 300;
 
+	String REVERSE_PROXY_PATH = "dlnatoad";
 	String CONTENT_PATH_PREFIX = "c/";
+	String THUMBS_PATH_PREFIX = "t/";
 
 	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
 

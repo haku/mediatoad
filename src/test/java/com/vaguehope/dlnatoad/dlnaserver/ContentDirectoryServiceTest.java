@@ -31,6 +31,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.ExternalUrls;
 import com.vaguehope.dlnatoad.media.MockContent;
 
 @RunWith(PowerMockRunner.class)
@@ -52,7 +53,7 @@ public class ContentDirectoryServiceTest {
 		this.mockContent.setShuffle(false);  // FIXME make tests less brittle.
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);
-		this.undertest = new ContentDirectoryService(this.contentTree, new NodeConverter(""), this.searchEngine, true);
+		this.undertest = new ContentDirectoryService(this.contentTree, new NodeConverter(new ExternalUrls("")), this.searchEngine, true);
 	}
 
 	/**

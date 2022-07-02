@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ExternalUrls;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 
@@ -33,7 +34,7 @@ public class NodeConverterTest {
 
 	@Before
 	public void before() throws Exception {
-		this.undertest = new NodeConverter(EXTERNAL_HTTP_CONTEXT);
+		this.undertest = new NodeConverter(new ExternalUrls(EXTERNAL_HTTP_CONTEXT));
 	}
 
 	@Test

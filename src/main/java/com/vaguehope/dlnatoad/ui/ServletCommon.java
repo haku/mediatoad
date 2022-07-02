@@ -1,10 +1,13 @@
 package com.vaguehope.dlnatoad.ui;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -20,28 +23,29 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ServletCommon {
 
 	private final ContentTree contentTree;
-	private final MediaId mediaId;
 	private final ImageResizer imageResizer;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
-	private final ExecutorService exSvc;
 
-	public ServletCommon (final ContentTree contentTree, final MediaId mediaId, final ImageResizer imageResizer,
-			final String hostName, final ContentServingHistory contentServingHistory, final ExecutorService exSvc) {
+	public ServletCommon(
+			final ContentTree contentTree,
+			final MediaId mediaId,
+			final ImageResizer imageResizer,
+			final String hostName,
+			final ContentServingHistory contentServingHistory,
+			final ExecutorService exSvc) {
 		this.contentTree = contentTree;
-		this.mediaId = mediaId;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
-		this.exSvc = exSvc;
 	}
 
 	@SuppressWarnings("resource")
@@ -156,12 +160,14 @@ public class ServletCommon {
 
 	private static void appendItem(final PrintWriter w, final ContentItem item) throws IOException {
 		w.print("<li><a href=\"");
+		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");
 		w.print(item.getFormat().getExt());
 		w.print("\">");
 		w.print(item.getFile().getName());
 		w.print("</a> [<a href=\"");
+		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");
 		w.print(item.getFormat().getExt());
@@ -187,19 +193,17 @@ public class ServletCommon {
 		w.println("</li>");
 	}
 
-	private void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb) throws IOException {
+	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb) throws IOException {
 		for (final ContentItem item : imagesToThumb) {
-			final File thumbFile = this.imageResizer.resizeFile(item.getFile(), 200, 0.8f);
-			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile, this.exSvc);
-			this.contentTree.addItem(new ContentItem(thumbId, null, null, thumbFile, MediaFormat.JPEG));
-
 			w.print("<span><a href=\"");
+			w.print(C.CONTENT_PATH_PREFIX);
 			w.print(item.getId());
 			w.print(".");
 			w.print(item.getFormat().getExt());
 			w.print("\">");
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
-			w.print(thumbId);
+			w.print(C.THUMBS_PATH_PREFIX);
+			w.print(item.getId());
 			w.print("\">");
 			w.println("</a></span>");
 		}
@@ -220,5 +224,31 @@ public class ServletCommon {
 		w.println(" items.</p>");
 	}
 
+	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+			"/",
+			"/" + C.REVERSE_PROXY_PATH,
+			"/" + C.REVERSE_PROXY_PATH + "/"
+			)));
+
+	public static String idFromPath(final String pathInfo, final String prefix, final String defVal) {
+		if (pathInfo == null || pathInfo.length() < 1 || ROOT_PATHS.contains(pathInfo)) {
+			return defVal;
+		}
+
+		String id = StringHelper.removePrefix(pathInfo, "/");
+		id = StringHelper.removePrefix(id, prefix);
+		id = StringHelper.removeSuffix(id, "/");
+		// Remove everything before the last slash.
+		final int lastSlash = id.lastIndexOf("/");
+		if (lastSlash >= 0 && lastSlash < id.length() - 1) {
+			id = id.substring(lastSlash + 1);
+		}
+		// Remove everything after first dot.
+		final int firstDot = id.indexOf('.');
+		if (firstDot > 0) {
+			id = id.substring(0, firstDot);
+		}
+		return id;
+	}
 
 }
