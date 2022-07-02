@@ -31,6 +31,9 @@ import com.vaguehope.cdsc.CDSCParser;
 import com.vaguehope.cdsc.CDSCParser.LogOpContext;
 import com.vaguehope.cdsc.CDSCParser.RelExpContext;
 import com.vaguehope.cdsc.CDSCParser.SearchExpContext;
+import com.vaguehope.dlnatoad.media.ContentGroup;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.StringHelper;
 

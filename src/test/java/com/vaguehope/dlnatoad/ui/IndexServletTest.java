@@ -18,14 +18,14 @@ import org.junit.rules.TemporaryFolder;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
-import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
-import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
-import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
-import com.vaguehope.dlnatoad.dlnaserver.MockContent;
+import com.vaguehope.dlnatoad.media.ContentGroup;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentServingHistory;
+import com.vaguehope.dlnatoad.media.ContentServlet;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaId;
+import com.vaguehope.dlnatoad.media.MockContent;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class IndexServletTest {

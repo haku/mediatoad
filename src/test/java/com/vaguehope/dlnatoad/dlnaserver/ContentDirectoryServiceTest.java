@@ -8,6 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,6 +17,8 @@ import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.model.BrowseFlag;
 import org.fourthline.cling.support.model.BrowseResult;
 import org.fourthline.cling.support.model.DIDLContent;
+import org.fourthline.cling.support.model.container.Container;
+import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +27,11 @@ import org.mockito.ArgumentMatchers;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MockContent;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ DIDLParser.class, ContentDirectoryService.class })
@@ -202,8 +211,27 @@ public class ContentDirectoryServiceTest {
 	private void assertParserMarshaled (final List<ContentNode> dirs, final List<ContentItem> items) throws Exception {
 		final ArgumentCaptor<DIDLContent> cap = ArgumentCaptor.forClass(DIDLContent.class);
 		verify(this.didlParser).generate(cap.capture());
-		assertEquals(MockContent.contentIds(dirs), MockContent.containerIds(cap.getValue().getContainers()));
-		assertEquals(MockContent.contentIds(items), MockContent.itemIds(cap.getValue().getItems()));
+		assertEquals(MockContent.contentIds(dirs), containerIds(cap.getValue().getContainers()));
+		assertEquals(MockContent.contentIds(items), itemIds(cap.getValue().getItems()));
+	}
+
+
+	private static List<String> containerIds(final Collection<Container> input) {
+		if (input == null) return Collections.emptyList();
+		final List<String> ret = new ArrayList<>();
+		for (final Container c : input) {
+			ret.add(c.getId());
+		}
+		return ret;
+	}
+
+	private static List<String> itemIds(final Collection<Item> input) {
+		if (input == null) return Collections.emptyList();
+		final List<String> ret = new ArrayList<>();
+		for (final Item c : input) {
+			ret.add(c.getId());
+		}
+		return ret;
 	}
 
 }

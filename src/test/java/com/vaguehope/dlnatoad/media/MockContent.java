@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.dlnaserver;
+package com.vaguehope.dlnatoad.media;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -12,10 +12,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.fourthline.cling.support.model.container.Container;
-import org.fourthline.cling.support.model.item.Item;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.media.AbstractContent;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 
 public class MockContent {
@@ -126,24 +128,6 @@ public class MockContent {
 		if (input == null) return Collections.emptyList();
 		final List<String> ret = new ArrayList<>();
 		for (final AbstractContent c : input) {
-			ret.add(c.getId());
-		}
-		return ret;
-	}
-
-	public static List<String> containerIds(final Collection<Container> input) {
-		if (input == null) return Collections.emptyList();
-		final List<String> ret = new ArrayList<>();
-		for (final Container c : input) {
-			ret.add(c.getId());
-		}
-		return ret;
-	}
-
-	public static List<String> itemIds(final Collection<Item> input) {
-		if (input == null) return Collections.emptyList();
-		final List<String> ret = new ArrayList<>();
-		for (final Item c : input) {
 			ret.add(c.getId());
 		}
 		return ret;

@@ -14,11 +14,11 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
-import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
-import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
+import com.vaguehope.dlnatoad.media.ContentGroup;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentServlet;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.StringHelper;
 import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 

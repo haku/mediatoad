@@ -10,7 +10,10 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.media.MockContent;
 
 public class SearchEngineTest {
 

@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 
 import com.vaguehope.dlnatoad.db.MediaDb;
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MediaId {

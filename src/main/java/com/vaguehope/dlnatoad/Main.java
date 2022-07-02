@@ -36,12 +36,12 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.db.MediaDb;
-import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
-import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
 import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
+import com.vaguehope.dlnatoad.media.ContentServingHistory;
+import com.vaguehope.dlnatoad.media.ContentServlet;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;

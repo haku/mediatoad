@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.dlnaserver;
+package com.vaguehope.dlnatoad.media;
 
 import java.io.IOException;
 import java.net.MalformedURLException;

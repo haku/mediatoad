@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.media.ContentTree;
 
 /**
  * Based on a class from WireMe and used under Apache 2 License.

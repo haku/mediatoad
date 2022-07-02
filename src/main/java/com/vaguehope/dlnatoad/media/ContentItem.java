@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.dlnaserver;
+package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -7,7 +7,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.ExConsumer;
 

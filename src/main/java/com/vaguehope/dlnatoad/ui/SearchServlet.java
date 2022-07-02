@@ -29,11 +29,11 @@ import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
-import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
+import com.vaguehope.dlnatoad.media.ContentGroup;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class SearchServlet extends HttpServlet {

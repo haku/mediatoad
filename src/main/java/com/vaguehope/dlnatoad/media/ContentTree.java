@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.dlnaserver;
+package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.util.Collection;

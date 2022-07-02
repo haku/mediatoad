@@ -10,8 +10,6 @@ import java.util.concurrent.ExecutorService;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-
 public class MediaIdTest {
 
 	private ExecutorService exSvc;

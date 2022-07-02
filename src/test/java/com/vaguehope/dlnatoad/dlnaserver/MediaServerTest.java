@@ -4,6 +4,8 @@ import java.net.URI;
 
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.media.ContentTree;
+
 public class MediaServerTest {
 
 	@Test

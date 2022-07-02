@@ -12,10 +12,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
-import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.AsyncCallback;
 import com.vaguehope.dlnatoad.util.Watcher.EventResult;

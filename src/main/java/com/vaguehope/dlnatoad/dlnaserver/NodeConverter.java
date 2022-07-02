@@ -36,6 +36,8 @@ import org.fourthline.cling.support.model.item.VideoItem;
 import org.seamless.util.MimeType;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 
 /**

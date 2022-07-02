@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.db.MediaDb;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.ffmpeg.Ffprobe;
 import com.vaguehope.dlnatoad.ffmpeg.FfprobeInfo;
 

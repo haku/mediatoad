@@ -19,6 +19,10 @@ import org.fourthline.cling.support.model.item.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentTree;
+
 /**
  * Based on a class from WireMe and used under Apache 2 License. See
  * https://code.google.com/p/wireme/ for more details.

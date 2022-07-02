@@ -26,10 +26,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.dlnatoad.db.MediaDb;
-import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
-import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
-import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
-import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.util.CollectionHelper;
 import com.vaguehope.dlnatoad.util.CollectionHelper.Function;
