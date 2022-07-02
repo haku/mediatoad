@@ -4,45 +4,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
-import org.fourthline.cling.support.model.DIDLObject;
-import org.fourthline.cling.support.model.PersonWithRole;
-import org.fourthline.cling.support.model.Protocol;
-import org.fourthline.cling.support.model.ProtocolInfo;
-import org.fourthline.cling.support.model.Res;
-import org.fourthline.cling.support.model.WriteStatus;
-import org.fourthline.cling.support.model.container.Container;
-import org.fourthline.cling.support.model.dlna.DLNAAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAConversionIndicator;
-import org.fourthline.cling.support.model.dlna.DLNAConversionIndicatorAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAFlags;
-import org.fourthline.cling.support.model.dlna.DLNAFlagsAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAOperations;
-import org.fourthline.cling.support.model.dlna.DLNAOperationsAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAProfileAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAProfiles;
-import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
-import org.fourthline.cling.support.model.item.AudioItem;
-import org.fourthline.cling.support.model.item.ImageItem;
-import org.fourthline.cling.support.model.item.Item;
-import org.fourthline.cling.support.model.item.VideoItem;
-import org.seamless.util.MimeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
@@ -61,7 +32,6 @@ public class MediaIndex implements FileListener {
 	private static final Logger LOG = LoggerFactory.getLogger(MediaIndex.class);
 
 	private final ContentTree contentTree;
-	private final String externalHttpContext;
 	private final HierarchyMode hierarchyMode;
 	private final MediaId mediaId;
 	private final MediaInfo mediaInfo;
@@ -70,10 +40,8 @@ public class MediaIndex implements FileListener {
 	private final ContentNode imageContainer;
 	private final ContentNode audioContainer;
 
-	public MediaIndex(final ContentTree contentTree, final String externalHttpContext,
-			final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) {
+	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) {
 		this.contentTree = contentTree;
-		this.externalHttpContext = externalHttpContext;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
 		this.mediaInfo = mediaInfo;
@@ -221,15 +189,15 @@ public class MediaIndex implements FileListener {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath(), dir);
 
-		findArtRes(dir, contentGroup, new AsyncCallback<Res, IOException>() {
+		findArtItem(dir, contentGroup, new AsyncCallback<ContentItem, IOException>() {
 			@Override
-			public void onResult(Res artRes) throws IOException {
-				if (artRes == null) return;
-				dirContainer.addContainerProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
+			public void onResult(final ContentItem art) throws IOException {
+				if (art == null) return;
+				dirContainer.setArt(art);
 			}
 
 			@Override
-			public void onError(IOException e) {
+			public void onError(final IOException e) {
 				LOG.warn("Error while attaching art to container: " + dirContainer, e);
 			}
 		});
@@ -291,25 +259,13 @@ public class MediaIndex implements FileListener {
 	 */
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
 			final String sortName, final File file) {
-		final ContentNode node = this.contentTree.getNode(id);
-		if (node != null) return node;
+		final ContentNode existingNode = this.contentTree.getNode(id);
+		if (existingNode != null) return existingNode;
 
-		final Container container = new Container();
-		container.setClazz(new DIDLObject.Class("object.container"));
-		container.setId(id);
-		container.setParentID(parentNode.getId());
-		container.setTitle(title);
-		container.setRestricted(true);
-		container.setWriteStatus(WriteStatus.NOT_WRITABLE);
-		container.setChildCount(Integer.valueOf(0));
-
-		final ContentNode contentNode = new ContentNode(id, container, file);
-		if (sortName != null) contentNode.setSortName(sortName);
-
-		// Sorting happens during add, so sort name must already be set.
-		if (parentNode.addChildContainerIfAbsent(container)) {
-			this.contentTree.addNode(contentNode);
-			return contentNode;
+		final ContentNode newNode = new ContentNode(id, parentNode.getId(), title, file, sortName);
+		if (parentNode.addNodeIfAbsent(newNode)) {
+			this.contentTree.addNode(newNode);
+			return newNode;
 		}
 
 		final ContentNode preExisting = this.contentTree.getNode(id);
@@ -340,45 +296,22 @@ public class MediaIndex implements FileListener {
 
 	private boolean makeItemInContainer(final MediaFormat format, final ContentNode parent, final File file,
 			final String title, final String id) throws IOException {
-		if (parent.hasChildItemWithId(id)) return false;  // Optimistic lock.
+		if (parent.hasItemWithId(id)) return false;  // Optimistic lock.
 
-		final Res res = new Res(formatToMime(format), Long.valueOf(file.length()), contentServletPathForId(id));
-		res.setSize(file.length());
+		final ContentItem item = new ContentItem(id, parent.getId(), title, file, format);
+		if (parent.addItemIfAbsent(item)) {
+			this.contentTree.addItem(item);
+			findMetadata(file, item);
+			findArt(file, format, item);
 
-		final Item item;
-		switch (format.getContentGroup()) {
-			case VIDEO:
-				// res.setDuration(formatDuration(durationMillis));
-				// res.setResolution(resolutionXbyY);
-				item = new VideoItem(id, parent.getId(), title, "", res);
+			final ContentGroup contentGroup = format.getContentGroup();
+			if (contentGroup == ContentGroup.VIDEO) {
 				findSubtitlesForItem(item, file);
-				this.mediaInfo.readInfoAsync(file, res);
-				break;
-			case IMAGE:
-				// res.setResolution(resolutionXbyY);
-				item = new ImageItem(id, parent.getId(), title, "", res);
-				break;
-			case AUDIO:
-				// res.setDuration(formatDuration(durationMillis));
-				item = new AudioItem(id, parent.getId(), title, "", res);
-				this.mediaInfo.readInfoAsync(file, res);
-				break;
-			default:
-				throw new IllegalArgumentException();
-		}
-
-		findMetadata(file, item);
-
-		if (parent.addChildItemIfAbsent(item)) {
-			final ContentNode node = new ContentNode(item.getId(), item, file, format);
-			this.contentTree.addNode(node);
-
-			switch (format.getContentGroup()) {
-				case VIDEO:
-				case AUDIO:
-					findArt(file, format, node);
-					break;
-				default:
+			}
+			// TODO mediaInfo on reads duration ATM, but could also ready width/height for all types.
+			// TODO remove this condition once width/height are read.
+			if (contentGroup == ContentGroup.VIDEO || contentGroup == ContentGroup.AUDIO) {
+				this.mediaInfo.readInfoAsync(file, item);
 			}
 
 			return true;
@@ -386,36 +319,27 @@ public class MediaIndex implements FileListener {
 		return false;
 	}
 
-	/**
-	 * Not synchronised because item should only by visible to caller.
-	 */
-	private static void findMetadata(final File file, final Item item) {
+	private static void findMetadata(final File file, final ContentItem item) {
 		final Metadata md = MetadataReader.read(file);
 		if (md == null) return;
-		if (md.getArtist() != null)
-			item.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(md.getArtist())));
-		if (md.getAlbum() != null) item.addProperty(new DIDLObject.Property.UPNP.ALBUM(md.getAlbum()));
+		item.setMetadata(md);
 	}
 
-	private void findArt(final File mediaFile, final MediaFormat mediaFormat, final ContentNode node) throws IOException {
-		findArtRes(mediaFile, mediaFormat.getContentGroup(), new AsyncCallback<Res, IOException>() {
+	private void findArt(final File mediaFile, final MediaFormat mediaFormat, final ContentItem item) throws IOException {
+		findArtItem(mediaFile, mediaFormat.getContentGroup(), new AsyncCallback<ContentItem, IOException>() {
 			@Override
-			public void onResult(Res artRes) throws IOException {
-				if (artRes == null) return;
-				node.withItem(i -> {
-					i.addProperty(new DIDLObject.Property.UPNP.ALBUM_ART_URI(URI.create(artRes.getValue())));
-					i.addResource(artRes);
-				});
+			public void onResult(final ContentItem artItem) throws IOException {
+				item.setArt(artItem);
 			}
 
 			@Override
-			public void onError(IOException e) {
-				LOG.warn("Error while attaching art to item: " + node, e);
+			public void onError(final IOException e) {
+				LOG.warn("Error while attaching art to item: " + item, e);
 			}
 		});
 	}
 
-	private void findArtRes(final File mediaFile, final ContentGroup mediaContentGroup, AsyncCallback<Res, IOException> callback) throws IOException {
+	private void findArtItem(final File mediaFile, final ContentGroup mediaContentGroup, final AsyncCallback<ContentItem, IOException> callback) throws IOException {
 		final File artFile = CoverArtHelper.findCoverArt(mediaFile);
 		if (artFile == null) return;
 
@@ -424,55 +348,20 @@ public class MediaIndex implements FileListener {
 			LOG.warn("Ignoring art file of unsupported type: {}", artFile);
 			return;
 		}
-		final MimeType artMimeType = formatToMime(artFormat);
 
 		this.mediaId.contentIdAsync(mediaContentGroup, artFile, new MediaIdCallback() {
 			@Override
-			public void onResult(String artId) throws IOException {
-				MediaIndex.this.contentTree.addNode(new ContentNode(artId, null, artFile, artFormat));
-				final Res res = new Res(makeProtocolInfo(artMimeType), Long.valueOf(artFile.length()), contentServletPathForId(artId));
-				callback.onResult(res);
+			public void onResult(final String artId) throws IOException {
+				final ContentItem artItem = new ContentItem(artId, null, null, artFile, artFormat);
+				MediaIndex.this.contentTree.addItem(artItem);
+				callback.onResult(artItem);
 			}
 
 			@Override
-			public void onError(IOException e) {
+			public void onError(final IOException e) {
 				callback.onError(e);
 			}
 		});
-
-	}
-
-	private static DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
-		@SuppressWarnings("rawtypes")
-		final EnumMap<DLNAAttribute.Type, DLNAAttribute> attributes = new EnumMap<>(DLNAAttribute.Type.class);
-
-		final DLNAProfiles dlnaThumbnailProfile = findDlnaThumbnailProfile(artMimeType);
-		if (dlnaThumbnailProfile != null) {
-			attributes.put(DLNAAttribute.Type.DLNA_ORG_PN, new DLNAProfileAttribute(dlnaThumbnailProfile));
-		}
-		attributes.put(DLNAAttribute.Type.DLNA_ORG_OP, new DLNAOperationsAttribute(DLNAOperations.RANGE));
-		attributes.put(DLNAAttribute.Type.DLNA_ORG_CI,
-				new DLNAConversionIndicatorAttribute(DLNAConversionIndicator.TRANSCODED));
-		attributes.put(DLNAAttribute.Type.DLNA_ORG_FLAGS, new DLNAFlagsAttribute(
-				DLNAFlags.INTERACTIVE_TRANSFERT_MODE, DLNAFlags.BACKGROUND_TRANSFERT_MODE, DLNAFlags.DLNA_V15));
-
-		return new DLNAProtocolInfo(Protocol.HTTP_GET, ProtocolInfo.WILDCARD, artMimeType.toString(), attributes);
-	}
-
-	private static final Collection<DLNAProfiles> DLNA_THUMBNAIL_TYPES = Collections.unmodifiableList(Arrays.asList(
-			DLNAProfiles.JPEG_TN, DLNAProfiles.PNG_TN));
-
-	private static final Map<String, DLNAProfiles> MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE;
-	static {
-		final Map<String, DLNAProfiles> m = new HashMap<>();
-		for (final DLNAProfiles p : DLNA_THUMBNAIL_TYPES) {
-			m.put(p.getContentFormat(), p);
-		}
-		MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE = Collections.unmodifiableMap(m);
-	}
-
-	private static DLNAProfiles findDlnaThumbnailProfile(final MimeType mimeType) {
-		return MIME_TYPE_TO_DLNA_THUMBNAIL_TYPE.get(mimeType.toString());
 	}
 
 	private void attachSubtitlesToItem(final File subtitlesFile, final MediaFormat subtitlesFormat,
@@ -483,10 +372,10 @@ public class MediaIndex implements FileListener {
 				final ContentNode dirNode = MediaIndex.this.contentTree.getNode(dirNodeId);
 				if (dirNode == null) return;
 
-				dirNode.withEachChildItem(i -> {
-					final File itemFile = MediaIndex.this.contentTree.getNode(i.getId()).getFile();
+				dirNode.withEachItem(i -> {
+					final File itemFile = i.getFile();
 					if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
-						addSubtitles(i, subtitlesFile, subtitlesFormat, () -> {
+						addSubtitlesToItem(i, subtitlesFile, subtitlesFormat, () -> {
 							LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(),
 									subtitlesFile.getAbsolutePath());
 							if (onComplete != null) onComplete.run();
@@ -509,8 +398,8 @@ public class MediaIndex implements FileListener {
 				final ContentNode parent = MediaIndex.this.contentTree.getNode(parentId);
 				if (parent == null) return;
 
-				parent.withEachChildItem(i -> {
-					removeSubtitles(i, subtitlesFile, subtitlesFormat, () -> {
+				parent.withEachItem(i -> {
+					removeSubtitlesFromItem(i, subtitlesFile, subtitlesFormat, () -> {
 						LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
 					});
 				});
@@ -523,7 +412,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void findSubtitlesForItem(final Item item, final File itemFile) throws IOException {
+	private void findSubtitlesForItem(final ContentItem item, final File itemFile) throws IOException {
 		final File dir = itemFile.getParentFile();
 		if (dir == null) throw new NullPointerException("itemFile has null parent: " + itemFile);
 
@@ -536,20 +425,19 @@ public class MediaIndex implements FileListener {
 		for (final String fName : fNames) {
 			final MediaFormat fFormat = MediaFormat.identify(fName);
 			if (fFormat != null && fFormat.getContentGroup() == ContentGroup.SUBTITLES) {
-				addSubtitles(item, new File(dir, fName), fFormat, null);
+				addSubtitlesToItem(item, new File(dir, fName), fFormat, null);
 			}
 		}
 	}
 
-	private void addSubtitles(final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat,
+	private void addSubtitlesToItem(final ContentItem item, final File subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
 		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, new MediaIdCallback() {
 			@Override
 			public void onResult(final String subtitlesId) throws IOException {
-				final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()),
-						contentServletPathForId(subtitlesId));
-				MediaIndex.this.contentTree.addNode(new ContentNode(subtitlesId, null, subtitlesFile, subtitlesFormat));
-				if (addResourceToItemIfNotPresent(item, subtitlesRes)) {
+				final ContentItem subtitlesItem = new ContentItem(subtitlesId, null, null, subtitlesFile, subtitlesFormat);
+				MediaIndex.this.contentTree.addItem(subtitlesItem);
+				if (item.addAttachmentIfNotPresent(subtitlesItem)) {
 					if (onComplete != null) onComplete.run();
 				}
 			}
@@ -561,57 +449,21 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void removeSubtitles(final Item item, final File subtitlesFile, final MediaFormat subtitlesFormat,
+	private void removeSubtitlesFromItem(final ContentItem item, final File subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
 		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, new MediaIdCallback() {
 			@Override
-			public void onResult(String subtitlesId) throws IOException {
-				final Res subtitlesRes = new Res(formatToMime(subtitlesFormat), Long.valueOf(subtitlesFile.length()),
-						contentServletPathForId(subtitlesId));
-				if (removeResourceFromItem(item, subtitlesRes)) {
+			public void onResult(final String subtitlesId) throws IOException {
+				if (item.removeAttachmetById(subtitlesId)) {
 					if (onComplete != null) onComplete.run();
 				}
 			}
 
 			@Override
-			public void onError(IOException e) {
+			public void onError(final IOException e) {
 				LOG.warn("Failed to remove subtitles, error getting subtitlesId.", e);
 			}
 		});
-	}
-
-	private String contentServletPathForId(final String id) {
-		return this.externalHttpContext + "/" + C.CONTENT_PATH_PREFIX + id;
-	}
-
-	private static boolean addResourceToItemIfNotPresent(final Item item, final Res res) {
-		if (res.getValue() == null) throw new IllegalArgumentException("Resource value must not be null.");
-		synchronized (item) {
-			for (final Res r : item.getResources()) {
-				if (res.getValue().equals(r.getValue())) return false;
-			}
-			item.addResource(res);
-			return true;
-		}
-	}
-
-	private static boolean removeResourceFromItem(final Item item, final Res res) {
-		if (res.getValue() == null) throw new IllegalArgumentException("Resource value must not be null.");
-		synchronized (item) {
-			final Iterator<Res> resIttr = item.getResources().iterator();
-			while (resIttr.hasNext()) {
-				if (res.getValue().equals(resIttr.next().getValue())) {
-					resIttr.remove();
-					return true;
-				}
-			}
-			return false;
-		}
-	}
-
-	private static MimeType formatToMime(final MediaFormat format) {
-		final String mime = format.getMime();
-		return new MimeType(mime.substring(0, mime.indexOf('/')), mime.substring(mime.indexOf('/') + 1));
 	}
 
 	private final class BasenameFilter implements FilenameFilter {

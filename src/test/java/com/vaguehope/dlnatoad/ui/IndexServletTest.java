@@ -19,6 +19,7 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
@@ -86,7 +87,7 @@ public class IndexServletTest {
 
 	@Test
 	public void itPassesThroughItems() throws Exception {
-		final List<ContentNode> mockItems = this.mockContent.givenMockItems(1);
+		final List<ContentItem> mockItems = this.mockContent.givenMockItems(1);
 		this.req.setPathInfo("/" + mockItems.get(0).getId());
 		this.undertest.doGet(this.req, this.resp);
 		verify(this.contentServlet).service(this.req, this.resp);
@@ -182,7 +183,7 @@ public class IndexServletTest {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode dir = mockDirs.get(0);
 
-		final ContentNode item = this.mockContent.addMockItem("i", dir);
+		final ContentItem item = this.mockContent.addMockItem("i", dir);
 		assertTrue(item.getFile().setLastModified(1034567890000L));
 		item.reload();
 

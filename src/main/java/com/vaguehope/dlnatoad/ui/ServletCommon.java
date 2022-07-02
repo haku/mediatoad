@@ -12,12 +12,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.fourthline.cling.support.model.Res;
-import org.fourthline.cling.support.model.container.Container;
-import org.fourthline.cling.support.model.item.Item;
+import org.fourthline.cling.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
@@ -111,105 +110,93 @@ public class ServletCommon {
 		w.print("<h3>");
 		w.print(contentNode.getTitle());
 		w.print(" (");
-		w.print(contentNode.getChildContainerCount());
+		w.print(contentNode.getNodeCount());
 		w.print(" dirs, ");
-		w.print(contentNode.getChildItemCount());
+		w.print(contentNode.getItemCount());
 		w.println(" items)</h3><ul>");
 
-		contentNode.withEachChildContainer(c -> appendDirectory(w, c));
-		final List<ContentNode> imagesToThumb = new ArrayList<>();
-		contentNode.applyContainer(c -> {
-			imagesToThumb.addAll(appendItemsAndImagesAndGetImagesToThumb(w, c.getItems()));
-			return null;
-		});
-
-		// This needs to be done OUTSIDE the contentNode lock held by applyContainer().
+		contentNode.withEachNode(c -> appendDirectory(w, c));
+		final List<ContentItem> imagesToThumb = new ArrayList<>();
+		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, imagesToThumb));
 		appendImageThumbnails(w, imagesToThumb);
 
 		w.println("</ul>");
 	}
 
-	public void printItemsAndImages(final PrintWriter w, final List<Item> items) throws IOException {
+	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items) throws IOException {
 		w.print("<h3>Local items: ");
 		w.print(items.size());
 		w.println("</h3><ul>");
-		final List<ContentNode> imagesToThumb = appendItemsAndImagesAndGetImagesToThumb(w, items);
+
+		final List<ContentItem> imagesToThumb = new ArrayList<>();
+		for (final ContentItem item : items) {
+			appendItemOrGetImageToThumb(w, item, imagesToThumb);
+		}
 		appendImageThumbnails(w, imagesToThumb);
+
 		w.println("</ul>");
 	}
 
-	private List<ContentNode> appendItemsAndImagesAndGetImagesToThumb(final PrintWriter w, final List<Item> items) throws IOException {
-		final List<ContentNode> imagesToThumb = new ArrayList<>();
-		for (final Item i : items) {
-			final ContentNode node = this.contentTree.getNode(i.getId());
-			if (this.imageResizer != null && node.getFormat().getContentGroup() == ContentGroup.IMAGE) {
-				imagesToThumb.add(node);
-			}
-			else {
-				appendItem(w, node);
-			}
+	private void appendItemOrGetImageToThumb(final PrintWriter w, final ContentItem item, final List<ContentItem> imagesToThumb) throws IOException {
+		if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+			imagesToThumb.add(item);
 		}
-		return imagesToThumb;
+		else {
+			appendItem(w, item);
+		}
 	}
 
-	private static void appendDirectory(final PrintWriter w, final Container dir) {
+	private static void appendDirectory(final PrintWriter w, final ContentNode node) {
 		w.print("<li><a href=\"");
-		w.print(dir.getId());
+		w.print(node.getId());
 		w.print("\">");
-		w.print(dir.getTitle());
+		w.print(node.getTitle());
 		w.println("</a></li>");
 	}
 
-	private static void appendItem(final PrintWriter w, final ContentNode node) throws IOException {
+	private static void appendItem(final PrintWriter w, final ContentItem item) throws IOException {
 		w.print("<li><a href=\"");
-		w.print(node.getId());
+		w.print(item.getId());
 		w.print(".");
-		w.print(node.getFormat().getExt());
+		w.print(item.getFormat().getExt());
 		w.print("\">");
-		w.print(node.getFile().getName());
+		w.print(item.getFile().getName());
 		w.print("</a> [<a href=\"");
-		w.print(node.getId());
+		w.print(item.getId());
 		w.print(".");
-		w.print(node.getFormat().getExt());
+		w.print(item.getFormat().getExt());
 		w.print("\" download=\"");
-		w.print(node.getFile().getName());
+		w.print(item.getFile().getName());
 		w.print("\">");
 
-		final Res firstResource = node.applyItem(i -> i.getFirstResource());
-		if (firstResource != null) {
-			w.print(FileHelper.readableFileSize(firstResource.getSize()));
+		final long fileLength = item.getFileLength();
+		if (fileLength > 0) {
+			w.print(FileHelper.readableFileSize(fileLength));
 		}
 
 		w.print("</a>]");
 
-		node.withItem(i -> {
-			final List<Res> ress = i.getResources();
-			if (ress != null) {
-				for (final Res res : ress) {
-					final String duration = res.getDuration();
-					if (duration != null && duration.length() > 0) {
-						w.print(" (");
-						w.print(duration);
-						w.print(")");
-						break;
-					}
-				}
-			}
-		});
+		final long durationMillis = item.getDurationMillis();
+		if (durationMillis > 0) {
+			w.print(" (");
+			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis);
+			w.print(ModelUtil.toTimeString(durationSeconds));
+			w.print(")");
+		}
 
 		w.println("</li>");
 	}
 
-	private void appendImageThumbnails(final PrintWriter w, final List<ContentNode> imagesToThumb) throws IOException {
-		for (final ContentNode node : imagesToThumb) {
-			final File thumbFile = this.imageResizer.resizeFile(node.getFile(), 200, 0.8f);
+	private void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb) throws IOException {
+		for (final ContentItem item : imagesToThumb) {
+			final File thumbFile = this.imageResizer.resizeFile(item.getFile(), 200, 0.8f);
 			final String thumbId = this.mediaId.contentIdSync(ContentGroup.THUMBNAIL, thumbFile, this.exSvc);
-			this.contentTree.addNode(new ContentNode(thumbId, null, thumbFile, MediaFormat.JPEG));
+			this.contentTree.addItem(new ContentItem(thumbId, null, null, thumbFile, MediaFormat.JPEG));
 
 			w.print("<span><a href=\"");
-			w.print(node.getId());
+			w.print(item.getId());
 			w.print(".");
-			w.print(node.getFormat().getExt());
+			w.print(item.getFormat().getExt());
 			w.print("\">");
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
 			w.print(thumbId);
@@ -226,9 +213,11 @@ public class ServletCommon {
 		w.print(" active in last 15 minutes.");
 		w.println("</p>");
 
-		w.print("<p>");
+		w.print("<p>content: ");
 		w.print(this.contentTree.getNodeCount());
-		w.println(" content nodes.</p>");
+		w.print(" nodes, ");
+		w.print(this.contentTree.getItemCount());
+		w.println(" items.</p>");
 	}
 
 

@@ -19,12 +19,8 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
-import org.fourthline.cling.support.model.DIDLObject;
-import org.fourthline.cling.support.model.DIDLObject.Property;
-import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.AudioItem;
 import org.fourthline.cling.support.model.item.ImageItem;
-import org.fourthline.cling.support.model.item.Item;
 import org.fourthline.cling.support.model.item.VideoItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +31,7 @@ import com.vaguehope.cdsc.CDSCParser;
 import com.vaguehope.cdsc.CDSCParser.LogOpContext;
 import com.vaguehope.cdsc.CDSCParser.RelExpContext;
 import com.vaguehope.cdsc.CDSCParser.SearchExpContext;
+import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class SearchEngine {
@@ -43,22 +40,18 @@ public class SearchEngine {
 
 	public SearchEngine () {}
 
-	public List<Item> search (final ContentNode contentNode, final String searchCriteria, final int maxResults) throws ContentDirectoryException {
+	public List<ContentItem> search (final ContentNode node, final String searchCriteria, final int maxResults) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
-		final Predicate<Item> predicate = criteriaToPredicate(searchCriteria);
+		final Predicate<ContentItem> predicate = criteriaToPredicate(searchCriteria);
 		if (predicate == null) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CRITERIA, "Do not know how to parse: " + searchCriteria);
 		LOG.debug("'{}' => {} in {}ms.", searchCriteria, predicate, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
-		// FIXME TODO This breaks the locking inside ContentNode and only works because
-		// filterItems() does its own locking on the container object.
-		final Container container = contentNode.applyContainer(c -> c);
-
-		final List<Item> results = new ArrayList<>();
-		filterItems(container, predicate, maxResults, results);
+		final List<ContentItem> results = new ArrayList<>();
+		filterItems(node, predicate, maxResults, results);
 		return results;
 	}
 
-	protected static Predicate<Item> criteriaToPredicate (final String searchCriteria) {
+	protected static Predicate<ContentItem> criteriaToPredicate (final String searchCriteria) {
 		final CriteriaListener listener = new CriteriaListener();
 		new ParseTreeWalker().walk(listener, new CDSCParser(
 				new CommonTokenStream(new CDSCLexer(new ANTLRInputStream(searchCriteria)))
@@ -74,18 +67,18 @@ public class SearchEngine {
 		private static final Set<String> ARTIST_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 				"dc:creator", "upnp:artist")));
 
-		@SuppressWarnings("serial") private static final Map<String, Class<?>> UPNP_TO_CLING = Collections.unmodifiableMap(new HashMap<String, Class<?>>() {
+		private static final Map<String, ContentGroup> UPNP_TO_GROUP = Collections.unmodifiableMap(new HashMap<String, ContentGroup>() {
 			{
-				put(VideoItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), VideoItem.class);
-				put(AudioItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), AudioItem.class);
-				put(ImageItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ImageItem.class);
+				put(VideoItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.VIDEO);
+				put(AudioItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.AUDIO);
+				put(ImageItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.IMAGE);
 			}
 		});
 
 		private static class Exp {
-			Predicate<Item> left;
+			Predicate<ContentItem> left;
 			LogOp logOp;
-			Predicate<Item> right;
+			Predicate<ContentItem> right;
 
 			public Exp () {}
 
@@ -95,12 +88,12 @@ public class SearchEngine {
 			}
 		}
 
-		private final LinkedList<Exp> stack = new LinkedList<Exp>();
+		private final LinkedList<Exp> stack = new LinkedList<>();
 		private Exp cExp = new Exp();
 
 		public CriteriaListener () {}
 
-		public Predicate<Item> getPredicate () {
+		public Predicate<ContentItem> getPredicate () {
 			if (this.stack.size() > 0) throw new IllegalStateException("Items left over on stack: " + this.stack);
 			if (this.cExp.left == null) throw new IllegalStateException("Left is null: " + this.cExp);
 			if (this.cExp.logOp != null) throw new IllegalStateException("Op not null: " + this.cExp);
@@ -108,16 +101,16 @@ public class SearchEngine {
 			return this.cExp.left;
 		}
 
-		private static Predicate<Item> collapse (final Exp exp) {
+		private static Predicate<ContentItem> collapse (final Exp exp) {
 			if (exp.left == null) throw new IllegalStateException("Left is null: " + exp);
 			if (exp.logOp == null) throw new IllegalStateException("Op is null: " + exp);
 			if (exp.right == null) throw new IllegalStateException("Right is null: " + exp);
 
 			switch (exp.logOp) {
 				case AND:
-					return new And<Item>(Arrays.asList(exp.left, exp.right));
+					return new And<>(Arrays.asList(exp.left, exp.right));
 				case OR:
-					return new Or<Item>(Arrays.asList(exp.left, exp.right));
+					return new Or<>(Arrays.asList(exp.left, exp.right));
 				default:
 					throw new IllegalStateException("Unknown op: " + exp.logOp);
 			}
@@ -177,7 +170,7 @@ public class SearchEngine {
 			final String op = ctx.binOp().getText();
 			final String value = StringHelper.unquoteQuotes(ctx.QuotedVal().getText());
 
-			final Predicate<Item> predicate;
+			final Predicate<ContentItem> predicate;
 
 			if ("upnp:class".equals(propertyName)) {
 				if ("=".equals(op) || "derivedfrom".equalsIgnoreCase(op)) {
@@ -223,11 +216,11 @@ public class SearchEngine {
 
 		}
 
-		private static Predicate<Item> relExpDerivedfrom (final String propertyName, final String value) {
+		private static Predicate<ContentItem> relExpDerivedfrom (final String propertyName, final String value) {
 			final String lcastUpnpClass = value.toLowerCase(Locale.ENGLISH);
-			for (final Entry<String, Class<?>> utc : UPNP_TO_CLING.entrySet()) {
+			for (final Entry<String, ContentGroup> utc : UPNP_TO_GROUP.entrySet()) {
 				if (lcastUpnpClass.startsWith(utc.getKey())) {
-					return new ClassInstanceOf<Item>(utc.getValue());
+					return new ContentGroupIs(utc.getValue());
 				}
 			}
 			LOG.debug("Unsupported value for property {}: {}", propertyName, value);
@@ -239,21 +232,22 @@ public class SearchEngine {
 	/**
 	 * Lazy recursive impl.
 	 */
-	private static void filterItems (final Container container, final Predicate<Item> predicate, final int maxResults, final List<Item> results) {
+	private static void filterItems (final ContentNode node, final Predicate<ContentItem> predicate, final int maxResults, final List<ContentItem> results) {
 		if (results.size() >= maxResults) return;
 
-		synchronized (container) {
-			for (final Item ci : container.getItems()) {
-				if (predicate.matches(ci)) {
-					results.add(ci);
-					if (results.size() >= maxResults) return;
-				}
+		node.withEachItem(i -> {
+			if (results.size() >= maxResults) return;  // TODO is there a nicer way to stop iterating?
+			if (predicate.matches(i)) {
+				results.add(i);
 			}
-			for (final Container childContainer : container.getContainers()) {
-				if (ContentGroup.RECENT.getId().equals(childContainer.getId())) continue;  // Do not search in recent.
-				filterItems(childContainer, predicate, maxResults, results);
-			}
-		}
+		});
+
+		// FIXME this is recursive and acquires locks so may deadlock.
+		// TODO replace with non-recursive impl.
+		node.withEachNode(n -> {
+			if (ContentGroup.RECENT.getId().equals(n.getId())) return;  // Do not search in recent.
+			filterItems(n, predicate, maxResults, results);
+		});
 	}
 
 	private enum LogOp {
@@ -354,41 +348,41 @@ public class SearchEngine {
 
 	}
 
-	private static class ClassInstanceOf<T> implements Predicate<T> {
+	private static class ContentGroupIs implements Predicate<ContentItem> {
 
-		private final Class<?> cls;
+		private final ContentGroup contentGroup;
 
-		public ClassInstanceOf (final Class<?> cls) {
-			this.cls = cls;
+		public ContentGroupIs (final ContentGroup contentGroup) {
+			this.contentGroup = contentGroup;
 		}
 
 		@Override
-		public boolean matches (final T item) {
-			return this.cls.isAssignableFrom(item.getClass());
+		public boolean matches (final ContentItem item) {
+			return this.contentGroup == item.getFormat().getContentGroup();
 		}
 
 		@Override
 		public String toString () {
-			return String.format("instanceOf %s", this.cls.getSimpleName());
+			return String.format("contentGroupIs %s", this.contentGroup);
 		}
 
 		@Override
 		public int hashCode () {
-			return this.cls.hashCode();
+			return this.contentGroup.hashCode();
 		}
 
 		@Override
 		public boolean equals (final Object obj) {
 			if (obj == null) return false;
 			if (obj == this) return true;
-			if (!(obj instanceof ClassInstanceOf)) return false;
-			final ClassInstanceOf<?> that = (ClassInstanceOf<?>) obj;
-			return Objects.equals(this.cls, that.cls);
+			if (!(obj instanceof ContentGroupIs)) return false;
+			final ContentGroupIs that = (ContentGroupIs) obj;
+			return Objects.equals(this.contentGroup, that.contentGroup);
 		}
 
 	}
 
-	private static class TitleContains implements Predicate<Item> {
+	private static class TitleContains implements Predicate<ContentItem> {
 
 		private final String lcaseSubString;
 
@@ -397,7 +391,7 @@ public class SearchEngine {
 		}
 
 		@Override
-		public boolean matches (final Item item) {
+		public boolean matches (final ContentItem item) {
 			return item.getTitle().toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString);
 		}
 
@@ -422,12 +416,7 @@ public class SearchEngine {
 
 	}
 
-	private static class ArtistContains implements Predicate<Item> {
-
-		/**
-		 * See constructor of org.teleal.cling.support.model.DIDLObject.Property.
-		 */
-		private static final String ARTIST_DES_NAME = DIDLObject.Property.UPNP.ARTIST.class.getSimpleName().toLowerCase();
+	private static class ArtistContains implements Predicate<ContentItem> {
 
 		private final String lcaseSubString;
 
@@ -436,13 +425,14 @@ public class SearchEngine {
 		}
 
 		@Override
-		public boolean matches (final Item item) {
-			for (final Property<?> prop : item.getProperties()) {
-				if (ARTIST_DES_NAME.equals(prop.getDescriptorName())) {
-					if (prop.getValue().toString().toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString)) return true;
-				}
-			}
-			return false;
+		public boolean matches (final ContentItem item) {
+			final Metadata md = item.getMetadata();
+			if (md == null) return false;
+
+			final String artist = md.getArtist();
+			if (artist == null) return false;
+
+			return artist.toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString);
 		}
 
 		@Override

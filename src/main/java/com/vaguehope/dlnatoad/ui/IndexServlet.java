@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
@@ -63,7 +64,7 @@ public class IndexServlet extends HttpServlet {
 		resp.setHeader("DAV", "1");
 	}
 
-	private ContentNode contentNodeFromPath(final HttpServletRequest req) {
+	private static String idFromPath(final HttpServletRequest req) {
 		String id = req.getPathInfo();
 		if (id == null || id.length() < 1
 				|| "/".equals(id)
@@ -74,14 +75,15 @@ public class IndexServlet extends HttpServlet {
 		else {
 			id = ContentServlet.contentNodeIdFromPath(id);
 		}
-		return this.contentTree.getNode(id);
+		return id;
 	}
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final ContentNode contentNode = contentNodeFromPath(req);
+		final String id = idFromPath(req);
+		final ContentNode contentNode = this.contentTree.getNode(id);
 		// ContentServlet does extra parsing and Index only handles directories anyway.
-		if (contentNode == null || !contentNode.hasContainer()) {
+		if (contentNode == null) {
 			req.setAttribute(DO_NOT_LOG_ATTR, Boolean.TRUE);
 			this.contentServlet.service(req, resp);
 			return;
@@ -91,11 +93,6 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private void printDir (HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode) throws IOException {
-		if (!contentNode.hasContainer()) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Item is a not a directory: " + contentNode.getId());
-			return;
-		}
-
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
@@ -109,8 +106,11 @@ public class IndexServlet extends HttpServlet {
 
 	// http://www.webdav.org/specs/rfc4918.html
 	protected void doPropfind(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final ContentNode contentNode = contentNodeFromPath(req);
-		if (contentNode == null) {
+		final String id = idFromPath(req);
+		final ContentNode node = this.contentTree.getNode(id);
+		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
+
+		if (node == null && item == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
 			return;
 		}
@@ -128,23 +128,26 @@ public class IndexServlet extends HttpServlet {
 		resp.setStatus(207);
 		resp.setCharacterEncoding("UTF-8");
 		resp.setContentType("application/xml");
+
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		w.println("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
 		w.println("<D:multistatus xmlns:D=\"DAV:\">");
-		appendPropfindItem(req, w, contentNode, false);
-		if ("1".equals(depth) && contentNode.hasContainer()) {
-			contentNode.withEachChildContainer(c -> {
-				appendPropfindItem(req, w, this.contentTree.getNode(c.getId()), true);
-			});
-			contentNode.withEachChildItem(i -> {
-				appendPropfindItem(req, w, this.contentTree.getNode(i.getId()), true);
-			});
+
+		if (node != null) {
+			appendPropfindNode(req, w, node, false);
+			if ("1".equals(depth)) {
+				node.withEachNode(n -> appendPropfindNode(req, w, n, true));
+				node.withEachItem(i -> appendPropfindItem(req, w, i, true));
+			}
+		}
+		else {
+			appendPropfindItem(req, w, item, false);
 		}
 		w.println("</D:multistatus>");
 	}
 
-	private static void appendPropfindItem(final HttpServletRequest req, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
+	private static void appendPropfindNode(final HttpServletRequest req, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
 		String path = req.getPathInfo();
 		if (appendIdToPath) {
 			path = StringHelper.removeSuffix(path, "/") + "/" + node.getId();
@@ -154,31 +157,55 @@ public class IndexServlet extends HttpServlet {
 		w.println("<D:href>" + path + "</D:href>");
 		w.println("<D:propstat>");
 		w.println("<D:prop>");
-		if (node.hasContainer()) {
-			w.println("<D:resourcetype><D:collection/></D:resourcetype>");
-		}
-		else {
-			w.println("<D:resourcetype/>");
-		}
+		w.println("<D:resourcetype><D:collection/></D:resourcetype>");
 
 		w.print("<D:displayname>");
 		w.print(StringEscapeUtils.escapeXml11(node.getTitle()));
 		w.println("</D:displayname>");
 
-		if (node.getFormat() != null) {
+		final long lastModified = node.getLastModified();
+		if (lastModified > 0) {
+			w.print("<D:getlastmodified>");
+			w.print(RFC1123_DATE.get().format(new Date(lastModified)));
+			w.print("</D:getlastmodified>");
+		}
+
+		w.println("</D:prop>");
+		w.println("<D:status>HTTP/1.1 200 OK</D:status>");
+		w.println("</D:propstat>");
+		w.println("</D:response>");
+	}
+
+	private static void appendPropfindItem(final HttpServletRequest req, final PrintWriter w, final ContentItem item, boolean appendIdToPath) {
+		String path = req.getPathInfo();
+		if (appendIdToPath) {
+			path = StringHelper.removeSuffix(path, "/") + "/" + item.getId();
+		}
+
+		w.println("<D:response>");
+		w.println("<D:href>" + path + "</D:href>");
+		w.println("<D:propstat>");
+		w.println("<D:prop>");
+		w.println("<D:resourcetype/>");
+
+		w.print("<D:displayname>");
+		w.print(StringEscapeUtils.escapeXml11(item.getTitle()));
+		w.println("</D:displayname>");
+
+		if (item.getFormat() != null) {
 			w.print("<D:getcontenttype>");
-			w.print(node.getFormat().getMime());
+			w.print(item.getFormat().getMime());
 			w.println("</D:getcontenttype>");
 		}
 
-		final long fileLength = node.getFileLength();
+		final long fileLength = item.getFileLength();
 		if (fileLength > 0) {
 			w.print("<D:getcontentlength>");
 			w.print(fileLength);
 			w.println("</D:getcontentlength>");
 		}
 
-		final long lastModified = node.getLastModified();
+		final long lastModified = item.getLastModified();
 		if (lastModified > 0) {
 			w.print("<D:getlastmodified>");
 			w.print(RFC1123_DATE.get().format(new Date(lastModified)));

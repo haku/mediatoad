@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class ThreadSafeDateFormatter {
 
@@ -32,7 +33,7 @@ public class ThreadSafeDateFormatter {
 		@Override
 		protected SimpleDateFormat initialValue () {
 			final SimpleDateFormat a = new SimpleDateFormat(this.format, this.locale);
-			//a.setTimeZone(TimeZone.getTimeZone("UTC"));
+			a.setTimeZone(TimeZone.getTimeZone("UTC"));
 			return a;
 		}
 	}

@@ -40,6 +40,7 @@ import com.vaguehope.dlnatoad.dlnaserver.ContentServingHistory;
 import com.vaguehope.dlnatoad.dlnaserver.ContentServlet;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
+import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
 import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaId;
@@ -160,17 +161,19 @@ public final class Main {
 		final URI selfUri = new URI(externalHttpContext);
 		LOG.info("Self: {}", externalHttpContext);
 
+		final NodeConverter nodeConverter = new NodeConverter(externalHttpContext);
+
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
-		final MediaIndex index = new MediaIndex(contentTree, externalHttpContext, hierarchyMode, mediaId, mediaInfo);
+		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo);
 
 		final Thread watcherThread = new Thread(new RunWatcher(args, index));
 		watcherThread.setName("watcher");
 		watcherThread.setDaemon(true);
 		watcherThread.start();
 
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, hostName, args.isPrintAccessLog(), selfUri).getDevice());
+		upnpService.getRegistry().addDevice(new MediaServer(contentTree, nodeConverter, hostName, args.isPrintAccessLog(), selfUri).getDevice());
 
 		// Periodic rescan to catch missed devices.
 		final ScheduledExecutorService upnpExSvc = new ScheduledThreadPoolExecutor(1,

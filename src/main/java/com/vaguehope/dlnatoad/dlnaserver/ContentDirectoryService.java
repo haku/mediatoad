@@ -1,6 +1,5 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -31,14 +30,16 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 	private static final int MAX_RESULTS = 500;
 
 	private final ContentTree contentTree;
+	private final NodeConverter nodeConverter;
 	private final SearchEngine searchEngine;
 	private final boolean printAccessLog;
 
-	public ContentDirectoryService (final ContentTree contentTree, final SearchEngine searchEngine, final boolean printAccessLog) {
+	public ContentDirectoryService(final ContentTree contentTree, NodeConverter nodeConverter, final SearchEngine searchEngine, final boolean printAccessLog) {
 		super(
 				Arrays.asList("dc:title", "upnp:class"), // also "dc:creator", "dc:date", "res@size"
 				Arrays.asList("dc:title")); // also "dc:creator", "dc:date", "res@size"
 		this.contentTree = contentTree;
+		this.nodeConverter = nodeConverter;
 		this.searchEngine = searchEngine;
 		this.printAccessLog = printAccessLog;
 	}
@@ -50,33 +51,27 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 	public BrowseResult browse (final String objectID, final BrowseFlag browseFlag, final String filter, final long firstResult, final long maxResults, final SortCriterion[] orderby) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
 		try {
-			final ContentNode contentNode = this.contentTree.getNode(objectID);
-			if (contentNode == null) return new BrowseResult(new DIDLParser().generate(new DIDLContent()), 0, 0);
-
-			if (contentNode.isItem()) {
-				return contentNode.applyItem(i -> {
+			final ContentNode node = this.contentTree.getNode(objectID);
+			if (node != null) {
+				if (browseFlag == BrowseFlag.METADATA) {
 					final DIDLContent didl = new DIDLContent();
-					didl.addItem(i);
+					didl.addContainer(this.nodeConverter.makeContainerWithoutSubContainers(node));
 					return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
-				});
-			}
+				}
 
-			if (browseFlag == BrowseFlag.METADATA) {
-				return contentNode.applyContainer(c -> {
-					final DIDLContent didl = new DIDLContent();
-					didl.addContainer(c);
-					return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
-				});
-			}
-
-			return contentNode.applyContainer(c -> {
-				// toRangedResult() uses List.sublist(),
-				// so make local copies.
-				final List<Container> containers = new ArrayList<Container>(c.getContainers());
-				final List<Item> items = new ArrayList<Item>(c.getItems());
-				// FIXME should also acquire locks on each item's ContentNode?
+				final List<Container> containers = this.nodeConverter.makeSubContainersWithoutTheirSubContainers(node);
+				final List<Item> items = this.nodeConverter.makeItems(node);
 				return toRangedResult(containers, items, firstResult, maxResults);
-			});
+			}
+
+			final ContentItem item = this.contentTree.getItem(objectID);
+			if (item != null) {
+				final DIDLContent didl = new DIDLContent();
+				didl.addItem(this.nodeConverter.makeItem(item));
+				return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+			}
+
+			return new BrowseResult(new DIDLParser().generate(new DIDLContent()), 0, 0);
 		}
 		catch (final Exception e) {
 			LOG.warn(String.format("Failed to generate directory listing" +
@@ -99,16 +94,14 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			final SortCriterion[] orderBy) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
 		try {
-			final ContentNode contentNode = this.contentTree.getNode(containerId);
-			if (contentNode == null) return new BrowseResult("", 0, 0);
-			if (contentNode.isItem()) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CONTAINER, "Can not seach inside in an item.");
+			final ContentNode node = this.contentTree.getNode(containerId);
+			if (node == null) return new BrowseResult("", 0, 0);
 
 			// TODO cache search results to make pagination faster.
-			// FIXME since search engine operates on / leaks Container and Item objects,
-			// marshaling search results is done without a lock.
 
-			final List<Item> searchMatches = this.searchEngine.search(contentNode, searchCriteria, MAX_RESULTS);
-			return toRangedResult(Collections.<Container> emptyList(), searchMatches, firstResult, maxResults);
+			final List<ContentItem> results = this.searchEngine.search(node, searchCriteria, MAX_RESULTS);
+			final List<Item> items = this.nodeConverter.makeItems(results);
+			return toRangedResult(Collections.<Container> emptyList(), items, firstResult, maxResults);
 		}
 		catch (final ContentDirectoryException e) {
 			LOG.warn(String.format("Failed to parse search request" +

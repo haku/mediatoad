@@ -7,10 +7,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
-import org.fourthline.cling.support.model.item.Item;
-import org.fourthline.cling.support.model.item.VideoItem;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.vaguehope.dlnatoad.media.MediaFormat;
 
 public class SearchEngineTest {
 
@@ -27,24 +27,24 @@ public class SearchEngineTest {
 
 	@Test
 	public void itSearchesByTitle () throws Exception {
-		final List<ContentNode> items = this.mockContent.givenMockItems(VideoItem.class, 10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.MP4, 10);
 		when(items.get(3).getTitle()).thenReturn("some file foo\"Bar song.mp4");
 
-		final List<Item> ret = this.undertest.search(this.contentTree.getRootNode(),
+		final List<ContentItem> ret = this.undertest.search(this.contentTree.getRootNode(),
 				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
 				10);
 
-		assertEquals(MockContent.nodeItems(items.subList(3, 4)), ret);
+		assertEquals(items.subList(3, 4), ret);
 	}
 
 	@Test
 	public void itLimitsResults () throws Exception {
-		final List<ContentNode> items = this.mockContent.givenMockItems(VideoItem.class, 10);
-		for (ContentNode cn : items) {
+		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.MP4, 10);
+		for (ContentItem cn : items) {
 			when(cn.getTitle()).thenReturn("some file foo\"Bar song.mp4");
 		}
 
-		final List<Item> ret = this.undertest.search(this.contentTree.getRootNode(),
+		final List<ContentItem> ret = this.undertest.search(this.contentTree.getRootNode(),
 				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
 				5);
 
@@ -54,19 +54,19 @@ public class SearchEngineTest {
 	@Test
 	public void itParsesVideoWithTitle () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"daa\")"),
-				hasToString("(instanceOf VideoItem and titleContains 'daa')"));
+				hasToString("(contentGroupIs VIDEO and titleContains 'daa')"));
 	}
 
 	@Test
 	public void itParsesAudioWithTitle () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.audioItem\" and dc:title contains \"daa\")"),
-				hasToString("(instanceOf AudioItem and titleContains 'daa')"));
+				hasToString("(contentGroupIs AUDIO and titleContains 'daa')"));
 	}
 
 	@Test
 	public void itParsesAudioWithCreatorOrArtist () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("(upnp:class derivedfrom \"object.item.audioItem\" and (dc:creator contains \"daa\" or upnp:artist contains \"daa\"))"),
-				hasToString("(instanceOf AudioItem and (artistContains 'daa' or artistContains 'daa'))"));
+				hasToString("(contentGroupIs AUDIO and (artistContains 'daa' or artistContains 'daa'))"));
 	}
 
 	@Test
@@ -86,7 +86,7 @@ public class SearchEngineTest {
 	@Test
 	public void itParsesVideoOrAudioWithTitle () throws Exception {
 		assertThat(SearchEngine.criteriaToPredicate("((upnp:class derivedfrom \"object.item.videoItem\" or upnp:class derivedfrom \"object.item.audioItem\") and dc:title contains \"foo\")"),
-				hasToString("((instanceOf VideoItem or instanceOf AudioItem) and titleContains 'foo')"));
+				hasToString("((contentGroupIs VIDEO or contentGroupIs AUDIO) and titleContains 'foo')"));
 	}
 
 	@Test

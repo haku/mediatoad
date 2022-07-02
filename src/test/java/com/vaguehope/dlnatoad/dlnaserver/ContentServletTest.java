@@ -52,21 +52,21 @@ public class ContentServletTest {
 
 	@Test
 	public void itResolvesMediaResource() throws Exception {
-		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
+		final ContentItem item = this.mockContent.givenMockItems(1).get(0);
 		final Resource res = this.undertest.getResource("/" + item.getId());
 		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
 
 	@Test
 	public void itResolvesMediaResourceWithContentDir() throws Exception {
-		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
+		final ContentItem item = this.mockContent.givenMockItems(1).get(0);
 		final Resource res = this.undertest.getResource("/c/" + item.getId());
 		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
 
 	@Test
 	public void itResolvesMediaResourceWithAnyFileExtension() throws Exception {
-		final ContentNode item = this.mockContent.givenMockItems(1).get(0);
+		final ContentItem item = this.mockContent.givenMockItems(1).get(0);
 		final Resource res = this.undertest.getResource("/" + item.getId() + ".foo");
 		assertEquals(item.getFile().getName(), res.getFile().getName());
 	}
@@ -102,7 +102,7 @@ public class ContentServletTest {
 		startServer();
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1");
-		final ContentNode item1 = this.mockContent.addMockItem("item1", dir1);
+		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
 		final URL url = new URL("http://localhost:" + this.server.getConnectors()[0].getLocalPort() + "/" + item1.getId());
 		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();

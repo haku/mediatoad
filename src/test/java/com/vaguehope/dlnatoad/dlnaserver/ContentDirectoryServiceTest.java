@@ -15,7 +15,6 @@ import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.model.BrowseFlag;
 import org.fourthline.cling.support.model.BrowseResult;
 import org.fourthline.cling.support.model.DIDLContent;
-import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +43,7 @@ public class ContentDirectoryServiceTest {
 		this.mockContent.setShuffle(false);  // FIXME make tests less brittle.
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);
-		this.undertest = new ContentDirectoryService(this.contentTree, this.searchEngine, true);
+		this.undertest = new ContentDirectoryService(this.contentTree, new NodeConverter(""), this.searchEngine, true);
 	}
 
 	/**
@@ -54,7 +53,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsAllWhenMaxEntitiesZero () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(3);
-		final List<ContentNode> items = this.mockContent.givenMockItems(3);
+		final List<ContentItem> items = this.mockContent.givenMockItems(3);
 		this.mockContent.addMockItem("item other", dirs.get(1));
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 0, null);
@@ -66,7 +65,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsAllItemsWhenTheyAreInsideTheRequetsRange () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(3);
-		final List<ContentNode> items = this.mockContent.givenMockItems(3);
+		final List<ContentItem> items = this.mockContent.givenMockItems(3);
 		this.mockContent.addMockItem("item other", dirs.get(1));
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 10, null);
@@ -78,7 +77,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itDoesNotMindIfMaxIsMoreThanCount () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(3);
-		final List<ContentNode> items = this.mockContent.givenMockItems(3);
+		final List<ContentItem> items = this.mockContent.givenMockItems(3);
 		this.mockContent.addMockItem("item other", dirs.get(1));
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 20, null);
@@ -99,7 +98,7 @@ public class ContentDirectoryServiceTest {
 
 	@Test
 	public void itReturnsFirstItemsWhenOnlyItemsInsideRange () throws Exception {
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 3, null);
 
@@ -110,7 +109,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsDirsThenSomeItemsWhenNotAllItemsFitInsideRange () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(5);
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 10, null);
 
@@ -132,7 +131,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsLastFewDirsThenSomeItems () throws Exception {
 		final List<ContentNode> dirs = this.mockContent.givenMockDirs(10);
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 5, 10, null);
 
@@ -143,7 +142,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsMidRangeItems () throws Exception {
 		this.mockContent.givenMockDirs(10);
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 14, 2, null);
 
@@ -154,7 +153,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsLastFewItems () throws Exception {
 		this.mockContent.givenMockDirs(10);
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
 
 		final BrowseResult ret = this.undertest.browse(this.contentTree.getRootNode().getId(), BrowseFlag.DIRECT_CHILDREN, null, 15, 5, null);
 
@@ -165,7 +164,7 @@ public class ContentDirectoryServiceTest {
 	@Test
 	public void itReturnsItemsFromSubDir () throws Exception {
 		final List<ContentNode> rootDirs = this.mockContent.givenMockDirs(5);
-		final List<ContentNode> items = this.mockContent.givenMockItems(15, rootDirs.get(0));
+		final List<ContentItem> items = this.mockContent.givenMockItems(15, rootDirs.get(0));
 
 		final BrowseResult ret = this.undertest.browse(rootDirs.get(0).getId(), BrowseFlag.DIRECT_CHILDREN, null, 0, 10, null);
 
@@ -175,8 +174,8 @@ public class ContentDirectoryServiceTest {
 
 	@Test
 	public void itSearchesUsingSearchEngine () throws Exception {
-		final List<ContentNode> items = this.mockContent.givenMockItems(10);
-		final Item item3 = items.get(3).applyItem(i -> i);
+		final List<ContentItem> items = this.mockContent.givenMockItems(10);
+		final ContentItem item3 = items.get(3);
 		when(this.searchEngine.search(eq(this.contentTree.getRootNode()), ArgumentMatchers.eq("some search query"), anyInt())).thenReturn(Collections.singletonList(item3));
 
 		final BrowseResult ret = this.undertest.search(this.contentTree.getRootNode().getId(), "some search query", "*", 0, 3, null);
@@ -200,11 +199,11 @@ public class ContentDirectoryServiceTest {
 		assertEquals(DIDL_XML, ret.getResult());
 	}
 
-	private void assertParserMarshaled (final List<ContentNode> dirs, final List<ContentNode> items) throws Exception {
+	private void assertParserMarshaled (final List<ContentNode> dirs, final List<ContentItem> items) throws Exception {
 		final ArgumentCaptor<DIDLContent> cap = ArgumentCaptor.forClass(DIDLContent.class);
 		verify(this.didlParser).generate(cap.capture());
-		assertEquals(MockContent.nodeContainers(dirs), cap.getValue().getContainers());
-		assertEquals(MockContent.nodeItems(items), cap.getValue().getItems());
+		assertEquals(MockContent.contentIds(dirs), MockContent.containerIds(cap.getValue().getContainers()));
+		assertEquals(MockContent.contentIds(items), MockContent.itemIds(cap.getValue().getItems()));
 	}
 
 }

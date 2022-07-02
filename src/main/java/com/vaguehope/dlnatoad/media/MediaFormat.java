@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.http.MimeTypes;
+import org.seamless.util.MimeType;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
 
@@ -52,7 +53,7 @@ public enum MediaFormat {
 
 	private static final Map<String, MediaFormat> EXT_TO_FORMAT;
 	static {
-		final Map<String, MediaFormat> t = new ConcurrentHashMap<String, MediaFormat>(MediaFormat.values().length);
+		final Map<String, MediaFormat> t = new ConcurrentHashMap<>(MediaFormat.values().length);
 		for (MediaFormat f : MediaFormat.values()) {
 			t.put(f.ext, f);
 		}
@@ -79,6 +80,11 @@ public enum MediaFormat {
 
 	public ContentGroup getContentGroup () {
 		return this.contentGroup;
+	}
+
+	public MimeType asMimetype() {
+		final int slash = this.mime.indexOf('/');
+		return new MimeType(this.mime.substring(0, slash), this.mime.substring(slash + 1));
 	}
 
 	public static MediaFormat identify (final File file) {

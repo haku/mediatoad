@@ -3,7 +3,6 @@ package com.vaguehope.dlnatoad.dlnaserver;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
-import java.util.Enumeration;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -62,9 +61,9 @@ public class ContentServlet extends DefaultServlet {
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
 			id = contentNodeIdFromPath(id);
-			final ContentNode node = this.contentTree.getNode(id);
-			if (node != null && node.isItem()) {
-				return Resource.newResource(node.getFile());
+			final ContentItem item = this.contentTree.getItem(id);
+			if (item != null) {
+				return Resource.newResource(item.getFile());
 			}
 		}
 		catch (final MalformedURLException e) {

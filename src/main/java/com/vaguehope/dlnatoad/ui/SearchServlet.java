@@ -30,6 +30,7 @@ import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
 import com.vaguehope.dlnatoad.dlnaserver.ContentGroup;
+import com.vaguehope.dlnatoad.dlnaserver.ContentItem;
 import com.vaguehope.dlnatoad.dlnaserver.ContentNode;
 import com.vaguehope.dlnatoad.dlnaserver.ContentTree;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
@@ -75,7 +76,7 @@ public class SearchServlet extends HttpServlet {
 			final String searchCriteria = String.format("(dc:title contains \"%s\")", query);
 			final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
 			try {
-				final List<Item> results = this.searchEngine.search(rootNode, searchCriteria, MAX_RESULTS);
+				final List<ContentItem> results = this.searchEngine.search(rootNode, searchCriteria, MAX_RESULTS);
 				this.servletCommon.printItemsAndImages(w, results);
 
 				// Only do remote search if local does not error.
