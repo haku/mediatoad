@@ -10,8 +10,8 @@ public class StoringMediaIdCallback implements MediaIdCallback {
 	private volatile IOException exception;
 
 	@Override
-	public void onResult(final String mediaId) throws IOException {
-		this.mediaId = mediaId;
+	public void onResult(final String id) throws IOException {
+		this.mediaId = id;
 		this.latch.countDown();
 	}
 

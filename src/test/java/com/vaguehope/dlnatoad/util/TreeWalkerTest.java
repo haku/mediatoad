@@ -36,7 +36,7 @@ public class TreeWalkerTest {
 		when(fileFilter.accept(isA(File.class))).thenReturn(true);
 
 		Hiker hiker = mock(Hiker.class);
-		List<File> roots = new ArrayList<File>();
+		List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
 		new TreeWalker(roots, fileFilter, hiker).walk();
 

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
@@ -25,6 +24,7 @@ import org.fourthline.cling.support.model.item.VideoItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
 import com.vaguehope.cdsc.CDSCBaseListener;
 import com.vaguehope.cdsc.CDSCLexer;
 import com.vaguehope.cdsc.CDSCParser;
@@ -57,7 +57,7 @@ public class SearchEngine {
 	protected static Predicate<ContentItem> criteriaToPredicate (final String searchCriteria) {
 		final CriteriaListener listener = new CriteriaListener();
 		new ParseTreeWalker().walk(listener, new CDSCParser(
-				new CommonTokenStream(new CDSCLexer(new ANTLRInputStream(searchCriteria)))
+				new CommonTokenStream(new CDSCLexer(CharStreams.fromString(searchCriteria)))
 				).searchCrit());
 		return listener.getPredicate();
 	}
@@ -70,13 +70,10 @@ public class SearchEngine {
 		private static final Set<String> ARTIST_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 				"dc:creator", "upnp:artist")));
 
-		private static final Map<String, ContentGroup> UPNP_TO_GROUP = Collections.unmodifiableMap(new HashMap<String, ContentGroup>() {
-			{
-				put(VideoItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.VIDEO);
-				put(AudioItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.AUDIO);
-				put(ImageItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.IMAGE);
-			}
-		});
+		private static final Map<String, ContentGroup> UPNP_TO_GROUP = ImmutableMap.of(
+				VideoItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.VIDEO,
+				AudioItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.AUDIO,
+				ImageItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.IMAGE);
 
 		private static class Exp {
 			Predicate<ContentItem> left;
@@ -181,7 +178,7 @@ public class SearchEngine {
 				}
 				else {
 					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
-					predicate = Bool.TRUE;
+					predicate = new Bool<>(true);
 				}
 			}
 			else if (TITLE_FIELDS.contains(propertyName)) {
@@ -190,7 +187,7 @@ public class SearchEngine {
 				}
 				else {
 					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
-					predicate = Bool.TRUE;
+					predicate = new Bool<>(true);
 				}
 			}
 			else if (ARTIST_FIELDS.contains(propertyName)) {
@@ -199,12 +196,12 @@ public class SearchEngine {
 				}
 				else {
 					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
-					predicate = Bool.TRUE;
+					predicate = new Bool<>(true);
 				}
 			}
 			else {
 				LOG.debug("Unsupported property: {}", propertyName);
-				predicate = Bool.TRUE;
+				predicate = new Bool<>(true);
 			}
 
 			if (this.cExp.left == null) {
@@ -227,7 +224,7 @@ public class SearchEngine {
 				}
 			}
 			LOG.debug("Unsupported value for property {}: {}", propertyName, value);
-			return Bool.TRUE;
+			return new Bool<>(true);
 		}
 
 	}
@@ -261,19 +258,22 @@ public class SearchEngine {
 		boolean matches (T thing);
 	}
 
-	private enum Bool implements Predicate {
-		TRUE(true),
-		FALSE(false);
+	private static class Bool<T> implements Predicate<T> {
 
 		private final boolean v;
 
-		private Bool (final boolean v) {
+		public Bool(final boolean v) {
 			this.v = v;
 		}
 
 		@Override
-		public boolean matches (final Object thing) {
+		public boolean matches (final T thing) {
 			return this.v;
+		}
+
+		@Override
+		public String toString() {
+			return Boolean.toString(this.v).toUpperCase(Locale.ENGLISH);
 		}
 	}
 

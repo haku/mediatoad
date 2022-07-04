@@ -10,7 +10,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.ImageResizer;
@@ -37,7 +36,7 @@ public class ThumbsServlet extends DefaultServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = ServletCommon.idFromPath(id, C.CONTENT_PATH_PREFIX, null);
+			id = ServletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				final File thumbFile = this.imageResizer.resizeFile(item.getFile(), THUMB_SIZE_PIXELS, THUMB_QUALITY);

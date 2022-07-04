@@ -230,13 +230,12 @@ public class ServletCommon {
 			"/" + C.REVERSE_PROXY_PATH + "/"
 			)));
 
-	public static String idFromPath(final String pathInfo, final String prefix, final String defVal) {
+	public static String idFromPath(final String pathInfo, final String defVal) {
 		if (pathInfo == null || pathInfo.length() < 1 || ROOT_PATHS.contains(pathInfo)) {
 			return defVal;
 		}
 
 		String id = StringHelper.removePrefix(pathInfo, "/");
-		id = StringHelper.removePrefix(id, prefix);
 		id = StringHelper.removeSuffix(id, "/");
 		// Remove everything before the last slash.
 		final int lastSlash = id.lastIndexOf("/");

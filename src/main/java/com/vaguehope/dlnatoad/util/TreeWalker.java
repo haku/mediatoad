@@ -33,7 +33,7 @@ public class TreeWalker {
 	}
 
 	public void walk () throws IOException {
-		final Queue<File> dirs = new LinkedList<File>();
+		final Queue<File> dirs = new LinkedList<>();
 		for (File root : this.roots) {
 			dirs.add(root);
 		}
@@ -54,7 +54,7 @@ public class TreeWalker {
 						dirs.add(file);
 					}
 					else if (file.isFile() && this.fileFilter.accept(file)) {
-						if (keepFiles == null) keepFiles = new ArrayList<File>();
+						if (keepFiles == null) keepFiles = new ArrayList<>();
 						keepFiles.add(file);
 					}
 				}

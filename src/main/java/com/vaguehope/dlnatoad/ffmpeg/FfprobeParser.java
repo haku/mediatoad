@@ -20,8 +20,8 @@ public class FfprobeParser implements Listener<String> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FfprobeParser.class);
 
-	private final Set<String> codecs = new LinkedHashSet<String>();
-	private final Set<String> profiles = new LinkedHashSet<String>();
+	private final Set<String> codecs = new LinkedHashSet<>();
+	private final Set<String> profiles = new LinkedHashSet<>();
 	private Long durationMillis = null;
 
 	@Override

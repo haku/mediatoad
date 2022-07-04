@@ -52,14 +52,14 @@ public class FileData {
 		return file.length() == this.size && file.lastModified() == this.modified;
 	}
 
-	public FileData withId (final String id) {
+	public FileData withId (final String newId) {
 		if (this.id != null) throw new IllegalStateException("ID already set.");
-		return new FileData(this.size, this.modified, this.hash, id);
+		return new FileData(this.size, this.modified, this.hash, newId);
 	}
 
-	public FileData withNewId (final String id) {
+	public FileData withNewId (final String newId) {
 		if (this.id == null) throw new IllegalStateException("ID not already set.");
-		return new FileData(this.size, this.modified, this.hash, id);
+		return new FileData(this.size, this.modified, this.hash, newId);
 	}
 
 	public static FileData forFile (final File file) throws IOException {

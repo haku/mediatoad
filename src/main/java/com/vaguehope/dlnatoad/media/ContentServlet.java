@@ -14,7 +14,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
@@ -61,7 +60,7 @@ public class ContentServlet extends DefaultServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = ServletCommon.idFromPath(id, C.CONTENT_PATH_PREFIX, null);
+			id = ServletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				return Resource.newResource(item.getFile());

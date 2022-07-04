@@ -1,11 +1,9 @@
 package com.vaguehope.dlnatoad.media;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import com.vaguehope.dlnatoad.media.ContentServingHistory;
 
 public class ContentServingHistoryTest {
 

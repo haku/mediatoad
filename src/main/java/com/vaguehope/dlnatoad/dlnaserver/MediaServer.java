@@ -56,7 +56,7 @@ public class MediaServer {
 		});
 
 		final LocalService<ConnectionManagerService> connManSrv = new AnnotationLocalServiceBinder().read(ConnectionManagerService.class);
-		connManSrv.setManager(new DefaultServiceManager<ConnectionManagerService>(connManSrv, ConnectionManagerService.class));
+		connManSrv.setManager(new DefaultServiceManager<>(connManSrv, ConnectionManagerService.class));
 
 		this.localDevice = new LocalDevice(new DeviceIdentity(usi, C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, icon, new LocalService[] { contDirSrv, connManSrv });
 	}

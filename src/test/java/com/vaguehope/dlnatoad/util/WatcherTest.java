@@ -51,7 +51,7 @@ public class WatcherTest {
 	public void before() throws Exception {
 		this.schEx = Executors.newSingleThreadExecutor(new DaemonThreadFactory("test"));
 		this.tmpRoot = this.tmp.getRoot();
-		final List<File> roots = new ArrayList<File>();
+		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmpRoot);
 		this.listener = mock(FileListener.class);
 		this.time = new Time.FakeTime();
@@ -181,7 +181,7 @@ public class WatcherTest {
 
 		this.time.advance(2, TimeUnit.SECONDS);
 		waitForWatcher(10);
-		verify(this.listener).fileModified(tmpRoot, f1, null);
+		verify(this.listener).fileModified(this.tmpRoot, f1, null);
 	}
 
 	@Test

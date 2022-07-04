@@ -21,15 +21,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
-
-import com.vaguehope.dlnatoad.media.ContentItem;
-import com.vaguehope.dlnatoad.media.ContentNode;
-import com.vaguehope.dlnatoad.media.ContentServingHistory;
-import com.vaguehope.dlnatoad.media.ContentServlet;
-import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaFormat;
 
 public class ContentServletTest {
 
@@ -40,8 +31,6 @@ public class ContentServletTest {
 	private ContentServlet undertest;
 
 	private MockContent mockContent;
-	private MockHttpServletRequest req;
-	private MockHttpServletResponse resp;
 
 	private Server server;
 
@@ -50,9 +39,6 @@ public class ContentServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory(), true);
-
-		this.req = new MockHttpServletRequest();
-		this.resp = new MockHttpServletResponse();
 	}
 
 	@Test

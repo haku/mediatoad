@@ -14,7 +14,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -66,7 +65,7 @@ public class IndexServlet extends HttpServlet {
 	}
 
 	private static String idFromPath(final HttpServletRequest req) {
-		return ServletCommon.idFromPath(req.getPathInfo(), C.CONTENT_PATH_PREFIX, ContentGroup.ROOT.getId());
+		return ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 	}
 
 	@Override

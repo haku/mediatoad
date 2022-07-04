@@ -14,12 +14,6 @@ import java.util.function.Consumer;
 
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.media.AbstractContent;
-import com.vaguehope.dlnatoad.media.ContentItem;
-import com.vaguehope.dlnatoad.media.ContentNode;
-import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaFormat;
-
 public class MockContent {
 
 	private final ContentTree contentTree;

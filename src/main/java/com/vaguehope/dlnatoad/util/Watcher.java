@@ -77,6 +77,7 @@ public class Watcher {
 		this(roots, filter, listener, Time.DEFAULT, TimeUnit.SECONDS.toMillis(5));
 	}
 
+	@SuppressWarnings("resource")
 	Watcher (final List<File> roots, final FileFilter filter, final FileListener listener, final Time time, final long pollIntervalMillis) throws IOException {
 		this.roots = roots;
 		this.filter = filter;

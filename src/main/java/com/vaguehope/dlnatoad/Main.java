@@ -28,12 +28,12 @@ import org.fourthline.cling.model.resource.IconResource;
 import org.fourthline.cling.model.resource.Resource;
 import org.fourthline.cling.protocol.ProtocolFactory;
 import org.fourthline.cling.registry.Registry;
-import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
+import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
@@ -79,7 +79,7 @@ public final class Main {
 			daemonise(args);
 			run(args);
 		}
-		catch (final CmdLineException e) {
+		catch (final ArgsException e) {
 			err.println(e.getMessage());
 			help(parser, err);
 			return;
@@ -252,7 +252,7 @@ public final class Main {
 			final MediaId mediaId,
 			final UpnpService upnpService,
 			final Args args,
-			final String hostName) throws CmdLineException {
+			final String hostName) throws ArgsException {
 		final File thumbsDir = args.getThumbsDir();
 		final ImageResizer imageResizer =
 				thumbsDir != null
@@ -310,7 +310,7 @@ public final class Main {
 		private final boolean verboseLog;
 		private final MediaIndex index;
 
-		public RunWatcher (final Args args, final MediaIndex index) throws CmdLineException, IOException {
+		public RunWatcher (final Args args, final MediaIndex index) throws ArgsException, IOException {
 			this.roots = args.getDirs();  // Trigger validation in main thread.
 			this.verboseLog = args.isVerboseLog();
 			this.index = index;

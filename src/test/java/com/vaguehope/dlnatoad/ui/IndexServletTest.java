@@ -30,6 +30,7 @@ import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class IndexServletTest {
 
+	@SuppressWarnings("unused")
 	private static final String PROPFIND_REQUEST_BODY_CADAVER = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
 			"<propfind xmlns=\"DAV:\"><prop>\n" +
 			"<getcontentlength xmlns=\"DAV:\"/>\n" +
@@ -40,6 +41,7 @@ public class IndexServletTest {
 			"<checked-out xmlns=\"DAV:\"/>\n" +
 			"</prop></propfind>\n";
 
+	@SuppressWarnings("unused")
 	private static final String PROPFIND_REQUEST_BODY_GNOME = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n" +
 			" <D:propfind xmlns:D=\"DAV:\">\n" +
 			"  <D:prop>\n" +

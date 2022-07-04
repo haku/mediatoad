@@ -6,7 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,12 +21,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
-import com.vaguehope.dlnatoad.media.ContentGroup;
-import com.vaguehope.dlnatoad.media.ContentItem;
-import com.vaguehope.dlnatoad.media.ContentNode;
-import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaFormat;
 
 public class ContentTreeTest {
 

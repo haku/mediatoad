@@ -36,7 +36,7 @@ public class MediaDb {
 	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
 
 	private final Connection dbConn;
-	private boolean verboseLog;
+	private final boolean verboseLog;
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
 
 	public MediaDb (final String dbPath, final ScheduledExecutorService exSvc, final boolean verboseLog) throws SQLException {

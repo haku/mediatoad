@@ -2,12 +2,12 @@ package com.vaguehope.dlnatoad;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.Option;
 
 public class Args {
@@ -23,18 +23,25 @@ public class Args {
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
-	public List<File> getDirs () throws CmdLineException, IOException {
-		final List<File> dirs = new ArrayList<File>();
+	public static class ArgsException extends Exception {
+		private static final long serialVersionUID = 4160594293982918286L;
+		public ArgsException(String msg) {
+			super(msg);
+		}
+	}
+
+	public List<File> getDirs () throws ArgsException, IOException {
+		final List<File> dirs = new ArrayList<>();
 
 		if (this.treePath != null && this.treePath.length() > 0) {
 			final File treeFile = new File(this.treePath);
-			if (!treeFile.exists()) throw new CmdLineException(null, "File not found: " + this.treePath);
-			if (!treeFile.isFile()) throw new CmdLineException(null, "Not a file: " + this.treePath);
-			for (final String line : FileUtils.readLines(treeFile)) {
+			if (!treeFile.exists()) throw new ArgsException("File not found: " + this.treePath);
+			if (!treeFile.isFile()) throw new ArgsException("Not a file: " + this.treePath);
+			for (final String line : FileUtils.readLines(treeFile, Charset.defaultCharset())) {
 				if (line.length() < 1 || line.startsWith("#")) continue;
 				final File lineDir = new File(line);
-				if (!lineDir.exists()) throw new CmdLineException(null, "Directory not found: " + line);
-				if (!lineDir.isDirectory()) throw new CmdLineException(null, "Not a directory: " + line);
+				if (!lineDir.exists()) throw new ArgsException("Directory not found: " + line);
+				if (!lineDir.isDirectory()) throw new ArgsException("Not a directory: " + line);
 				dirs.add(lineDir);
 			}
 		}
@@ -47,7 +54,7 @@ public class Args {
 
 		if (dirs.size() < 1) dirs.add(new File("."));
 
-		final List<File> cDirs = new ArrayList<File>();
+		final List<File> cDirs = new ArrayList<>();
 		for (final File dir : dirs) {
 			cDirs.add(dir.getCanonicalFile());
 		}
@@ -83,26 +90,26 @@ public class Args {
 		return this.db != null ? new File(this.db) : null;
 	}
 
-	public File getThumbsDir() throws CmdLineException {
+	public File getThumbsDir() throws ArgsException {
 		if (this.thumbsDir == null) return null;
 		final File f = new File(this.thumbsDir);
-		if (!f.exists()) throw new CmdLineException(null, "Not found: " + f.getAbsolutePath());
-		if (!f.isDirectory()) throw new CmdLineException(null, "Not directory: " + f.getAbsolutePath());
+		if (!f.exists()) throw new ArgsException("Not found: " + f.getAbsolutePath());
+		if (!f.isDirectory()) throw new ArgsException("Not directory: " + f.getAbsolutePath());
 		return f;
 	}
 
 	private static List<File> pathsToFiles (final List<String> paths) {
-		final List<File> files = new ArrayList<File>();
+		final List<File> files = new ArrayList<>();
 		for (final String path : paths) {
 			files.add(new File(path));
 		}
 		return files;
 	}
 
-	private static void checkDirExist (final List<File> files) throws CmdLineException {
+	private static void checkDirExist (final List<File> files) throws ArgsException {
 		for (final File file : files) {
 			if (!file.exists() || !file.isDirectory()) {
-				throw new CmdLineException(null, "Directory not found: " + file.getAbsolutePath());
+				throw new ArgsException("Directory not found: " + file.getAbsolutePath());
 			}
 		}
 	}
