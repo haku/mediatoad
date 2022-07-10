@@ -69,7 +69,7 @@ public class IndexServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.exSvc = mock(ExecutorService.class);
-		this.mediaId = new MediaId(null, this.exSvc);
+		this.mediaId = new MediaId(null);
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
 		this.contentServlet = mock(ContentServlet.class);

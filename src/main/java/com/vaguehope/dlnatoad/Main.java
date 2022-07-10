@@ -146,7 +146,7 @@ public final class Main {
 		else {
 			mediaMetadataStore = null;
 		}
-		final MediaId mediaId = new MediaId(mediaMetadataStore, fsExSvc);
+		final MediaId mediaId = new MediaId(mediaMetadataStore);
 		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
 
 		final UpnpService upnpService = makeUpnpServer();

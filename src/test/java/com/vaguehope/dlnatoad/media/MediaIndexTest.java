@@ -52,7 +52,7 @@ public class MediaIndexTest {
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new MediaDb("file:testdb?mode=memory&cache=shared"), this.schEx, true);
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN,
-				new MediaId(this.mediaMetadataStore, this.schEx), new MediaInfo());
+				new MediaId(this.mediaMetadataStore), new MediaInfo());
 	}
 
 	public void after() {
@@ -95,6 +95,24 @@ public class MediaIndexTest {
 		assertEquals(1, videoDirs.size());
 		final ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedFiles, node);
+	}
+
+	@Test
+	public void itHandlesModifiedFile() throws Exception {
+		final File file = mockFile("foo.mkv");
+		this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
+		waitForEmptyQueue();
+
+		final List<ContentNode> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getCopyOfNodes();
+		assertEquals(1, videoDirs.size());
+		final ContentNode node = this.contentTree.getNode(videoDirs.get(0).getId());
+		assertNodeWithItems(this.tmp.getRoot(), Arrays.asList(file), node);
+
+		FileUtils.touch(file);
+		this.undertest.fileModified(this.tmp.getRoot(), file, null);
+		waitForEmptyQueue();
+
+		assertNodeWithItems(this.tmp.getRoot(), Arrays.asList(file), node);
 	}
 
 	@Test
@@ -150,7 +168,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaMetadataStore, this.schEx), new MediaInfo());
+				new MediaId(this.mediaMetadataStore), new MediaInfo());
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);
@@ -275,6 +293,8 @@ public class MediaIndexTest {
 		assertEquals(srtFile, attachment.getFile());
 
 		this.undertest.fileGone(srtFile);
+		waitForEmptyQueue();
+
 		final ContentItem itemStillInTree = this.contentTree.getItem(item.getId());
 		assertEquals(videoFile, itemStillInTree.getFile());
 		assertEquals(0, itemStillInTree.getCopyOfAttachments().size());
@@ -312,7 +332,7 @@ public class MediaIndexTest {
 				if (r instanceof RunnableScheduledFuture && ((RunnableScheduledFuture<?>) r).isPeriodic()) continue;
 				tasks.add(r);
 			}
-			if (tasks.size() == 0) return;
+			if (tasks.size() == 0 && this.schEx.getActiveCount() < 1) return;
 			Thread.sleep(200);
 		}
 		fail("After timeout queue has items: " + tasks);

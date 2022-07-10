@@ -2,23 +2,19 @@ package com.vaguehope.dlnatoad.media;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.text.MatchesPattern.matchesPattern;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
-import java.util.concurrent.ExecutorService;
 
 import org.junit.Before;
 import org.junit.Test;
 
 public class MediaIdTest {
 
-	private ExecutorService exSvc;
 	private MediaId undertest;
 
 	@Before
 	public void before() throws Exception {
-		this.exSvc = mock(ExecutorService.class);
-		this.undertest = new MediaId(null, this.exSvc);
+		this.undertest = new MediaId(null);
 	}
 
 	@Test

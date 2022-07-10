@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,97 +24,132 @@ import com.vaguehope.dlnatoad.media.MediaIdCallback;
 
 public class MediaMetadataStore {
 
-	private static final int COMMIT_DURATIONS_INTERVAL_SECONDS = 30;
+	private static final long MEDIA_ID_BATCH_NANOS = TimeUnit.SECONDS.toNanos(10);
+	private static final int DURATION_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
 
+	private final BlockingQueue<FileAndIdCallback> fileIdQueue = new LinkedBlockingQueue<>();
+	private final AtomicBoolean fileIdWorkerRunning = new AtomicBoolean(false);
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
 
 	private final MediaDb mediaDb;
+	private final ScheduledExecutorService exSvc;
 	private final boolean verboseLog;
 
 	public MediaMetadataStore(final MediaDb mediaDb, final ScheduledExecutorService exSvc, final boolean verboseLog) {
-		this(mediaDb, exSvc, verboseLog, COMMIT_DURATIONS_INTERVAL_SECONDS);
-	}
-
-	public MediaMetadataStore(final MediaDb mediaDb, final ScheduledExecutorService exSvc, final boolean verboseLog, final int commitDelaySeconds) {
 		this.mediaDb = mediaDb;
+		this.exSvc = exSvc;
 		this.verboseLog = verboseLog;
-		exSvc.scheduleWithFixedDelay(new DurationBatchWriter(), commitDelaySeconds, commitDelaySeconds, TimeUnit.SECONDS);
+		exSvc.scheduleWithFixedDelay(new DurationWorker(), 0, DURATION_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
-	public void idForFile (final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws SQLException, IOException {
+	public void idForFile(final File file, final MediaIdCallback callback) throws IOException, InterruptedException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
+		this.fileIdQueue.put(new FileAndIdCallback(file, callback));
+		scheduleFileIdBatchIfNeeded();
+	}
 
-		final FileData oldFileData = this.mediaDb.readFileData(file);
-		if (oldFileData == null || !oldFileData.upToDate(file)) {
-			// Whatever needs doing, it might take a while and oldFileData may be out of date by the time the work
-			// runs, so check everything closer to the time.  This is still a check-and-set and not really thread
-			// safe, but given the executor is supposed to single threaded this should work out ok.
-			exSvc.submit(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						addOrUpdateFileData(file, callback);
-					}
-					catch (final Exception e) {
-						if (e instanceof IOException) {
-							callback.onError((IOException) e);
-						}
-						else {
-							callback.onError(new IOException(e));
-						}
-					}
-				}
-			});
-		}
-		else {
-			final String id = canonicaliseAndStoreId(oldFileData);
-			callback.onResult(id);
+	private void scheduleFileIdBatchIfNeeded() {
+		if (this.fileIdWorkerRunning.compareAndSet(false, true)) {
+			this.exSvc.execute(new FileIdWorker());
 		}
 	}
 
-	private void addOrUpdateFileData(final File file, final MediaIdCallback callback) throws SQLException, IOException {
-		final FileData oldFileData = this.mediaDb.readFileData(file);
+	private class FileIdWorker implements Runnable {
+		@Override
+		public void run() {
+			try {
+				processFileIdQueue();
+			}
+			catch (final Exception e) {
+				LOG.error("Exception while processing file ID queue.", e);
+			}
+		}
+	}
+
+	private void processFileIdQueue() throws SQLException, IOException {
+		final long startTime = System.nanoTime();
+		int count = 0;
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			FileAndIdCallback f;
+			do {
+				f = this.fileIdQueue.poll();
+				if (f != null) {
+					processFileIdRequest(w, f);
+					count += 1;
+				}
+			}
+			while (f != null && System.nanoTime() - startTime < MEDIA_ID_BATCH_NANOS);
+			this.fileIdWorkerRunning.compareAndSet(true, false);
+			// we have said we are not running anymore, any new work added to the queue
+			// will add a new batch.  if there is any work still on the queue, schedule a
+			// a batch to cover that.
+			if (this.fileIdQueue.size() > 0) {
+				scheduleFileIdBatchIfNeeded();
+			}
+		}
+		if (this.verboseLog) {
+			LOG.info("Batch ID generation for {} files.", count);
+		}
+	}
+
+	private void processFileIdRequest(final WritableMediaDb w, final FileAndIdCallback f) {
+		try {
+			addOrUpdateFileData(w, f.getFile(), f.getCallback());
+		}
+		catch (final Exception e) {
+			if (e instanceof IOException) {
+				f.getCallback().onError((IOException) e);
+			}
+			else {
+				f.getCallback().onError(new IOException(e));
+			}
+		}
+	}
+
+	private void addOrUpdateFileData(final WritableMediaDb w, final File file, final MediaIdCallback callback) throws SQLException, IOException {
+		final FileData oldFileData = w.readFileData(file);
 		final String id;
 		if (oldFileData == null) {
-			final FileData newFileData = generateNewFileData(file);
-			id = canonicaliseAndStoreId(newFileData);
+			final FileData newFileData = generateNewFileData(w, file);
+			id = canonicaliseAndStoreId(w, newFileData);
 		}
-		else if (!oldFileData.upToDate(file)) {
-			final FileData updatedFileData = generateUpdatedFileData(file, oldFileData);
-			id = canonicaliseAndStoreId(updatedFileData);
+		// If file does not exist, return what we have so the old ID can be used to remove the file from memory.
+		else if (file.exists() && !oldFileData.upToDate(file)) {
+			final FileData updatedFileData = generateUpdatedFileData(w, file, oldFileData);
+			id = canonicaliseAndStoreId(w, updatedFileData);
 		}
 		else {
-			id = canonicaliseAndStoreId(oldFileData);
+			id = canonicaliseAndStoreId(w, oldFileData);
 		}
 		callback.onResult(id);
 	}
 
-	private String canonicaliseAndStoreId(final FileData fileData) throws SQLException {
-		String id = this.mediaDb.canonicalIdForHash(fileData.getHash());
+	private static String canonicaliseAndStoreId(final WritableMediaDb w, final FileData fileData) throws SQLException {
+		String id = w.canonicalIdForHash(fileData.getHash());
 		if (id == null) {
 			id = fileData.getId();
-			this.mediaDb.storeCanonicalId(fileData.getHash(), id);
+			w.storeCanonicalId(fileData.getHash(), id);
 		}
 		return id;
 	}
 
-	private FileData generateNewFileData(final File file) throws IOException, SQLException {
+	private FileData generateNewFileData(final WritableMediaDb w, final File file) throws IOException, SQLException {
 		FileData fileData;
-		fileData = FileData.forFile(file);  // Slow.
+		fileData = FileData.forFile(file); // Slow.
 
-		final Collection<FileAndData> otherFiles = missingFilesWithHash(fileData.getHash());
+		final Collection<FileAndData> otherFiles = missingFilesWithHash(w, fileData.getHash());
 		final Set<String> otherIds = distinctIds(otherFiles);
 		if (otherIds.size() == 1) {
 			fileData = fileData.withId(otherIds.iterator().next());
 		}
 		else {
-			fileData = fileData.withId(newUnusedId());
+			fileData = fileData.withId(newUnusedId(w));
 			otherFiles.clear(); // Did not merge, so do not remove.
 		}
 
-		this.mediaDb.storeFileData(file, fileData);
-		removeFiles(otherFiles);
+		w.storeFileData(file, fileData);
+		removeFiles(w, otherFiles);
 
 		if (this.verboseLog) {
 			LOG.info("New [merged={}]: {}",
@@ -125,15 +160,15 @@ public class MediaMetadataStore {
 		return fileData;
 	}
 
-	private FileData generateUpdatedFileData(final File file, FileData fileData) throws SQLException, IOException {
+	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, FileData fileData) throws SQLException, IOException {
 		final long prevModified = fileData.getModified();
 		final String prevHash = fileData.getHash();
-		final String prevHashCanonicalId = this.mediaDb.canonicalIdForHash(prevHash);
-		fileData = FileData.forFile(file).withId(fileData.getId());  // Slow.
+		final String prevHashCanonicalId = w.canonicalIdForHash(prevHash);
+		fileData = FileData.forFile(file).withId(fileData.getId()); // Slow.
 
 		Collection<FileAndData> otherFiles = Collections.emptySet();
 		if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(fileData.getId())) {
-			otherFiles = this.mediaDb.filesWithHash(prevHash);
+			otherFiles = w.filesWithHash(prevHash);
 			excludeFile(otherFiles, file); // Remove self.
 
 			if (allMissing(otherFiles)) {
@@ -144,8 +179,8 @@ public class MediaMetadataStore {
 			}
 		}
 
-		this.mediaDb.updateFileData(file, fileData);
-		removeFiles(otherFiles);
+		w.updateFileData(file, fileData);
+		removeFiles(w, otherFiles);
 
 		if (this.verboseLog) {
 			LOG.info("Updated [merged={} hash={} mod={}]: {}",
@@ -158,15 +193,66 @@ public class MediaMetadataStore {
 		return fileData;
 	}
 
-	public long readFileDurationMillis (final File file) throws SQLException {
+	private static Collection<FileAndData> missingFilesWithHash(final WritableMediaDb w, final String hash) throws SQLException {
+		final Collection<FileAndData> files = w.filesWithHash(hash);
+		excludeFilesThatStillExist(files);
+		return files;
+	}
+
+	private static String newUnusedId(final WritableMediaDb w) throws SQLException {
+		while (true) {
+			final String id = UUID.randomUUID().toString();
+			if (w.hashesForId(id).size() < 1) return id;
+			LOG.warn("Discarding colliding random UUID: {}", id);
+		}
+	}
+
+	protected void removeFiles(final WritableMediaDb w, final Collection<FileAndData> files) throws SQLException {
+		for (final FileAndData file : files) {
+			w.removeFile(file.getFile());
+		}
+	}
+
+	private static void excludeFilesThatStillExist(final Collection<FileAndData> files) {
+		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+			if (i.next().getFile().exists()) i.remove();
+		}
+	}
+
+	private static void excludeFile(final Collection<FileAndData> files, final File file) {
+		final int startSize = files.size();
+		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+			if (file.equals(i.next().getFile())) i.remove();
+		}
+		if (files.size() != startSize - 1) throw new IllegalStateException("Expected to only remove one item from list.");
+	}
+
+	private static Set<String> distinctIds(final Collection<FileAndData> files) {
+		final Set<String> ids = new HashSet<>();
+		for (final FileAndData f : files) {
+			ids.add(f.getData().getId());
+		}
+		return ids;
+	}
+
+	private static boolean allMissing(final Collection<FileAndData> files) {
+		for (final FileAndData file : files) {
+			if (file.getFile().exists()) return false;
+		}
+		return true;
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	public long readFileDurationMillis(final File file) throws SQLException {
 		return this.mediaDb.readDurationCheckingFileSize(file.getAbsolutePath(), file.length());
 	}
 
-	public void storeFileDurationMillisAsync (final File file, final long duration) throws SQLException, InterruptedException {
+	public void storeFileDurationMillisAsync(final File file, final long duration) throws SQLException, InterruptedException {
 		this.storeDuraionQueue.put(new FileAndDuration(file, duration));
 	}
 
-	private class DurationBatchWriter implements Runnable {
+	private class DurationWorker implements Runnable {
 
 		@Override
 		public void run() {
@@ -186,55 +272,5 @@ public class MediaMetadataStore {
 		}
 
 	}
-
-	private Collection<FileAndData> missingFilesWithHash (final String hash) throws SQLException {
-		final Collection<FileAndData> files = this.mediaDb.filesWithHash(hash);
-		excludeFilesThatStillExist(files);
-		return files;
-	}
-
-	private String newUnusedId () throws SQLException {
-		while (true) {
-			final String id = UUID.randomUUID().toString();
-			if (this.mediaDb.hashesForId(id).size() < 1) return id;
-			LOG.warn("Discarding colliding random UUID: {}", id);
-		}
-	}
-
-	protected void removeFiles (final Collection<FileAndData> files) throws SQLException {
-		for (final FileAndData file : files) {
-			this.mediaDb.removeFile(file.getFile());
-		}
-	}
-
-	private static void excludeFilesThatStillExist (final Collection<FileAndData> files) {
-		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
-			if (i.next().getFile().exists()) i.remove();
-		}
-	}
-
-	private static void excludeFile (final Collection<FileAndData> files, final File file) {
-		final int startSize = files.size();
-		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
-			if (file.equals(i.next().getFile())) i.remove();
-		}
-		if (files.size() != startSize - 1) throw new IllegalStateException("Expected to only remove one item from list.");
-	}
-
-	private static Set<String> distinctIds (final Collection<FileAndData> files) {
-		final Set<String> ids = new HashSet<>();
-		for (final FileAndData f : files) {
-			ids.add(f.getData().getId());
-		}
-		return ids;
-	}
-
-	private static boolean allMissing (final Collection<FileAndData> files) {
-		for (final FileAndData file : files) {
-			if (file.getFile().exists()) return false;
-		}
-		return true;
-	}
-
 
 }

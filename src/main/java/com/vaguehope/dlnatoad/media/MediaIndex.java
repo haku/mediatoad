@@ -84,13 +84,13 @@ public class MediaIndex implements FileListener {
 			@Override
 			public void onResult(final String itemId) throws IOException {
 				// If ID has changed, remove and re-add.
-				final ContentNode itemInTree = MediaIndex.this.contentTree.getNode(itemId);
+				final ContentItem itemInTree = MediaIndex.this.contentTree.getItem(itemId);
 				if (itemInTree == null) {
 					MediaIndex.this.contentTree.removeFile(file);
 					addFile(rootDir, file, new Runnable() {
 						@Override
 						public void run() {
-							LOG.info("modified: {}", file.getAbsolutePath());
+							LOG.info("File ID changed {}: {}", file.getAbsolutePath(), itemId);
 							if (onUsed != null) onUsed.run();
 						}
 					});
@@ -362,6 +362,7 @@ public class MediaIndex implements FileListener {
 
 	private void attachSubtitlesToItem(final File subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
+		// Note that contentIdAsync() is used for a dir here to preserve ordering of events.
 		this.mediaId.contentIdAsync(ContentGroup.VIDEO, subtitlesFile.getParentFile(), new MediaIdCallback() {
 			@Override
 			public void onResult(final String dirNodeId) throws IOException {
@@ -388,23 +389,14 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void deattachSubtitles(final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
-		this.mediaId.contentIdAsync(ContentGroup.VIDEO, subtitlesFile.getParentFile(), new MediaIdCallback() {
-			@Override
-			public void onResult(final String parentId) throws IOException {
-				final ContentNode parent = MediaIndex.this.contentTree.getNode(parentId);
-				if (parent == null) return;
+		final String dirNodeId = this.mediaId.contentIdForDirectory(ContentGroup.VIDEO, subtitlesFile.getParentFile());
+		final ContentNode dirNode = MediaIndex.this.contentTree.getNode(dirNodeId);
+		if (dirNode == null) return;
 
-				parent.withEachItem(i -> {
-					removeSubtitlesFromItem(i, subtitlesFile, subtitlesFormat, () -> {
-						LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
-					});
-				});
-			}
-
-			@Override
-			public void onError(final IOException e) {
-				LOG.warn("Failed to deattach subtitles, error getting parentId.", e);
-			}
+		dirNode.withEachItem(i -> {
+			removeSubtitlesFromItem(i, subtitlesFile, subtitlesFormat, () -> {
+				LOG.info("subtitles removed: {}", subtitlesFile.getAbsolutePath());
+			});
 		});
 	}
 
