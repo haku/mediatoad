@@ -9,18 +9,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 import org.sqlite.SQLiteConfig.TransactionMode;
 
 public class MediaDb {
 
-	private static final Logger LOG = LoggerFactory.getLogger(MediaDb.class);
-
+	private final String dbPath;
 	private final Connection dbConn;
 
 	public MediaDb (final File dbFile) throws SQLException {
@@ -31,7 +27,8 @@ public class MediaDb {
 		this("jdbc:sqlite:" + dbPath, false);
 	}
 
-	private MediaDb (final String dbPath, boolean ignored) throws SQLException {
+	private MediaDb (final String dbPath, final boolean ignored) throws SQLException {
+		this.dbPath = dbPath;
 		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();
 	}
@@ -50,6 +47,13 @@ public class MediaDb {
 			executeSql("CREATE TABLE durations ("
 					+ "key STRING NOT NULL PRIMARY KEY, size INT NOT NULL, duration INT NOT NULL);");
 		}
+	}
+
+	@SuppressWarnings("resource")
+	protected WritableMediaDb getWritable() throws SQLException {
+		final Connection c = makeDbConnection(this.dbPath);
+		c.setAutoCommit(false);
+		return new WritableMediaDb(c);
 	}
 
 	protected FileData readFileData (final File file) throws SQLException {
@@ -217,52 +221,6 @@ public class MediaDb {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-	protected void storeDurations(final List<FileAndDuration> toStore) throws SQLException {
-		final List<FileAndDuration> toInsert = new ArrayList<>();
-
-		final PreparedStatement stUpdate = this.dbConn.prepareStatement(
-				"UPDATE durations SET size=?,duration=? WHERE key=?;");
-		try {
-			for (final FileAndDuration fad : toStore) {
-				stUpdate.setLong(1, fad.getFile().length());
-				stUpdate.setLong(2, fad.getDuration());
-				stUpdate.setString(3, fad.getFile().getAbsolutePath());
-				stUpdate.addBatch();
-			}
-			final int[] nUpdated = stUpdate.executeBatch();
-
-			for (int i = 0; i < nUpdated.length; i++) {
-				if (nUpdated[i] < 1) {
-					toInsert.add(toStore.get(i));
-				}
-			}
-		}
-		finally {
-			stUpdate.close();
-		}
-
-		final PreparedStatement stInsert = this.dbConn.prepareStatement(
-				"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
-		try {
-			for (final FileAndDuration fad : toInsert) {
-				stInsert.setString(1, fad.getFile().getAbsolutePath());
-				stInsert.setLong(2, fad.getFile().length());
-				stInsert.setLong(3, fad.getDuration());
-				stInsert.addBatch();
-			}
-			final int[] nInserted = stInsert.executeBatch();
-
-			for (int i = 0; i < nInserted.length; i++) {
-				if (nInserted[i] < 1) {
-					LOG.error("No insert occured inserting key '{}'.", toInsert.get(i).getFile().getAbsolutePath());
-				}
-			}
-		}
-		finally {
-			stInsert.close();
-		}
-	}
 
 	protected long readDurationCheckingFileSize (final String key, final long expectedSize) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(

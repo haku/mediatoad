@@ -174,7 +174,9 @@ public class MediaMetadataStore {
 				final List<FileAndDuration> todo = new ArrayList<>();
 				MediaMetadataStore.this.storeDuraionQueue.drainTo(todo);
 				if (todo.size() > 0) {
-					MediaMetadataStore.this.mediaDb.storeDurations(todo);
+					try (final WritableMediaDb w = MediaMetadataStore.this.mediaDb.getWritable()) {
+						w.storeDurations(todo);
+					}
 					LOG.info("Batch duration write for {} files.", todo.size());
 				}
 			}
