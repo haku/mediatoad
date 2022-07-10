@@ -27,13 +27,6 @@ public class MediaId {
 		return transientContentId(type, file);
 	}
 
-	@Deprecated
-	public String contentIdSync (final ContentGroup type, final File file, final ExecutorService altExSvc) throws IOException {
-		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.impl.idForFile(type, file, cb, altExSvc);
-		return cb.getMediaId();
-	}
-
 	public void contentIdAsync (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
 		this.impl.idForFile(type, file, callback, this.defExSvc);
 	}

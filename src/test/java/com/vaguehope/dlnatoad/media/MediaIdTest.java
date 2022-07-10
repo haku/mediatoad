@@ -13,18 +13,19 @@ import org.junit.Test;
 public class MediaIdTest {
 
 	private ExecutorService exSvc;
+	private MediaId undertest;
 
 	@Before
 	public void before() throws Exception {
 		this.exSvc = mock(ExecutorService.class);
+		this.undertest = new MediaId(null, this.exSvc);
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void itMakesTempId() throws Exception {
-		final MediaId mid = new MediaId(null, this.exSvc);
-		String actual = mid.contentIdSync(ContentGroup.VIDEO, new File("MyVideo.mp4"), this.exSvc);
-		assertThat(actual, matchesPattern("video-[0-9a-f]+-MyVideo_mp4"));
+		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
+		this.undertest.contentIdAsync(ContentGroup.VIDEO, new File("MyVideo.mp4"), cb);
+		assertThat(cb.getMediaId(), matchesPattern("video-[0-9a-f]+-MyVideo_mp4"));
 	}
 
 }
