@@ -19,6 +19,7 @@ public class MediaIdTest {
 		this.exSvc = mock(ExecutorService.class);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void itMakesTempId() throws Exception {
 		final MediaId mid = new MediaId(null, this.exSvc);
