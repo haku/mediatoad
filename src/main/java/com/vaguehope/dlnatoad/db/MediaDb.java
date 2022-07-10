@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
+import org.sqlite.SQLiteConfig.TransactionMode;
 
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 
@@ -506,11 +507,16 @@ public class MediaDb {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+	private static SQLiteConfig makeDbConfig() throws SQLException {
+		final SQLiteConfig c = new SQLiteConfig();
+		c.setEncoding(Encoding.UTF8);
+		c.setSharedCache(true);
+		c.setTransactionMode(TransactionMode.DEFERRED);
+		return c;
+	}
+
 	private static Connection makeDbConnection (final String dbPath) throws SQLException {
-		final SQLiteConfig config = new SQLiteConfig();
-		config.setEncoding(Encoding.UTF8);
-//		config.setUserVersion(version); // TODO
-		return DriverManager.getConnection(dbPath, config.toProperties());
+		return DriverManager.getConnection(dbPath, makeDbConfig().toProperties());
 	}
 
 	private boolean tableExists (final String tableName) throws SQLException {
