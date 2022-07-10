@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
 import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
@@ -136,16 +137,17 @@ public final class Main {
 		});
 
 		final File dbFile = args.getDb();
-		final MediaDb mediaDb;
+		final MediaMetadataStore mediaMetadataStore;
 		if (dbFile != null) {
 			LOG.info("db: {}", dbFile.getAbsolutePath());
-			mediaDb = new MediaDb(dbFile, fsExSvc, args.isVerboseLog());
+			final MediaDb mediaDb = new MediaDb(dbFile);
+			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
 		}
 		else {
-			mediaDb = null;
+			mediaMetadataStore = null;
 		}
-		final MediaId mediaId = new MediaId(mediaDb, fsExSvc);
-		final MediaInfo mediaInfo = new MediaInfo(mediaDb, miExSvc);
+		final MediaId mediaId = new MediaId(mediaMetadataStore, fsExSvc);
+		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
 
 		final UpnpService upnpService = makeUpnpServer();
 		Runtime.getRuntime().addShutdownHook(new Thread() {

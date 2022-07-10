@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutorService;
 
-import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MediaId {
@@ -17,8 +17,8 @@ public class MediaId {
 	private final Ider impl;
 	private final ExecutorService defExSvc;
 
-	public MediaId (final MediaDb mediaDb, final ExecutorService exSvc) {
-		this.impl = mediaDb != null ? new PersistentIder(mediaDb) : new TransientIder();
+	public MediaId (final MediaMetadataStore mediaMetadataStore, final ExecutorService exSvc) {
+		this.impl = mediaMetadataStore != null ? new PersistentIder(mediaMetadataStore) : new TransientIder();
 		this.defExSvc = exSvc;
 	}
 
@@ -40,17 +40,17 @@ public class MediaId {
 
 	private static class PersistentIder implements Ider {
 
-		private final MediaDb mediaDb;
+		private final MediaMetadataStore mediaMetadataStore;
 
-		public PersistentIder (final MediaDb mediaDb) {
-			this.mediaDb = mediaDb;
+		public PersistentIder (final MediaMetadataStore mediaMetadataStore) {
+			this.mediaMetadataStore = mediaMetadataStore;
 		}
 
 		@Override
 		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback, final ExecutorService exSvc) throws IOException {
 			try {
 				if (file.isFile()) {
-					this.mediaDb.idForFile(file, callback, exSvc);
+					this.mediaMetadataStore.idForFile(file, callback, exSvc);
 				}
 				else {
 					callback.onResult(transientContentId(type, file));

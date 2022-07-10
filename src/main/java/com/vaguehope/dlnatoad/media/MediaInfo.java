@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.ffmpeg.Ffprobe;
 import com.vaguehope.dlnatoad.ffmpeg.FfprobeInfo;
 
@@ -16,33 +16,33 @@ public class MediaInfo {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MediaInfo.class);
 
-	private final MediaDb mediaDb;
+	private final MediaMetadataStore mediaMetadataStore;
 	private final ExecutorService exSvc;
 
 	public MediaInfo () {
 		this(null, null);
 	}
 
-	public MediaInfo (final MediaDb mediaDb, final ExecutorService exSvc) {
-		this.mediaDb = mediaDb;
+	public MediaInfo (final MediaMetadataStore mediaMetadataStore, final ExecutorService exSvc) {
+		this.mediaMetadataStore = mediaMetadataStore;
 		this.exSvc = exSvc;
 	}
 
 	public void readInfoAsync (final File file, final ContentItem item) {
-		if (this.mediaDb == null) return;
-		this.exSvc.submit(new ReadInfoJob(file, item, this.mediaDb));
+		if (this.mediaMetadataStore == null) return;
+		this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
 	}
 
 	private static class ReadInfoJob implements Runnable {
 
 		private final File file;
 		private final ContentItem item;
-		private final MediaDb mediaDb;
+		private final MediaMetadataStore mediaMetadataStore;
 
-		public ReadInfoJob (final File file, final ContentItem item, final MediaDb mediaDb) {
+		public ReadInfoJob (final File file, final ContentItem item, final MediaMetadataStore mediaMetadataStore) {
 			this.file = file;
 			this.item = item;
-			this.mediaDb = mediaDb;
+			this.mediaMetadataStore = mediaMetadataStore;
 		}
 
 		@Override
@@ -56,13 +56,13 @@ public class MediaInfo {
 		}
 
 		private long readDurationMillis () throws IOException, SQLException, InterruptedException {
-			final long storedDurationMillis = this.mediaDb.readFileDurationMillis(this.file);
+			final long storedDurationMillis = this.mediaMetadataStore.readFileDurationMillis(this.file);
 			if (storedDurationMillis > 0) return storedDurationMillis;
 
 			final FfprobeInfo info = Ffprobe.inspect(this.file);
 			final Long readDuration = info.getDurationMillis();
 			if (readDuration != null && readDuration > 0) {
-				this.mediaDb.storeFileDurationMillisAsync(this.file, readDuration);
+				this.mediaMetadataStore.storeFileDurationMillisAsync(this.file, readDuration);
 				return readDuration;
 			}
 

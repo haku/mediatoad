@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.spy;
@@ -28,14 +29,14 @@ import org.mockito.ArgumentCaptor;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 
-public class MediaDbTest {
+public class MediaMetadataStoreTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
 
 	private Random rnd;
 	private File dbFile;
 	private ScheduledExecutorService schEx;
-	private MediaDb undertest;
+	private MediaMetadataStore undertest;
 
 	private Runnable durationBatchWriter;
 
@@ -44,7 +45,7 @@ public class MediaDbTest {
 		this.rnd = new Random();
 		this.dbFile = this.tmp.newFile("id-db.db3");
 		this.schEx = spy(new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs")));
-		this.undertest = new MediaDb(this.dbFile, this.schEx, true);
+		this.undertest = new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true);
 
 		final ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
 		verify(this.schEx).scheduleWithFixedDelay(cap.capture(), anyLong(), anyLong(), any(TimeUnit.class));
@@ -57,10 +58,9 @@ public class MediaDbTest {
 		return cb.getMediaId();
 	}
 
-	@SuppressWarnings("unused")
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
-		new MediaDb(this.dbFile, this.schEx, true);
+		assertNotNull(new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true));
 	}
 
 	@Test
