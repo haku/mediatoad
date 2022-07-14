@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.fourthline.cling.support.contentdirectory.ContentDirectoryException;
 import org.fourthline.cling.support.model.item.AudioItem;
 import org.fourthline.cling.support.model.item.ImageItem;
@@ -28,6 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import com.vaguehope.cdsc.CDSCBaseListener;
 import com.vaguehope.cdsc.CDSCLexer;
 import com.vaguehope.cdsc.CDSCParser;
+import com.vaguehope.cdsc.CDSCParser.BinOpContext;
 import com.vaguehope.cdsc.CDSCParser.LogOpContext;
 import com.vaguehope.cdsc.CDSCParser.RelExpContext;
 import com.vaguehope.cdsc.CDSCParser.SearchExpContext;
@@ -71,6 +73,9 @@ public class SearchEngine {
 
 		private static final Set<String> ARTIST_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 				"dc:creator", "upnp:artist")));
+
+		private static final Set<String> TAG_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+				"tag")));
 
 		private static final Map<String, ContentGroup> UPNP_TO_GROUP = ImmutableMap.of(
 				VideoItem.CLASS.getValue().toLowerCase(Locale.ENGLISH), ContentGroup.VIDEO,
@@ -155,10 +160,10 @@ public class SearchEngine {
 				this.cExp.right = null;
 			}
 
-			if ("or".equals(ctx.getText())) {
+			if ("or".equalsIgnoreCase(ctx.getText())) {
 				this.cExp.logOp = LogOp.OR;
 			}
-			else if ("and".equals(ctx.getText())) {
+			else if ("and".equalsIgnoreCase(ctx.getText())) {
 				this.cExp.logOp = LogOp.AND;
 			}
 			else {
@@ -168,9 +173,12 @@ public class SearchEngine {
 
 		@Override
 		public void exitRelExp (final RelExpContext ctx) {
+			final BinOpContext binOp = ctx.binOp();
+			final TerminalNode quotedVal = ctx.QuotedVal();
+
 			final String propertyName = ctx.Property().getText();
-			final String op = ctx.binOp().getText();
-			final String value = StringHelper.unquoteQuotes(ctx.QuotedVal().getText());
+			final String op = binOp != null ? binOp.getText() : null;
+			final String value = quotedVal != null ? StringHelper.unquoteQuotes(quotedVal.getText()) : null;
 
 			final Predicate<ContentItem> predicate;
 
@@ -195,6 +203,27 @@ public class SearchEngine {
 			else if (ARTIST_FIELDS.contains(propertyName)) {
 				if ("=".equals(op) || "contains".equalsIgnoreCase(op)) {
 					predicate = new ArtistContains(value);
+				}
+				else {
+					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
+					predicate = new Bool<>(true);
+				}
+			}
+			else if (TAG_FIELDS.contains(propertyName)) {
+				if ("=".equals(op)) {
+					predicate = new TagPredicate(value, Operator.EQUAL);
+				}
+				else if ("!=".equals(op)) {
+					predicate = new TagPredicate(value, Operator.NOT_EQUAL);
+				}
+				else if ("contains".equalsIgnoreCase(op)) {
+					predicate = new TagPredicate(value, Operator.CONTAINS);
+				}
+				else if ("doesNotContain".equalsIgnoreCase(op)) {
+					predicate = new TagPredicate(value, Operator.DOES_NOT_CONTAIN);
+				}
+				else if ("startsWith".equalsIgnoreCase(op)) {
+					predicate = new TagPredicate(value, Operator.STARTS_WITH);
 				}
 				else {
 					LOG.debug("Unsupported op for property {}: {}", propertyName, op);
@@ -254,6 +283,10 @@ public class SearchEngine {
 
 	private enum LogOp {
 		OR, AND
+	}
+
+	private enum Operator {
+		EQUAL, NOT_EQUAL, STARTS_WITH, CONTAINS, DOES_NOT_CONTAIN
 	}
 
 	protected static class Where {
@@ -514,6 +547,74 @@ public class SearchEngine {
 			if (!(obj instanceof ArtistContains)) return false;
 			final ArtistContains that = (ArtistContains) obj;
 			return Objects.equals(this.lcaseSubString, that.lcaseSubString);
+		}
+
+	}
+
+	private static class TagPredicate implements Predicate<ContentItem> {
+
+		private final String val;
+		private final Operator op;
+
+		public TagPredicate (final String val, final Operator op) {
+			this.val = val;
+			this.op = op;
+		}
+
+		@Override
+		public boolean matches (final ContentItem item) {
+			return true;  // TODO implement for memory searches?
+		}
+
+		@Override
+		public String toString () {
+			return String.format("tag %s '%s'", this.op, this.val);
+		}
+
+		@Override
+		public Where getWhere() {
+			final String q;
+			final String v;
+			switch (this.op) {
+				case EQUAL:
+					q = " = ?";
+					v = this.val;
+					break;
+				case NOT_EQUAL:
+					q = " != ?";
+					v = this.val;
+					break;
+				case STARTS_WITH:
+					q = " LIKE ? ESCAPE ?";
+					v = Sqlite.escapeSearch(this.val) + "%";
+					break;
+				case CONTAINS:
+					q = " LIKE ? ESCAPE ?";
+					v = "%" + Sqlite.escapeSearch(this.val) + "%";
+					break;
+				case DOES_NOT_CONTAIN:
+					q = " NOT LIKE ? ESCAPE ?";
+					v = "%" + Sqlite.escapeSearch(this.val) + "%";
+					break;
+					default:
+						throw new IllegalArgumentException("Unsupported Operator: " + this.op);
+			}
+			return new Where(MediaDb.COL_TAG + q, Arrays.asList(v, Sqlite.SEARCH_ESC));
+		}
+
+		@Override
+		public int hashCode () {
+			return Objects.hash(this.val, this.op);
+		}
+
+		@Override
+		public boolean equals (final Object obj) {
+			if (obj == null) return false;
+			if (obj == this) return true;
+			if (!(obj instanceof TagPredicate)) return false;
+			final TagPredicate that = (TagPredicate) obj;
+			return Objects.equals(this.val, that.val)
+					&& Objects.equals(this.op, that.op);
 		}
 
 	}

@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.dlnaserver;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -108,10 +108,58 @@ public class SearchEngineTest {
 		assertWhere(p, "((file LIKE ? ESCAPE ? OR file LIKE ? ESCAPE ?) OR file LIKE ? ESCAPE ?)", "foo", "\\", "daa", "\\", "daa", "\\");
 	}
 
+	@Test
+	public void itParsesTitleAndTag() throws Exception {
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(dc:title contains \"baz\" and tag = \"label\")");
+		assertThat(p, hasToString("(titleContains 'baz' and tag EQUAL 'label')"));
+		assertWhere(p, "(file LIKE ? ESCAPE ? AND tag = ?)", "baz", "\\", "label", "\\");
+	}
+
+	@Test
+	public void itParsesTagNotEqual() throws Exception {
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(tag != \"label\")");
+		assertThat(p, hasToString("tag NOT_EQUAL 'label'"));
+		assertWhere(p, "tag != ?", "label", "\\");
+	}
+
+	@Test
+	public void itParsesTagContains() throws Exception {
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(tag contains \"label\")");
+		assertThat(p, hasToString("tag CONTAINS 'label'"));
+		assertWhere(p, "tag LIKE ? ESCAPE ?", "%label%", "\\");
+	}
+
+	@Test
+	public void itParsesTagDoesNotContain() throws Exception {
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(tag doesNotContain \"label\")");
+		assertThat(p, hasToString("tag DOES_NOT_CONTAIN 'label'"));
+		assertWhere(p, "tag NOT LIKE ? ESCAPE ?", "%label%", "\\");
+	}
+
+	@Test
+	public void itParsesTagStartsWith() throws Exception {
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(tag startsWith \"label\")");
+		assertThat(p, hasToString("tag STARTS_WITH 'label'"));
+		assertWhere(p, "tag LIKE ? ESCAPE ?", "label%", "\\");
+	}
+
+	@Test
+	public void itHandlesMalformedOperator() throws Exception {
+		// TODO handle this more usefully?
+		final Predicate<ContentItem> p = SearchEngine.criteriaToPredicate("(tag starsWith \"label\")");
+		assertThat(p, hasToString("TRUE"));
+		assertWhere(p, "TRUE");
+	}
+
 	private static void assertWhere(final Predicate<ContentItem> p, final String clause, final String... params) {
 		final Where w = p.getWhere();
 		assertEquals(clause, w.clause);
-		assertEquals(Arrays.asList(params), w.params);
+		if (params.length > 0) {
+			assertEquals(Arrays.asList(params), w.params);
+		}
+		else {
+			assertEquals(null, w.params);
+		}
 	}
 
 }

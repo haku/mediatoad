@@ -15,6 +15,7 @@ import org.sqlite.SQLiteConfig.TransactionMode;
 public class MediaDb {
 
 	public static final String COL_FILE = "file";
+	public static final String COL_TAG = "tag";
 
 	private final String dbPath;
 	private final Connection dbConn;
