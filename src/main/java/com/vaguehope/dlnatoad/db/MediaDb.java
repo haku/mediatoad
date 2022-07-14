@@ -14,6 +14,8 @@ import org.sqlite.SQLiteConfig.TransactionMode;
 
 public class MediaDb {
 
+	public static final String COL_FILE = "file";
+
 	private final String dbPath;
 	private final Connection dbConn;
 
@@ -34,7 +36,7 @@ public class MediaDb {
 	private void makeSchema () throws SQLException {
 		if (!tableExists("files")) {
 			executeSql("CREATE TABLE files ("
-					+ "file STRING NOT NULL PRIMARY KEY, size INT NOT NULL, modified INT NOT NULL, hash STRING NOT NULL, id STRING NOT NULL);");
+					+ COL_FILE + " STRING NOT NULL PRIMARY KEY, size INT NOT NULL, modified INT NOT NULL, hash STRING NOT NULL, id STRING NOT NULL);");
 		}
 		if (!tableExists("hashes")) {
 			executeSql("CREATE TABLE hashes ("

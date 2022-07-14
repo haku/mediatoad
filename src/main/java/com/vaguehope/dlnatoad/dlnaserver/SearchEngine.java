@@ -31,6 +31,8 @@ import com.vaguehope.cdsc.CDSCParser;
 import com.vaguehope.cdsc.CDSCParser.LogOpContext;
 import com.vaguehope.cdsc.CDSCParser.RelExpContext;
 import com.vaguehope.cdsc.CDSCParser.SearchExpContext;
+import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.Sqlite;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -254,8 +256,33 @@ public class SearchEngine {
 		OR, AND
 	}
 
+	protected static class Where {
+		final String clause;
+		final List<String> params;
+		Where(final String clause, final List<String> params) {
+			this.clause = clause;
+			this.params = params;
+		}
+
+		public static <T> Where join(final Collection<Predicate<T>> predicates, final String seperator) {
+			final StringBuilder t = new StringBuilder("(");
+			final List<String> params = new ArrayList<>();
+			boolean first = true;
+			for (final Predicate<T> p : predicates) {
+				if (!first) t.append(" ").append(seperator).append(" ");
+				first = false;
+				final Where w = p.getWhere();
+				t.append(w.clause);
+				if (w.params != null) params.addAll(w.params);
+			}
+			t.append(")");
+			return new Where(t.toString(), params);
+		}
+	}
+
 	protected interface Predicate<T> {
 		boolean matches (T thing);
+		Where getWhere();
 	}
 
 	private static class Bool<T> implements Predicate<T> {
@@ -274,6 +301,11 @@ public class SearchEngine {
 		@Override
 		public String toString() {
 			return Boolean.toString(this.v).toUpperCase(Locale.ENGLISH);
+		}
+
+		@Override
+		public Where getWhere() {
+			return new Where(this.v ? "TRUE" : "FALSE", null);
 		}
 	}
 
@@ -296,6 +328,11 @@ public class SearchEngine {
 		@Override
 		public String toString () {
 			return StringHelper.join("(", ")", this.predicates, " or ");
+		}
+
+		@Override
+		public Where getWhere() {
+			return Where.join(this.predicates, "OR");
 		}
 
 		@Override
@@ -336,6 +373,11 @@ public class SearchEngine {
 		}
 
 		@Override
+		public Where getWhere() {
+			return Where.join(this.predicates, "AND");
+		}
+
+		@Override
 		public int hashCode () {
 			return this.predicates.hashCode();
 		}
@@ -370,6 +412,11 @@ public class SearchEngine {
 		}
 
 		@Override
+		public Where getWhere() {
+			return new Bool<>(true).getWhere();  // TODO check type.
+		}
+
+		@Override
 		public int hashCode () {
 			return this.contentGroup.hashCode();
 		}
@@ -401,6 +448,12 @@ public class SearchEngine {
 		@Override
 		public String toString () {
 			return String.format("titleContains '%s'", this.lcaseSubString);
+		}
+
+		@Override
+		public Where getWhere() {
+			return new Where(MediaDb.COL_FILE + " LIKE ? ESCAPE ?",
+					Arrays.asList(Sqlite.escapeSearch(this.lcaseSubString), Sqlite.SEARCH_ESC));
 		}
 
 		@Override
@@ -441,6 +494,12 @@ public class SearchEngine {
 		@Override
 		public String toString () {
 			return String.format("artistContains '%s'", this.lcaseSubString);
+		}
+
+		@Override
+		public Where getWhere() {
+			return new Where(MediaDb.COL_FILE + " LIKE ? ESCAPE ?",
+					Arrays.asList(Sqlite.escapeSearch(this.lcaseSubString), Sqlite.SEARCH_ESC));
 		}
 
 		@Override
