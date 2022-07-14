@@ -61,7 +61,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+	// File ID.
 	// The read methods are here so they are reading from the same transaction as the writes around them.
 
 	protected FileData readFileData (final File file) throws SQLException {
@@ -229,6 +229,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	//	Durations.
 
 	protected void storeDurations(final List<FileAndDuration> toStore) throws SQLException {
 		final List<FileAndDuration> toInsert = new ArrayList<>();
@@ -273,6 +274,47 @@ public class WritableMediaDb implements Closeable {
 		}
 		finally {
 			stInsert.close();
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Tags.
+
+	protected void addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
+		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag);
+		for (final Tag t : existing) {
+			// If any not deleted, nothing to do.
+			if (!t.isDeleted()) return;
+		}
+		for (final Tag t : existing) {
+			// Reinstate first item, if any.
+			setTagDeleted(t, false, modifiled);
+			return;
+		}
+
+		try (final PreparedStatement st = this.conn.prepareStatement(
+				"INSERT INTO tags (file_id,tag,modified) VALUES (?,?,?)")) {
+			st.setString(1, fileId);
+			st.setString(2, tag);
+			st.setLong(3, modifiled);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for %s: %s", fileId, tag));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to store tag for %s: %s", fileId, tag), e);
+		}
+	}
+
+	protected void setTagDeleted(final Tag tag, boolean deleted, final long modifiled) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET deleted=?,modified=? WHERE id=?")) {
+			st.setInt(1, deleted ? 1 : 0);
+			st.setLong(2, modifiled);
+			st.setLong(3, tag.getId());
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured marking tag as deleted %s:", tag.getId()));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to mark tag as deleted: %s", tag.getId()), e);
 		}
 	}
 
