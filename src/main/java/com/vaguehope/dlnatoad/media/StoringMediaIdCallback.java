@@ -27,7 +27,10 @@ public class StoringMediaIdCallback implements MediaIdCallback {
 		} catch (final InterruptedException e) {
 			throw new IOException(e);
 		}
-		if (this.exception != null) throw this.exception;
+		if (this.exception != null) {
+			// Wrap exception so it includes the async caller.
+			throw new IOException(this.exception);
+		}
 		return this.mediaId;
 	}
 

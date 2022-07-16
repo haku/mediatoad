@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -155,9 +156,13 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void storeFileData (final File file, final FileData fileData) throws SQLException {
+	/**
+	 * Returns the autoincrement row key.
+	 */
+	protected long storeFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"INSERT INTO files (file,size,modified,hash,id) VALUES (?,?,?,?,?);");
+				"INSERT INTO files (file,size,modified,hash,id) VALUES (?,?,?,?,?);",
+				Statement.RETURN_GENERATED_KEYS);
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setLong(2, fileData.getSize());
@@ -166,6 +171,10 @@ public class WritableMediaDb implements Closeable {
 			st.setString(5, fileData.getId());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No insert occured inserting file '" + file.getAbsolutePath() + "'.");
+			try (final ResultSet rs = st.getGeneratedKeys()) {
+				if (!rs.next()) throw new SQLException("INSERT did not return autoincrement ID.");
+				return rs.getLong(1);
+			}
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to store new data for file %s \"%s\".", file, fileData), e);
@@ -280,8 +289,8 @@ public class WritableMediaDb implements Closeable {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	protected void addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
-		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag);
+	protected void addTag(final long fileKey, final String tag, final long modifiled) throws SQLException {
+		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileKey, tag);
 		for (final Tag t : existing) {
 			// If any not deleted, nothing to do.
 			if (!t.isDeleted()) return;
@@ -293,15 +302,15 @@ public class WritableMediaDb implements Closeable {
 		}
 
 		try (final PreparedStatement st = this.conn.prepareStatement(
-				"INSERT INTO tags (file_id,tag,modified) VALUES (?,?,?)")) {
-			st.setString(1, fileId);
+				"INSERT INTO tags (file_key,tag,modified) VALUES (?,?,?)")) {
+			st.setLong(1, fileKey);
 			st.setString(2, tag);
 			st.setLong(3, modifiled);
 			final int n = st.executeUpdate();
-			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for %s: %s", fileId, tag));
+			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for fileKey=%s: %s", fileKey, tag));
 		}
 		catch (final SQLException e) {
-			throw new SQLException(String.format("Failed to store tag for %s: %s", fileId, tag), e);
+			throw new SQLException(String.format("Failed to store tag for fileKey=%s: %s", fileKey, tag), e);
 		}
 	}
 

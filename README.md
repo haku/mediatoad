@@ -102,3 +102,17 @@ Some classes are based on code from WireMe and are used under the Apache 2
 License.  WireMe was also used as a general example of how to expose content via
 DLNA using the Cling library.  See https://code.google.com/p/wireme/ for more
 details.
+
+DB Migrations
+-------------
+
+Add AUTOINCREMENT to files table:
+
+```sql
+BEGIN TRANSACTION;
+CREATE TABLE new_files (key INTEGER PRIMARY KEY AUTOINCREMENT, file STRING NOT NULL, size INT NOT NULL, modified INT NOT NULL, hash STRING NOT NULL, id STRING NOT NULL, UNIQUE(file));
+INSERT INTO new_files (file, size, modified, hash, id) SELECT file, size, modified, hash, id FROM files;
+DROP TABLE files;
+ALTER TABLE new_files RENAME TO files;
+COMMIT TRANSACTION;
+```
