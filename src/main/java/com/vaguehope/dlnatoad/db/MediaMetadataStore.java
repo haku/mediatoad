@@ -88,9 +88,7 @@ public class MediaMetadataStore {
 				scheduleFileIdBatchIfNeeded();
 			}
 		}
-		if (this.verboseLog) {
-			LOG.info("Batch ID generation for {} files.", count);
-		}
+		LOG.info("Batch ID generation for {} files.", count);
 	}
 
 	private void processFileIdRequest(final WritableMediaDb w, final FileAndIdCallback f) {
