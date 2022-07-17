@@ -39,22 +39,20 @@ public class MediaDb {
 	private void makeSchema () throws SQLException {
 		if (!tableExists("files")) {
 			executeSql("CREATE TABLE files ("
-					+ "key INTEGER PRIMARY KEY AUTOINCREMENT, "
-					+ COL_FILE + " STRING NOT NULL, "
+					+ COL_FILE + " STRING NOT NULL PRIMARY KEY, "
 					+ "size INT NOT NULL, "
 					+ "modified INT NOT NULL, "
 					+ "hash STRING NOT NULL, "
-					+ "id STRING NOT NULL, "
-					+ "UNIQUE(" + COL_FILE + ")"
+					+ "id STRING NOT NULL"
 					+ ");");
 		}
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
-					+ "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-					+ "file_key INTEGER NOT NULL, "
+					+ "file_id STRING NOT NULL, "
 					+ COL_TAG + " STRING NOT NULL COLLATE NOCASE, "
-					+ "modified INT NOT NULL, deleted INT(1), "
-					+ "FOREIGN KEY(file_key) REFERENCES files(key) ON DELETE RESTRICT ON UPDATE RESTRICT"
+					+ "modified INT NOT NULL, "
+					+ "deleted INT(1) NOT NULL DEFAULT 0, "
+					+ "UNIQUE(file_id, " + COL_TAG + ")"
 					+ ");");
 		}
 		if (!tableExists("hashes")) {
@@ -107,34 +105,34 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	protected Collection<Tag> getTags(final long fileKey, final boolean includeDeleted) throws SQLException {
-		return getTagsFromConn(this.dbConn, fileKey, includeDeleted);
+	protected Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {
+		return getTagsFromConn(this.dbConn, fileId, includeDeleted);
 	}
 
-	protected static Collection<Tag> getTagFromConn(final Connection conn, final long fileKey, final String tag) throws SQLException {
-		try (final PreparedStatement st = conn.prepareStatement(SELECT_FROM_TAGS + "file_key=? AND tag=?")) {
-			st.setLong(1, fileKey);
+	protected static Collection<Tag> getTagFromConn(final Connection conn, final String fileId, final String tag) throws SQLException {
+		try (final PreparedStatement st = conn.prepareStatement(SELECT_FROM_TAGS + "file_id=? AND tag=?")) {
+			st.setString(1, fileId);
 			st.setString(2, tag);
 			return readTagsResultSet(st);
 		}
 	}
 
-	protected static Collection<Tag> getTagsFromConn(final Connection conn, final long fileKey, final boolean includeDeleted) throws SQLException {
-		String query = SELECT_FROM_TAGS + "file_key=?";
-		if (!includeDeleted) query += " AND deleted IS NULL OR deleted=0";
+	protected static Collection<Tag> getTagsFromConn(final Connection conn, final String fileId, final boolean includeDeleted) throws SQLException {
+		String query = SELECT_FROM_TAGS + "file_id=?";
+		if (!includeDeleted) query += " AND deleted=0";
 		try (final PreparedStatement st = conn.prepareStatement(query)) {
-			st.setLong(1, fileKey);
+			st.setString(1, fileId);
 			return readTagsResultSet(st);
 		}
 	}
 
-	private static final String SELECT_FROM_TAGS = "SELECT id,tag,modified,deleted FROM tags WHERE ";
+	private static final String SELECT_FROM_TAGS = "SELECT tag,modified,deleted FROM tags WHERE ";
 
 	private static Collection<Tag> readTagsResultSet(final PreparedStatement st) throws SQLException {
 		try (final ResultSet rs = st.executeQuery()) {
 			final Collection<Tag> ret = new ArrayList<>();
 			while (rs.next()) {
-				ret.add(new Tag(rs.getLong(1), rs.getString(2), rs.getLong(3), rs.getInt(4) > 0));
+				ret.add(new Tag(rs.getString(1), rs.getLong(2), rs.getInt(3) != 0));
 			}
 			return ret;
 		}
