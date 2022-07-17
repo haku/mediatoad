@@ -48,9 +48,13 @@ public class ServletCommon {
 		this.contentServingHistory = contentServingHistory;
 	}
 
-	@SuppressWarnings("resource")
 	public static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {
 		resp.reset();
+		returnStatusWithoutReset(resp, status, msg);
+	}
+
+	@SuppressWarnings("resource")
+	public static void returnStatusWithoutReset (final HttpServletResponse resp, final int status, final String msg) throws IOException {
 		resp.setContentType("text/plain");
 		resp.setStatus(status);
 		resp.getWriter().println(msg);
@@ -96,15 +100,19 @@ public class ServletCommon {
 	}
 
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w) {
+		printLinkRow(req, w, "");
+	}
+
+	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 		final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
 
 		w.println("<a href=\"/\">Home</a>");
-		w.println("<a href=\"upnp\">UPNP</a>");
-		w.println("<form style=\"display:inline;\" action=\"search\" method=\"GET\">");
+		w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");
+		w.println("<form style=\"display:inline;\" action=\"" + pathPrefix + "search\" method=\"GET\">");
 		w.println("<input type=\"text\" id=\"query\" name=\"query\" value=\"" + query + "\">");
-		w.print("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
+		w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
 		w.println("<label for=\"remote\">remote</label>");
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
@@ -196,10 +204,8 @@ public class ServletCommon {
 	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb) throws IOException {
 		for (final ContentItem item : imagesToThumb) {
 			w.print("<span><a href=\"");
-			w.print(C.CONTENT_PATH_PREFIX);
+			w.print(C.ITEM_PATH_PREFIX);
 			w.print(item.getId());
-			w.print(".");
-			w.print(item.getFormat().getExt());
 			w.print("\">");
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
 			w.print(C.THUMBS_PATH_PREFIX);

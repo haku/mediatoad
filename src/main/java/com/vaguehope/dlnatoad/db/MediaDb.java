@@ -67,7 +67,7 @@ public class MediaDb {
 	}
 
 	@SuppressWarnings("resource")
-	protected WritableMediaDb getWritable() throws SQLException {
+	public WritableMediaDb getWritable() throws SQLException {
 		final Connection c = makeDbConnection(this.dbPath);
 		c.setAutoCommit(false);
 		return new WritableMediaDb(c);
@@ -105,7 +105,7 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	protected Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {
+	public Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {
 		return getTagsFromConn(this.dbConn, fileId, includeDeleted);
 	}
 

@@ -49,6 +49,7 @@ import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
+import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
@@ -137,13 +138,15 @@ public final class Main {
 		});
 
 		final File dbFile = args.getDb();
+		final MediaDb mediaDb;
 		final MediaMetadataStore mediaMetadataStore;
 		if (dbFile != null) {
 			LOG.info("db: {}", dbFile.getAbsolutePath());
-			final MediaDb mediaDb = new MediaDb(dbFile);
+			mediaDb = new MediaDb(dbFile);
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
 		}
 		else {
+			mediaDb = null;
 			mediaMetadataStore = null;
 		}
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
@@ -158,7 +161,7 @@ public final class Main {
 		});
 
 		final ContentTree contentTree = new ContentTree();
-		final Server server = startContentServer(contentTree, mediaId, upnpService, args, address, hostName);
+		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, address, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(address, server.getConnectors()[0].getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -212,6 +215,7 @@ public final class Main {
 	private static Server startContentServer(
 			final ContentTree contentTree,
 			final MediaId mediaId,
+			final MediaDb mediaDb,
 			final UpnpService upnpService,
 			final Args args,
 			final InetAddress address,
@@ -227,7 +231,7 @@ public final class Main {
 		}
 
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, mediaId, upnpService, args, hostName);
+			final HandlerList handler = makeContentHandler(contentTree, mediaId, mediaDb, upnpService, args, hostName);
 
 			final Server server = new Server();
 			server.setHandler(handler);
@@ -252,6 +256,7 @@ public final class Main {
 	private static HandlerList makeContentHandler(
 			final ContentTree contentTree,
 			final MediaId mediaId,
+			final MediaDb mediaDb,
 			final UpnpService upnpService,
 			final Args args,
 			final String hostName) throws ArgsException {
@@ -282,6 +287,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();

@@ -280,7 +280,7 @@ public class WritableMediaDb implements Closeable {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	protected void addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
+	public void addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
 		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag);
 		if (existing.size() > 1) throw new IllegalStateException(String.format("DB UNIQUE(file_id, tag) constraint failed: id=%s tag='%s'", fileId, tag));
 		if (existing.size() > 0) {
@@ -303,7 +303,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void setTagDeleted(final String fileId, final String tag, final boolean deleted, final long modifiled) throws SQLException {
+	public void setTagDeleted(final String fileId, final String tag, final boolean deleted, final long modifiled) throws SQLException {
 		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET deleted=?,modified=? WHERE file_id=? AND tag=?")) {
 			st.setInt(1, deleted ? 1 : 0);
 			st.setLong(2, modifiled);
