@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.fourthline.cling.UpnpService;
@@ -48,12 +49,14 @@ import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
+import com.vaguehope.dlnatoad.ui.AuthFilter;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
+import com.vaguehope.dlnatoad.ui.Users;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
@@ -106,6 +109,12 @@ public final class Main {
 	}
 
 	private static void run (final Args args) throws Exception { // NOSONAR
+		if (args.isAddUser()) {
+			final int status = Users.interactivlyAddUser(args);
+			if (status != 0) System.exit(status);
+			return;
+		}
+
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		LOG.info("hostName: {}", hostName);
 
@@ -259,7 +268,7 @@ public final class Main {
 			final MediaDb mediaDb,
 			final UpnpService upnpService,
 			final Args args,
-			final String hostName) throws ArgsException {
+			final String hostName) throws ArgsException, IOException {
 		final File thumbsDir = args.getThumbsDir();
 		final ImageResizer imageResizer =
 				thumbsDir != null
@@ -269,8 +278,13 @@ public final class Main {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		MediaFormat.addTo(servletHandler.getMimeTypes());
 		servletHandler.setContextPath("/");
-		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 
+		final File userfile = args.getUserfile();
+		final Users users = userfile != null ? new Users(userfile) : null;
+		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, contentTree));
+		servletHandler.addFilter(authFilterHolder, "/*", null);
+
+		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 

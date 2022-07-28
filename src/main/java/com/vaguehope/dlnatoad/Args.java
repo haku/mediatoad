@@ -19,6 +19,8 @@ public class Args {
 	@Option(name = "-s", aliases = { "--simplify" }, usage = "simplify directory structure.") private boolean simplifyHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "print log lines for various events.") private boolean verboseLog;
+	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
+	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
@@ -84,6 +86,14 @@ public class Args {
 
 	public boolean isVerboseLog() {
 		return this.verboseLog;
+	}
+
+	public File getUserfile() {
+		return this.userfile != null ? new File(this.userfile) : null;
+	}
+
+	public boolean isAddUser() {
+		return this.addUser;
 	}
 
 	public File getDb () {
