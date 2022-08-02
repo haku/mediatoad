@@ -83,7 +83,7 @@ public class ItemServlet extends HttpServlet {
 
 		w.println("</div>");
 
-		w.print("<img style=\"max-width: 100%; padding-top: 1em;\" src=\"../");
+		w.print("<img style=\"max-width: 100%; max-height: 50em; padding-top: 1em;\" src=\"../");
 		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");
