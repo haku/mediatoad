@@ -23,6 +23,7 @@ public class Args {
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
+	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public static class ArgsException extends Exception {
@@ -101,8 +102,17 @@ public class Args {
 	}
 
 	public File getThumbsDir() throws ArgsException {
-		if (this.thumbsDir == null) return null;
-		final File f = new File(this.thumbsDir);
+		return checkIsDirOrNull(this.thumbsDir);
+	}
+
+	public File getDropDir() throws ArgsException {
+		if (this.db == null) throw new ArgsException("--dropdir requires --db to be set.");
+		return checkIsDirOrNull(this.dropDir);
+	}
+
+	private static File checkIsDirOrNull(final String path) throws ArgsException {
+		if (path == null) return null;
+		final File f = new File(path);
 		if (!f.exists()) throw new ArgsException("Not found: " + f.getAbsolutePath());
 		if (!f.isDirectory()) throw new ArgsException("Not directory: " + f.getAbsolutePath());
 		return f;

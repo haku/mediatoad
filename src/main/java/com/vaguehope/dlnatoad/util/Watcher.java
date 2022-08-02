@@ -15,6 +15,7 @@ import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -63,6 +64,7 @@ public class Watcher {
 	private final Time time;
 	private final long pollIntervalMillis;
 
+	private final List<Runnable> onPrescanComplete = new CopyOnWriteArrayList<>();
 	private final CountDownLatch prescanComplete = new CountDownLatch(1);
 	private final AtomicLong watchEvents = new AtomicLong(0);
 
@@ -94,13 +96,22 @@ public class Watcher {
 				totalFiles += registerRecursive(root, root);
 			}
 			LOG.info("Found {} media files.", totalFiles);
+
 			this.prescanComplete.countDown();
+			for (final Runnable l : this.onPrescanComplete) {
+				l.run();
+			}
+
 			watch();
 		}
 		finally {
 			LOG.error("Watcher terminated.");
 			this.watchService.close();
 		}
+	}
+
+	public void addPrescanCompleteListener(final Runnable l) {
+		this.onPrescanComplete.add(l);
 	}
 
 	public void waitForPrescan(final long timeout, final TimeUnit unit) throws InterruptedException {

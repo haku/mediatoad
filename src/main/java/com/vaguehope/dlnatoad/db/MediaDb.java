@@ -103,6 +103,38 @@ public class MediaDb {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Hashes.
+
+	public String canonicalIdForHash (final String hash) throws SQLException {
+		return MediaDb.canonicalIdForHashFromConn(this.dbConn, hash);
+	}
+
+	/**
+	 * hash is lower case hex, from BigInteger.toString(16).
+	 */
+	protected static String canonicalIdForHashFromConn (final Connection conn, final String hash) throws SQLException {
+		final PreparedStatement st = conn.prepareStatement(
+				"SELECT id FROM hashes WHERE hash=?;");
+		try {
+			st.setString(1, hash);
+			st.setMaxRows(2);
+			final ResultSet rs = st.executeQuery();
+			try {
+				if (!rs.next()) return null;
+				final String id = rs.getString(1);
+				if (rs.next()) throw new SQLException("Query for hash '" + hash + "' retured more than one result.");
+				return id;
+			}
+			finally {
+				rs.close();
+			}
+		}
+		finally {
+			st.close();
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
 	public Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {

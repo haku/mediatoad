@@ -1,11 +1,11 @@
 package com.vaguehope.dlnatoad.util;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -95,6 +94,10 @@ public class WatcherTest {
 			}
 		});
 		this.undertest.waitForPrescan(timeoutSeconds, TimeUnit.SECONDS);
+
+		if (waitForEventCount < 1) {
+			this.undertest.shutdown();
+		}
 	}
 
 	private void waitForWatcher(final int timeoutSeconds) throws Exception {
@@ -110,6 +113,15 @@ public class WatcherTest {
 			}
 			Thread.sleep(200);
 		}
+	}
+
+	@Test
+	public void itRunsPrescanCompleteListener() throws Exception {
+		final Runnable l = mock(Runnable.class);
+		this.undertest.addPrescanCompleteListener(l);
+		startWatcher(0, 1);
+		waitForWatcher(1);
+		verify(l).run();
 	}
 
 	@Test
@@ -192,7 +204,7 @@ public class WatcherTest {
 		waitForWatcher(10);
 
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
-		verify(this.listener, Mockito.timeout(10000)).fileGone(f1);
+		verify(this.listener, timeout(10000)).fileGone(f1);
 	}
 
 }

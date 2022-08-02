@@ -1,0 +1,18 @@
+[
+  {
+    "sha1": "d8e244abc5057409cbbfcb8f44c5120ec2e3f64f",
+    "tags": [
+      "foo",
+      "bar",
+      "bat"
+    ]
+  },
+  {
+    "sha1": "722f710e0f039262c87c50b6af87a9d9132feac4",
+    "tags": [
+      "red",
+      "green",
+      "blue"
+    ]
+  }
+]

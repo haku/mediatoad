@@ -42,6 +42,7 @@ import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
 import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
+import com.vaguehope.dlnatoad.importer.MetadataImporter;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -152,7 +153,7 @@ public final class Main {
 		final MediaDb mediaDb;
 		final MediaMetadataStore mediaMetadataStore;
 		if (dbFile != null) {
-			LOG.info("db: {}", dbFile.getAbsolutePath());
+			LOG.info("DB: {}", dbFile.getAbsolutePath());
 			mediaDb = new MediaDb(dbFile);
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
 		}
@@ -162,6 +163,12 @@ public final class Main {
 		}
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
 		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
+
+		final File dropDir = args.getDropDir();
+		final Runnable metadataImporterStarter = () -> {
+			if (dropDir == null) return;
+			new MetadataImporter(dropDir, mediaDb).start(fsExSvc);
+		};
 
 		final UpnpService upnpService = makeUpnpServer();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -184,7 +191,7 @@ public final class Main {
 
 		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo);
 
-		final Thread watcherThread = new Thread(new RunWatcher(args, index));
+		final Thread watcherThread = new Thread(new RunWatcher(args, index, metadataImporterStarter));
 		watcherThread.setName("watcher");
 		watcherThread.setDaemon(true);
 		watcherThread.start();
@@ -311,7 +318,7 @@ public final class Main {
 		return handler;
 	}
 
-	protected static RewriteHandler wrapWithRewrites(Handler wrapped) {
+	protected static RewriteHandler wrapWithRewrites(final Handler wrapped) {
 		final RewriteHandler rewrites = new RewriteHandler();
 
 		// Do not modify the request object because:
@@ -351,18 +358,22 @@ public final class Main {
 		private final List<File> roots;
 		private final boolean verboseLog;
 		private final MediaIndex index;
+		private final Runnable prescanCompleteListener;
 
-		public RunWatcher (final Args args, final MediaIndex index) throws ArgsException, IOException {
+		public RunWatcher (final Args args, final MediaIndex index, final Runnable prescanCompleteListener) throws ArgsException, IOException {
 			this.roots = args.getDirs();  // Trigger validation in main thread.
 			this.verboseLog = args.isVerboseLog();
 			this.index = index;
+			this.prescanCompleteListener = prescanCompleteListener;
 		}
 
 		@Override
 		public void run () {
 			try {
-				new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE,
-						new ProgressLogFileListener(this.index, this.verboseLog)).run();
+				final Watcher w = new Watcher(this.roots, MediaFormat.MediaFileFilter.INSTANCE,
+						new ProgressLogFileListener(this.index, this.verboseLog));
+				w.addPrescanCompleteListener(this.prescanCompleteListener);
+				w.run();
 				LOG.error("Watcher thread exited.");
 			}
 			catch (final Exception e) { // NOSONAR

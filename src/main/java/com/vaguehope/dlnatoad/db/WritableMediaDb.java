@@ -112,25 +112,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected String canonicalIdForHash (final String hash) throws SQLException {
-		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT id FROM hashes WHERE hash=?;");
-		try {
-			st.setString(1, hash);
-			st.setMaxRows(2);
-			final ResultSet rs = st.executeQuery();
-			try {
-				if (!rs.next()) return null;
-				final String id = rs.getString(1);
-				if (rs.next()) throw new SQLException("Query for hash '" + hash + "' retured more than one result.");
-				return id;
-			}
-			finally {
-				rs.close();
-			}
-		}
-		finally {
-			st.close();
-		}
+		return MediaDb.canonicalIdForHashFromConn(this.conn, hash);
 	}
 
 	protected Collection<String> hashesForId (final String id) throws SQLException {
@@ -280,14 +262,17 @@ public class WritableMediaDb implements Closeable {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	public void addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
+	/**
+	 * Returns true if a change was made, otherwise false.
+	 */
+	public boolean addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
 		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag);
 		if (existing.size() > 1) throw new IllegalStateException(String.format("DB UNIQUE(file_id, tag) constraint failed: id=%s tag='%s'", fileId, tag));
 		if (existing.size() > 0) {
 			final Tag t = existing.iterator().next();
-			if (!t.isDeleted()) return;
+			if (!t.isDeleted()) return false;
 			setTagDeleted(fileId, tag, false, modifiled);
-			return;
+			return true;
 		}
 
 		try (final PreparedStatement st = this.conn.prepareStatement(
@@ -297,6 +282,7 @@ public class WritableMediaDb implements Closeable {
 			st.setLong(3, modifiled);
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for id=%s: %s", fileId, tag));
+			return true;
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to store tag for id=%s: %s", fileId, tag), e);

@@ -3,6 +3,8 @@ package com.vaguehope.dlnatoad.db;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Collection;
@@ -35,7 +37,7 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId));
-			w.addTag(fileId, "my-tag", 1234567890L);
+			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
 		final Collection<Tag> expectedTags = this.undertest.getTags(fileId, false);
@@ -60,13 +62,14 @@ public class MediaDbTest {
 	}
 
 	@Test
-	public void itDoesNotDuplicateTags() throws Exception {
+	public void itDoesNotDuplicateTagsAndIsCaseInsenstive() throws Exception {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId));
-			w.addTag(fileId, "my-tag", 1234567890L);
-			w.addTag(fileId, "my-tag", 1234567891L);
+			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
+			assertFalse(w.addTag(fileId, "my-tag", 1234567891L));
+			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
 		}
 		assertThat(this.undertest.getTags(fileId, true), hasSize(1));
 	}
@@ -77,7 +80,7 @@ public class MediaDbTest {
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId));
-			w.addTag(fileId, "my-tag", 1234567890L);
+			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
 		final Collection<Tag> tags = this.undertest.getTags(fileId, false);
@@ -93,7 +96,7 @@ public class MediaDbTest {
 		assertEquals(1234567891L, deletedTag.getModified());
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.addTag(fileId, "my-tag", 1234567892L);
+			assertTrue(w.addTag(fileId, "my-tag", 1234567892L));
 		}
 
 		final Collection<Tag> undeleted = this.undertest.getTags(fileId, true);
