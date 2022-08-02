@@ -1,6 +1,10 @@
 package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -21,6 +25,14 @@ public class AuthFilter implements Filter {
 	private static final String BASIC_REALM = "Basic realm=\"Secure Area\"";
 	private static final String HEADER_AUTHORISATION = "Authorization"; // Incoming request has this.
 	private static final String HEADER_AUTHORISATION_PREFIX = "Basic "; // Incoming request starts with this.
+
+	private final static Set<String> READ_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+			"GET",
+			"PROPFIND"
+			)));
+	private final static Set<String> WRITE_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+			"POST"
+			)));
 
 	private final Users users;
 	private final ContentTree contentTree;
@@ -44,14 +56,14 @@ public class AuthFilter implements Filter {
 		final HttpServletResponse resp = (HttpServletResponse) response;
 
 		final boolean needsAuth;
-		if ("POST".equals(req.getMethod())) {
+		if (WRITE_METHODS.contains(req.getMethod())) {
 			if (this.users == null) {
 				ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST requires --userfile.");
 				return;
 			}
 			needsAuth = true;
 		}
-		else if ("GET".equals(req.getMethod())) {
+		else if (READ_METHODS.contains(req.getMethod())) {
 			// TODO does this media need auth?
 			// if yes and users==null, return error.
 			// otherwise needsAuth implies users!=null.

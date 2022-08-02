@@ -15,6 +15,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -243,7 +245,7 @@ public final class Main {
 			final HandlerList handler = makeContentHandler(contentTree, mediaId, mediaDb, upnpService, args, hostName);
 
 			final Server server = new Server();
-			server.setHandler(handler);
+			server.setHandler(wrapWithRewrites(handler));
 			server.addConnector(createHttpConnector(args.getInterface(), port));
 			try {
 				server.start();
@@ -307,6 +309,24 @@ public final class Main {
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });
 		return handler;
+	}
+
+	protected static RewriteHandler wrapWithRewrites(Handler wrapped) {
+		final RewriteHandler rewrites = new RewriteHandler();
+
+		// Do not modify the request object because:
+		// - RuleContainer.apply() messes up the encoding.
+		// - ServletHelper.getReqPath() knows how to remove the prefix.
+		rewrites.setRewriteRequestURI(false);
+		rewrites.setRewritePathInfo(false);
+
+		final RewritePatternRule r = new RewritePatternRule();
+		r.setPattern("/" + C.REVERSE_PROXY_PATH + "/*");
+		r.setReplacement("/");
+		rewrites.addRule(r);
+
+		rewrites.setHandler(wrapped);
+		return rewrites;
 	}
 
 	private static SelectChannelConnector createHttpConnector (final String iface, final int port) {
