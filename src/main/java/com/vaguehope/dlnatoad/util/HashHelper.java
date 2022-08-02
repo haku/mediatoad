@@ -33,6 +33,7 @@ public final class HashHelper {
 		return hashFile(file, buffer, MD_SHA1_FACTORY);
 	}
 
+	@Deprecated
 	public static String md5 (final String text) {
 		final MessageDigest md = MD_MD5_FACTORY.get();
 		md.update(text.getBytes(), 0, text.length());
