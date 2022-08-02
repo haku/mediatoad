@@ -84,6 +84,10 @@ public final class Main {
 		final CmdLineParser parser = new CmdLineParser(args);
 		try {
 			parser.parseArgument(rawArgs);
+			if (args.isHelp()) {
+				help(parser, System.out);
+				return;
+			}
 			daemonise(args);
 			run(args);
 		}

@@ -12,13 +12,14 @@ import org.kohsuke.args4j.Option;
 
 public class Args {
 
-	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "file root dirs to scan, one per line.") private String treePath;
+	@Option(name = "-h", aliases = { "--help" }, usage = "Print this help text.") private boolean help;
+	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "File root dirs to scan, one per line.") private String treePath;
 	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP address of interface to bind to.") private String iface;
-	@Option(name = "-d", aliases = { "--daemon" }, usage = "detach form terminal and run in bakground.") private boolean daemonise;
-	@Option(name = "-s", aliases = { "--simplify" }, usage = "simplify directory structure.") private boolean simplifyHierarchy;
-	@Option(name = "-a", aliases = { "--accesslog" }, usage = "print access log line at end of each request.") private boolean printAccessLog;
-	@Option(name = "-v", aliases = { "--verbose" }, usage = "print log lines for various events.") private boolean verboseLog;
+	@Option(name = "-d", aliases = { "--daemon" }, usage = "Detach form terminal and run in bakground.") private boolean daemonise;
+	@Option(name = "-s", aliases = { "--simplify" }, usage = "Simplify directory structure.") private boolean simplifyHierarchy;
+	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
+	@Option(name = "-v", aliases = { "--verbose" }, usage = "Print log lines for various events.") private boolean verboseLog;
 	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
@@ -31,6 +32,10 @@ public class Args {
 		public ArgsException(String msg) {
 			super(msg);
 		}
+	}
+
+	public boolean isHelp() {
+		return this.help;
 	}
 
 	public List<File> getDirs () throws ArgsException, IOException {
@@ -106,7 +111,7 @@ public class Args {
 	}
 
 	public File getDropDir() throws ArgsException {
-		if (this.db == null) throw new ArgsException("--dropdir requires --db to be set.");
+		if (this.dropDir != null && this.db == null) throw new ArgsException("--dropdir requires --db to be set.");
 		return checkIsDirOrNull(this.dropDir);
 	}
 
