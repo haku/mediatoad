@@ -2,7 +2,9 @@ package com.vaguehope.dlnatoad.importer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Collection;
@@ -62,9 +64,12 @@ public class MetadataImporterTest {
 			w.addTag(fileId, "bar", System.currentTimeMillis());
 		}
 
+		final String sha1UpperCase = sha1.toUpperCase();
+		assertFalse(sha1UpperCase.equals(sha1));  // Check they do not match anymore.
+
 		final File dropFile = new File(this.dropDir, "my drop file.json");
 		FileUtils.writeStringToFile(dropFile, "["
-				+ "{\"sha1\": \"" + sha1 + "\", \"tags\": [\"foo\", \"bar\", \"bat\"]},"
+				+ "{\"sha1\": \"" + sha1UpperCase + "\", \"tags\": [\"foo\", \"bar\", \"bat\"]},"
 				+ "{\"sha1\": \"abc123\", \"tags\": [\"should-not-be-imported\"]}"
 				+ "]", "UTF-8");
 
@@ -77,6 +82,32 @@ public class MetadataImporterTest {
 		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
 
 		assertEquals(2, this.undertest.getCountOfImportedTags());
+	}
+
+	@Test
+	public void itHandlesLeadingZeros() throws Exception {
+		final File mediaFile = this.tmp.newFile();
+		FileUtils.writeStringToFile(mediaFile, "29870140786256099922262137536303123045", "UTF-8");
+		final String sha1 = HashHelper.sha1(mediaFile).toString(16);
+		assertEquals(38, sha1.length());  // Assert less than 40.
+		assertFalse(sha1.startsWith("0"));
+
+		final String fullLengthSha1 = "00" + sha1;
+		assertEquals(40, fullLengthSha1.length());
+
+		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
+		this.mediaMetadataStore.idForFile(mediaFile, cb);
+		final String fileId = cb.getMediaId();
+
+		final File dropFile = new File(this.dropDir, "my drop file.json");
+		FileUtils.writeStringToFile(dropFile, "["
+				+ "{\"sha1\": \"" + fullLengthSha1 + "\", \"tags\": [\"foo\", \"bar\", \"bat\"]}"
+				+ "]", "UTF-8");
+
+		this.undertest.processDropDir();
+
+		final Set<String> actual = tagsAsSet(this.mediaDb.getTags(fileId, false));
+		assertThat(actual, containsInAnyOrder("foo", "bar", "bat"));
 	}
 
 	@Test
