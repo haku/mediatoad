@@ -88,7 +88,7 @@ public class MockContent {
 			dir = null;
 		}
 
-		final ContentNode node = new ContentNode(id, parent.getId(), id, dir, null);
+		final ContentNode node = new ContentNode(id, parent.getId(), id, dir, null, null);
 		this.contentTree.addNode(node);
 		parent.addNodeIfAbsent(node);
 		return node;

@@ -36,7 +36,7 @@ public class MediaIndex implements FileListener {
 	private final ContentNode imageContainer;
 	private final ContentNode audioContainer;
 
-	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) {
+	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) throws IOException {
 		this.contentTree = contentTree;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
@@ -176,7 +176,7 @@ public class MediaIndex implements FileListener {
 		makeItemInContainer(format, dirContainer, file, file.getName(), onComplete);
 	}
 
-	private ContentNode makeFormatContainerOnTree(final ContentNode parentNode, final ContentGroup group) {
+	private ContentNode makeFormatContainerOnTree(final ContentNode parentNode, final ContentGroup group) throws IOException {
 		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
 	}
 
@@ -241,12 +241,12 @@ public class MediaIndex implements FileListener {
 		return this.contentTree.getNode(dirId);
 	}
 
-	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title) {
+	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title) throws IOException {
 		return makeContainerOnTree(parentNode, id, title, null);
 	}
 
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
-			final String sortName) {
+			final String sortName) throws IOException {
 		return makeContainerOnTree(parentNode, id, title, sortName, null);
 	}
 
@@ -254,18 +254,19 @@ public class MediaIndex implements FileListener {
 	 * If it already exists it will return the existing instance.
 	 */
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
-			final String sortName, final File file) {
+			final String sortName, final File file) throws IOException {
 		final ContentNode existingNode = this.contentTree.getNode(id);
 		if (existingNode != null) return existingNode;
 
-		final ContentNode newNode = new ContentNode(id, parentNode.getId(), title, file, sortName);
+		final AuthList authList = file != null ? AuthList.forDir(file) : null;
+		final ContentNode newNode = new ContentNode(id, parentNode.getId(), title, file, authList, sortName);
 		if (parentNode.addNodeIfAbsent(newNode)) {
 			this.contentTree.addNode(newNode);
 			return newNode;
 		}
 
 		final ContentNode preExisting = this.contentTree.getNode(id);
-		if (preExisting == null) throw new IllegalStateException("parentNode already had item with ID but its not in tree: " + id);
+		if (preExisting == null) throw new IllegalStateException("parentNode already had item with ID but it is not in the content tree: " + id);
 		return preExisting;
 	}
 

@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.B64Code;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class AuthFilter implements Filter {
@@ -118,6 +119,7 @@ public class AuthFilter implements Filter {
 		}
 
 		// TODO set cookie.
+		req.setAttribute(C.USERNAME_ATTR, user);
 
 		chain.doFilter(request, response);
 	}

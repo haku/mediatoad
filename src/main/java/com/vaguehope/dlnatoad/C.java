@@ -1,5 +1,7 @@
 package com.vaguehope.dlnatoad;
 
+import java.util.regex.Pattern;
+
 public interface C {
 
 	String APPNAME = "DLNAtoad";
@@ -27,5 +29,8 @@ public interface C {
 	String THUMBS_PATH_PREFIX = "t/";
 
 	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
+
+	Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
+	String USERNAME_ATTR = "dlnatoad.username";
 
 }

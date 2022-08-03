@@ -19,6 +19,7 @@ public class ContentNode extends AbstractContent {
 
 	private final String sortKey;
 	private final File file;
+	private final AuthList authList;
 
 	private final List<ContentNode> nodes = new ArrayList<>();
 	private final Collection<ContentItem> items;
@@ -27,20 +28,37 @@ public class ContentNode extends AbstractContent {
 	private volatile long lastModified = 0L;
 
 	public ContentNode (final String id, final String parentId, final String title, final String sortKey) {
-		this(id, parentId, title, null, sortKey);
+		this(id, parentId, title, null, null, sortKey);
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final String sortKey) {
-		this(id, parentId, title, dir, sortKey, new ArrayList<>());
+	public ContentNode (final String id, final String parentId, final String title, final File dir, final AuthList authList, final String sortKey) {
+		this(id, parentId, title, dir, authList, sortKey, new ArrayList<>());
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final String sortKey, Collection<ContentItem> itemsCollection) {
-		super(id, parentId, title);
+	public ContentNode (final String id, final String parentId, final String title, final File dir, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
+		super(id, parentId, modTitle(title, authList));
 		if (parentId == null)  throw new IllegalArgumentException("parentId must not be null.");
 		this.file = dir;
+		this.authList = authList;
 		this.sortKey = sortKey;
 		this.items = itemsCollection;
 		reload();
+	}
+
+	private static String modTitle(final String title, final AuthList al) {
+		if (al != null) {
+			return title + " (restricted)";
+		}
+		return title;
+	}
+
+	public boolean hasAuthList() {
+		return this.authList != null;
+	}
+
+	public boolean isUserAuth(final String username) {
+		if (this.authList == null) return true;
+		return this.authList.hasUser(username);
 	}
 
 	public String getSortKey() {
@@ -209,7 +227,7 @@ public class ContentNode extends AbstractContent {
 		MODIFIED_DESC {
 			@Override
 			public int compare (final ContentNode a, final ContentNode b) {
-				int c = Long.compare(b.lastModified, a.lastModified);
+				final int c = Long.compare(b.lastModified, a.lastModified);
 				if (c != 0) return c;
 				return TITLE.compare(a, b);
 			}

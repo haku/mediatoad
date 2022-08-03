@@ -41,7 +41,7 @@ public class ContentTree {
 		addNode(this.rootNode);
 
 		if (trackRecent) {
-			this.recentNode = new ContentNode(ContentGroup.RECENT.getId(), this.rootNode.getId(), ContentGroup.RECENT.getHumanName(), null, null, this.recent);
+			this.recentNode = new ContentNode(ContentGroup.RECENT.getId(), this.rootNode.getId(), ContentGroup.RECENT.getHumanName(), null, null, null, this.recent);
 			// TODO mark recent as not searchable.
 			addNode(this.recentNode);
 			this.rootNode.addNodeIfAbsent(this.recentNode);
@@ -164,6 +164,16 @@ public class ContentTree {
 	private void maybeAddToRecent(final ContentItem item) {
 		if (this.recentNode == null) return;
 		if (item.getParentId() == null) return;  // Things like subtitles and thumbnails.
+
+		// Do not add items in collections that require auth.
+		// For safety missing content nodes are assumed to have an auth list.
+		final ContentNode node = getNode(item.getParentId());
+		if (node == null) {
+			LOG.warn("Item {} has parent {} which is not in the content tree.", item.getId(), item.getParentId());
+			return;
+		}
+		if (node.hasAuthList()) return;
+
 		if (item.getLastModified() < this.oldestRecentItem) return;
 
 		synchronized (this.recentLock) {

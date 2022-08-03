@@ -9,16 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
 import com.vaguehope.dlnatoad.Args;
+import com.vaguehope.dlnatoad.C;
 
 public class Users {
-
-	private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
 	private final Map<String, User> users;
 
@@ -88,8 +86,8 @@ public class Users {
 
 		System.out.print("Username: ");
 		final String username = scanner.next();
-		if (!USERNAME_PATTERN.matcher(username).find()) {
-			System.out.println("Username must match: " + USERNAME_PATTERN.pattern());
+		if (!C.USERNAME_PATTERN.matcher(username).find()) {
+			System.out.println("Username must match: " + C.USERNAME_PATTERN.pattern());
 			return 1;
 		}
 
