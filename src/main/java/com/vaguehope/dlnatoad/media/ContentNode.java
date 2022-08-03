@@ -128,6 +128,12 @@ public class ContentNode extends AbstractContent {
 	}
 
 	public boolean addNodeIfAbsent(final ContentNode node) {
+		if (!this.id.equals(node.getParentId())) {
+			throw new IllegalArgumentException(String.format(
+					"Node %s with parent ID %s can not be added to node with id %s.",
+					node.getId(), node.getParentId(), this.id));
+		}
+
 		synchronized (this.nodes) {
 			if (hasNodeWithId(node.getId())) return false;
 			this.nodes.add(node);
@@ -137,6 +143,12 @@ public class ContentNode extends AbstractContent {
 	}
 
 	public boolean addItemIfAbsent(final ContentItem item) {
+		if (!this.id.equals(item.getParentId())) {
+			throw new IllegalArgumentException(String.format(
+					"Item %s with parent ID %s can not be added to node with id %s.",
+					item.getId(), item.getParentId(), this.id));
+		}
+
 		synchronized (this.items) {
 			if (hasItemWithId(item.getId())) return false;
 			this.items.add(item);
