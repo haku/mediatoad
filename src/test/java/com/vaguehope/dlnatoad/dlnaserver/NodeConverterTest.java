@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.dlnaserver;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.fourthline.cling.support.model.DIDLObject;
@@ -20,6 +22,7 @@ import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.media.AuthList;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ExternalUrls;
@@ -40,8 +43,8 @@ public class NodeConverterTest {
 	@Test
 	public void itMakesAContainer() throws Exception {
 		final ContentNode input = new ContentNode("id", "pid", "title", null);
-		input.addNodeIfAbsent(new ContentNode("0", "pid", "0", null));
-		input.addNodeIfAbsent(new ContentNode("1", "pid", "1", null));
+		input.addNodeIfAbsent(new ContentNode("0", "id", "0", null));
+		input.addNodeIfAbsent(new ContentNode("1", "id", "1", null));
 		input.addItemIfAbsent(new ContentItem("2", "id", "2", null, MediaFormat.AAC));
 		input.addItemIfAbsent(new ContentItem("3", "id", "3", null, MediaFormat.AAC));
 
@@ -60,6 +63,20 @@ public class NodeConverterTest {
 		final Property<?> artProp = c.getProperties().get(0);
 		assertThat(artProp, instanceOf(DIDLObject.Property.UPNP.ALBUM_ART_URI.class));
 		assertEquals(URI.create("http://foo:123/c/art"), artProp.getValue());
+
+		assertThat(c.getContainers(), hasSize(0));
+		assertThat(c.getItems(), hasSize(0));
+	}
+
+	@Test
+	public void itDoesNotMakeContainersWithAuthLists() throws Exception {
+		final ContentNode input = new ContentNode("id", "pid", "title", null);
+		input.addNodeIfAbsent(new ContentNode("0", "id", "0", null, mock(AuthList.class), null));
+		input.addNodeIfAbsent(new ContentNode("1", "id", "1", null));
+
+		final List<Container> actual = this.undertest.makeSubContainersWithoutTheirSubContainers(input);
+		assertEquals("1", actual.get(0).getId());
+		assertThat(actual, hasSize(1));
 	}
 
 	@Test

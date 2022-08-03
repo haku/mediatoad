@@ -53,7 +53,10 @@ public class NodeConverter {
 
 	public List<Container> makeSubContainersWithoutTheirSubContainers(final ContentNode n) {
 		final List<Container> ret = new ArrayList<>();
-		n.withEachNode(i -> ret.add(makeContainerWithoutSubContainers(i)));
+		n.withEachNode(i -> {
+			if (i.hasAuthList()) return;
+			ret.add(makeContainerWithoutSubContainers(i));
+		});
 		return ret;
 	}
 
