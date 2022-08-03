@@ -92,10 +92,12 @@ public class Watcher {
 	public void run () throws IOException {
 		try {
 			long totalFiles = 0L;
+			final long startTime = System.nanoTime();
 			for (final File root : this.roots) {
 				totalFiles += registerRecursive(root, root);
 			}
-			LOG.info("Found {} media files.", totalFiles);
+			final long scanTime = System.nanoTime() - startTime;
+			LOG.info("Found {} media files in {} seconds.", totalFiles, TimeUnit.NANOSECONDS.toSeconds(scanTime));
 
 			this.prescanComplete.countDown();
 			for (final Runnable l : this.onPrescanComplete) {
