@@ -107,6 +107,7 @@ public class ServletCommon {
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 		final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
+		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
 
 		w.println("<a href=\"/\">Home</a>");
 		w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");
@@ -115,6 +116,7 @@ public class ServletCommon {
 		w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
 		w.println("<label for=\"remote\">remote</label>");
 		w.println("<input type=\"submit\" value=\"Search\">");
+		if (username != null) w.println("<span>Username: " + username + "</span>");
 		w.println("</form>");
 	}
 

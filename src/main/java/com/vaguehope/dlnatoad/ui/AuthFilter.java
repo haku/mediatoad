@@ -87,15 +87,16 @@ public class AuthFilter implements Filter {
 //			// TODO auth?
 //		}
 
-		if (!needsAuth) {
+		// TODO check for cookie.
+
+		String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
+
+		if (!needsAuth && authHeader64 == null) {
 			chain.doFilter(request, response);
 			return;
 		}
 
-		// TODO check for cookie.
-
 		// Request basic auth.
-		String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 		if (authHeader64 == null
 				|| authHeader64.length() < HEADER_AUTHORISATION_PREFIX.length() + 3
 				|| !authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {

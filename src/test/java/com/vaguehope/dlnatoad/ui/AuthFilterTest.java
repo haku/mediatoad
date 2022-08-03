@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class AuthFilterTest {
@@ -90,6 +91,19 @@ public class AuthFilterTest {
 		when(this.users.validUser("h4cker", "hunter2")).thenReturn(true);
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 		assertEquals(200, this.resp.getStatus());
+		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itDoesAuthorizedGetAndAddsRequestAttributes() throws Exception {
+		this.req.setMethod("GET");
+		this.req.addHeader("Authorization", "Basic aDRja2VyOmh1bnRlcjI=");
+		when(this.users.validUser("h4cker", "hunter2")).thenReturn(true);
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(200, this.resp.getStatus());
+		assertEquals("h4cker", this.req.getAttribute(C.USERNAME_ATTR));
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
 
