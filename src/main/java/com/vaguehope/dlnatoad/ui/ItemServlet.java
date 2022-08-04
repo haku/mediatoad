@@ -38,12 +38,14 @@ public class ItemServlet extends HttpServlet {
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final ContentItem item = getItemFromPath(req, resp);
-		if (item == null) return;
+		if (item == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
+			return;
+		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
 		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
-
-		if (node != null && !node.isUserAuth(username)) {
+		if (node == null || !node.isUserAuth(username)) {
 			ServletCommon.returnDenied(resp, username);
 			return;
 		}
@@ -114,7 +116,17 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final ContentItem item = getItemFromPath(req, resp);
-		if (item == null) return;
+		if (item == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
+			return;
+		}
+
+		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		if (node == null || !node.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
+			return;
+		}
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
 			final String tag = readRequiredParam(req, resp, "tag");
