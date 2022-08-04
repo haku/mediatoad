@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.Args.ArgsException;
+import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
@@ -294,7 +295,8 @@ public final class Main {
 
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
-		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, contentTree));
+		final AuthTokens authTokens = new AuthTokens();
+		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog()));
 		servletHandler.addFilter(authFilterHolder, "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();

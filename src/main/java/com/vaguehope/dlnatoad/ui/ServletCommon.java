@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -116,8 +117,17 @@ public class ServletCommon {
 		w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
 		w.println("<label for=\"remote\">remote</label>");
 		w.println("<input type=\"submit\" value=\"Search\">");
-		if (username != null) w.println("<span>Username: " + username + "</span>");
 		w.println("</form>");
+
+		if (username != null) {
+			w.println("<span>Username: " + username + "</span>");
+		}
+		else {
+			w.println("<form style=\"display:inline;\" action=\"\" method=\"GET\">");
+			w.println("<input type=\"hidden\" name=\"action\" value=\"login\">");
+			w.println("<input type=\"submit\" value=\"Login\">");
+			w.println("</form>");
+		}
 	}
 
 	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode) throws IOException {
@@ -256,6 +266,17 @@ public class ServletCommon {
 			id = id.substring(0, firstDot);
 		}
 		return id;
+	}
+
+	public static Cookie findCookie(final HttpServletRequest req, final String name) {
+		final Cookie[] cookies = req.getCookies();
+		if (cookies == null) return null;
+
+		for (final Cookie cookie : cookies) {
+			if (name.equals(cookie.getName())) return cookie;
+		}
+
+		return null;
 	}
 
 }
