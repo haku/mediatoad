@@ -22,7 +22,7 @@ import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaguehope.dlnatoad.media.AuthList;
+import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ExternalUrls;

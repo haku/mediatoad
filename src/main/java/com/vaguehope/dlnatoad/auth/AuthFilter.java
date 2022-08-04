@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.ui;
+package com.vaguehope.dlnatoad.auth;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,9 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
-import com.vaguehope.dlnatoad.auth.Auth;
-import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.ServletCommon;
+import com.vaguehope.dlnatoad.ui.Users;
 
 public class AuthFilter implements Filter {
 

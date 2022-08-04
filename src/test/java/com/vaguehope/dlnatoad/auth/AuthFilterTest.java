@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.ui;
+package com.vaguehope.dlnatoad.auth;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyArray;
@@ -23,8 +23,8 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.C;
-import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.Users;
 
 public class AuthFilterTest {
 

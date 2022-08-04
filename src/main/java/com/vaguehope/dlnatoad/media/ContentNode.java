@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.util.ExConsumer;
 
 /**

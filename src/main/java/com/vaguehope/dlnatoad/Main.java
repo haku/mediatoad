@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.Args.ArgsException;
+import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
@@ -53,7 +54,6 @@ import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
-import com.vaguehope.dlnatoad.ui.AuthFilter;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;

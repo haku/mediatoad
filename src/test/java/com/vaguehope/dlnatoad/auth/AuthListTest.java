@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.media;
+package com.vaguehope.dlnatoad.auth;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
