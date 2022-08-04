@@ -103,7 +103,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 
 			// TODO cache search results to make pagination faster.
 
-			final List<ContentItem> results = this.searchEngine.search(node, searchCriteria, MAX_RESULTS);
+			final List<ContentItem> results = this.searchEngine.search(node, searchCriteria, MAX_RESULTS, /* username= */null);
 			final List<Item> items = this.nodeConverter.makeItems(results);
 			return toRangedResult(Collections.<Container> emptyList(), items, firstResult, maxResults);
 		}

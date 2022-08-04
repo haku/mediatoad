@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.auth.AuthList;
+
 public class MockContent {
 
 	private final ContentTree contentTree;
@@ -30,7 +32,7 @@ public class MockContent {
 		this.tmp = tmp;
 	}
 
-	public void setShuffle(boolean shuffle) {
+	public void setShuffle(final boolean shuffle) {
 		this.shuffle = shuffle;
 	}
 
@@ -46,7 +48,7 @@ public class MockContent {
 		return givenMockItems(MediaFormat.MP4, n);
 	}
 
-	public List<ContentItem> givenMockItems (final int n, Consumer<File> modifier) throws IOException {
+	public List<ContentItem> givenMockItems (final int n, final Consumer<File> modifier) throws IOException {
 		return givenMockItems(MediaFormat.MP4, n, this.contentTree.getRootNode(), modifier);
 	}
 
@@ -58,7 +60,7 @@ public class MockContent {
 		return givenMockItems(MediaFormat.MP4, n, parent, null);
 	}
 
-	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, Consumer<File> modifier) throws IOException {
+	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, final Consumer<File> modifier) throws IOException {
 		final List<Integer> ids = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
 			ids.add(i);
@@ -76,10 +78,14 @@ public class MockContent {
 	}
 
 	public ContentNode addMockDir (final String id) throws IOException {
-		return addMockDir(id, this.contentTree.getRootNode());
+		return addMockDir(id, this.contentTree.getRootNode(), null);
 	}
 
 	public ContentNode addMockDir (final String id, final ContentNode parent) throws IOException {
+		return addMockDir(id, parent, null);
+	}
+
+	public ContentNode addMockDir (final String id, final ContentNode parent, final AuthList authlist) throws IOException {
 		final File dir;
 		if (this.tmp != null) {
 			dir = this.tmp.newFolder(id);
@@ -88,7 +94,7 @@ public class MockContent {
 			dir = null;
 		}
 
-		final ContentNode node = new ContentNode(id, parent.getId(), id, dir, null, null);
+		final ContentNode node = new ContentNode(id, parent.getId(), id, dir, authlist, null);
 		this.contentTree.addNode(node);
 		parent.addNodeIfAbsent(node);
 		return node;
@@ -98,7 +104,7 @@ public class MockContent {
 		return addMockItem(MediaFormat.MP4, id, parent, null);
 	}
 
-	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent, Consumer<File> modifier) throws IOException {
+	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent, final Consumer<File> modifier) throws IOException {
 		final String fileName = id + "." + format.getExt();
 		final File file;
 		if (this.tmp != null) {

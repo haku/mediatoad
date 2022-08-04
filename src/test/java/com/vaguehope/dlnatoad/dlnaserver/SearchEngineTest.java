@@ -3,6 +3,8 @@ package com.vaguehope.dlnatoad.dlnaserver;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -11,9 +13,11 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine.Predicate;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine.Where;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
@@ -38,7 +42,7 @@ public class SearchEngineTest {
 
 		final List<ContentItem> ret = this.undertest.search(this.contentTree.getRootNode(),
 				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
-				10);
+				10, null);
 
 		assertEquals(items.subList(3, 4), ret);
 	}
@@ -52,9 +56,36 @@ public class SearchEngineTest {
 
 		final List<ContentItem> ret = this.undertest.search(this.contentTree.getRootNode(),
 				"(upnp:class derivedfrom \"object.item.videoItem\" and dc:title contains \"foo\\\"bar\")",
-				5);
+				5, null);
 
 		assertEquals(5, ret.size());
+	}
+
+	@Test
+	public void itEnforcedAuthLists() throws Exception {
+		final ContentNode root = this.mockContent.givenMockDirs(1).get(0);
+
+		final ContentNode openDir = this.mockContent.addMockDir("dir-open", root);
+		final List<ContentItem> openItems = this.mockContent.givenMockItems(10, openDir);
+
+		final AuthList authlist = mock(AuthList.class);
+		when(authlist.hasUser("shork")).thenReturn(true);
+		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", root, authlist);
+		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
+
+		when(openItems.get(3).getTitle()).thenReturn("some open file foobar song.mp4");
+		when(protecItems.get(4).getTitle()).thenReturn("some protec file foobar song.mp4");
+
+		final List<ContentItem> openRet = this.undertest.search(this.contentTree.getRootNode(),
+				"dc:title contains \"foobar\"",
+				100, null);
+		assertEquals(openItems.subList(3, 4), openRet);
+		verify(authlist).hasUser(null);
+
+		final List<ContentItem> protecRet = this.undertest.search(this.contentTree.getRootNode(),
+				"dc:title contains \"foobar\"",
+				100, "shork");
+		assertEquals(Arrays.asList(openItems.get(3), protecItems.get(4)), protecRet);
 	}
 
 	@Test

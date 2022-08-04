@@ -47,14 +47,14 @@ public class SearchEngine {
 
 	public SearchEngine () {}
 
-	public List<ContentItem> search (final ContentNode node, final String searchCriteria, final int maxResults) throws ContentDirectoryException {
+	public List<ContentItem> search (final ContentNode node, final String searchCriteria, final int maxResults, final String username) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
 		final Predicate<ContentItem> predicate = criteriaToPredicate(searchCriteria);
 		if (predicate == null) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CRITERIA, "Do not know how to parse: " + searchCriteria);
 		LOG.debug("'{}' => {} in {}ms.", searchCriteria, predicate, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
 		final List<ContentItem> results = new ArrayList<>();
-		filterItems(node, predicate, maxResults, results);
+		filterItems(node, predicate, maxResults, username, results);
 		return results;
 	}
 
@@ -263,8 +263,9 @@ public class SearchEngine {
 	/**
 	 * Lazy recursive impl.
 	 */
-	private static void filterItems (final ContentNode node, final Predicate<ContentItem> predicate, final int maxResults, final List<ContentItem> results) {
+	private static void filterItems (final ContentNode node, final Predicate<ContentItem> predicate, final int maxResults, final String username, final List<ContentItem> results) {
 		if (results.size() >= maxResults) return;
+		if (!node.isUserAuth(username)) return;
 
 		node.withEachItem(i -> {
 			if (results.size() >= maxResults) return;  // TODO is there a nicer way to stop iterating?
@@ -277,7 +278,7 @@ public class SearchEngine {
 		// TODO replace with non-recursive impl.
 		node.withEachNode(n -> {
 			if (ContentGroup.RECENT.getId().equals(n.getId())) return;  // Do not search in recent.
-			filterItems(n, predicate, maxResults, results);
+			filterItems(n, predicate, maxResults, username, results);
 		});
 	}
 
