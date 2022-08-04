@@ -18,6 +18,7 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class ItemServlet extends HttpServlet {
@@ -38,6 +39,14 @@ public class ItemServlet extends HttpServlet {
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final ContentItem item = getItemFromPath(req, resp);
 		if (item == null) return;
+
+		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+
+		if (node != null && !node.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
+			return;
+		}
 
 		final Collection<Tag> tags;
 		if (this.mediaDb != null) {

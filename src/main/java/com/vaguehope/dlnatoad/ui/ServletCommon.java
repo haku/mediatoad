@@ -61,6 +61,15 @@ public class ServletCommon {
 		resp.getWriter().println(msg);
 	}
 
+	public static void returnDenied(final HttpServletResponse resp, final String username) throws IOException {
+		if (username == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
+		}
+		else {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+		}
+	}
+
 	public static void setHtmlContentType(final HttpServletResponse resp) {
 		resp.setContentType("text/html; charset=utf-8");
 	}
@@ -130,7 +139,7 @@ public class ServletCommon {
 		}
 	}
 
-	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode) throws IOException {
+	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
 		w.print("<h3>");
 		w.print(contentNode.getTitle());
 		w.print(" (");
@@ -139,7 +148,7 @@ public class ServletCommon {
 		w.print(contentNode.getItemCount());
 		w.println(" items)</h3><ul>");
 
-		contentNode.withEachNode(c -> appendDirectory(w, c));
+		contentNode.withEachNode(c -> appendDirectory(w, c, username));
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, imagesToThumb));
 		appendImageThumbnails(w, imagesToThumb);
@@ -170,7 +179,9 @@ public class ServletCommon {
 		}
 	}
 
-	private static void appendDirectory(final PrintWriter w, final ContentNode node) {
+	private static void appendDirectory(final PrintWriter w, final ContentNode node, final String username) {
+		if (!node.isUserAuth(username)) return;
+
 		w.print("<li><a href=\"");
 		w.print(node.getId());
 		w.print("\">");

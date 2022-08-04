@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.junit.rules.TemporaryFolder;
@@ -20,6 +21,7 @@ public class MockContent {
 
 	private final ContentTree contentTree;
 	private final TemporaryFolder tmp;
+	private final AtomicInteger idGen = new AtomicInteger(0);
 
 	private boolean shuffle = true;
 
@@ -39,7 +41,7 @@ public class MockContent {
 	public List<ContentNode> givenMockDirs (final int n) throws IOException {
 		final List<ContentNode> ret = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
-			ret.add(addMockDir("dir " + i));
+			ret.add(addMockDir("dir " + this.idGen.getAndIncrement()));
 		}
 		return ret;
 	}
@@ -63,7 +65,7 @@ public class MockContent {
 	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, final Consumer<File> modifier) throws IOException {
 		final List<Integer> ids = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
-			ids.add(i);
+			ids.add(this.idGen.getAndIncrement());
 		}
 		if (this.shuffle) Collections.shuffle(ids);
 

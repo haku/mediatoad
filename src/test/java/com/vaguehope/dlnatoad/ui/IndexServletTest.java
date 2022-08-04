@@ -3,10 +3,12 @@ package com.vaguehope.dlnatoad.ui;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -18,6 +20,8 @@ import org.junit.rules.TemporaryFolder;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -114,6 +118,44 @@ public class IndexServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getContentAsString(), containsString("<h3>Recent"));
+	}
+
+	@Test
+	public void itFiltersOutProtectedNodes() throws Exception {
+		final ContentNode openDir = this.mockContent.addMockDir("dir-open", this.contentTree.getRootNode());
+		this.mockContent.givenMockItems(10, openDir);
+
+		final AuthList authlist = mock(AuthList.class);
+		when(authlist.hasUser("shork")).thenReturn(true);
+		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", this.contentTree.getRootNode(), authlist);
+		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
+
+		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
+		this.undertest.doGet(this.req, this.resp);
+
+		assertThat(this.resp.getContentAsString(), containsString("\"dir-open\""));
+		assertThat(this.resp.getContentAsString(), not(containsString("dir-protec")));
+
+		this.req.setPathInfo("/" + protecDir.getId());
+		this.resp = new MockHttpServletResponse();
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(401, this.resp.getStatus());
+
+		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
+		this.req.setAttribute(C.USERNAME_ATTR, "shork");
+		this.resp = new MockHttpServletResponse();
+		this.undertest.doGet(this.req, this.resp);
+
+		assertThat(this.resp.getContentAsString(), containsString("\"dir-open\""));
+		assertThat(this.resp.getContentAsString(), containsString("\"dir-protec\""));
+
+		this.req.setPathInfo("/" + protecDir.getId());
+		this.resp = new MockHttpServletResponse();
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getContentAsString(), containsString("c/" + protecItems.get(0).getId() + "."));
 	}
 
 	@Test

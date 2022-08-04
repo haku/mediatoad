@@ -14,6 +14,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -79,17 +80,23 @@ public class IndexServlet extends HttpServlet {
 			return;
 		}
 
-		printDir(req, resp, contentNode);
+		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		if (!contentNode.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
+			return;
+		}
+
+		printDir(req, resp, contentNode, username);
 	}
 
-	private void printDir (HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode) throws IOException {
+	private void printDir (HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode, final String username) throws IOException {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w);
 		this.servletCommon.printLinkRow(req, w);
 
-		this.servletCommon.printDirectoriesAndItems(w, contentNode);
+		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(w);
 		this.servletCommon.endBody(w);
 	}
@@ -99,9 +106,15 @@ public class IndexServlet extends HttpServlet {
 		final String id = idFromPath(req);
 		final ContentNode node = this.contentTree.getNode(id);
 		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
+		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
 
 		if (node == null && item == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
+			return;
+		}
+
+		if (node != null && !node.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
 			return;
 		}
 
@@ -125,9 +138,9 @@ public class IndexServlet extends HttpServlet {
 		w.println("<D:multistatus xmlns:D=\"DAV:\">");
 
 		if (node != null) {
-			appendPropfindNode(req, w, node, false);
+			appendPropfindNode(req, username, w, node, false);
 			if ("1".equals(depth)) {
-				node.withEachNode(n -> appendPropfindNode(req, w, n, true));
+				node.withEachNode(n -> appendPropfindNode(req, username, w, n, true));
 				node.withEachItem(i -> appendPropfindItem(req, w, i, true));
 			}
 		}
@@ -137,7 +150,9 @@ public class IndexServlet extends HttpServlet {
 		w.println("</D:multistatus>");
 	}
 
-	private static void appendPropfindNode(final HttpServletRequest req, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
+	private static void appendPropfindNode(final HttpServletRequest req, String username, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
+		if (!node.isUserAuth(username)) return;
+
 		String path = req.getPathInfo();
 		if (appendIdToPath) {
 			path = StringHelper.removeSuffix(path, "/") + "/" + node.getId();
