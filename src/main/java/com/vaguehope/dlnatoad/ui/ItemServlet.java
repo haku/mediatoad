@@ -57,7 +57,11 @@ public class ItemServlet extends HttpServlet {
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, item.getId());
 		this.servletCommon.printLinkRow(req, w, "../");
-		w.print("<br>");
+		w.println("<br>");
+
+		w.print("<h2>");
+		w.print(item.getTitle());
+		w.println("</h2>");
 
 		w.println("<div style=\"padding-top: 1em;\">");
 		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");

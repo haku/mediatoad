@@ -321,6 +321,20 @@ public class MediaIndexTest {
 		assertEquals(artFile, art.getFile());
 	}
 
+	@Test
+	public void itDoesNotAddArtForImages() throws Exception {
+		final File expectedFile = mockFile("image.jpeg");
+		this.undertest.fileFound(this.tmp.getRoot(), expectedFile, null, null);
+		waitForEmptyQueue();
+
+		final List<ContentNode> dirs = this.contentTree.getNode(ContentGroup.IMAGE.getId()).getCopyOfNodes();
+		final ContentNode dir = this.contentTree.getNode(dirs.get(0).getId());
+		final ContentItem item = this.contentTree.getItem(dir.getCopyOfItems().get(0).getId());
+
+		// If a thumbnail was found it would overwrite the item with a null title.
+		assertEquals("image.jpeg", item.getTitle());
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private void waitForEmptyQueue() throws InterruptedException, SecurityException, ReflectiveOperationException {

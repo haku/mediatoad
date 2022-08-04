@@ -324,6 +324,9 @@ public class MediaIndex implements FileListener {
 	}
 
 	private void findArt(final File mediaFile, final MediaFormat mediaFormat, final ContentItem item) throws IOException {
+		// Images are their own art so no need to search for anything.
+		if (mediaFormat.getContentGroup() == ContentGroup.IMAGE) return;
+
 		findArtItem(mediaFile, mediaFormat.getContentGroup(), new AsyncCallback<ContentItem, IOException>() {
 			@Override
 			public void onResult(final ContentItem artItem) throws IOException {
