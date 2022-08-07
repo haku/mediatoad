@@ -7,14 +7,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.mindrot.jbcrypt.BCrypt;
-
-import com.vaguehope.dlnatoad.Args;
-import com.vaguehope.dlnatoad.C;
 
 public class Users {
 
@@ -68,46 +64,6 @@ public class Users {
 			return BCrypt.checkpw(pass, this.encPass);
 		}
 
-	}
-
-	public static int interactivlyAddUser(final Args args) throws IOException {
-		final File userfile = args.getUserfile();
-		if (userfile == null) {
-			System.out.println("--userfile is required.");
-			return 1;
-		}
-
-		final Users users = new Users(userfile);
-		System.out.println("Existing users: ");
-		System.out.println(users.allUsernames());
-
-		@SuppressWarnings("resource")
-		final Scanner scanner = new Scanner(System.in);
-
-		System.out.print("Username: ");
-		final String username = scanner.next();
-		if (!C.USERNAME_PATTERN.matcher(username).find()) {
-			System.out.println("Username must match: " + C.USERNAME_PATTERN.pattern());
-			return 1;
-		}
-
-		if (users.allUsernames().contains(username)) {
-			System.out.println("Username already exists.  Users can be removed by deleting lines from the file.");
-			return 1;
-		}
-
-		System.out.print("Password (not hidden): ");
-		final String password = scanner.next();
-		if (password.length() < 1) {
-			System.out.println("Password can not be empty.");
-			return 1;
-		}
-
-		final String encPass = BCrypt.hashpw(password, BCrypt.gensalt());
-		final String line = String.format("%s %s\n", username, encPass);
-		FileUtils.write(userfile, line, "UTF-8", true);
-
-		return 0;
 	}
 
 }

@@ -40,6 +40,7 @@ import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.auth.Users;
+import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
@@ -118,7 +119,7 @@ public final class Main {
 
 	private static void run (final Args args) throws Exception { // NOSONAR
 		if (args.isAddUser()) {
-			final int status = Users.interactivlyAddUser(args);
+			final int status = UsersCli.interactivlyAddUser(args);
 			if (status != 0) System.exit(status);
 			return;
 		}
