@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.ui;
+package com.vaguehope.dlnatoad.auth;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;

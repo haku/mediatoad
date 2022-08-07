@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.ui;
+package com.vaguehope.dlnatoad.auth;
 
 import java.io.File;
 import java.io.IOException;

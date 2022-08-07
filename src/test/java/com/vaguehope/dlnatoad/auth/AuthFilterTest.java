@@ -24,7 +24,6 @@ import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.ui.Users;
 
 public class AuthFilterTest {
 

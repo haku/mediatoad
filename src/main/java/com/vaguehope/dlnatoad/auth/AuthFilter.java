@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
-import com.vaguehope.dlnatoad.ui.Users;
 
 public class AuthFilter implements Filter {
 
