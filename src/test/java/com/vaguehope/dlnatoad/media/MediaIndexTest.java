@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.util.CollectionHelper;
@@ -50,7 +50,7 @@ public class MediaIndexTest {
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
-		this.mediaMetadataStore = new MediaMetadataStore(new MediaDb("file:testdb?mode=memory&cache=shared"), this.schEx, true);
+		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, true);
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN,
 				new MediaId(this.mediaMetadataStore), new MediaInfo());
 	}

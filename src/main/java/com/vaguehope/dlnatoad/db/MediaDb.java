@@ -23,14 +23,10 @@ public class MediaDb {
 	private final Connection dbConn;
 
 	public MediaDb (final File dbFile) throws SQLException {
-		this("jdbc:sqlite:" + dbFile.getAbsolutePath(), false);
+		this("jdbc:sqlite:" + dbFile.getAbsolutePath());
 	}
 
-	public MediaDb (final String dbPath) throws SQLException {
-		this("jdbc:sqlite:" + dbPath, false);
-	}
-
-	private MediaDb (final String dbPath, final boolean ignored) throws SQLException {
+	protected MediaDb(final String dbPath) throws SQLException {
 		this.dbPath = dbPath;
 		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();

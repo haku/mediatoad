@@ -13,6 +13,7 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -35,7 +36,7 @@ public class ItemServletTest {
 	public void before() throws Exception {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
-		this.mediaDb = new MediaDb("file:testdb?mode=memory&cache=shared");
+		this.mediaDb = new InMemoryMediaDb();
 		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, null, null, null), this.contentTree, this.mediaDb);
 
 		this.req = new MockHttpServletRequest();

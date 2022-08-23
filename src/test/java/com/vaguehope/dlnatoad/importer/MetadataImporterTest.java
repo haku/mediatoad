@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.db.Tag;
@@ -39,7 +40,7 @@ public class MetadataImporterTest {
 
 	@Before
 	public void before() throws Exception {
-		this.mediaDb = new MediaDb("file:testdb?mode=memory&cache=shared");
+		this.mediaDb = new InMemoryMediaDb();
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		this.mediaMetadataStore = new MediaMetadataStore(this.mediaDb, this.schEx, true);
 		this.dropDir = this.tmp.newFolder();
