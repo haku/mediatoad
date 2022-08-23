@@ -2,8 +2,11 @@ package com.vaguehope.dlnatoad;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -15,7 +18,7 @@ public class Args {
 	@Option(name = "-h", aliases = { "--help" }, usage = "Print this help text.") private boolean help;
 	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "File root dirs to scan, one per line.") private String treePath;
 	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
-	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP address of interface to bind to.") private String iface;
+	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP addresses of interfaces to bind to.") private List<String> ifaces;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "Detach form terminal and run in bakground.") private boolean daemonise;
 	@Option(name = "-s", aliases = { "--simplify" }, usage = "Simplify directory structure.") private boolean simplifyHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
@@ -29,7 +32,7 @@ public class Args {
 
 	public static class ArgsException extends Exception {
 		private static final long serialVersionUID = 4160594293982918286L;
-		public ArgsException(String msg) {
+		public ArgsException(final String msg) {
 			super(msg);
 		}
 	}
@@ -74,8 +77,18 @@ public class Args {
 		return this.port;
 	}
 
-	public String getInterface () {
-		return this.iface;
+	/**
+	 * Returns null for no interfaces.
+	 * Never returns an empty list.
+	 */
+	public List<InetAddress> getInterfaces() throws UnknownHostException {
+		if (this.ifaces == null || this.ifaces.size() < 1) return null;
+
+		final List<InetAddress> ret = new ArrayList<>();
+		for (final String iface : this.ifaces) {
+			ret.add(InetAddress.getByName(iface));
+		}
+		return Collections.unmodifiableList(ret);
 	}
 
 	public boolean isDaemonise() {

@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.BindException;
 import java.net.InetAddress;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,12 +23,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.UpnpServiceImpl;
-import org.fourthline.cling.model.meta.Icon;
-import org.fourthline.cling.model.resource.IconResource;
-import org.fourthline.cling.model.resource.Resource;
-import org.fourthline.cling.protocol.ProtocolFactory;
-import org.fourthline.cling.registry.Registry;
 import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +35,9 @@ import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
+import com.vaguehope.dlnatoad.dlnaserver.DlnaService;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
-import com.vaguehope.dlnatoad.dlnaserver.RegistryImplWithOverrides;
 import com.vaguehope.dlnatoad.importer.MetadataImporter;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
@@ -66,7 +58,6 @@ import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
-import com.vaguehope.dlnatoad.util.NetHelper.IfaceAndAddr;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.Watcher;
 
@@ -127,16 +118,8 @@ public final class Main {
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		LOG.info("hostName: {}", hostName);
 
-		final InetAddress address;
-		if (args.getInterface() != null) {
-			address = InetAddress.getByName(args.getInterface());
-			LOG.info("using address: {}", address);
-		}
-		else {
-			final List<IfaceAndAddr> addresses = NetHelper.getIpAddresses();
-			address = addresses.iterator().next().getAddr();
-			LOG.info("addresses: {} using address: {}", addresses, address);
-		}
+		final List<InetAddress> bindAddresses = args.getInterfaces();
+		final InetAddress selfAddress = NetHelper.guessSelfAddress(bindAddresses);
 
 		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs", Thread.MIN_PRIORITY));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -176,18 +159,11 @@ public final class Main {
 			new MetadataImporter(dropDir, mediaDb).start(fsExSvc);
 		};
 
-		final UpnpService upnpService = makeUpnpServer();
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				upnpService.shutdown();
-			}
-		});
-
+		final UpnpService upnpService = new DlnaService(bindAddresses).start();
 		final ContentTree contentTree = new ContentTree();
-		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, address, hostName);
+		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, bindAddresses, hostName);
 
-		final ExternalUrls externalUrls = new ExternalUrls(address, server.getConnectors()[0].getPort());
+		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, server.getConnectors()[0].getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
 
 		final NodeConverter nodeConverter = new NodeConverter(externalUrls);
@@ -221,28 +197,13 @@ public final class Main {
 		server.join(); // Keep app alive.
 	}
 
-	private static UpnpService makeUpnpServer () throws IOException {
-		final Map<String, Resource<?>> pathToRes = new HashMap<>();
-
-		final Icon icon = MediaServer.createDeviceIcon();
-		final IconResource iconResource = new IconResource(icon.getUri(), icon);
-		pathToRes.put("/icon.png", iconResource);
-
-		return new UpnpServiceImpl() {
-			@Override
-			protected Registry createRegistry (final ProtocolFactory pf) {
-				return new RegistryImplWithOverrides(this, pathToRes);
-			}
-		};
-	}
-
 	private static Server startContentServer(
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
 			final UpnpService upnpService,
 			final Args args,
-			final InetAddress address,
+			final List<InetAddress> bindAddresses,
 			final String hostName) throws Exception {
 		int port = args.getPort();
 		final boolean defaultPort;
@@ -259,7 +220,16 @@ public final class Main {
 
 			final Server server = new Server();
 			server.setHandler(wrapWithRewrites(handler));
-			server.addConnector(createHttpConnector(args.getInterface(), port));
+
+			if (bindAddresses != null) {
+				for (final InetAddress address : bindAddresses) {
+					server.addConnector(createHttpConnector(address, port));
+				}
+			}
+			else {
+				server.addConnector(createHttpConnector(null, port));
+			}
+
 			try {
 				server.start();
 				return server;
@@ -343,10 +313,10 @@ public final class Main {
 		return rewrites;
 	}
 
-	private static SelectChannelConnector createHttpConnector (final String iface, final int port) {
+	private static SelectChannelConnector createHttpConnector (final InetAddress bindAddress, final int port) {
 		final SelectChannelConnector connector = new SelectChannelConnector();
 		connector.setStatsOn(false);
-		connector.setHost(iface);
+		if (bindAddress != null) connector.setHost(bindAddress.getHostName());
 		connector.setPort(port);
 		return connector;
 	}

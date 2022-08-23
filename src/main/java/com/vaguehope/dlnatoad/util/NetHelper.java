@@ -10,7 +10,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public final class NetHelper {
+
+	private static final Logger LOG = LoggerFactory.getLogger(NetHelper.IfaceAndAddr.class);
 
 	public static class IfaceAndAddr {
 		private final NetworkInterface iface;
@@ -64,6 +69,24 @@ public final class NetHelper {
 		if (name.startsWith("tailscale")) return false;
 
 		return true;
+	}
+
+	/**
+	 * Never returns null.
+	 */
+	public static InetAddress guessSelfAddress(final List<InetAddress> bindAddresses) throws SocketException {
+		if (bindAddresses != null && bindAddresses.size() > 0) {
+			final InetAddress ret = bindAddresses.iterator().next();
+			LOG.info("Bind addresses: {}, using address for self: {}", bindAddresses, ret);
+			return ret;
+		}
+
+		final List<IfaceAndAddr> addresses = NetHelper.getIpAddresses();
+		if (addresses.size() < 1) throw new SocketException("Failed to guess which interface/address to use for self, try specifying one with --interface");
+
+		final InetAddress ret = addresses.iterator().next().getAddr();
+		LOG.info("Available addresses: {}, using address for self: {}", addresses, ret);
+		return ret;
 	}
 
 }
