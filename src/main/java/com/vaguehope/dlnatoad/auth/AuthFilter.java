@@ -21,7 +21,6 @@ import org.eclipse.jetty.util.B64Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
@@ -110,9 +109,7 @@ public class AuthFilter implements Filter {
 			return;
 		}
 
-		if (username != null) {
-			req.setAttribute(C.USERNAME_ATTR, username);
-		}
+		ReqAttr.USERNAME.set(req, username);
 
 		final boolean needsAuth;
 		if (WRITE_METHODS.contains(req.getMethod())) {

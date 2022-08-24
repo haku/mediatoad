@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class AuthFilterTest {
@@ -149,7 +148,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", this.req.getAttribute(C.USERNAME_ATTR));
+		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
 
 		final Cookie[] cookies = this.resp.getCookies();
 		if (cookies.length != 1) fail("Expected 1 cookie: " + Arrays.toString(cookies));
@@ -174,7 +173,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", this.req.getAttribute(C.USERNAME_ATTR));
+		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
 
@@ -187,7 +186,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", this.req.getAttribute(C.USERNAME_ATTR));
+		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
 		assertThat(this.resp.getCookies(), emptyArray());
 
 		verify(this.chain).doFilter(this.req, this.resp);

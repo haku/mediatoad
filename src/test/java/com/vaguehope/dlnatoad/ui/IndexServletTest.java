@@ -20,8 +20,8 @@ import org.junit.rules.TemporaryFolder;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -143,7 +143,7 @@ public class IndexServletTest {
 		assertEquals(401, this.resp.getStatus());
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
-		this.req.setAttribute(C.USERNAME_ATTR, "shork");
+		ReqAttr.USERNAME.set(this.req, "shork");
 		this.resp = new MockHttpServletResponse();
 		this.undertest.doGet(this.req, this.resp);
 

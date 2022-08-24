@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.fourthline.cling.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -117,7 +118,7 @@ public class ServletCommon {
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 		final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
-		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		final String username = ReqAttr.USERNAME.get(req);
 
 		w.println("<a href=\"/\">Home</a>");
 		w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");

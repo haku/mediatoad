@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
@@ -44,7 +45,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		final String username = ReqAttr.USERNAME.get(req);
 		if (node == null || !node.isUserAuth(username)) {
 			ServletCommon.returnDenied(resp, username);
 			return;
@@ -122,7 +123,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		final String username = ReqAttr.USERNAME.get(req);
 		if (node == null || !node.isUserAuth(username)) {
 			ServletCommon.returnDenied(resp, username);
 			return;

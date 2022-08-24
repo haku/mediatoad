@@ -14,7 +14,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -80,7 +80,7 @@ public class IndexServlet extends HttpServlet {
 			return;
 		}
 
-		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		final String username = ReqAttr.USERNAME.get(req);
 		if (!contentNode.isUserAuth(username)) {
 			ServletCommon.returnDenied(resp, username);
 			return;
@@ -106,7 +106,7 @@ public class IndexServlet extends HttpServlet {
 		final String id = idFromPath(req);
 		final ContentNode node = this.contentTree.getNode(id);
 		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
-		final String username = (String) req.getAttribute(C.USERNAME_ATTR);
+		final String username = ReqAttr.USERNAME.get(req);
 
 		if (node == null && item == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
