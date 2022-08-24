@@ -72,6 +72,7 @@ public class ContentTree {
 	}
 
 	public ContentNode getNode (final String id) {
+		if (id == null) throw new NullPointerException("Cannot get node with null id.");
 		return this.contentNodes.get(id);
 	}
 
@@ -80,6 +81,7 @@ public class ContentTree {
 	}
 
 	public ContentItem getItem(final String id) {
+		if (id == null) throw new NullPointerException("Cannot get item with null id.");
 		return this.contentItems.get(id);
 	}
 
