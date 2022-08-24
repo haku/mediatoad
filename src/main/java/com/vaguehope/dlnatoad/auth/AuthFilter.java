@@ -70,9 +70,14 @@ public class AuthFilter implements Filter {
 		if (tokenCookie != null) {
 			username = this.authTokens.usernameForToken(tokenCookie.getValue());
 			// Continue even if token is invalid as auth may be attached or may not be required.
+
+			// Clean up invalid tokens.
+			if (username == null) {
+				clearTokenCookie(resp);
+			}
 		}
 
-		if (username == null && this.users != null) {
+		if (this.users != null && username == null && (isPost(req) || isLoginRequest(req))) {
 			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 			if (authHeader64 != null
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
@@ -81,19 +86,19 @@ public class AuthFilter implements Filter {
 				final String authHeader = B64Code.decode(authHeader64, (String) null);
 				final int x = authHeader.indexOf(":");
 				if (x <= 0) {
-					send401(resp);
+					send401AndMaybePromptLogin(req, resp);
 					logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
 					return;
 				}
 				final String user = authHeader.substring(0, x);
 				final String pass = authHeader.substring(x + 1);
 				if (user == null || pass == null || user.isEmpty() || pass.isEmpty()) {
-					send401(resp);
+					send401AndMaybePromptLogin(req, resp);
 					logRequest(req, resp, "Rejected missing creds for user: {}", user);
 					return;
 				}
 				if (!this.users.validUser(user, pass)) {
-					send401(resp);
+					send401AndMaybePromptLogin(req, resp);
 					logRequest(req, resp, "Rejected invalid creds for user: {}", user);
 					return;
 				}
@@ -101,12 +106,10 @@ public class AuthFilter implements Filter {
 				username = user;
 				logRequest(req, resp, "Accepted creds for user: {}", username);
 			}
-		}
-
-		// Do not prompt for login if already logged in cos that will cause a loop.
-		if (username == null && "login".equalsIgnoreCase(req.getParameter("action"))) {
-			promptForLogin(resp);
-			return;
+			else {
+				send401AndMaybePromptLogin(req, resp);
+				return;
+			}
 		}
 
 		ReqAttr.USERNAME.set(req, username);
@@ -129,7 +132,7 @@ public class AuthFilter implements Filter {
 		}
 
 		if (needsAuth && username == null) {
-			send401(resp);
+			send401AndMaybePromptLogin(req, resp);
 			logRequest(req, resp, "Rejected request from unknown user when auth is required.");
 			return;
 		}
@@ -160,12 +163,22 @@ public class AuthFilter implements Filter {
 		LOG.info("{} {} {} {} " + msg, allArgs);
 	}
 
-	private static void send401(final HttpServletResponse resp) throws IOException {
-		resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+	private static boolean isGet(final HttpServletRequest req) {
+		return "GET".equals(req.getMethod());
 	}
 
-	private static void promptForLogin(final HttpServletResponse resp) throws IOException {
-		resp.setHeader(WWW_AUTHENTICATE, BASIC_REALM);
+	private static boolean isPost(final HttpServletRequest req) {
+		return "POST".equals(req.getMethod());
+	}
+
+	private static boolean isLoginRequest(final HttpServletRequest req) {
+		return "login".equalsIgnoreCase(req.getParameter("action"));
+	}
+
+	private static void send401AndMaybePromptLogin(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		if (isGet(req) || isLoginRequest(req)) {
+			resp.setHeader(WWW_AUTHENTICATE, BASIC_REALM);
+		}
 		resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
@@ -173,6 +186,13 @@ public class AuthFilter implements Filter {
 		final String token = this.authTokens.newToken(username);
 		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
 		cookie.setMaxAge((int) TimeUnit.MILLISECONDS.toSeconds(Auth.MAX_TOKEN_AGE_MILLIS));
+		cookie.setPath("/");
+		resp.addCookie(cookie);
+	}
+
+	private static void clearTokenCookie(final HttpServletResponse resp) throws IOException {
+		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, "");
+		cookie.setMaxAge(0);
 		cookie.setPath("/");
 		resp.addCookie(cookie);
 	}
