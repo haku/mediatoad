@@ -26,6 +26,8 @@ import org.fourthline.cling.model.meta.RemoteDeviceIdentity;
 import org.fourthline.cling.model.meta.RemoteService;
 import org.fourthline.cling.model.meta.Service;
 
+import com.vaguehope.dlnatoad.auth.ReqAttr;
+
 public class UpnpServlet extends HttpServlet {
 
 	private static final int SEARCH_TIMEOUT_SECONDS = 5;
@@ -42,11 +44,21 @@ public class UpnpServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		if (!ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
+			ServletCommon.returnForbidden(resp);
+			return;
+		}
+
 		printPage(req, resp, null);
 	}
 
 	@Override
 	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		if (!ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
+			ServletCommon.returnForbidden(resp);
+			return;
+		}
+
 		if ("scan".equalsIgnoreCase(req.getParameter("action"))) {
 			final int devCountBefore = this.upnpService.getRegistry().getRemoteDevices().size();
 			this.upnpService.getControlPoint().search(SEARCH_TIMEOUT_SECONDS);

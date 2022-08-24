@@ -83,7 +83,7 @@ public class SearchServlet extends HttpServlet {
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
-				if (StringUtils.isNotBlank(remote)) {
+				if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req) && StringUtils.isNotBlank(remote)) {
 					remoteSearch(searchCriteria, w);
 				}
 			}

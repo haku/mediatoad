@@ -112,7 +112,12 @@ public class AuthFilter implements Filter {
 			}
 		}
 
-		ReqAttr.USERNAME.set(req, username);
+		if (username != null) {
+			ReqAttr.USERNAME.set(req, username);
+			// ATM all auth users get all permissions.
+			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
+			ReqAttr.ALLOW_UPNP_INSPECTOR.set(req, Boolean.TRUE);
+		}
 
 		final boolean needsAuth;
 		if (WRITE_METHODS.contains(req.getMethod())) {

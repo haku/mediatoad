@@ -67,8 +67,12 @@ public class ServletCommon {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
 		}
 		else {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+			returnForbidden(resp);
 		}
+	}
+
+	public static void returnForbidden(final HttpServletResponse resp) throws IOException {
+		ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
 	}
 
 	public static void setHtmlContentType(final HttpServletResponse resp) {
@@ -115,17 +119,23 @@ public class ServletCommon {
 	}
 
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
-		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
-		final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
-		final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
 		final String username = ReqAttr.USERNAME.get(req);
 
 		w.println("<a href=\"/\">Home</a>");
-		w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");
+
+		if (ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
+			w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");
+		}
+
+		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
 		w.println("<form style=\"display:inline;\" action=\"" + pathPrefix + "search\" method=\"GET\">");
 		w.println("<input type=\"text\" id=\"query\" name=\"query\" value=\"" + query + "\">");
-		w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
-		w.println("<label for=\"remote\">remote</label>");
+		if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req)) {
+			final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
+			final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
+			w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
+			w.println("<label for=\"remote\">remote</label>");
+		}
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
 
