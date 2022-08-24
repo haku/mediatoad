@@ -30,6 +30,7 @@ public class ContentItem extends AbstractContent {
 			final File file,
 			final MediaFormat format) {
 		super(id, parentId, title);
+		if (parentId == null) throw new IllegalArgumentException("parentId must not be null.");
 		this.file = file;
 		this.format = format;
 		reload();

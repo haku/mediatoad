@@ -51,7 +51,7 @@ public class NodeConverterTest {
 		final File artFile = mock(File.class);
 		when(artFile.exists()).thenReturn(true);
 		when(artFile.length()).thenReturn(222L);
-		final ContentItem art = new ContentItem("art", null, null, artFile, MediaFormat.JPEG);
+		final ContentItem art = new ContentItem("art", "id-of-art-container", null, artFile, MediaFormat.JPEG);
 		input.setArt(art);
 
 		final Container c = this.undertest.makeContainerWithoutSubContainers(input);
@@ -93,13 +93,13 @@ public class NodeConverterTest {
 		final File artFile = mock(File.class);
 		when(artFile.exists()).thenReturn(true);
 		when(artFile.length()).thenReturn(222L);
-		final ContentItem art = new ContentItem("art", null, null, artFile, MediaFormat.JPEG);
+		final ContentItem art = new ContentItem("art", "id-of-art-container", null, artFile, MediaFormat.JPEG);
 		input.setArt(art);
 
 		final File subtitlesFile = mock(File.class);
 		when(subtitlesFile.exists()).thenReturn(true);
 		when(subtitlesFile.length()).thenReturn(111L);
-		final ContentItem subtitles = new ContentItem("subtitles", null, null, subtitlesFile, MediaFormat.SRT);
+		final ContentItem subtitles = new ContentItem("subtitles", "id-of-subtitles-container", null, subtitlesFile, MediaFormat.SRT);
 		input.addAttachmentIfNotPresent(subtitles);
 
 		final Item i = this.undertest.makeItem(input);

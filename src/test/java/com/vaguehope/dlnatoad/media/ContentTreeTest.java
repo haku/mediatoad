@@ -74,7 +74,7 @@ public class ContentTreeTest {
 	@Test
 	public void itDoesNotAddThumbnailsToRecent() throws Exception {
 		File thumbFile = mock(File.class);
-		this.undertest.addItem(new ContentItem("thumbId", null, null, thumbFile, MediaFormat.JPEG));
+		this.undertest.addItem(new ContentItem("thumbId", "id-of-container", null, thumbFile, MediaFormat.JPEG));
 
 		final ContentNode cn = this.undertest.getNode(ContentGroup.RECENT.getId());
 		assertThat(cn.getCopyOfItems(), hasItems());

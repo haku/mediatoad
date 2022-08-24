@@ -186,7 +186,7 @@ public class MediaIndex implements FileListener {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath(), dir);
 
-		findArtItem(dir, contentGroup, new AsyncCallback<ContentItem, IOException>() {
+		findArtItem(dir, contentGroup, id, new AsyncCallback<ContentItem, IOException>() {
 			@Override
 			public void onResult(final ContentItem art) throws IOException {
 				if (art == null) return;
@@ -327,7 +327,7 @@ public class MediaIndex implements FileListener {
 		// Images are their own art so no need to search for anything.
 		if (mediaFormat.getContentGroup() == ContentGroup.IMAGE) return;
 
-		findArtItem(mediaFile, mediaFormat.getContentGroup(), new AsyncCallback<ContentItem, IOException>() {
+		findArtItem(mediaFile, mediaFormat.getContentGroup(), item.getParentId(), new AsyncCallback<ContentItem, IOException>() {
 			@Override
 			public void onResult(final ContentItem artItem) throws IOException {
 				item.setArt(artItem);
@@ -340,7 +340,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void findArtItem(final File mediaFile, final ContentGroup mediaContentGroup, final AsyncCallback<ContentItem, IOException> callback) throws IOException {
+	private void findArtItem(final File mediaFile, final ContentGroup mediaContentGroup, final String parentId, final AsyncCallback<ContentItem, IOException> callback) throws IOException {
 		final File artFile = CoverArtHelper.findCoverArt(mediaFile);
 		if (artFile == null) return;
 
@@ -353,7 +353,7 @@ public class MediaIndex implements FileListener {
 		this.mediaId.contentIdAsync(mediaContentGroup, artFile, new MediaIdCallback() {
 			@Override
 			public void onResult(final String artId) throws IOException {
-				final ContentItem artItem = new ContentItem(artId, null, null, artFile, artFormat);
+				final ContentItem artItem = new ContentItem(artId, parentId, artFile.getName(), artFile, artFormat);
 				MediaIndex.this.contentTree.addItem(artItem);
 				callback.onResult(artItem);
 			}
@@ -428,7 +428,7 @@ public class MediaIndex implements FileListener {
 		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, new MediaIdCallback() {
 			@Override
 			public void onResult(final String subtitlesId) throws IOException {
-				final ContentItem subtitlesItem = new ContentItem(subtitlesId, null, null, subtitlesFile, subtitlesFormat);
+				final ContentItem subtitlesItem = new ContentItem(subtitlesId, item.getParentId(), subtitlesFile.getName(), subtitlesFile, subtitlesFormat);
 				MediaIndex.this.contentTree.addItem(subtitlesItem);
 				if (item.addAttachmentIfNotPresent(subtitlesItem)) {
 					if (onComplete != null) onComplete.run();
