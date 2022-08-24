@@ -244,6 +244,8 @@ public class ServletCommon {
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
 			w.print(C.THUMBS_PATH_PREFIX);
 			w.print(item.getId());
+			w.print("\" title=\"");
+			w.print(item.getTitle());
 			w.print("\">");
 			w.println("</a></span>");
 		}
