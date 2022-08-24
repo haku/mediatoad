@@ -76,26 +76,33 @@ public class ItemServlet extends HttpServlet {
 		w.println("</h2>");
 
 		w.println("<div style=\"padding-top: 1em;\">");
+
 		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");
+		final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
 		for (final Tag tag : tags) {
 			w.print("<span style=\"padding-right: 0.5em;\">");
 			w.print(tag.getTag());
-			w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
-			w.println("<input type=\"hidden\" name=\"action\" value=\"rmtag\">");
-			w.println("<input type=\"hidden\" name=\"tag\" value=\"" + tag.getTag() + "\">");
-			w.println("<input type=\"submit\" value=\"X\">");
-			w.println("</form>");
+			if (allowEditTags) {
+				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
+				w.println("<input type=\"hidden\" name=\"action\" value=\"rmtag\">");
+				w.println("<input type=\"hidden\" name=\"tag\" value=\"" + tag.getTag() + "\">");
+				w.println("<input type=\"submit\" value=\"X\">");
+				w.println("</form>");
+			}
 			w.println("</span>");
 		}
-		w.println("</br>");
-		w.println("<div style=\"padding-top: 0.5em\">");
-		w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
-		w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-		w.println("<label style=\"padding-right: 0.5em;\" for=\"tag\">Add Tag:</label>");
-		w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
-		w.println("<input type=\"submit\" value=\"Add\">");
-		w.println("</form>");
-		w.println("</div>");
+
+		if (allowEditTags) {
+			w.println("</br>");
+			w.println("<div style=\"padding-top: 0.5em\">");
+			w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
+			w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
+			w.println("<label style=\"padding-right: 0.5em;\" for=\"tag\">Add Tag:</label>");
+			w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
+			w.println("<input type=\"submit\" value=\"Add\">");
+			w.println("</form>");
+			w.println("</div>");
+		}
 
 		w.println("</div>");
 
@@ -113,6 +120,11 @@ public class ItemServlet extends HttpServlet {
 	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		if (this.mediaDb == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Can not store tags when --db is not specified.");
+			return;
+		}
+
+		if (!ReqAttr.ALLOW_EDIT_TAGS.get(req)) {
+			ServletCommon.returnForbidden(resp);
 			return;
 		}
 

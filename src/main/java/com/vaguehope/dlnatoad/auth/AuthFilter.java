@@ -117,6 +117,7 @@ public class AuthFilter implements Filter {
 			// ATM all auth users get all permissions.
 			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
 			ReqAttr.ALLOW_UPNP_INSPECTOR.set(req, Boolean.TRUE);
+			ReqAttr.ALLOW_EDIT_TAGS.set(req, Boolean.TRUE);
 		}
 
 		final boolean needsAuth;
