@@ -158,17 +158,17 @@ public class ContentItem extends AbstractContent {
 			public int compare (final ContentItem a, final ContentItem b) {
 				int c = Long.compare(b.lastModified, a.lastModified);
 				if (c == 0) {
-					c = TITLE.compare(a, b);
+					c = TITLE_CASE_INSENSITIVE.compare(a, b);
 				}
 				return c;
 			}
 		},
-		TITLE {
+		TITLE_CASE_INSENSITIVE {
 			@Override
 			public int compare(final ContentItem a, final ContentItem b) {
 				final String at = a.getTitle();
 				final String bt = b.getTitle();
-				int c = (at != null ? (bt != null ? at.compareTo(bt) : 1) : -1);
+				int c = (at != null ? (bt != null ? at.compareToIgnoreCase(bt) : 1) : -1);
 				if (c == 0) {
 					c = ID.compare(a, b);
 				}

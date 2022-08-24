@@ -184,7 +184,8 @@ public class MediaIndex implements FileListener {
 	private ContentNode makeDirContainerOnTree(final ContentGroup contentGroup, final ContentNode parentContainer,
 			final String id, final File dir) throws IOException {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
-		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), dir.getAbsolutePath(), dir);
+		final String sortName = dir.getAbsolutePath().toLowerCase();
+		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), sortName, dir);
 
 		findArtItem(dir, contentGroup, id, new AsyncCallback<ContentItem, IOException>() {
 			@Override
@@ -243,12 +244,7 @@ public class MediaIndex implements FileListener {
 	}
 
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title) throws IOException {
-		return makeContainerOnTree(parentNode, id, title, null);
-	}
-
-	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
-			final String sortName) throws IOException {
-		return makeContainerOnTree(parentNode, id, title, sortName, null);
+		return makeContainerOnTree(parentNode, id, title, null, null);
 	}
 
 	/**

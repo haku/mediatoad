@@ -153,6 +153,9 @@ public class ContentNode extends AbstractContent {
 		synchronized (this.items) {
 			if (hasItemWithId(item.getId())) return false;
 			this.items.add(item);
+			if (this.items instanceof List) {
+				Collections.sort((List<ContentItem>) this.items, ContentItem.Order.TITLE_CASE_INSENSITIVE);
+			}
 			return true;
 		}
 	}
@@ -191,10 +194,10 @@ public class ContentNode extends AbstractContent {
 		return false;
 	}
 
-	public boolean hasItemWithId(final String idToRemove) {
+	public boolean hasItemWithId(final String idToFind) {
 		synchronized (this.items) {
 			for (final ContentItem i : this.items) {
-				if (idToRemove.equals(i.getId())) return true;
+				if (idToFind.equals(i.getId())) return true;
 			}
 		}
 		return false;
@@ -242,7 +245,7 @@ public class ContentNode extends AbstractContent {
 			public int compare (final ContentNode a, final ContentNode b) {
 				final int c = Long.compare(b.lastModified, a.lastModified);
 				if (c != 0) return c;
-				return TITLE.compare(a, b);
+				return TITLE_CASE_INSENSITIVE.compare(a, b);
 			}
 		},
 		SORT_KEY {
@@ -256,13 +259,13 @@ public class ContentNode extends AbstractContent {
 				return ID.compare(a, b);
 			}
 		},
-		TITLE {
+		TITLE_CASE_INSENSITIVE {
 			@Override
 			public int compare(final ContentNode a, final ContentNode b) {
 				final String at = a.title;
 				final String bt = b.title;
 				if (at == bt) ID.compare(a, b);
-				final int c = (at != null ? (bt != null ? at.compareTo(bt) : 1) : -1);
+				final int c = (at != null ? (bt != null ? at.compareToIgnoreCase(bt) : 1) : -1);
 				if (c != 0) return c;
 				return ID.compare(a, b);
 			}
