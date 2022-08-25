@@ -7,7 +7,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
@@ -15,7 +16,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
@@ -24,9 +24,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
-import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 
 public class MediaMetadataStoreTest {
 
@@ -43,7 +44,16 @@ public class MediaMetadataStoreTest {
 	public void before () throws Exception {
 		this.rnd = new Random();
 		this.dbFile = this.tmp.newFile("id-db.db3");
-		this.schEx = spy(new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs")));
+
+		this.schEx = mock(ScheduledExecutorService.class);
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer (final InvocationOnMock inv) throws Throwable {
+				inv.getArgument(0, Runnable.class).run();
+				return null;
+			}
+		}).when(this.schEx).execute(any(Runnable.class));
+
 		this.undertest = new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true);
 
 		final ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
