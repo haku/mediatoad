@@ -252,18 +252,21 @@ public class ServletCommon {
 	}
 
 	public void appendDebugFooter(final PrintWriter w) {
-		w.print("<p>");
+		w.println("<p>");
+
 		w.print(this.contentServingHistory.getActiveCount());
 		w.print(" active playbacks, ");
 		w.print(this.contentServingHistory.getRecentlyActiveCount(TimeUnit.MINUTES.toSeconds(15)));
 		w.print(" active in last 15 minutes.");
-		w.println("</p>");
+		w.println("</br>");
 
-		w.print("<p>content: ");
+		w.print("content: ");
 		w.print(this.contentTree.getNodeCount());
 		w.print(" nodes, ");
 		w.print(this.contentTree.getItemCount());
-		w.println(" items.</p>");
+		w.println(" items.</br>");
+
+		w.println("</p>");
 	}
 
 	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
