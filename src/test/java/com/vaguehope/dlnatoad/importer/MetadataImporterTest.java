@@ -5,18 +5,23 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -24,7 +29,6 @@ import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
-import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MetadataImporterTest {
@@ -33,15 +37,23 @@ public class MetadataImporterTest {
 	public TemporaryFolder tmp = new TemporaryFolder();
 
 	private MediaDb mediaDb;
-	private ScheduledThreadPoolExecutor schEx;
+	private ScheduledExecutorService schEx;
 	private MediaMetadataStore mediaMetadataStore;
 	private File dropDir;
 	private MetadataImporter undertest;
 
 	@Before
 	public void before() throws Exception {
+		this.schEx = mock(ScheduledExecutorService.class);
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer (final InvocationOnMock inv) throws Throwable {
+				inv.getArgument(0, Runnable.class).run();
+				return null;
+			}
+		}).when(this.schEx).execute(any(Runnable.class));
+
 		this.mediaDb = new InMemoryMediaDb();
-		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		this.mediaMetadataStore = new MediaMetadataStore(this.mediaDb, this.schEx, true);
 		this.dropDir = this.tmp.newFolder();
 		this.undertest = new MetadataImporter(this.dropDir, this.mediaDb);
