@@ -1,8 +1,10 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
@@ -90,6 +92,21 @@ public class ContentTree {
 		maybeAddToRecent(item);
 	}
 
+	public List<ContentItem> getItemsForIds(final List<String> ids, final String username) {
+		final List<ContentItem> ret = new ArrayList<>();
+		for (final String id : ids) {
+			final ContentItem item = getItem(id);
+			if (item == null) {
+				LOG.debug("ID not found in content tree: {}", id);
+				continue;
+			}
+			final ContentNode node = getNode(item.getParentId());
+			if (!node.isUserAuth(username)) continue;
+			ret.add(item);
+		}
+		return ret;
+	}
+
 	/**
 	 * Returns number of items removed.
 	 */
@@ -111,7 +128,7 @@ public class ContentTree {
 
 		final Iterator<Entry<String, ContentItem>> itemIttr = this.contentItems.entrySet().iterator();
 		while (itemIttr.hasNext()) {
-			Entry<String, ContentItem> e = itemIttr.next();
+			final Entry<String, ContentItem> e = itemIttr.next();
 			if (file.equals(e.getValue().getFile())) {
 				itemIttr.remove();
 				removeItemFromParent(e.getValue());
@@ -138,7 +155,7 @@ public class ContentTree {
 		}
 	}
 
-	private static boolean isContainerEmptyAndRemoveable(ContentNode node) {
+	private static boolean isContainerEmptyAndRemoveable(final ContentNode node) {
 		return node.getNodeAndItemCount() < 1 && !ContentGroup.incluesId(node.getId());
 	}
 

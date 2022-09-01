@@ -3,6 +3,7 @@ package com.vaguehope.dlnatoad.auth;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,6 +40,10 @@ public class AuthList {
 		if (names == null) return null;
 		if (names.isEmpty()) return EMPTY_AUTH_LIST;
 		return new AuthList(names);
+	}
+
+	public static AuthList ofNames(final String... names) {
+		return new AuthList(new HashSet<>(Arrays.asList(names)));
 	}
 
 	private static final Cache<String, Optional<Set<String>>> AUTH_FILE_CACHE = CacheBuilder.newBuilder()

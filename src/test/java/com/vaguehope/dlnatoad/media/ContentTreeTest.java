@@ -15,12 +15,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import com.vaguehope.dlnatoad.auth.AuthList;
 
 public class ContentTreeTest {
 
@@ -49,16 +55,84 @@ public class ContentTreeTest {
 
 	@Test
 	public void itRemovesEmptyDirs() throws Exception {
-		ContentNode a = this.mockContent.addMockDir("aa");
-		ContentNode b = this.mockContent.addMockDir("bb", a);
-		ContentNode c = this.mockContent.addMockDir("cc", b);
-		ContentNode d = this.mockContent.addMockDir("dd", c);
+		final ContentNode a = this.mockContent.addMockDir("aa");
+		final ContentNode b = this.mockContent.addMockDir("bb", a);
+		final ContentNode c = this.mockContent.addMockDir("cc", b);
+		final ContentNode d = this.mockContent.addMockDir("dd", c);
 
 		this.undertest.removeFile(d.getFile());
 		assertThat(this.undertest.getNodes(), not(hasItem(d)));
 		assertThat(this.undertest.getNodes(), not(hasItem(c)));
 		assertThat(this.undertest.getNodes(), not(hasItem(b)));
 		assertThat(this.undertest.getNodes(), not(hasItem(a)));
+	}
+
+	@Test
+	public void itReturnsASetOfItems() throws Exception {
+		final List<String> openItems = itemIds(this.mockContent.givenMockItems(100));
+
+		final AuthList allowAuthlist = mock(AuthList.class);
+		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final ContentNode allowProtecDir = this.mockContent.addMockDir("allow-dir-protec", this.undertest.getRootNode(), allowAuthlist);
+		final List<String> allowProtecItems = itemIds(this.mockContent.givenMockItems(100, allowProtecDir));
+
+		final AuthList blockAuthlist = mock(AuthList.class);
+		final ContentNode blockProtecDir = this.mockContent.addMockDir("block-dir-protec", this.undertest.getRootNode(), blockAuthlist);
+		final List<String> blockProtecItems = itemIds(this.mockContent.givenMockItems(100, blockProtecDir));
+
+		final List<String> idsToFetch = new ArrayList<>();
+		idsToFetch.addAll(openItems.subList(10, 20));
+		idsToFetch.addAll(allowProtecItems.subList(10, 20));
+		idsToFetch.addAll(blockProtecItems.subList(10, 20));
+
+		final List<String> expectedIds = new ArrayList<>();
+		expectedIds.addAll(openItems.subList(10, 20));
+		expectedIds.addAll(allowProtecItems.subList(10, 20));
+
+		final List<String> actualIds = itemIds(this.undertest.getItemsForIds(idsToFetch, "shork"));
+		assertEquals(expectedIds, actualIds);
+	}
+
+	@Ignore("Micro benchmark for checking performance of sort on insert.")
+	@Test
+	public void itMapsIdsToItemsQuickly() throws Exception {
+		final int nodeCount = 4000;
+		final int itemCount = 50000;
+		final int fetchCount = 500;  // max search results.
+		final int testIterations = 100;
+
+		final StopWatch setupTime = StopWatch.createStarted();
+		this.mockContent = new MockContent(this.undertest);
+		this.mockContent.setSpy(false);
+		this.mockContent.setShuffle(false);
+
+		final AuthList authList = AuthList.ofNames("foo", "bar", "bat", "baz", "shork");
+		final int itemsPerNode = itemCount / nodeCount;
+		for (int i = 0; i < nodeCount; i++) {
+			final ContentNode n = this.mockContent.addMockDir("node-" + i, authList);
+			this.mockContent.givenMockItems(itemsPerNode, n);
+		}
+		final int leftOver = itemCount - (itemsPerNode * nodeCount);
+		this.mockContent.givenMockItems(leftOver, this.undertest.getNodes().iterator().next());
+		assertEquals(itemCount, this.undertest.getItemCount());
+
+		final List<String> allItemIds = itemIds(this.undertest.getItems());
+		System.out.println("Setup time: " + setupTime.getTime(TimeUnit.MILLISECONDS) + "ms");
+
+		long totalTime = 0L;
+		for (int i = 0; i < testIterations; i++) {
+			Collections.shuffle(allItemIds);
+			final List<String> idsToFetch = allItemIds.subList(0, fetchCount);
+
+			final long start = System.nanoTime();
+			final List<ContentItem> ret = this.undertest.getItemsForIds(idsToFetch, "shork");
+			final long end = System.nanoTime();
+			totalTime += end - start;
+
+			assertEquals(fetchCount, ret.size());
+		}
+		final double meanTime = (double) totalTime / (double) testIterations;
+		System.out.println("Mapping " + fetchCount + " items average duration: " + meanTime + " nanos = " + TimeUnit.NANOSECONDS.toMillis((long) meanTime) + " ms");
 	}
 
 	@Test
@@ -73,7 +147,7 @@ public class ContentTreeTest {
 
 	@Test
 	public void itDoesNotAddThumbnailsToRecent() throws Exception {
-		File thumbFile = mock(File.class);
+		final File thumbFile = mock(File.class);
 		this.undertest.addItem(new ContentItem("thumbId", "id-of-container", null, thumbFile, MediaFormat.JPEG));
 
 		final ContentNode cn = this.undertest.getNode(ContentGroup.RECENT.getId());
@@ -93,7 +167,7 @@ public class ContentTreeTest {
 
 	@Test
 	public void itRemovesGoneItemsFromRecent() throws Exception {
-		List<ContentItem> items = this.mockContent.givenMockItems(1);
+		final List<ContentItem> items = this.mockContent.givenMockItems(1);
 		assertThat(this.undertest.getRecent(), hasSize(1));
 
 		final File file = items.get(0).getFile();
@@ -105,11 +179,15 @@ public class ContentTreeTest {
 	private static Consumer<File> sequentialTimeStamps() {
 		return new Consumer<File>() {
 			@Override
-			public void accept(File f) {
-				int n = Integer.parseInt(f.getName().substring(0, f.getName().indexOf(".")).replace("id", ""));
+			public void accept(final File f) {
+				final int n = Integer.parseInt(f.getName().substring(0, f.getName().indexOf(".")).replace("id", ""));
 				when(f.lastModified()).thenReturn(n * 1000L);
 			}
 		};
+	}
+
+	private static List<String> itemIds(final Collection<ContentItem> items) {
+		return items.stream().map(i -> i.getId()).collect(Collectors.toList());
 	}
 
 }

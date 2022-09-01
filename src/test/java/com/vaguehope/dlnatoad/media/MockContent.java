@@ -24,6 +24,7 @@ public class MockContent {
 	private final AtomicInteger idGen = new AtomicInteger(0);
 
 	private boolean shuffle = true;
+	private boolean spy = true;
 
 	public MockContent (final ContentTree contentTree) {
 		this(contentTree, null);
@@ -36,6 +37,9 @@ public class MockContent {
 
 	public void setShuffle(final boolean shuffle) {
 		this.shuffle = shuffle;
+	}
+	public void setSpy(final boolean spy) {
+		this.spy = spy;
 	}
 
 	public List<ContentNode> givenMockDirs (final int n) throws IOException {
@@ -87,6 +91,10 @@ public class MockContent {
 		return addMockDir(id, parent, null);
 	}
 
+	public ContentNode addMockDir (final String id, final AuthList authlist) throws IOException {
+		return addMockDir(id, this.contentTree.getRootNode(), authlist);
+	}
+
 	public ContentNode addMockDir (final String id, final ContentNode parent, final AuthList authlist) throws IOException {
 		final File dir;
 		if (this.tmp != null) {
@@ -120,7 +128,8 @@ public class MockContent {
 		}
 		if (modifier != null) modifier.accept(file);
 
-		final ContentItem item = spy(new ContentItem(id, parent.getId(), "item " + id, file, format));
+		ContentItem item = new ContentItem(id, parent.getId(), "item " + id, file, format);
+		if (this.spy) item = spy(item);
 		this.contentTree.addItem(item);
 		parent.addItemIfAbsent(item);
 		return item;
