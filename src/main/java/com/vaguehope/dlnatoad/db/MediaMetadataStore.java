@@ -43,6 +43,10 @@ public class MediaMetadataStore {
 		exSvc.scheduleWithFixedDelay(new DurationWorker(), 0, DURATION_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
+	public MediaDb getMediaDb() {
+		return this.mediaDb;
+	}
+
 	public void idForFile(final File file, final MediaIdCallback callback) throws IOException, InterruptedException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 		this.fileIdQueue.put(new FileAndIdCallback(file, callback));

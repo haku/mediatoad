@@ -30,6 +30,8 @@ import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -50,16 +52,18 @@ public class SearchServlet extends HttpServlet {
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
+	private final MediaDb mediaDb;
 	private final UpnpService upnpService;
 	private final SearchEngine searchEngine;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final UpnpService upnpService) {
-		this(servletCommon, contentTree, upnpService, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService) {
+		this(servletCommon, contentTree, mediaDb, upnpService, new SearchEngine());
 	}
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final UpnpService upnpService, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
+		this.mediaDb = mediaDb;
 		this.upnpService = upnpService;
 		this.searchEngine = searchEngine;
 	}
@@ -74,17 +78,25 @@ public class SearchServlet extends HttpServlet {
 
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
 		if (!StringUtils.isBlank(query)) {
-			final String searchCriteria = String.format("(dc:title contains \"%s\")", query);
-			final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
+			final String username = ReqAttr.USERNAME.get(req);
+			final String upnpQuery = String.format("(dc:title contains \"%s\")", query);
+
 			try {
-				final String username = ReqAttr.USERNAME.get(req);
-				final List<ContentItem> results = this.searchEngine.search(rootNode, searchCriteria, MAX_RESULTS, username);
+				final List<ContentItem> results;
+				if (this.mediaDb != null) {
+					final List<String> ids = DbSearchParser.parseSearch(query).execute(this.mediaDb, MAX_RESULTS);
+					results = this.contentTree.getItemsForIds(ids, username);
+				}
+				else {
+					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
+					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, username);
+				}
 				this.servletCommon.printItemsAndImages(w, results);
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
 				if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req) && StringUtils.isNotBlank(remote)) {
-					remoteSearch(searchCriteria, w);
+					remoteSearch(upnpQuery, w);
 				}
 			}
 			catch (final Exception e) {

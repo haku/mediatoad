@@ -69,6 +69,15 @@ public class MediaDb {
 		return new WritableMediaDb(c);
 	}
 
+	public PreparedStatement prepare(final String sql) throws SQLException {
+		try {
+			return this.dbConn.prepareStatement(sql);
+		}
+		catch (final SQLException e) {
+			throw new SQLException("Failed to compile query (sql='" + sql + "').", e);
+		}
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	protected long readDurationCheckingFileSize (final String key, final long expectedSize) throws SQLException {
