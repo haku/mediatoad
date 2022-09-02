@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -137,68 +136,64 @@ public class MediaMetadataStore {
 	}
 
 	private FileData generateNewFileData(final WritableMediaDb w, final File file) throws IOException, SQLException {
-		FileData fileData;
-		fileData = FileData.forFile(file); // Slow.
+		FileData fileData = FileData.forFile(file); // Slow.
+		Collection<FileAndData> filesToRemove = null;
 
-		final Collection<FileAndData> otherFiles = missingFilesWithHash(w, fileData.getHash());
+		// A preexisting ID will only be used only if no other files with that hash still exist.
+		// Otherwise a new ID will be generated and stored in the files table.
+		final Collection<FileAndData> otherFiles = w.filesWithHash(fileData.getHash());
+		excludeFilesThatStillExist(otherFiles);
 		final Set<String> otherIds = distinctIds(otherFiles);
 		if (otherIds.size() == 1) {
 			fileData = fileData.withId(otherIds.iterator().next());
+			filesToRemove = otherFiles;
 		}
 		else {
 			fileData = fileData.withId(newUnusedId(w));
-			otherFiles.clear(); // Did not merge, so do not remove.
 		}
 
 		w.storeFileData(file, fileData);
-		removeFiles(w, otherFiles);
+		if (filesToRemove != null) {
+			removeFiles(w, filesToRemove);
+		}
 
 		if (this.verboseLog) {
 			LOG.info("New [merged={}]: {}",
-					otherFiles.size(),
+					filesToRemove != null ? filesToRemove.size() : 0,
 					file.getAbsolutePath());
 		}
-
 		return fileData;
 	}
 
-	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, FileData fileData) throws SQLException, IOException {
-		final long prevModified = fileData.getModified();
-		final String prevHash = fileData.getHash();
-		final String prevHashCanonicalId = w.canonicalIdForHash(prevHash);
-		fileData = FileData.forFile(file).withId(fileData.getId()); // Slow.
+	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, final FileData oldFileData) throws SQLException, IOException {
+		FileData fileData = FileData.forFile(file).withId(oldFileData.getId()); // Slow.
+		Collection<FileAndData> filesToRemove = null;
 
-		Collection<FileAndData> otherFiles = Collections.emptySet();
-		if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(fileData.getId())) {
-			otherFiles = w.filesWithHash(prevHash);
+		// ID from hashes table will be copied into files table only if all other files with that hash are missing.
+		// Otherwise ID in files table with be unchanged.
+		final String prevHashCanonicalId = w.canonicalIdForHash(oldFileData.getHash());
+		if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(oldFileData.getId())) {
+			final Collection<FileAndData> otherFiles = w.filesWithHash(oldFileData.getHash());
 			excludeFile(otherFiles, file); // Remove self.
-
 			if (allMissing(otherFiles)) {
 				fileData = fileData.withNewId(prevHashCanonicalId);
-			}
-			else {
-				otherFiles.clear(); // Did not merge, so do not remove.
+				filesToRemove = otherFiles;
 			}
 		}
 
 		w.updateFileData(file, fileData);
-		removeFiles(w, otherFiles);
+		if (filesToRemove != null) {
+			removeFiles(w, filesToRemove);
+		}
 
 		if (this.verboseLog) {
 			LOG.info("Updated [merged={} hash={} mod={}]: {}",
-					otherFiles.size(),
-					prevHash.equals(fileData.getHash()) ? "same" : "changed",
-					prevModified == fileData.getModified() ? "same" : prevModified + "-->" + fileData.getModified(),
+					filesToRemove != null ? filesToRemove.size() : 0,
+					oldFileData.getHash().equals(fileData.getHash()) ? "same" : "changed",
+					oldFileData.getModified() == fileData.getModified() ? "same" : oldFileData.getModified() + "-->" + fileData.getModified(),
 					file.getAbsolutePath());
 		}
-
 		return fileData;
-	}
-
-	private static Collection<FileAndData> missingFilesWithHash(final WritableMediaDb w, final String hash) throws SQLException {
-		final Collection<FileAndData> files = w.filesWithHash(hash);
-		excludeFilesThatStillExist(files);
-		return files;
 	}
 
 	private static String newUnusedId(final WritableMediaDb w) throws SQLException {
