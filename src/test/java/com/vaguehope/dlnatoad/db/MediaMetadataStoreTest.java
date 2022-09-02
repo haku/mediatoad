@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,12 +15,14 @@ import static org.mockito.Mockito.verify;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.sql.SQLException;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -94,6 +97,22 @@ public class MediaMetadataStoreTest {
 		assertEquals(
 				callIdForFile(f1),
 				callIdForFile(f2));
+	}
+
+	@Ignore("It is debatable if this test should pass or not.")
+	@Test
+	public void itStoresTheSameIdInTheFilesTableForIdenticalFiles() throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final File f2 = this.tmp.newFile("media-2.ext");
+		FileUtils.copyFile(f1, f2, false);
+		callIdForFile(f1);
+		callIdForFile(f2);
+
+		final FileData fd1 = getFileData(f1);
+		final FileData fd2 = getFileData(f2);
+		assertNotNull(fd1);
+		assertNotNull(fd2);
+		assertEquals(fd1.getId(), fd2.getId());
 	}
 
 	@Test
@@ -174,8 +193,8 @@ public class MediaMetadataStoreTest {
 		final String id1 = callIdForFile(f1);
 
 		final File f2 = this.tmp.newFile("media-01.ext");
-		f2.delete();
-		FileUtils.moveFile(f1, f2);
+		f1.renameTo(f2);
+		assertFalse(f1.exists());
 		assertEquals(id1, callIdForFile(f2));
 
 		fillFile(f2);
@@ -188,7 +207,6 @@ public class MediaMetadataStoreTest {
 		final String id1 = callIdForFile(f1);
 
 		final File f2 = this.tmp.newFile("media-01.ext");
-		f2.delete();
 		FileUtils.copyFile(f1, f2, false);
 		assertEquals(id1, callIdForFile(f2));
 
@@ -205,12 +223,10 @@ public class MediaMetadataStoreTest {
 		final String id1 = callIdForFile(f1);
 
 		final File f2 = this.tmp.newFile("media-01.ext");
-		f2.delete();
 		FileUtils.copyFile(f1, f2, false);
 		assertEquals(id1, callIdForFile(f2));
 
 		final File f3 = this.tmp.newFile("media-001.ext");
-		f3.delete();
 		FileUtils.copyFile(f1, f3, false);
 		assertEquals(id1, callIdForFile(f3));
 
@@ -222,6 +238,7 @@ public class MediaMetadataStoreTest {
 
 		fillFile(f2);
 		assertEquals(id1, callIdForFile(f2));
+		assertEquals(id1, getFileData(f2).getId());
 	}
 
 	@Test
@@ -261,6 +278,12 @@ public class MediaMetadataStoreTest {
 		final byte[] b = new byte[l];
 		this.rnd.nextBytes(b);
 		FileUtils.writeByteArrayToFile(f, b);
+	}
+
+	public FileData getFileData(final File f) throws IOException, SQLException {
+		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
+			return w.readFileData(f);
+		}
 	}
 
 }
