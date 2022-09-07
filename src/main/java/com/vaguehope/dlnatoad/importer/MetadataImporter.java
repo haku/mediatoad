@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
+import com.vaguehope.dlnatoad.importer.HashAndTags.ImportedTag;
+import com.vaguehope.dlnatoad.util.Time;
 
 public class MetadataImporter {
 
@@ -23,11 +25,19 @@ public class MetadataImporter {
 
 	private final File dropDir;
 	private final MediaDb mediaDb;
+	private boolean verboseLog;
+	private final Time time;
 	private final AtomicLong countOfImportedTags = new AtomicLong(0L);
 
-	public MetadataImporter(final File dropDir, final MediaDb mediaDb) {
+	public MetadataImporter(final File dropDir, final MediaDb mediaDb, boolean verboseLog) {
+		this(dropDir, mediaDb, verboseLog, Time.DEFAULT);
+	}
+
+	protected MetadataImporter(final File dropDir, final MediaDb mediaDb, final boolean verboseLog, final Time time) {
 		this.dropDir = dropDir;
 		this.mediaDb = mediaDb;
+		this.verboseLog = verboseLog;
+		this.time = time;
 	}
 
 	public long getCountOfImportedTags() {
@@ -67,8 +77,10 @@ public class MetadataImporter {
 			}
 			try {
 				final MetadataDump md = MetadataDump.readFile(file);
-				importMetadataDump(md);
+				final long changeCount = importMetadataDump(md);
+				this.countOfImportedTags.addAndGet(changeCount);
 				renameDropFile(file, MetadataDump.PROCESSED_FILE_EXTENSION);
+				LOG.info("Successfully imported {} changes from drop file: {}", changeCount, file);
 			}
 			catch (final Exception e) {
 				LOG.warn("Failed to process drop file {}: {}", file.getAbsolutePath(), e.toString());
@@ -77,18 +89,30 @@ public class MetadataImporter {
 		}
 	}
 
-	private void importMetadataDump(final MetadataDump md) throws SQLException, IOException {
+	private long importMetadataDump(final MetadataDump md) throws SQLException, IOException {
+		long changeCount = 0;
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			for (final HashAndTags hat : md.getHashAndTags()) {
 				final String cid = this.mediaDb.canonicalIdForHash(hat.getSha1().toString(16));
 				if (cid == null) continue;
-				for (final String tag : hat.getTags()) {
-					if (w.addTag(cid, tag, System.currentTimeMillis())) {
-						this.countOfImportedTags.incrementAndGet();
+				for (final ImportedTag tag : hat.getTags()) {
+					final boolean modified;
+					if (tag.getMod() != 0) {
+						modified = w.mergeTag(cid, tag.getTag(), tag.getMod(), tag.isDel());
+						if (this.verboseLog && modified) LOG.info("{} Merged: {} {}", changeCount, hat.getSha1().toString(16), tag);
 					}
+					else if (!tag.isDel()) {
+						modified = w.addTagIfNotDeleted(cid, tag.getTag(), this.time.now());
+						if (this.verboseLog && modified) LOG.info("{} Added new: {} {}", changeCount, hat.getSha1().toString(16), tag);
+					}
+					else {
+						continue;
+					}
+					if (modified) changeCount += 1;
 				}
 			}
 		}
+		return changeCount;
 	}
 
 	private static void renameDropFile(final File file, String suffix) throws IOException {

@@ -30,17 +30,21 @@ import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
 import com.vaguehope.dlnatoad.util.HashHelper;
+import com.vaguehope.dlnatoad.util.Time;
+import com.vaguehope.dlnatoad.util.Time.FakeTime;
 
 public class MetadataImporterTest {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
 
+	private FakeTime time;
 	private MediaDb mediaDb;
 	private ScheduledExecutorService schEx;
 	private MediaMetadataStore mediaMetadataStore;
 	private File dropDir;
 	private MetadataImporter undertest;
+
 
 	@Before
 	public void before() throws Exception {
@@ -53,10 +57,11 @@ public class MetadataImporterTest {
 			}
 		}).when(this.schEx).execute(any(Runnable.class));
 
+		this.time = new Time.FakeTime();
 		this.mediaDb = new InMemoryMediaDb();
 		this.mediaMetadataStore = new MediaMetadataStore(this.mediaDb, this.schEx, true);
 		this.dropDir = this.tmp.newFolder();
-		this.undertest = new MetadataImporter(this.dropDir, this.mediaDb);
+		this.undertest = new MetadataImporter(this.dropDir, this.mediaDb, true, this.time);
 
 		FileUtils.writeStringToFile(new File(this.dropDir, "ignore-me.txt"), "abc[", "UTF-8");
 		assertTrue(new File(this.dropDir, "ignore-me-dir").mkdir());
@@ -64,6 +69,8 @@ public class MetadataImporterTest {
 
 	@Test
 	public void itImportsMinimalDropFile() throws Exception {
+		final long now = this.time.now();
+
 		final File mediaFile = this.tmp.newFile();
 		FileUtils.writeStringToFile(mediaFile, "abc123", "UTF-8");
 		final String sha1 = HashHelper.sha1(mediaFile).toString(16);
@@ -72,9 +79,9 @@ public class MetadataImporterTest {
 		this.mediaMetadataStore.idForFile(mediaFile, cb);
 		final String fileId = cb.getMediaId();
 
-		// Have one existing tag that should not change.
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			w.addTag(fileId, "bar", System.currentTimeMillis());
+			w.addTag(fileId, "should-not-change", now);
+			w.addTag(fileId, "will-be-deleted", now);
 		}
 
 		final String sha1UpperCase = sha1.toUpperCase();
@@ -82,19 +89,35 @@ public class MetadataImporterTest {
 
 		final File dropFile = new File(this.dropDir, "my drop file.json");
 		FileUtils.writeStringToFile(dropFile, "["
-				+ "{\"sha1\": \"" + sha1UpperCase + "\", \"tags\": [\"foo\", \"bar\", \"bat\"]},"
-				+ "{\"sha1\": \"abc123\", \"tags\": [\"should-not-be-imported\"]}"
+				+ "{\"sha1\": \"" + sha1UpperCase + "\", \"tags\": ["
+				+ "{\"tag\":\"foo\",\"mod\":123,\"del\":false},"
+				+ "{\"tag\":\"will-be-deleted\",\"mod\":" + (now + 1) + ",\"del\":true},"
+				+ "{\"tag\":\"should-not-change\",\"del\":true},"  // will be ignored.
+				+ "{\"tag\":\"should-not-change\",\"mod\":" + now + ",\"del\":false}," // will be ignored.
+				+ "{\"tag\":\"should-not-change\",\"mod\":" + now + ",\"del\":true}," // will be ignored.
+				+ "{\"tag\":\"no-mod-date\",\"del\":false},"       // will be added if not exists.
+				+ "{\"tag\":\"no-mod-deleted\",\"del\":true},"     // will be ignored.
+				+ "{\"tag\":\"bat\",\"mod\":123,\"del\":true}"
+				+ "]},"
+				+ "{\"sha1\": \"abc123\", \"tags\": ["
+				+ "{\"tag\":\"should-not-be-imported\",\"mod\":123,\"del\":false},"
+				+ "]}"
 				+ "]", "UTF-8");
 
 		this.undertest.processDropDir();
 
-		final Set<String> actual = tagsAsSet(this.mediaDb.getTags(fileId, false));
-		assertThat(actual, containsInAnyOrder("foo", "bar", "bat"));
+		assertThat(this.mediaDb.getTags(fileId, true), containsInAnyOrder(
+				new Tag("foo", 123, false),
+				new Tag("should-not-change", now, false),
+				new Tag("will-be-deleted", now + 1, true),
+				new Tag("no-mod-date", now, false),
+				new Tag("bat", 123, true)
+				));
 
 		assertFalse(dropFile.exists());
 		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
 
-		assertEquals(2, this.undertest.getCountOfImportedTags());
+		assertEquals(4, this.undertest.getCountOfImportedTags());
 	}
 
 	@Test
@@ -114,7 +137,11 @@ public class MetadataImporterTest {
 
 		final File dropFile = new File(this.dropDir, "my drop file.json");
 		FileUtils.writeStringToFile(dropFile, "["
-				+ "{\"sha1\": \"" + fullLengthSha1 + "\", \"tags\": [\"foo\", \"bar\", \"bat\"]}"
+				+ "{\"sha1\": \"" + fullLengthSha1 + "\", \"tags\": ["
+						+ "{\"tag\":\"foo\",\"mod\":123,\"del\":false},"
+						+ "{\"tag\":\"bar\",\"mod\":123,\"del\":false},"
+						+ "{\"tag\":\"bat\",\"mod\":123,\"del\":false}"
+						+ "]}"
 				+ "]", "UTF-8");
 
 		this.undertest.processDropDir();

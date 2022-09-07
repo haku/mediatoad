@@ -1,8 +1,9 @@
 package com.vaguehope.dlnatoad.util;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.lang3.RandomUtils;
 
 public interface Time {
 
@@ -22,7 +23,7 @@ public interface Time {
 
 	public class FakeTime implements Time {
 
-		private final AtomicLong time = new AtomicLong(new Random().nextLong());
+		private final AtomicLong time = new AtomicLong(RandomUtils.nextLong(1000000000000L, Long.MAX_VALUE));
 
 		@Override
 		public long now() {

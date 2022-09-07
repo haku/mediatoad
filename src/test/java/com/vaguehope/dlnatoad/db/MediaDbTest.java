@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.db;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,7 +49,7 @@ public class MediaDbTest {
 		assertThat(expectedTags, hasSize(1));
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setTagDeleted(fileId, existing.getTag(), true, 2345678901L);
+			w.setTagModifiedAndDeleted(fileId, existing.getTag(), true, 2345678901L);
 		}
 
 		final Collection<Tag> deletedTags = this.undertest.getTags(fileId, true);
@@ -62,6 +63,27 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itAddsADeletedTag() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId));
+			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
+		}
+		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
+	}
+
+	@Test
+	public void itDoesNotAddTagWithNoDate() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId));
+			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
+			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", 9234567890L));
+		}
+		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
+	}
+
+	@Test
 	public void itDoesNotDuplicateTagsAndIsCaseInsenstive() throws Exception {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
@@ -71,11 +93,24 @@ public class MediaDbTest {
 			assertFalse(w.addTag(fileId, "my-tag", 1234567891L));
 			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
 		}
-		assertThat(this.undertest.getTags(fileId, true), hasSize(1));
+		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
 
 	@Test
-	public void itUndeletesWhenReadding() throws Exception {
+	public void itDoesNotMergeOlderUpdates() throws Exception {
+		final String fileId = "myid";
+		final File file = new File("/media/foo.wav");
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId));
+			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
+			assertFalse(w.mergeTag(fileId, "my-tag", 1234567870L, true));
+			assertFalse(w.mergeTag(fileId, "my-tag", 1234567890L, true));
+		}
+		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, false)));
+	}
+
+	@Test
+	public void itUndeletesWhenReAdding() throws Exception {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
@@ -86,7 +121,7 @@ public class MediaDbTest {
 		final Collection<Tag> tags = this.undertest.getTags(fileId, false);
 		final Tag tag = tags.iterator().next();
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setTagDeleted(fileId, tag.getTag(), true, 1234567891L);
+			w.setTagModifiedAndDeleted(fileId, tag.getTag(), true, 1234567891L);
 		}
 
 		final Collection<Tag> deleted = this.undertest.getTags(fileId, true);

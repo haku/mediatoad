@@ -1,5 +1,7 @@
 package com.vaguehope.dlnatoad.db;
 
+import java.util.Objects;
+
 public class Tag {
 
 	private final String tag;
@@ -30,6 +32,20 @@ public class Tag {
 		return String.format("Tag{%s, %s, %s}", this.tag, this.modified, this.deleted);
 	}
 
-	// no equals() ATM as i can not decide if matching all fields is useful.
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.tag, this.modified, this.deleted);
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == null) return false;
+		if (this == obj) return true;
+		if (!(obj instanceof Tag)) return false;
+		final Tag that = (Tag) obj;
+		return Objects.equals(this.tag, that.tag)
+				&& Objects.equals(this.modified, that.modified)
+				&& Objects.equals(this.deleted, that.deleted);
+	}
 
 }

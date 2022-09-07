@@ -156,7 +156,7 @@ public final class Main {
 		final File dropDir = args.getDropDir();
 		final Runnable metadataImporterStarter = () -> {
 			if (dropDir == null) return;
-			new MetadataImporter(dropDir, mediaDb).start(fsExSvc);
+			new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
 		};
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();

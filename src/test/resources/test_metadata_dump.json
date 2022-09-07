@@ -2,17 +2,40 @@
   {
     "sha1": "d8e244abc5057409cbbfcb8f44c5120ec2e3f64f",
     "tags": [
-      "foo",
-      "bar",
-      "bat"
+      {
+        "tag": "foo",
+        "mod": 1200000100000,
+        "del": false
+      },
+      {
+        "tag": "no mod",
+        "del": false
+      },
+      {
+        "tag": "bat",
+        "mod": 1200000300000,
+        "del": true
+      }
     ]
   },
   {
     "sha1": "722f710e0f039262c87c50b6af87a9d9132feac4",
     "tags": [
-      "red",
-      "green",
-      "blue"
+      {
+        "tag": "red",
+        "mod": 1300000100000,
+        "del": false
+      },
+      {
+        "tag": "green",
+        "mod": 1300000200000,
+        "del": true
+      },
+      {
+        "tag": "blue",
+        "mod": 1300000300000,
+        "del": false
+      }
     ]
   }
 ]

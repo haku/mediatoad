@@ -157,7 +157,7 @@ public class ItemServlet extends HttpServlet {
 			final String tag = readRequiredParam(req, resp, "tag");
 			if (tag == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-				w.setTagDeleted(item.getId(), tag, true, System.currentTimeMillis());
+				w.setTagModifiedAndDeleted(item.getId(), tag, true, System.currentTimeMillis());
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
