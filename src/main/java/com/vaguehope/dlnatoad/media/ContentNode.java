@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,6 +52,11 @@ public class ContentNode extends AbstractContent {
 			return title + " (restricted)";
 		}
 		return title;
+	}
+
+	public BigInteger getAuth() {
+		if (this.authList == null) return BigInteger.ZERO;
+		return this.authList.getId();
 	}
 
 	public boolean hasAuthList() {

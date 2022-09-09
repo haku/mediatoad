@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.db;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -42,6 +43,7 @@ public class MediaDb {
 					+ "id STRING NOT NULL"
 					+ ");");
 		}
+		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'"); // TODO add default!
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
 					+ "file_id STRING NOT NULL, "
@@ -79,6 +81,26 @@ public class MediaDb {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Files.
+
+	/**
+	 * Only for unit tests.
+	 */
+	BigInteger readFileAuth(final File file) throws SQLException {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT auth FROM files WHERE file=?;")) {
+			st.setString(1, file.getAbsolutePath());
+			st.setMaxRows(2);
+			try (final ResultSet rs = st.executeQuery()) {
+				if (!rs.next()) return null;
+				final BigInteger ret = new BigInteger(rs.getString(1), 16);
+				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
+				return ret;
+			}
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// Durations.
 
 	protected long readDurationCheckingFileSize (final String key, final long expectedSize) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(

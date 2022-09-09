@@ -3,6 +3,7 @@ package com.vaguehope.dlnatoad.db;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -66,7 +67,7 @@ public class WritableMediaDb implements Closeable {
 
 	protected FileData readFileData (final File file) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT size, modified, hash, id FROM files WHERE file=?;");
+				"SELECT size, modified, hash, id, auth FROM files WHERE file=?;");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);
@@ -74,7 +75,7 @@ public class WritableMediaDb implements Closeable {
 			try {
 				if (!rs.next()) return null;
 				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4));
+						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), new BigInteger(rs.getString(5), 16));
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return fileData;
 			}
@@ -87,9 +88,10 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
+	// TODO could this method only return ID and File?
 	protected Collection<FileAndData> filesWithHash (final String hash) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT file, size, modified, hash, id FROM files WHERE hash=?;");
+				"SELECT file, size, modified, hash, id, auth FROM files WHERE hash=?;");
 		try {
 			st.setString(1, hash);
 			final ResultSet rs = st.executeQuery();
@@ -98,7 +100,7 @@ public class WritableMediaDb implements Closeable {
 				while (rs.next()) {
 					ret.add(new FileAndData(
 							new File(rs.getString(1)),
-							new FileData(rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5))));
+							new FileData(rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5), new BigInteger(rs.getString(6), 16))));
 				}
 				return ret;
 			}
@@ -171,6 +173,23 @@ public class WritableMediaDb implements Closeable {
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to update data for file %s to \"%s\".", file, fileData), e);
+		}
+		finally {
+			st.close();
+		}
+	}
+
+	protected void updateFileAuth(final File file, final BigInteger auth) throws SQLException {
+		final PreparedStatement st = this.conn.prepareStatement(
+				"UPDATE files SET auth=? WHERE file=?;");
+		try {
+			st.setString(1, auth.toString(16));
+			st.setString(2, file.getAbsolutePath());
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException("No update occured updating auth '" + file.getAbsolutePath() + "'.");
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to update auth for file %s to \"%s\".", file, auth.toString(16)), e);
 		}
 		finally {
 			st.close();

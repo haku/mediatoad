@@ -20,7 +20,7 @@ public class MediaIdTest {
 	@Test
 	public void itMakesTempId() throws Exception {
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.undertest.contentIdAsync(ContentGroup.VIDEO, new File("MyVideo.mp4"), cb);
+		this.undertest.contentIdAsync(ContentGroup.VIDEO, new File("MyVideo.mp4"), null, cb);
 		assertThat(cb.getMediaId(), matchesPattern("video-[0-9a-f]+-MyVideo_mp4"));
 	}
 

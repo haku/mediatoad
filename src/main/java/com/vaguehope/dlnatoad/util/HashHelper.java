@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -19,10 +19,13 @@ public final class HashHelper {
 		throw new AssertionError();
 	}
 
-	public static String sha1(final String s) {
+	public static BigInteger sha1(final String s) {
 		final MessageDigest md = MD_SHA1_FACTORY.get();
-		final byte[] bytes = md.digest(getBytes(s));
-		return new BigInteger(1, bytes).toString(16); // NOSONAR Hex is not a magic number.
+		return new BigInteger(1, md.digest(s.getBytes(StandardCharsets.UTF_8)));
+	}
+
+	public static String sha1AsString(final String s) {
+		return sha1(s).toString(16); // NOSONAR Hex is not a magic number.
 	}
 
 	public static BigInteger sha1 (final File file) throws IOException {
@@ -36,17 +39,8 @@ public final class HashHelper {
 	@Deprecated
 	public static String md5 (final String text) {
 		final MessageDigest md = MD_MD5_FACTORY.get();
-		md.update(text.getBytes(), 0, text.length());
+		md.update(text.getBytes(StandardCharsets.UTF_8), 0, text.length());
 		return new BigInteger(1, md.digest()).toString(16);
-	}
-
-	private static byte[] getBytes (final String s) {
-		try {
-			return s.getBytes("UTF-8");
-		}
-		catch (final UnsupportedEncodingException e) {
-			throw new IllegalStateException("JVM should always know about UTF-8.", e);
-		}
 	}
 
 	private static ByteBuffer createByteBuffer () {

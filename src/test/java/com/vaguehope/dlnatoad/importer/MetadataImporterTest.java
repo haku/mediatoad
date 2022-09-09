@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -76,7 +77,7 @@ public class MetadataImporterTest {
 		final String sha1 = HashHelper.sha1(mediaFile).toString(16);
 
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.mediaMetadataStore.idForFile(mediaFile, cb);
+		this.mediaMetadataStore.idForFile(mediaFile, BigInteger.ZERO, cb);
 		final String fileId = cb.getMediaId();
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
@@ -132,7 +133,7 @@ public class MetadataImporterTest {
 		assertEquals(40, fullLengthSha1.length());
 
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.mediaMetadataStore.idForFile(mediaFile, cb);
+		this.mediaMetadataStore.idForFile(mediaFile, BigInteger.ZERO, cb);
 		final String fileId = cb.getMediaId();
 
 		final File dropFile = new File(this.dropDir, "my drop file.json");

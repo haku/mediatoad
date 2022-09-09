@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.auth;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
@@ -9,16 +10,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class AuthList {
 
@@ -89,6 +93,7 @@ public class AuthList {
 		return names != null ? names : Collections.emptySet();
 	}
 
+	private final BigInteger id;
 	private final Set<String> usernames;
 
 	/**
@@ -96,7 +101,15 @@ public class AuthList {
 	 */
 	private AuthList(final Set<String> usernames) {
 		if (usernames == null) throw new IllegalStateException("Set usernames can not be null.");
-		this.usernames = Collections.unmodifiableSet(usernames);
+		this.usernames = Collections.unmodifiableSet(new TreeSet<>(usernames));  // Sort the list.
+		this.id = HashHelper.sha1(StringUtils.join(this.usernames, "\n"));
+
+		// Probably excessive, but better to be sure.
+		if (this.id.equals(BigInteger.ZERO)) throw new IllegalStateException("AuthList can not SHA1 to 0.");
+	}
+
+	public BigInteger getId() {
+		return this.id;
 	}
 
 	public Set<String> usernames() {

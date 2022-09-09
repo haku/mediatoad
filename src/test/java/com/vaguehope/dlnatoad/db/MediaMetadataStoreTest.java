@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
 import java.util.Random;
@@ -33,6 +35,8 @@ import org.mockito.stubbing.Answer;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
 
 public class MediaMetadataStoreTest {
+
+	private static final Random RND = new Random(System.currentTimeMillis());
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
 
@@ -65,14 +69,31 @@ public class MediaMetadataStoreTest {
 	}
 
 	private String callIdForFile(final File file) throws IOException, InterruptedException {
+		return callIdForFile(file, BigInteger.ZERO);
+	}
+
+	private String callIdForFile(final File file, final BigInteger auth) throws IOException, InterruptedException {
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.undertest.idForFile(file, cb);
+		this.undertest.idForFile(file, auth, cb);
 		return cb.getMediaId();
 	}
 
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
 		assertNotNull(new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true));
+	}
+
+	@Test
+	public void itStoresAuthForNewfileAndUpdatesForChangedAuth() throws Exception {
+		final BigInteger auth1 = new BigInteger(128, RND);
+		final File f1 = mockMediaFile("media-1.ext");
+		callIdForFile(f1, auth1);
+		assertEquals(auth1, this.undertest.getMediaDb().readFileAuth(f1));
+
+		final BigInteger auth2 = new BigInteger(128, RND);
+		assertNotEquals(auth1, auth2);
+		callIdForFile(f1, auth2);
+		assertEquals(auth2, this.undertest.getMediaDb().readFileAuth(f1));
 	}
 
 	@Test

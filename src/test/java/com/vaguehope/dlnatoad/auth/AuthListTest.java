@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
@@ -75,6 +76,15 @@ public class AuthListTest {
 		writeListAndReadDir(dir1, "usera\nuserb\nuser1\nuser2");
 		final AuthList actual = writeListAndReadDir(dir2, "usera\nuserb\nuserc\nuser1\nuser2\nuser3");
 		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
+	}
+
+	@Test
+	public void itGiveListAStableId() throws Exception {
+		final BigInteger id = new BigInteger("55c8ecbe743ae53c684b1ed2b097b6e9292252b7", 16);
+		final AuthList actual1 = AuthList.ofNames("foo", "bar", "bat");
+		assertEquals(id, actual1.getId());
+		final AuthList actual2 = AuthList.ofNames("bar", "foo", "bat");
+		assertEquals(id, actual2.getId());
 	}
 
 	private AuthList writeListAndReadDir(final String list) throws IOException {

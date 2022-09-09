@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -70,7 +71,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(10, 50), StandardCharsets.UTF_8);
 
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		idForFile(mediaFile, cb);
+		idForFile(mediaFile, BigInteger.ZERO, cb);
 		final String fileId = cb.getMediaId();
 
 		try (final WritableMediaDb w = getMediaDb().getWritable()) {

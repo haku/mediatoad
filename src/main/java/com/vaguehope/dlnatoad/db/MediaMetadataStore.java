@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.db;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,9 +47,9 @@ public class MediaMetadataStore {
 		return this.mediaDb;
 	}
 
-	public void idForFile(final File file, final MediaIdCallback callback) throws IOException, InterruptedException {
+	public void idForFile(final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException, InterruptedException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
-		this.fileIdQueue.put(new FileAndIdCallback(file, callback));
+		this.fileIdQueue.put(new FileAndIdCallback(file, auth, callback));
 		scheduleFileIdBatchIfNeeded();
 	}
 
@@ -96,7 +97,7 @@ public class MediaMetadataStore {
 
 	private void processFileIdRequest(final WritableMediaDb w, final FileAndIdCallback f) {
 		try {
-			addOrUpdateFileData(w, f.getFile(), f.getCallback());
+			addOrUpdateFileData(w, f.getFile(), f.getAuth(), f.getCallback());
 		}
 		catch (final Exception e) {
 			if (e instanceof IOException) {
@@ -108,7 +109,7 @@ public class MediaMetadataStore {
 		}
 	}
 
-	private void addOrUpdateFileData(final WritableMediaDb w, final File file, final MediaIdCallback callback) throws SQLException, IOException {
+	private void addOrUpdateFileData(final WritableMediaDb w, final File file, final BigInteger auth, final MediaIdCallback callback) throws SQLException, IOException {
 		final FileData oldFileData = w.readFileData(file);
 		final String id;
 		if (oldFileData == null) {
@@ -122,6 +123,9 @@ public class MediaMetadataStore {
 		}
 		else {
 			id = canonicaliseAndStoreId(w, oldFileData);
+		}
+		if (oldFileData == null || !oldFileData.hasAuth(auth)) {
+			w.updateFileAuth(file, auth);
 		}
 		callback.onResult(id);
 	}

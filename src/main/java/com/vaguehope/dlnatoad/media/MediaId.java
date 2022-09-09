@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.util.HashHelper;
@@ -9,7 +10,7 @@ import com.vaguehope.dlnatoad.util.HashHelper;
 public class MediaId {
 
 	private interface Ider {
-		void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException;
+		void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException;
 	}
 
 	private final Ider impl;
@@ -23,8 +24,8 @@ public class MediaId {
 		return transientContentId(type, file);
 	}
 
-	public void contentIdAsync (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
-		this.impl.idForFile(type, file, callback);
+	public void contentIdAsync (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
+		this.impl.idForFile(type, file, auth, callback);
 	}
 
 	private static class PersistentIder implements Ider {
@@ -36,10 +37,11 @@ public class MediaId {
 		}
 
 		@Override
-		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
+		public void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
 			try {
 				if (file.isFile()) {
-					this.mediaMetadataStore.idForFile(file, callback);
+					if (auth == null) throw new NullPointerException("ID of a file requires non-null auth.");
+					this.mediaMetadataStore.idForFile(file, auth, callback);
 				}
 				else {
 					callback.onResult(transientContentId(type, file));
@@ -57,7 +59,7 @@ public class MediaId {
 		public TransientIder () {}
 
 		@Override
-		public void idForFile (final ContentGroup type, final File file, final MediaIdCallback callback) throws IOException {
+		public void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
 			callback.onResult(transientContentId(type, file));
 		}
 
