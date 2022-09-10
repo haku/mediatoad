@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -81,7 +82,7 @@ public class ItemServlet extends HttpServlet {
 		final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
 		for (final Tag tag : tags) {
 			w.print("<span style=\"padding-right: 0.5em;\">");
-			w.print(tag.getTag());
+			w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
 			if (allowEditTags) {
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"rmtag\">");
