@@ -46,6 +46,9 @@ public class AuthList {
 		return new AuthList(names);
 	}
 
+	/**
+	 * Only for testing.
+	 */
 	public static AuthList ofNames(final String... names) {
 		return new AuthList(new HashSet<>(Arrays.asList(names)));
 	}
@@ -117,6 +120,7 @@ public class AuthList {
 	}
 
 	public boolean hasUser(final String username) {
+		if (username == null) return false;
 		return this.usernames.contains(username);
 	}
 
