@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
@@ -194,6 +196,24 @@ public class MediaDb {
 				ret.add(new Tag(rs.getString(1), rs.getLong(2), rs.getInt(3) != 0));
 			}
 			return ret;
+		}
+	}
+
+	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final int countLimit) throws SQLException {
+		final StringBuilder sql = new StringBuilder();
+		sql.append("SELECT tag, count(1) AS freq FROM files, tags WHERE id=file_id AND");
+		SqlFragments.appendWhereAuth(sql, authIds);
+		sql.append(" GROUP BY tag ORDER BY freq DESC, tag ASC LIMIT ?;");
+		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
+			st.setInt(1, countLimit);
+			st.setMaxRows(countLimit);
+			try (final ResultSet rs = st.executeQuery()) {
+				final List<TagFrequency> ret = new ArrayList<>(countLimit);
+				while (rs.next()) {
+					ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
+				}
+				return ret;
+			}
 		}
 	}
 

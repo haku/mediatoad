@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.AuthSet;
 
 /**
  * Based on a class from WireMe and used under Apache 2 License. See
@@ -24,6 +25,7 @@ public class ContentTree {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentTree.class);
 
+	private final AuthSet authSet = new AuthSet();
 	private final Map<String, ContentNode> contentNodes = new ConcurrentHashMap<>();
 	private final ContentNode rootNode;
 	private final Map<String, ContentItem> contentItems = new ConcurrentHashMap<>();
@@ -53,6 +55,10 @@ public class ContentTree {
 		}
 	}
 
+	public AuthSet getAuthSet() {
+		return this.authSet;
+	}
+
 	public int getNodeCount() {
 		return this.contentNodes.size();
 	}
@@ -65,11 +71,11 @@ public class ContentTree {
 		return this.rootNode;
 	}
 
-	public Collection<ContentNode> getNodes () {
+	Collection<ContentNode> getNodes () {
 		return this.contentNodes.values();
 	}
 
-	public Collection<ContentItem> getItems() {
+	Collection<ContentItem> getItems() {
 		return this.contentItems.values();
 	}
 
@@ -79,6 +85,7 @@ public class ContentTree {
 	}
 
 	public void addNode (final ContentNode node) {
+		this.authSet.add(node.getAuthList());
 		this.contentNodes.put(node.getId(), node);
 	}
 

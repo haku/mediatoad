@@ -2,8 +2,12 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -15,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -30,14 +36,16 @@ public class IndexServlet extends HttpServlet {
 	private static final Logger LOG = LoggerFactory.getLogger(IndexServlet.class);
 	private static final long serialVersionUID = -8907271726001369264L;
 
-	private ServletCommon servletCommon;
+	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
+	private final MediaDb mediaDb;
 	private final ContentServlet contentServlet;
 	private final boolean printAccessLog;
 
-	public IndexServlet (ServletCommon servletCommon, final ContentTree contentTree, final ContentServlet contentServlet, boolean printAccessLog) {
+	public IndexServlet (final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final ContentServlet contentServlet, final boolean printAccessLog) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
+		this.mediaDb = mediaDb;
 		this.contentServlet = contentServlet;
 		this.printAccessLog = printAccessLog;
 	}
@@ -89,16 +97,46 @@ public class IndexServlet extends HttpServlet {
 		printDir(req, resp, contentNode, username);
 	}
 
-	private void printDir (HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode, final String username) throws IOException {
+	private void printDir (final HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode, final String username) throws IOException {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w);
 		this.servletCommon.printLinkRow(req, w);
 
+		if (ContentGroup.ROOT.getId().equals(contentNode.getId())) {
+			printTopTags(w, username);
+		}
+
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(w);
 		this.servletCommon.endBody(w);
+	}
+
+	// TODO make able to search for top tags in a directory.
+	private void printTopTags(final PrintWriter w, final String username) throws IOException {
+		if (this.mediaDb == null) return;
+
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		try {
+			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, 25);
+			if (topTags.size() < 1) return;
+
+			w.println("<h3>Tags</h3>");
+			for (final TagFrequency t : topTags) {
+				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
+				w.print("search?query=t%3D");
+				w.print(StringEscapeUtils.escapeHtml4(t.getTag()));
+				w.print("\">");
+				w.print(t.getTag());
+				w.print(" (");
+				w.print(t.getCount());
+				w.println(")</a>");
+			}
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
+		}
 	}
 
 	// http://www.webdav.org/specs/rfc4918.html
@@ -150,7 +188,7 @@ public class IndexServlet extends HttpServlet {
 		w.println("</D:multistatus>");
 	}
 
-	private static void appendPropfindNode(final HttpServletRequest req, String username, final PrintWriter w, final ContentNode node, boolean appendIdToPath) {
+	private static void appendPropfindNode(final HttpServletRequest req, final String username, final PrintWriter w, final ContentNode node, final boolean appendIdToPath) {
 		if (!node.isUserAuth(username)) return;
 
 		String path = req.getPathInfo();
@@ -181,7 +219,7 @@ public class IndexServlet extends HttpServlet {
 		w.println("</D:response>");
 	}
 
-	private static void appendPropfindItem(final HttpServletRequest req, final PrintWriter w, final ContentItem item, boolean appendIdToPath) {
+	private static void appendPropfindItem(final HttpServletRequest req, final PrintWriter w, final ContentItem item, final boolean appendIdToPath) {
 		String path = req.getPathInfo();
 		if (appendIdToPath) {
 			path = StringHelper.removeSuffix(path, "/") + "/" + item.getId();

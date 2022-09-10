@@ -84,7 +84,7 @@ public class MediaIndex implements FileListener {
 
 		final ContentNode dirContainer = dirToContentNode(rootDir, file.getParentFile(), format);
 
-		this.mediaId.contentIdAsync(format.getContentGroup(), file, dirContainer.getAuth(), new MediaIdCallback() {
+		this.mediaId.contentIdAsync(format.getContentGroup(), file, dirContainer.getAuthId(), new MediaIdCallback() {
 			@Override
 			public void onResult(final String itemId) throws IOException {
 				// If ID has changed, remove and re-add.
@@ -276,7 +276,7 @@ public class MediaIndex implements FileListener {
 
 	private void makeItemInContainer(final MediaFormat format, final ContentNode parent, final File file,
 			final String title, final Runnable onComplete) throws IOException {
-		this.mediaId.contentIdAsync(format.getContentGroup(), file, parent.getAuth(), new MediaIdCallback() {
+		this.mediaId.contentIdAsync(format.getContentGroup(), file, parent.getAuthId(), new MediaIdCallback() {
 			@Override
 			public void onResult(final String itemId) throws IOException {
 				final boolean added = makeItemInContainer(format, parent, file, title, itemId);
@@ -353,7 +353,7 @@ public class MediaIndex implements FileListener {
 			return;
 		}
 
-		this.mediaId.contentIdAsync(mediaContentGroup, artFile, node.getAuth(), new MediaIdCallback() {
+		this.mediaId.contentIdAsync(mediaContentGroup, artFile, node.getAuthId(), new MediaIdCallback() {
 			@Override
 			public void onResult(final String artId) throws IOException {
 				final ContentItem artItem = new ContentItem(artId, node.getId(), artFile.getName(), artFile, artFormat);

@@ -2,10 +2,12 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -84,7 +86,8 @@ public class SearchServlet extends HttpServlet {
 			try {
 				final List<ContentItem> results;
 				if (this.mediaDb != null) {
-					final List<String> ids = DbSearchParser.parseSearch(query).execute(this.mediaDb, MAX_RESULTS);
+					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, MAX_RESULTS);
 					results = this.contentTree.getItemsForIds(ids, username);
 				}
 				else {

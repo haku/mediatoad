@@ -9,12 +9,15 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.sql.SQLException;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import com.google.common.collect.ImmutableSet;
 
 public class MediaDbTest {
 
@@ -140,6 +143,30 @@ public class MediaDbTest {
 		final Tag undeletedTag = undeleted.iterator().next();
 		assertEquals(false, undeletedTag.isDeleted());
 		assertEquals(1234567892L, undeletedTag.getModified());
+	}
+
+	@Test
+	public void itGetsTopTags() throws Exception {
+		final BigInteger auth = BigInteger.valueOf(234567);
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			for (int i = 0; i < 10; i++) {
+				addMockFiles(w, "id-" + i, BigInteger.ZERO, "tag1");
+			}
+			for (int i = 10; i < 20; i++) {
+				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
+			}
+		}
+		assertThat(this.undertest.getTopTags(null, 10), contains(new TagFrequency("tag1", 10)));
+		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));
+	}
+
+	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {
+		final File f = new File("/media/" + id + ".wav");
+		w.storeFileData(f, new FileData(12, 123456, "myhash-" + id, id, null));
+		w.updateFileAuth(f, auth);
+		for (final String tag : tags) {
+			assertTrue(w.addTag(id, tag, 1234567890L));
+		}
 	}
 
 }

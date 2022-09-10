@@ -1,12 +1,15 @@
 package com.vaguehope.dlnatoad.db.search;
 
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
 
 public class DbSearchParser {
@@ -42,29 +45,23 @@ public class DbSearchParser {
 		throw new AssertionError();
 	}
 
-	public static DbSearch parseSearch (final String allTerms) {
-		return parseSearch(null, null, allTerms);
-	}
-
-	public static DbSearch parseSearch (final String allTerms,
-			final String[] sortColumns, final SortDirection[] sortDirection) {
-		return parseSearch(sortColumns, sortDirection, allTerms);
+	public static DbSearch parseSearch (final String allTerms, final Set<BigInteger> authIds) {
+		return parseSearch(allTerms, authIds, null, null);
 	}
 
 	public static DbSearch parseSearch (
-			final String[] sortColumns, final SortDirection[] sortDirection) {
-		return parseSearch(sortColumns, sortDirection, null);
-	}
-
-	public static DbSearch parseSearch (
-			final String[] sortColumns, final SortDirection[] sortDirection,
-			final String allTerms) {
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final String[] sortColumns,
+			final SortDirection[] sortDirection) {
 		if (sortColumns == null ^ sortDirection == null) throw new IllegalArgumentException("Must specify both or neith of sort and direction.");
 		if (sortColumns != null && sortDirection != null && sortColumns.length != sortDirection.length) throw new IllegalArgumentException("Sorts and directions must be same length.");
 
 		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
-		appendWhere(sql, terms);
+		sql.append(_SQL_WHERE);
+		SqlFragments.appendWhereAuth(sql, authIds);
+		appendWhereTerms(sql, terms);
 		if (sortColumns != null && sortDirection != null && sortColumns.length > 0 && sortDirection.length > 0) {
 			sql.append(" ORDER BY ");
 			for (int i = 0; i < sortColumns.length; i++) {
@@ -79,14 +76,9 @@ public class DbSearchParser {
 		return new DbSearch(sql.toString(), terms);
 	}
 
-	private static void appendWhere (final StringBuilder sql, final List<String> terms) {
-		sql.append(_SQL_WHERE);
-		boolean needAnd = false;
-
+	private static void appendWhereTerms (final StringBuilder sql, final List<String> terms) {
 		if (terms.size() > 0) {
-			if (needAnd) sql.append(_SQL_AND);
-			needAnd = true;
-
+			sql.append(_SQL_AND);
 			sql.append(" ( ");
 			int openBrackets = 0;
 			for (int i = 0; i < terms.size(); i++) {

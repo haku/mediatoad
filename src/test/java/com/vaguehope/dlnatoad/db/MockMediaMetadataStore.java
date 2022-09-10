@@ -51,27 +51,31 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 	}
 
 	public String addFileWithTags(final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, tags);
+	}
+
+	public String addFileWithAuthAndTags(final BigInteger auth, final String... tags) throws IOException, InterruptedException, SQLException {
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", auth, tags);
 	}
 
 	public String addFileWithName(String nameFragment) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext");
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO);
 	}
 
 	public String addFileWithName(String nameFragment, String nameSuffex) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, nameSuffex);
+		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO);
 	}
 
 	public String addFileWithNameAndTags(String nameFragment, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext", tags);
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, tags);
 	}
 
-	public String addFileWithNameExtAndTags(String nameFragment, String nameSuffex, final String... tags) throws IOException, InterruptedException, SQLException {
+	public String addFileWithNameExtAndTags(String nameFragment, String nameSuffex, final BigInteger auth, final String... tags) throws IOException, InterruptedException, SQLException {
 		final File mediaFile = File.createTempFile("mock_media_" + nameFragment, nameSuffex, this.tmp.getRoot());
 		FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(10, 50), StandardCharsets.UTF_8);
 
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		idForFile(mediaFile, BigInteger.ZERO, cb);
+		idForFile(mediaFile, auth, cb);
 		final String fileId = cb.getMediaId();
 
 		try (final WritableMediaDb w = getMediaDb().getWritable()) {

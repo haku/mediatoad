@@ -54,7 +54,11 @@ public class ContentNode extends AbstractContent {
 		return title;
 	}
 
-	public BigInteger getAuth() {
+	public AuthList getAuthList() {
+		return this.authList;
+	}
+
+	public BigInteger getAuthId() {
 		if (this.authList == null) return BigInteger.ZERO;
 		return this.authList.getId();
 	}

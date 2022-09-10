@@ -5,21 +5,24 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
 public class DbSearchParserTest {
 
-	private static final String SQL_PREFIX = "SELECT id FROM files WHERE ";
+	private static final String SQL_PREFIX = "SELECT id FROM files WHERE";
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
@@ -37,7 +40,8 @@ public class DbSearchParserTest {
 	@Test
 	public void itParsesSingleTermQuery() throws Exception {
 		runParser("hello", SQL_PREFIX +
-				"(  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) )" +
+				" auth IN ('0')" +
+				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) )" +
 				"  ORDER BY file COLLATE NOCASE ASC;",
 				"hello");
 	}
@@ -46,6 +50,14 @@ public class DbSearchParserTest {
 	public void itSearchesWithSingleTermQuery() throws Exception {
 		final String id = this.mockMediaMetadataStore.addFileWithTags("hello", "how", "are", "you");
 		runQuery("hello", id);
+	}
+
+	@Test
+	public void itSeachesMatchingAuth() throws Exception {
+		final String noauth = this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.ZERO, "hello");
+		final String allowed = this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.valueOf(100001L), "hello");
+		this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.valueOf(200002L), "hello");
+		runQuery("hello", ImmutableSet.of(BigInteger.valueOf(100001L)), noauth, allowed);
 	}
 
 	@Test
@@ -404,13 +416,17 @@ public class DbSearchParserTest {
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
-		final DbSearch parsed = DbSearchParser.parseSearch(input);
+		final DbSearch parsed = DbSearchParser.parseSearch(input, null);
 		if (expectedSql != null) assertEquals(expectedSql, parsed.getSql());
 		assertThat(parsed.getTerms(), contains(expectedTerms));
 	}
 
 	private void runQuery(final String input, final String... expectedResults) throws SQLException {
-		final DbSearch parsed = DbSearchParser.parseSearch(input);
+		runQuery(input, null, expectedResults);
+	}
+
+	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
+		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds);
 		final List<String> results = parsed.execute(this.mediaDb);
 		assertThat(results, containsInAnyOrder(expectedResults));
 	}
