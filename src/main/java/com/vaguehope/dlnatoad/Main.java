@@ -17,6 +17,7 @@ import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -263,6 +264,9 @@ public final class Main {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		MediaFormat.addTo(servletHandler.getMimeTypes());
 		servletHandler.setContextPath("/");
+		if (args.isVerboseLog()) {
+			servletHandler.setErrorHandler(new ErrorHandler());
+		}
 
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
