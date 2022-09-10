@@ -25,7 +25,6 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.StringHelper;
@@ -39,7 +38,6 @@ public class ServletCommon {
 
 	public ServletCommon(
 			final ContentTree contentTree,
-			final MediaId mediaId,
 			final ImageResizer imageResizer,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,

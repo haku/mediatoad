@@ -282,7 +282,7 @@ public final class Main {
 				svExSvc.shutdown();
 			}
 		});
-		final ServletCommon servletCommon = new ServletCommon(contentTree, mediaId, imageResizer, hostName, contentServingHistory, svExSvc);
+		final ServletCommon servletCommon = new ServletCommon(contentTree, imageResizer, hostName, contentServingHistory, svExSvc);
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");

@@ -28,7 +28,6 @@ import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MockContent;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 
@@ -59,7 +58,6 @@ public class IndexServletTest {
 	private ContentTree contentTree;
 	private MockContent mockContent;
 	private ExecutorService exSvc;
-	private MediaId mediaId;
 	private ImageResizer imageResizer;
 	private ContentServingHistory contentServingHistory;
 	private IndexServlet undertest;
@@ -73,11 +71,10 @@ public class IndexServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.exSvc = mock(ExecutorService.class);
-		this.mediaId = new MediaId(null);
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
 		this.contentServlet = mock(ContentServlet.class);
-		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.mediaId, this.imageResizer, "hostName", this.contentServingHistory, this.exSvc),
+		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.imageResizer, "hostName", this.contentServingHistory, this.exSvc),
 				this.contentTree, this.contentServlet, true);
 
 		this.req = new MockHttpServletRequest();
