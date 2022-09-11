@@ -156,8 +156,29 @@ public class MediaDbTest {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
 			}
 		}
-		assertThat(this.undertest.getTopTags(null, 10), contains(new TagFrequency("tag1", 10)));
-		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));
+		assertThat(this.undertest.getTopTags(null, null, 10), contains(new TagFrequency("tag1", 10)));
+		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), null, 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));
+	}
+
+	@Test
+	public void itGetsTopTagsForSubDir() throws Exception {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			for (int i = 0; i < 5; i++) {
+				addMockFiles(w, "id-" + i, BigInteger.ZERO, "tag1");
+			}
+			for (int i = 5; i < 11; i++) {
+				addMockFiles(w, "sub/dir/path/id-" + i, BigInteger.ZERO, "tag2");
+			}
+			for (int i = 11; i < 18; i++) {
+				addMockFiles(w, "other/path/id-" + i, BigInteger.ZERO, "tag3");
+			}
+		}
+		assertThat(this.undertest.getTopTags(null, null, 10), contains(
+				new TagFrequency("tag3", 7),
+				new TagFrequency("tag2", 6),
+				new TagFrequency("tag1", 5)));
+		assertThat(this.undertest.getTopTags(null, "/media/sub/", 10), contains(
+				new TagFrequency("tag2", 6)));
 	}
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {

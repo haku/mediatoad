@@ -199,13 +199,21 @@ public class MediaDb {
 		}
 	}
 
-	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final int countLimit) throws SQLException {
+	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final String pathPrefix, final int countLimit) throws SQLException {
 		final StringBuilder sql = new StringBuilder();
 		sql.append("SELECT tag, count(1) AS freq FROM files, tags WHERE id=file_id AND");
+		if (pathPrefix != null) {
+			sql.append(" file LIKE ? ESCAPE ? AND");
+		}
 		SqlFragments.appendWhereAuth(sql, authIds);
 		sql.append(" GROUP BY tag ORDER BY freq DESC, tag ASC LIMIT ?;");
 		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
-			st.setInt(1, countLimit);
+			int param = 1;
+			if (pathPrefix != null) {
+				st.setString(param++, Sqlite.escapeSearch(pathPrefix) + "%");
+				st.setString(param++, Sqlite.SEARCH_ESC);
+			}
+			st.setInt(param++, countLimit);
 			st.setMaxRows(countLimit);
 			try (final ResultSet rs = st.executeQuery()) {
 				final List<TagFrequency> ret = new ArrayList<>(countLimit);

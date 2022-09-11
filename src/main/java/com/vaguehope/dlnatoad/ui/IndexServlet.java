@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
@@ -106,22 +107,22 @@ public class IndexServlet extends HttpServlet {
 		this.servletCommon.headerAndStartBody(w);
 		this.servletCommon.printLinkRow(req, w);
 
-		if (ContentGroup.ROOT.getId().equals(contentNode.getId())) {
-			printTopTags(w, username);
-		}
-
+		printTopTags(w, contentNode, username);
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(w);
 		this.servletCommon.endBody(w);
 	}
 
-	// TODO make able to search for top tags in a directory.
-	private void printTopTags(final PrintWriter w, final String username) throws IOException {
+	private void printTopTags(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
 		if (this.mediaDb == null) return;
+
+		final File dir = contentNode.getFile();
+		final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
+		if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(contentNode.getId())) return;
 
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
-			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, 100);
+			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, pathPrefix, 100);
 			if (topTags.size() < 1) return;
 
 			w.println("<h3>Tags</h3>");
