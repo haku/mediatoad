@@ -107,8 +107,8 @@ public class IndexServlet extends HttpServlet {
 		this.servletCommon.headerAndStartBody(w);
 		this.servletCommon.printLinkRow(req, w);
 
-		printTopTags(w, contentNode, username);
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
+		printTopTags(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(w);
 		this.servletCommon.endBody(w);
 	}
