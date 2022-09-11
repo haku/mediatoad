@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
@@ -122,23 +123,33 @@ public class ServletCommon {
 		w.println("<a href=\"/\">Home</a>");
 
 		if (ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
-			w.println("<a href=\"" + pathPrefix + "upnp\">UPNP</a>");
+			w.print("<a href=\"");
+			w.print(pathPrefix);
+			w.println("upnp\">UPNP</a>");
 		}
 
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
-		w.println("<form style=\"display:inline;\" action=\"" + pathPrefix + "search\" method=\"GET\">");
-		w.println("<input type=\"text\" id=\"query\" name=\"query\" value=\"" + query + "\">");
+		w.print("<form style=\"display:inline;\" action=\"");
+		w.print(pathPrefix);
+		w.println("search\" method=\"GET\">");
+		w.print("<input type=\"text\" id=\"query\" name=\"query\" value=\"");
+		w.print(StringEscapeUtils.escapeHtml4(query));
+		w.println("\">");
 		if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req)) {
 			final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 			final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
-			w.println("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" " + remoteChecked + ">");
+			w.print("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" ");
+			w.print(remoteChecked);
+			w.println(">");
 			w.println("<label for=\"remote\">remote</label>");
 		}
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
 
 		if (username != null) {
-			w.println("<span>Username: " + username + "</span>");
+			w.print("<span>Username: ");
+			w.print(username);
+			w.println("</span>");
 		}
 		else {
 			w.println("<form style=\"display:inline;\" action=\"\" method=\"GET\">");

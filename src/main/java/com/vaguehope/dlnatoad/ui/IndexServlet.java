@@ -18,9 +18,11 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -125,8 +127,10 @@ public class IndexServlet extends HttpServlet {
 			w.println("<h3>Tags</h3>");
 			for (final TagFrequency t : topTags) {
 				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
-				w.print("search?query=t%3D");
-				w.print(StringEscapeUtils.escapeHtml4(t.getTag()));
+				w.print("search?query=");
+				w.print(StringEscapeUtils.escapeHtml4(
+						UrlEscapers.urlPathSegmentEscaper().escape(
+								DbSearchSyntax.makeSingleTagSearch(t.getTag()))));
 				w.print("\">");
 				w.print(t.getTag());
 				w.print(" (");
