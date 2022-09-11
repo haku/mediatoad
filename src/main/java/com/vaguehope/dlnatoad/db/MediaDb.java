@@ -210,7 +210,10 @@ public class MediaDb {
 		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
 			int param = 1;
 			if (pathPrefix != null) {
-				st.setString(param++, Sqlite.escapeSearch(pathPrefix) + "%");
+				String pathLike = pathPrefix;
+				// TODO what about file systems that use \ ?
+				if (!pathLike.endsWith("/")) pathLike += "/";
+				st.setString(param++, Sqlite.escapeSearch(pathLike) + "%");
 				st.setString(param++, Sqlite.SEARCH_ESC);
 			}
 			st.setInt(param++, countLimit);

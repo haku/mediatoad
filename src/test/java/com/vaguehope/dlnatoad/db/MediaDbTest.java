@@ -170,14 +170,14 @@ public class MediaDbTest {
 				addMockFiles(w, "sub/dir/path/id-" + i, BigInteger.ZERO, "tag2");
 			}
 			for (int i = 11; i < 18; i++) {
-				addMockFiles(w, "other/path/id-" + i, BigInteger.ZERO, "tag3");
+				addMockFiles(w, "sub2/path/id-" + i, BigInteger.ZERO, "tag3");
 			}
 		}
 		assertThat(this.undertest.getTopTags(null, null, 10), contains(
 				new TagFrequency("tag3", 7),
 				new TagFrequency("tag2", 6),
 				new TagFrequency("tag1", 5)));
-		assertThat(this.undertest.getTopTags(null, "/media/sub/", 10), contains(
+		assertThat(this.undertest.getTopTags(null, "/media/sub", 10), contains(
 				new TagFrequency("tag2", 6)));
 	}
 
