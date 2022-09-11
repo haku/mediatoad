@@ -119,7 +119,7 @@ public class IndexServlet extends HttpServlet {
 
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
-			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, 25);
+			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, 100);
 			if (topTags.size() < 1) return;
 
 			w.println("<h3>Tags</h3>");
