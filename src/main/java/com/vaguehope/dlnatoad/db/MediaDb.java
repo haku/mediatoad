@@ -214,7 +214,7 @@ public class MediaDb {
 
 	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final String pathPrefix, final int countLimit) throws SQLException {
 		final StringBuilder sql = new StringBuilder();
-		sql.append("SELECT tag, count(1) AS freq FROM files, tags WHERE id=file_id AND");
+		sql.append("SELECT tag, count(1) AS freq FROM files, tags WHERE id=file_id AND deleted=0 AND");
 		if (pathPrefix != null) {
 			sql.append(" file LIKE ? ESCAPE ? AND");
 		}
