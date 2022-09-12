@@ -275,6 +275,10 @@ public final class Main {
 			servletHandler.setErrorHandler(new ErrorHandler());
 		}
 
+		// Lets start really small and increase later if needed.
+		servletHandler.setMaxFormContentSize(1024);
+		servletHandler.setMaxFormKeys(10);
+
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens();
