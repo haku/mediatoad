@@ -10,6 +10,7 @@ public class FileAndIdCallback {
 	private final File file;
 	private final BigInteger auth;
 	private final MediaIdCallback callback;
+	private Runnable genericCallback;
 
 	public FileAndIdCallback(final File file, final BigInteger auth, final MediaIdCallback callback) {
 		if (file == null) throw new IllegalArgumentException("file can not be null.");
@@ -18,6 +19,14 @@ public class FileAndIdCallback {
 		this.file = file;
 		this.auth = auth;
 		this.callback = callback;
+	}
+
+	public FileAndIdCallback(final Runnable callback) {
+		this.file = null;
+		this.auth = null;
+		this.callback = null;
+		this.genericCallback = callback;
+
 	}
 
 	public File getFile() {
@@ -30,6 +39,10 @@ public class FileAndIdCallback {
 
 	public MediaIdCallback getCallback() {
 		return this.callback;
+	}
+
+	public Runnable getGenericCallback() {
+		return this.genericCallback;
 	}
 
 }

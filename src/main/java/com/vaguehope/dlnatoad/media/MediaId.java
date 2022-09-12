@@ -11,6 +11,7 @@ public class MediaId {
 
 	private interface Ider {
 		void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException;
+		void putCallbackInQueue(Runnable callback);
 	}
 
 	private final Ider impl;
@@ -26,6 +27,10 @@ public class MediaId {
 
 	public void contentIdAsync (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
 		this.impl.idForFile(type, file, auth, callback);
+	}
+
+	public void putCallbackInQueue(final Runnable callback) {
+		this.impl.putCallbackInQueue(callback);
 	}
 
 	private static class PersistentIder implements Ider {
@@ -52,6 +57,11 @@ public class MediaId {
 			}
 		}
 
+		@Override
+		public void putCallbackInQueue(final Runnable callback) {
+			this.mediaMetadataStore.putCallbackInQueue(callback);
+		}
+
 	}
 
 	private static class TransientIder implements Ider {
@@ -61,6 +71,11 @@ public class MediaId {
 		@Override
 		public void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
 			callback.onResult(transientContentId(type, file));
+		}
+
+		@Override
+		public void putCallbackInQueue(Runnable callback) {
+			callback.run(); // No queue, so run now.
 		}
 
 	}
@@ -74,4 +89,5 @@ public class MediaId {
 	private static String getSafeName (final File file) {
 		return file.getName().replaceAll("[^a-zA-Z0-9]", "_");
 	}
+
 }

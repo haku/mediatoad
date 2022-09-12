@@ -67,6 +67,7 @@ public class MetadataImporter {
 	// Visible for testing.
 	void processDropDir() throws SQLException, IOException {
 		final File[] files = this.dropDir.listFiles();
+		if (this.verboseLog) LOG.info("Importing {} files for drop dir...", files.length);
 		Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);  // Make somewhat predictable.
 		for (final File file : files) {
 			if (!file.isFile()) continue;

@@ -53,6 +53,15 @@ public class MediaMetadataStore {
 		scheduleFileIdBatchIfNeeded();
 	}
 
+	public void putCallbackInQueue(final Runnable callback) {
+		try {
+			this.fileIdQueue.put(new FileAndIdCallback(callback));
+		}
+		catch (final InterruptedException e) {
+			LOG.warn("Interupted while waiting to put generic callback in file ID queue.");
+		}
+	}
+
 	private void scheduleFileIdBatchIfNeeded() {
 		if (this.fileIdWorkerRunning.compareAndSet(false, true)) {
 			this.exSvc.execute(new FileIdWorker());
@@ -74,11 +83,15 @@ public class MediaMetadataStore {
 	private void processFileIdQueue() throws SQLException, IOException {
 		final long startTime = System.nanoTime();
 		int count = 0;
+		Runnable genericCallback = null;
+
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			FileAndIdCallback f;
 			do {
 				f = this.fileIdQueue.poll();
 				if (f != null) {
+					genericCallback = f.getGenericCallback();
+					if (genericCallback != null) break;
 					processFileIdRequest(w, f);
 					count += 1;
 				}
@@ -93,6 +106,10 @@ public class MediaMetadataStore {
 			}
 		}
 		LOG.info("Batch ID generation for {} files.", count);
+
+		if (genericCallback != null) {
+			genericCallback.run();
+		}
 	}
 
 	private void processFileIdRequest(final WritableMediaDb w, final FileAndIdCallback f) {

@@ -153,15 +153,20 @@ public final class Main {
 		}
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
 		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
+		final ContentTree contentTree = new ContentTree();
 
 		final File dropDir = args.getDropDir();
-		final Runnable metadataImporterStarter = () -> {
-			if (dropDir == null) return;
-			new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
+		final Runnable afterInitialScanIdsAllFiles = () -> {
+			if (dropDir != null) {
+				new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
+			}
+		};
+
+		final Runnable afterInitialScanFindsAllDirs = () -> {
+			mediaId.putCallbackInQueue(afterInitialScanIdsAllFiles);
 		};
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
-		final ContentTree contentTree = new ContentTree();
 		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, server.getConnectors()[0].getPort());
@@ -174,7 +179,7 @@ public final class Main {
 
 		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo);
 
-		final Thread watcherThread = new Thread(new RunWatcher(args, index, metadataImporterStarter));
+		final Thread watcherThread = new Thread(new RunWatcher(args, index, afterInitialScanFindsAllDirs));
 		watcherThread.setName("watcher");
 		watcherThread.setDaemon(true);
 		watcherThread.start();
