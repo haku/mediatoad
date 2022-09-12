@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -36,6 +37,8 @@ import com.vaguehope.dlnatoad.media.MockContent;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ DIDLParser.class, ContentDirectoryService.class })
+// https://github.com/mockito/mockito/issues/1562
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*"})
 public class ContentDirectoryServiceTest {
 
 	private static final String DIDL_XML = "didl xml";
