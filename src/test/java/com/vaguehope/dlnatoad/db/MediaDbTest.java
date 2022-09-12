@@ -8,6 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -41,7 +42,7 @@ public class MediaDbTest {
 	public void itAddsAndReadsAndRemovesATag() throws Exception {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
@@ -70,7 +71,7 @@ public class MediaDbTest {
 	public void itAddsADeletedTag() throws Exception {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
 		}
 		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
@@ -80,7 +81,7 @@ public class MediaDbTest {
 	public void itDoesNotAddTagWithNoDate() throws Exception {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
 			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", 9234567890L));
 		}
@@ -92,7 +93,7 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 			assertFalse(w.addTag(fileId, "my-tag", 1234567891L));
 			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
@@ -105,7 +106,7 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 			assertFalse(w.mergeTag(fileId, "my-tag", 1234567870L, true));
 			assertFalse(w.mergeTag(fileId, "my-tag", 1234567890L, true));
@@ -118,7 +119,7 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.valueOf(234567)));
+			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
@@ -143,6 +144,20 @@ public class MediaDbTest {
 		final Tag undeletedTag = undeleted.iterator().next();
 		assertEquals(false, undeletedTag.isDeleted());
 		assertEquals(1234567892L, undeletedTag.getModified());
+	}
+
+	@Test
+	public void itMarkesFileAsMissing() throws Exception {
+		final File file = new File("/media/foo.wav");
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(file, new FileData(12, 123456, "myhash", "myid", BigInteger.ZERO, false));
+		}
+		assertFalse(getFileData(file).isMissing());
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setFileMissing(file.getAbsolutePath(), true);
+		}
+		assertTrue(getFileData(file).isMissing());
 	}
 
 	@Test
@@ -183,10 +198,16 @@ public class MediaDbTest {
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {
 		final File f = new File("/media/" + id + ".wav");
-		w.storeFileData(f, new FileData(12, 123456, "myhash-" + id, id, null));
+		w.storeFileData(f, new FileData(12, 123456, "myhash-" + id, id, null, false));
 		w.updateFileAuth(f, auth);
 		for (final String tag : tags) {
 			assertTrue(w.addTag(id, tag, 1234567890L));
+		}
+	}
+
+	private FileData getFileData(final File f) throws IOException, SQLException {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			return w.readFileData(f);
 		}
 	}
 

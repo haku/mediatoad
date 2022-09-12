@@ -14,6 +14,7 @@ public class FileData {
 	private final String hash;
 	private final String id;
 	private final BigInteger auth;
+	private final boolean missing;
 
 	public FileData (final long size, final long modified, final String hash) {
 		if (size < 0) throw new IllegalArgumentException("Invalid size: " + size);
@@ -23,9 +24,10 @@ public class FileData {
 		this.hash = hash;
 		this.id = null;
 		this.auth = null;
+		this.missing = false;
 	}
 
-	public FileData (final long size, final long modified, final String hash, final String id, final BigInteger auth) {
+	public FileData (final long size, final long modified, final String hash, final String id, final BigInteger auth, final boolean missing) {
 		if (size < 0) throw new IllegalArgumentException("Invalid size: " + size);
 		if (hash == null || hash.length() < 1) throw new IllegalArgumentException("Invalid hash: " + hash);
 		if (id == null || id.length() < 1) throw new IllegalArgumentException("Invalid id: " + id);
@@ -34,6 +36,7 @@ public class FileData {
 		this.hash = hash;
 		this.id = id;
 		this.auth = auth;
+		this.missing = missing;
 	}
 
 	public long getSize () {
@@ -57,18 +60,22 @@ public class FileData {
 		return Objects.equal(this.auth, authToCompareTo);
 	}
 
+	public boolean isMissing() {
+		return this.missing;
+	}
+
 	public boolean upToDate (final File file) {
 		return file.length() == this.size && file.lastModified() == this.modified;
 	}
 
 	public FileData withId (final String newId) {
 		if (this.id != null) throw new IllegalStateException("ID already set.");
-		return new FileData(this.size, this.modified, this.hash, newId, this.auth);
+		return new FileData(this.size, this.modified, this.hash, newId, this.auth, this.missing);
 	}
 
 	public FileData withNewId (final String newId) {
 		if (this.id == null) throw new IllegalStateException("ID not already set.");
-		return new FileData(this.size, this.modified, this.hash, newId, this.auth);
+		return new FileData(this.size, this.modified, this.hash, newId, this.auth, this.missing);
 	}
 
 	public static FileData forFile (final File file) throws IOException {

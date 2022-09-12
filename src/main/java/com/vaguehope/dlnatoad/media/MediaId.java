@@ -11,6 +11,7 @@ public class MediaId {
 
 	private interface Ider {
 		void idForFile (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException;
+		void fileGoneAsync(final File file);
 		void putCallbackInQueue(Runnable callback);
 	}
 
@@ -27,6 +28,10 @@ public class MediaId {
 
 	public void contentIdAsync (final ContentGroup type, final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException {
 		this.impl.idForFile(type, file, auth, callback);
+	}
+
+	public void fileGoneAsync(final File file) {
+		this.impl.fileGoneAsync(file);
 	}
 
 	public void putCallbackInQueue(final Runnable callback) {
@@ -58,6 +63,11 @@ public class MediaId {
 		}
 
 		@Override
+		public void fileGoneAsync(final File file) {
+			this.mediaMetadataStore.fileGone(file);
+		}
+
+		@Override
 		public void putCallbackInQueue(final Runnable callback) {
 			this.mediaMetadataStore.putCallbackInQueue(callback);
 		}
@@ -74,7 +84,12 @@ public class MediaId {
 		}
 
 		@Override
-		public void putCallbackInQueue(Runnable callback) {
+		public void fileGoneAsync(final File file) {
+			// Nothing.
+		}
+
+		@Override
+		public void putCallbackInQueue(final Runnable callback) {
 			callback.run(); // No queue, so run now.
 		}
 

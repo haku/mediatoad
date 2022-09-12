@@ -67,7 +67,7 @@ public class WritableMediaDb implements Closeable {
 
 	protected FileData readFileData (final File file) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT size, modified, hash, id, auth FROM files WHERE file=?;");
+				"SELECT size, modified, hash, id, auth, missing FROM files WHERE file=?;");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);
@@ -75,7 +75,8 @@ public class WritableMediaDb implements Closeable {
 			try {
 				if (!rs.next()) return null;
 				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), new BigInteger(rs.getString(5), 16));
+						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4),
+						new BigInteger(rs.getString(5), 16), rs.getInt(6) != 0);
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return fileData;
 			}
@@ -91,7 +92,7 @@ public class WritableMediaDb implements Closeable {
 	// TODO could this method only return ID and File?
 	protected Collection<FileAndData> filesWithHash (final String hash) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT file, size, modified, hash, id, auth FROM files WHERE hash=?;");
+				"SELECT file, size, modified, hash, id, auth, missing FROM files WHERE hash=?;");
 		try {
 			st.setString(1, hash);
 			final ResultSet rs = st.executeQuery();
@@ -100,7 +101,9 @@ public class WritableMediaDb implements Closeable {
 				while (rs.next()) {
 					ret.add(new FileAndData(
 							new File(rs.getString(1)),
-							new FileData(rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5), new BigInteger(rs.getString(6), 16))));
+							new FileData(
+									rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5),
+									new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0)));
 				}
 				return ret;
 			}
@@ -161,13 +164,14 @@ public class WritableMediaDb implements Closeable {
 
 	protected void updateFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"UPDATE files SET size=?,modified=?,hash=?,id=? WHERE file=?;");
+				"UPDATE files SET size=?,modified=?,hash=?,id=?,missing=? WHERE file=?;");
 		try {
 			st.setLong(1, fileData.getSize());
 			st.setLong(2, fileData.getModified());
 			st.setString(3, fileData.getHash());
 			st.setString(4, fileData.getId());
-			st.setString(5, file.getAbsolutePath());
+			st.setBoolean(5, fileData.isMissing());
+			st.setString(6, file.getAbsolutePath());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured updating file '" + file.getAbsolutePath() + "'.");
 		}
@@ -193,6 +197,18 @@ public class WritableMediaDb implements Closeable {
 		}
 		finally {
 			st.close();
+		}
+	}
+
+	protected void setFileMissing(final String file, final boolean missing) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE files SET missing=? WHERE file=?;")) {
+			st.setBoolean(1, missing);
+			st.setString(2, file);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured setting missing=%s for file \"%s\".", missing, file));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set missing=%s for file \"%s\".", missing, file), e);
 		}
 	}
 

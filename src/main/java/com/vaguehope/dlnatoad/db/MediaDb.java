@@ -45,7 +45,8 @@ public class MediaDb {
 					+ "id STRING NOT NULL"
 					+ ");");
 		}
-		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'"); // TODO add default!
+		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
+		Sqlite.addColumnIfMissing(this.dbConn, "files", "missing", "INT(1) NOT NULL DEFAULT 0");
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
 					+ "file_id STRING NOT NULL, "
@@ -96,6 +97,18 @@ public class MediaDb {
 				if (!rs.next()) return null;
 				final BigInteger ret = new BigInteger(rs.getString(1), 16);
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
+				return ret;
+			}
+		}
+	}
+
+	public Collection<String> getAllFilesThatAreNotMarkedAsMissing() throws SQLException {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT file FROM files WHERE missing=0;")) {
+			try (final ResultSet rs = st.executeQuery()) {
+				final Collection<String> ret = new ArrayList<>();
+				while (rs.next()) {
+					ret.add(rs.getString(1));
+				}
 				return ret;
 			}
 		}

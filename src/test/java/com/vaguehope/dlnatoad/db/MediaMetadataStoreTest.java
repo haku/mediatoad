@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -263,6 +264,25 @@ public class MediaMetadataStoreTest {
 	}
 
 	@Test
+	public void itPropagatesFileGone() throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		callIdForFile(f1);
+
+		this.undertest.fileGone(f1);
+		assertTrue(getFileData(f1).isMissing());
+
+		callIdForFile(f1);
+		assertFalse(getFileData(f1).isMissing());
+	}
+
+	@Test
+	public void itRunsGenericCallback() throws Exception {
+		final Runnable cb = mock(Runnable.class);
+		this.undertest.putCallbackInQueue(cb);
+		verify(cb).run();
+	}
+
+	@Test
 	public void itStoresAndRetrivesDuration () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
 		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
@@ -301,7 +321,7 @@ public class MediaMetadataStoreTest {
 		FileUtils.writeByteArrayToFile(f, b);
 	}
 
-	public FileData getFileData(final File f) throws IOException, SQLException {
+	private FileData getFileData(final File f) throws IOException, SQLException {
 		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
 			return w.readFileData(f);
 		}

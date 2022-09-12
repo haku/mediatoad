@@ -50,6 +50,10 @@ public class MockContent {
 		return ret;
 	}
 
+	public ContentItem givenMockItem() throws IOException {
+		return givenMockItems(MediaFormat.MP4, 1).iterator().next();
+	}
+
 	public List<ContentItem> givenMockItems (final int n) throws IOException {
 		return givenMockItems(MediaFormat.MP4, n);
 	}

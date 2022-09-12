@@ -34,6 +34,7 @@ import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.auth.UsersCli;
+import com.vaguehope.dlnatoad.db.DbCleaner;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.DlnaService;
@@ -157,6 +158,7 @@ public final class Main {
 
 		final File dropDir = args.getDropDir();
 		final Runnable afterInitialScanIdsAllFiles = () -> {
+			new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
 			if (dropDir != null) {
 				new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
 			}

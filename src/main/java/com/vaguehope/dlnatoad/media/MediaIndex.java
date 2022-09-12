@@ -125,7 +125,10 @@ public class MediaIndex implements FileListener {
 			}
 		}
 
-		if (this.contentTree.removeFile(file) > 0) LOG.info("unshared: {}", file.getAbsolutePath());
+		if (this.contentTree.removeFile(file) > 0) {
+			LOG.info("unshared: {}", file.getAbsolutePath());
+		}
+		this.mediaId.fileGoneAsync(file);
 	}
 
 	private void addFile(final File rootDir, final File file, final Runnable onComplete) throws IOException {

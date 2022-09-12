@@ -75,7 +75,7 @@ public class ContentTree {
 		return this.contentNodes.values();
 	}
 
-	Collection<ContentItem> getItems() {
+	public Collection<ContentItem> getItems() {
 		return this.contentItems.values();
 	}
 

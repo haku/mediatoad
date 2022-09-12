@@ -28,7 +28,7 @@ public class MediaMetadataStore {
 	private static final int DURATION_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
 
-	private final BlockingQueue<FileAndIdCallback> fileIdQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<FileTask> fileQueue = new LinkedBlockingQueue<>();
 	private final AtomicBoolean fileIdWorkerRunning = new AtomicBoolean(false);
 	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
 
@@ -49,30 +49,41 @@ public class MediaMetadataStore {
 
 	public void idForFile(final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException, InterruptedException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
-		this.fileIdQueue.put(new FileAndIdCallback(file, auth, callback));
+		this.fileQueue.put(new FileTask(file, auth, callback));
 		scheduleFileIdBatchIfNeeded();
+	}
+
+	public void fileGone(final File file) {
+		try {
+			this.fileQueue.put(new FileTask(file));
+			scheduleFileIdBatchIfNeeded();
+		}
+		catch (final InterruptedException e) {
+			LOG.warn("Interupted while waiting to put file gone task in queue.");
+		}
 	}
 
 	public void putCallbackInQueue(final Runnable callback) {
 		try {
-			this.fileIdQueue.put(new FileAndIdCallback(callback));
+			this.fileQueue.put(new FileTask(callback));
+			scheduleFileIdBatchIfNeeded();
 		}
 		catch (final InterruptedException e) {
-			LOG.warn("Interupted while waiting to put generic callback in file ID queue.");
+			LOG.warn("Interupted while waiting to put generic callback queue.");
 		}
 	}
 
 	private void scheduleFileIdBatchIfNeeded() {
 		if (this.fileIdWorkerRunning.compareAndSet(false, true)) {
-			this.exSvc.execute(new FileIdWorker());
+			this.exSvc.execute(new FileWorker());
 		}
 	}
 
-	private class FileIdWorker implements Runnable {
+	private class FileWorker implements Runnable {
 		@Override
 		public void run() {
 			try {
-				processFileIdQueue();
+				processFileQueue();
 			}
 			catch (final Exception e) {
 				LOG.error("Exception while processing file ID queue.", e);
@@ -80,19 +91,19 @@ public class MediaMetadataStore {
 		}
 	}
 
-	private void processFileIdQueue() throws SQLException, IOException {
+	private void processFileQueue() throws SQLException, IOException {
 		final long startTime = System.nanoTime();
 		int count = 0;
 		Runnable genericCallback = null;
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			FileAndIdCallback f;
+			FileTask f;
 			do {
-				f = this.fileIdQueue.poll();
+				f = this.fileQueue.poll();
 				if (f != null) {
 					genericCallback = f.getGenericCallback();
 					if (genericCallback != null) break;
-					processFileIdRequest(w, f);
+					processFile(w, f);
 					count += 1;
 				}
 			}
@@ -101,27 +112,42 @@ public class MediaMetadataStore {
 			// we have said we are not running anymore, any new work added to the queue
 			// will add a new batch.  if there is any work still on the queue, schedule a
 			// a batch to cover that.
-			if (this.fileIdQueue.size() > 0) {
+			if (this.fileQueue.size() > 0) {
 				scheduleFileIdBatchIfNeeded();
 			}
 		}
-		LOG.info("Batch ID generation for {} files.", count);
+		LOG.info("Batch file metadata write for {} files.", count);
 
 		if (genericCallback != null) {
 			genericCallback.run();
 		}
 	}
 
-	private void processFileIdRequest(final WritableMediaDb w, final FileAndIdCallback f) {
+	private void processFile(final WritableMediaDb w, final FileTask f) {
 		try {
-			addOrUpdateFileData(w, f.getFile(), f.getAuth(), f.getCallback());
+			switch (f.getAction()) {
+			case ID:
+				addOrUpdateFileData(w, f.getFile(), f.getAuth(), f.getCallback());
+				break;
+			case GONE:
+				w.setFileMissing(f.getFile().getAbsolutePath(), true);
+				break;
+			default:
+				LOG.error("Task missing action: {}", f);
+			}
 		}
 		catch (final Exception e) {
-			if (e instanceof IOException) {
-				f.getCallback().onError((IOException) e);
+			final MediaIdCallback callback = f.getCallback();
+			if (callback != null) {
+				if (e instanceof IOException) {
+					callback.onError((IOException) e);
+				}
+				else {
+					callback.onError(new IOException(e));
+				}
 			}
 			else {
-				f.getCallback().onError(new IOException(e));
+				LOG.error("File task {} failed.", f, e);
 			}
 		}
 	}
@@ -139,6 +165,10 @@ public class MediaMetadataStore {
 			id = canonicaliseAndStoreId(w, updatedFileData);
 		}
 		else {
+			// File has not changed but missing flag needs unsetting.
+			if (file.exists() && oldFileData.isMissing()) {
+				w.setFileMissing(file.getAbsolutePath(), false);
+			}
 			id = canonicaliseAndStoreId(w, oldFileData);
 		}
 		if (oldFileData == null || !oldFileData.hasAuth(auth)) {

@@ -6,6 +6,8 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +43,7 @@ public class MediaIndexTest {
 
 	private ContentTree contentTree;
 	private MediaMetadataStore mediaMetadataStore;
+	private MediaId mediaId;
 	private ScheduledThreadPoolExecutor schEx;
 	private MediaIndex undertest;
 
@@ -51,8 +54,8 @@ public class MediaIndexTest {
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, true);
-		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN,
-				new MediaId(this.mediaMetadataStore), new MediaInfo());
+		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
+		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo());
 	}
 
 	public void after() {
@@ -113,6 +116,18 @@ public class MediaIndexTest {
 		waitForEmptyQueue();
 
 		assertNodeWithItems(this.tmp.getRoot(), Arrays.asList(file), node);
+	}
+
+	@Test
+	public void itHandlesDeletedFile() throws Exception {
+		final File file = mockFile("foo.mkv");
+		this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
+		waitForEmptyQueue();
+
+		this.undertest.fileGone(file);
+		final List<ContentNode> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getCopyOfNodes();
+		assertEquals(0, videoDirs.size());
+		verify(this.mediaId).fileGoneAsync(file);
 	}
 
 	@Test
