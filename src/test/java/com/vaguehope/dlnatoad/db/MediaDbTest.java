@@ -170,6 +170,7 @@ public class MediaDbTest {
 			for (int i = 10; i < 20; i++) {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
 			}
+			w.mergeTag("id-0", "deleted", 1234567890L, true);
 		}
 		assertThat(this.undertest.getTopTags(null, null, 10), contains(new TagFrequency("tag1", 10)));
 		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), null, 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));
