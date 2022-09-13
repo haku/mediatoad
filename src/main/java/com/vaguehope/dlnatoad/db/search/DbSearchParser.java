@@ -17,9 +17,8 @@ public class DbSearchParser {
 	private static final int MAX_SEARCH_TERMS = 10;
 
 	private static final String _SQL_MEDIAFILES_SELECT =
-			"SELECT id FROM files";
+			"SELECT id FROM files WHERE missing=0 AND";
 
-	private static final String _SQL_WHERE = " WHERE";
 	private static final String _SQL_AND = " AND";
 	private static final String _SQL_OR = " OR";
 
@@ -58,9 +57,8 @@ public class DbSearchParser {
 		if (sortColumns != null && sortDirection != null && sortColumns.length != sortDirection.length) throw new IllegalArgumentException("Sorts and directions must be same length.");
 
 		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
-		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
-		sql.append(_SQL_WHERE);
 		SqlFragments.appendWhereAuth(sql, authIds);
+		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
 		appendWhereTerms(sql, terms);
 		if (sortColumns != null && sortDirection != null && sortColumns.length > 0 && sortDirection.length > 0) {
 			sql.append(" ORDER BY ");

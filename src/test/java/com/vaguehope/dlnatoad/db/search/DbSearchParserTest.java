@@ -22,8 +22,6 @@ import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
 public class DbSearchParserTest {
 
-	private static final String SQL_PREFIX = "SELECT id FROM files WHERE";
-
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
 
@@ -39,8 +37,10 @@ public class DbSearchParserTest {
 
 	@Test
 	public void itParsesSingleTermQuery() throws Exception {
-		runParser("hello", SQL_PREFIX +
-				" auth IN ('0')" +
+		runParser("hello",
+				"SELECT id FROM files WHERE" +
+				" missing=0" +
+				" AND auth IN ('0')" +
 				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) )" +
 				"  ORDER BY file COLLATE NOCASE ASC;",
 				"hello");
@@ -49,6 +49,7 @@ public class DbSearchParserTest {
 	@Test
 	public void itSearchesWithSingleTermQuery() throws Exception {
 		final String id = this.mockMediaMetadataStore.addFileWithTags("hello", "how", "are", "you");
+		this.mockMediaMetadataStore.addMissingFileWithTags("hello");
 		runQuery("hello", id);
 	}
 
