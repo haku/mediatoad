@@ -158,9 +158,11 @@ public final class Main {
 
 		final File dropDir = args.getDropDir();
 		final Runnable afterInitialScanIdsAllFiles = () -> {
-			new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
-			if (dropDir != null) {
-				new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
+			if (mediaDb != null) {
+				new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
+				if (dropDir != null) {
+					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
+				}
 			}
 		};
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,8 +35,8 @@ public class MetadataImporter {
 	}
 
 	protected MetadataImporter(final File dropDir, final MediaDb mediaDb, final boolean verboseLog, final Time time) {
-		this.dropDir = dropDir;
-		this.mediaDb = mediaDb;
+		this.dropDir = Objects.requireNonNull(dropDir, "dropDir");
+		this.mediaDb = Objects.requireNonNull(mediaDb, "mediaDb");
 		this.verboseLog = verboseLog;
 		this.time = time;
 	}

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +27,8 @@ public class DbCleaner {
 	private final boolean verboseLog;
 
 	public DbCleaner(final ContentTree contentTree, final MediaDb mediaDb, final boolean verboseLog) {
-		this.contentTree = contentTree;
-		this.mediaDb = mediaDb;
+		this.contentTree = Objects.requireNonNull(contentTree, "contentTree");
+		this.mediaDb = Objects.requireNonNull(mediaDb, "mediaDb");
 		this.verboseLog = verboseLog;
 	}
 
