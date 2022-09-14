@@ -54,7 +54,7 @@ public class MediaDbTest {
 		assertThat(expectedTags, hasSize(1));
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setTagModifiedAndDeleted(fileId, existing.getTag(), true, 2345678901L);
+			w.setTagModifiedAndDeleted(fileId, existing.getTag(), existing.getCls(), true, 2345678901L);
 		}
 
 		final Collection<Tag> deletedTags = this.undertest.getTags(fileId, true);
@@ -72,7 +72,7 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
-			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
+			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 		}
 		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
@@ -82,8 +82,8 @@ public class MediaDbTest {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
-			assertTrue(w.mergeTag(fileId, "my-tag", 1234567890L, true));
-			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", 9234567890L));
+			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", "", 9234567890L));
 		}
 		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
@@ -102,14 +102,39 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itAllowsAddingTheSameTagTwiceWithDifferentCls() throws Exception {
+		final String fileId = "myid";
+		final File file = new File("/media/foo.wav");
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
+			assertTrue(w.addTag(fileId, "my-tag", "", 1234567889L));
+			assertTrue(w.addTag(fileId, "my-tag", "c", 1234567890L));
+			assertFalse(w.addTag(fileId, "my-tag", "", 1234567891L));
+			assertFalse(w.addTag(fileId, "my-tag", "c", 1234567892L));
+		}
+		assertThat(this.undertest.getTags(fileId, true), contains(
+				new Tag("my-tag", "", 1234567889L, false),
+				new Tag("my-tag", "c", 1234567890L, false)
+				));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setTagModifiedAndDeleted(fileId, "my-tag", "c", true, 1234567891L);
+		}
+		assertThat(this.undertest.getTags(fileId, true), contains(
+				new Tag("my-tag", "", 1234567889L, false),
+				new Tag("my-tag", "c", 1234567891L, true)
+				));
+	}
+
+	@Test
 	public void itDoesNotMergeOlderUpdates() throws Exception {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, new FileData(12, 123456, "myhash", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
-			assertFalse(w.mergeTag(fileId, "my-tag", 1234567870L, true));
-			assertFalse(w.mergeTag(fileId, "my-tag", 1234567890L, true));
+			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567870L, true));
+			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 		}
 		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
@@ -126,7 +151,7 @@ public class MediaDbTest {
 		final Collection<Tag> tags = this.undertest.getTags(fileId, false);
 		final Tag tag = tags.iterator().next();
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setTagModifiedAndDeleted(fileId, tag.getTag(), true, 1234567891L);
+			w.setTagModifiedAndDeleted(fileId, tag.getTag(), tag.getCls(), true, 1234567891L);
 		}
 
 		final Collection<Tag> deleted = this.undertest.getTags(fileId, true);
@@ -170,7 +195,7 @@ public class MediaDbTest {
 			for (int i = 10; i < 20; i++) {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
 			}
-			w.mergeTag("id-0", "deleted", 1234567890L, true);
+			w.mergeTag("id-0", "deleted", "", 1234567890L, true);
 		}
 		assertThat(this.undertest.getTopTags(null, null, 10), contains(new TagFrequency("tag1", 10)));
 		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), null, 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));

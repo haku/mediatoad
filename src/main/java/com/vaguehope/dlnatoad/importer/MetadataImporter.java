@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,13 +99,14 @@ public class MetadataImporter {
 				final String cid = this.mediaDb.canonicalIdForHash(hat.getSha1().toString(16));
 				if (cid == null) continue;
 				for (final ImportedTag tag : hat.getTags()) {
+					final String cls = StringUtils.trimToEmpty(tag.getCls());
 					final boolean modified;
 					if (tag.getMod() != 0) {
-						modified = w.mergeTag(cid, tag.getTag(), tag.getMod(), tag.isDel());
+						modified = w.mergeTag(cid, tag.getTag(), cls, tag.getMod(), tag.isDel());
 						if (this.verboseLog && modified) LOG.info("{} Merged: {} {}", changeCount, hat.getSha1().toString(16), tag);
 					}
 					else if (!tag.isDel()) {
-						modified = w.addTagIfNotDeleted(cid, tag.getTag(), this.time.now());
+						modified = w.addTagIfNotDeleted(cid, tag.getTag(), cls, this.time.now());
 						if (this.verboseLog && modified) LOG.info("{} Added new: {} {}", changeCount, hat.getSha1().toString(16), tag);
 					}
 					else {

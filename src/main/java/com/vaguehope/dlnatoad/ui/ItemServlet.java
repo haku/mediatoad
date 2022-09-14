@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.vaguehope.dlnatoad.C;
@@ -83,10 +82,16 @@ public class ItemServlet extends HttpServlet {
 		for (final Tag tag : tags) {
 			w.print("<span style=\"padding-right: 0.5em;\">");
 			w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
+			if (tag.getCls().length() > 0) {
+				w.print(" (");
+				w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
+				w.print(")");
+			}
 			if (allowEditTags) {
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"rmtag\">");
 				w.println("<input type=\"hidden\" name=\"tag\" value=\"" + tag.getTag() + "\">");
+				w.println("<input type=\"hidden\" name=\"cls\" value=\"" + tag.getCls() + "\">");
 				w.println("<input type=\"submit\" value=\"X\">");
 				w.println("</form>");
 			}
@@ -143,7 +148,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
-			final String tag = readRequiredParam(req, resp, "tag");
+			final String tag = readRequiredParam(req, resp, "tag", 1);
 			if (tag == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 				w.addTag(item.getId(), tag, System.currentTimeMillis());
@@ -155,10 +160,11 @@ public class ItemServlet extends HttpServlet {
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
 		}
 		else if ("rmtag".equalsIgnoreCase(req.getParameter("action"))) {
-			final String tag = readRequiredParam(req, resp, "tag");
-			if (tag == null) return;
+			final String tag = readRequiredParam(req, resp, "tag", 1);
+			final String cls = readRequiredParam(req, resp, "cls", 0);
+			if (tag == null || cls == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-				w.setTagModifiedAndDeleted(item.getId(), tag, true, System.currentTimeMillis());
+				w.setTagModifiedAndDeleted(item.getId(), tag, cls, true, System.currentTimeMillis());
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
@@ -185,14 +191,14 @@ public class ItemServlet extends HttpServlet {
 		return item;
 	}
 
-	private static String readRequiredParam(final HttpServletRequest req, final HttpServletResponse resp, final String param) throws IOException {
+	private static String readRequiredParam(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
 		final String[] vals = req.getParameterValues(param);
 		if (vals != null && vals.length > 1) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
 			return null;
 		}
-		final String p = StringUtils.trimToEmpty(vals != null ?  vals[0] : null);
-		if (p.length() < 1) {
+		final String p = vals != null ? vals[0] : null;
+		if (p == null || p.length() < minLength) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
 			return null;
 		}

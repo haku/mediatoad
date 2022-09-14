@@ -45,17 +45,23 @@ class HashAndTags {
 
 	public static class ImportedTag {
 		private final String tag;
+		private final String cls;
 		private final long mod;
 		private final boolean del;
 
-		public ImportedTag(final String tag, final long mod, final boolean del) {
+		public ImportedTag(final String tag, String cls, final long mod, final boolean del) {
 			this.tag = tag;
+			this.cls = cls;
 			this.mod = mod;
 			this.del = del;
 		}
 
 		public String getTag() {
 			return this.tag;
+		}
+
+		public String getCls() {
+			return this.cls;
 		}
 
 		public long getMod() {
@@ -68,12 +74,12 @@ class HashAndTags {
 
 		@Override
 		public String toString() {
-			return String.format("Tag{%s, %s, %s}", this.tag, this.mod, this.del);
+			return String.format("Tag{%s, %s, %s, %s}", this.tag, this.cls, this.mod, this.del);
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.tag, this.mod, this.del);
+			return Objects.hash(this.tag, this.cls, this.mod, this.del);
 		}
 
 		@Override
@@ -83,6 +89,7 @@ class HashAndTags {
 			if (!(obj instanceof ImportedTag)) return false;
 			final ImportedTag that = (ImportedTag) obj;
 			return Objects.equals(this.tag, that.tag)
+					&& Objects.equals(this.cls, that.cls)
 					&& Objects.equals(this.mod, that.mod)
 					&& Objects.equals(this.del, that.del);
 		}

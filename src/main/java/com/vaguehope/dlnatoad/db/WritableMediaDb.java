@@ -300,22 +300,26 @@ public class WritableMediaDb implements Closeable {
 	/**
 	 * Returns true if a change was made, otherwise false.
 	 * If tag was previously deleted, will re-add it.
-	 * Works like mergeTag() except will not update modified if tag and deleted have changed.
+	 * Works like mergeTag() except will not update modified if tag and deleted have not changed.
 	 */
 	public boolean addTag(final String fileId, final String tag, final long modifiled) throws SQLException {
-		return mergeTag(fileId, tag, modifiled, /* deleted= */false, /* updateModified= */false, /* insertOnly= */false);
+		return addTag(fileId, tag, "", modifiled);
 	}
 
-	public boolean addTagIfNotDeleted(final String fileId, final String tag, final long modifiled) throws SQLException {
-		return mergeTag(fileId, tag, modifiled, /* deleted= */false, /* updateModified= */false, /* insertOnly= */true);
+	public boolean addTag(final String fileId, final String tag, final String cls, final long modifiled) throws SQLException {
+		return mergeTag(fileId, tag, cls, modifiled, /* deleted= */false, /* updateModified= */false, /* insertOnly= */false);
 	}
 
-	public boolean mergeTag(final String fileId, final String tag, final long modifiled, final boolean deleted) throws SQLException {
-		return mergeTag(fileId, tag, modifiled, /* deleted= */deleted, /* updateModified= */true, /* insertOnly= */false);
+	public boolean addTagIfNotDeleted(final String fileId, final String tag, final String cls, final long modifiled) throws SQLException {
+		return mergeTag(fileId, tag, cls, modifiled, /* deleted= */false, /* updateModified= */false, /* insertOnly= */true);
 	}
 
-	private boolean mergeTag(final String fileId, final String tag, final long modifiled, final boolean deleted, final boolean updateModified, final boolean insertOnly) throws SQLException {
-		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag);
+	public boolean mergeTag(final String fileId, final String tag, final String cls, final long modifiled, final boolean deleted) throws SQLException {
+		return mergeTag(fileId, tag, cls, modifiled, /* deleted= */deleted, /* updateModified= */true, /* insertOnly= */false);
+	}
+
+	private boolean mergeTag(final String fileId, final String tag, final String cls, final long modifiled, final boolean deleted, final boolean updateModified, final boolean insertOnly) throws SQLException {
+		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag, cls);
 		if (existing.size() > 1) throw new IllegalStateException(String.format("DB UNIQUE(file_id, tag) constraint failed: id=%s tag='%s'", fileId, tag));
 		if (existing.size() > 0) {
 			if (insertOnly) return false;
@@ -324,36 +328,38 @@ public class WritableMediaDb implements Closeable {
 			if (e.getModified() >= modifiled) return false;
 			if (e.isDeleted() == deleted && !updateModified) return false;
 
-			setTagModifiedAndDeleted(fileId, tag, deleted, modifiled);
+			setTagModifiedAndDeleted(fileId, tag, cls, deleted, modifiled);
 			return true;
 		}
 
 		try (final PreparedStatement st = this.conn.prepareStatement(
-				"INSERT INTO tags (file_id,tag,modified,deleted) VALUES (?,?,?,?)")) {
+				"INSERT INTO tags (file_id,tag,cls,modified,deleted) VALUES (?,?,?,?,?)")) {
 			st.setString(1, fileId);
 			st.setString(2, tag);
-			st.setLong(3, modifiled);
-			st.setBoolean(4, deleted);  // Yes first write might be recoding a deletion.
+			st.setString(3, cls);
+			st.setLong(4, modifiled);
+			st.setBoolean(5, deleted);  // Yes first write might be recoding a deletion.
 			final int n = st.executeUpdate();
-			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for id=%s: %s", fileId, tag));
+			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for id=%s: tag='%s' cls='%s'", fileId, tag, cls));
 			return true;
 		}
 		catch (final SQLException e) {
-			throw new SQLException(String.format("Failed to store tag for id=%s: %s", fileId, tag), e);
+			throw new SQLException(String.format("Failed to store tag for id=%s: tag='%s' cls='%s'", fileId, tag, cls), e);
 		}
 	}
 
-	public void setTagModifiedAndDeleted(final String fileId, final String tag, final boolean deleted, final long modifiled) throws SQLException {
-		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET deleted=?,modified=? WHERE file_id=? AND tag=?")) {
+	public void setTagModifiedAndDeleted(final String fileId, final String tag, final String cls, final boolean deleted, final long modifiled) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET deleted=?,modified=? WHERE file_id=? AND tag=? AND cls=?")) {
 			st.setInt(1, deleted ? 1 : 0);
 			st.setLong(2, modifiled);
 			st.setString(3, fileId);
 			st.setString(4, tag);
+			st.setString(5, cls);
 			final int n = st.executeUpdate();
-			if (n < 1) throw new SQLException(String.format("No update occured setting tag deleted=%s: id=%s tag='%s'", deleted, fileId, tag));
+			if (n < 1) throw new SQLException(String.format("No update occured setting tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls));
 		}
 		catch (final SQLException e) {
-			throw new SQLException(String.format("Failed to set tag deleted=%s: id=%s tag='%s'", deleted, fileId, tag), e);
+			throw new SQLException(String.format("Failed to set tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls), e);
 		}
 	}
 

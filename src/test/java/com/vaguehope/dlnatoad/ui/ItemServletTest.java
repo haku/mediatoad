@@ -165,6 +165,7 @@ public class ItemServletTest {
 		final String tag = "mytag";
 		this.req.setParameter("action", "rmtag");
 		this.req.setParameter("tag", tag);
+		this.req.setParameter("cls", "");
 		return tag;
 	}
 

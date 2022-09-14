@@ -33,6 +33,7 @@
       },
       {
         "tag": "blue",
+        "cls": "colour",
         "mod": 1300000300000,
         "del": false
       }

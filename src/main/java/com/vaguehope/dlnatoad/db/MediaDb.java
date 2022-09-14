@@ -51,11 +51,13 @@ public class MediaDb {
 			executeSql("CREATE TABLE tags ("
 					+ "file_id STRING NOT NULL, "
 					+ COL_TAG + " STRING NOT NULL COLLATE NOCASE, "
+					+ "cls STRING NOT NULL COLLATE NOCASE DEFAULT '', "
 					+ "modified INT NOT NULL, "
 					+ "deleted INT(1) NOT NULL DEFAULT 0, "
-					+ "UNIQUE(file_id, " + COL_TAG + ")"
+					+ "UNIQUE(file_id, " + COL_TAG + ", cls)"  // TODO auto backfill adding cls here?
 					+ ");");
 		}
+		Sqlite.addColumnIfMissing(this.dbConn, "tags", "cls", "STRING NOT NULL COLLATE NOCASE DEFAULT ''");
 		if (!tableExists("hashes")) {
 			executeSql("CREATE TABLE hashes ("
 					+ "hash STRING NOT NULL PRIMARY KEY, id STRING NOT NULL);");
@@ -183,10 +185,11 @@ public class MediaDb {
 		return getTagsFromConn(this.dbConn, fileId, includeDeleted);
 	}
 
-	protected static Collection<Tag> getTagFromConn(final Connection conn, final String fileId, final String tag) throws SQLException {
-		try (final PreparedStatement st = conn.prepareStatement(SELECT_FROM_TAGS + "file_id=? AND tag=?")) {
+	protected static Collection<Tag> getTagFromConn(final Connection conn, final String fileId, final String tag, final String cls) throws SQLException {
+		try (final PreparedStatement st = conn.prepareStatement(SELECT_FROM_TAGS + "file_id=? AND tag=? AND cls=?")) {
 			st.setString(1, fileId);
 			st.setString(2, tag);
+			st.setString(3, cls);
 			return readTagsResultSet(st);
 		}
 	}
@@ -200,13 +203,13 @@ public class MediaDb {
 		}
 	}
 
-	private static final String SELECT_FROM_TAGS = "SELECT tag,modified,deleted FROM tags WHERE ";
+	private static final String SELECT_FROM_TAGS = "SELECT tag,cls,modified,deleted FROM tags WHERE ";
 
 	private static Collection<Tag> readTagsResultSet(final PreparedStatement st) throws SQLException {
 		try (final ResultSet rs = st.executeQuery()) {
 			final Collection<Tag> ret = new ArrayList<>();
 			while (rs.next()) {
-				ret.add(new Tag(rs.getString(1), rs.getLong(2), rs.getInt(3) != 0));
+				ret.add(new Tag(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getInt(4) != 0));
 			}
 			return ret;
 		}
