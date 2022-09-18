@@ -86,7 +86,7 @@ public class MetadataImporter {
 				LOG.info("Successfully imported {} changes from drop file: {}", changeCount, file);
 			}
 			catch (final Exception e) {
-				LOG.warn("Failed to process drop file {}: {}", file.getAbsolutePath(), e.toString());
+				LOG.warn("Failed to process drop file {}: {}", file.getAbsolutePath(), e);
 				renameDropFile(file, MetadataDump.FAILED_FILE_EXTENSION);
 			}
 		}
@@ -96,9 +96,10 @@ public class MetadataImporter {
 		long changeCount = 0;
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			for (final HashAndTags hat : md.getHashAndTags()) {
-				final String cid = this.mediaDb.canonicalIdForHash(hat.getSha1().toString(16));
+				final String cid = w.canonicalIdForHash(hat.getSha1().toString(16));
 				if (cid == null) continue;
 				for (final ImportedTag tag : hat.getTags()) {
+					if (tag == null) throw new IllegalStateException("Null tag in list.");
 					final String cls = StringUtils.trimToEmpty(tag.getCls());
 					final boolean modified;
 					if (tag.getMod() != 0) {

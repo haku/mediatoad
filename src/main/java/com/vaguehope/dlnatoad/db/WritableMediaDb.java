@@ -116,7 +116,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected String canonicalIdForHash (final String hash) throws SQLException {
+	public String canonicalIdForHash (final String hash) throws SQLException {
 		return MediaDb.canonicalIdForHashFromConn(this.conn, hash);
 	}
 
