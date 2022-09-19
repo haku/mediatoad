@@ -104,7 +104,7 @@ public class IndexServlet extends HttpServlet {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w);
+		this.servletCommon.headerAndStartBody(w, contentNode.getTitle());
 		this.servletCommon.printLinkRow(req, w);
 
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);

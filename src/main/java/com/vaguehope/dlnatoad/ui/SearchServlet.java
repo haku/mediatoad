@@ -72,13 +72,14 @@ public class SearchServlet extends HttpServlet {
 
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
+
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, "Search");
+		this.servletCommon.headerAndStartBody(w, StringUtils.defaultString(query, "Search"));
 		this.servletCommon.printLinkRow(req, w);
 
-		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
 			final String upnpQuery = String.format("(dc:title contains \"%s\")", query);

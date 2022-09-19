@@ -78,10 +78,6 @@ public class ServletCommon {
 		resp.setContentType("text/html; charset=utf-8");
 	}
 
-	public void headerAndStartBody(final PrintWriter w) {
-		this.headerAndStartBody(w, null);
-	}
-
 	public void headerAndStartBody(final PrintWriter w, final String title) {
 		w.println("<!DOCTYPE html>");
 		w.println("<html>");
@@ -89,7 +85,7 @@ public class ServletCommon {
 		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
 
 		w.print("<title>");
-		if (!StringUtils.isBlank(title)) {
+		if (StringUtils.isNotBlank(title)) {
 			w.print(title);
 			w.print(" - ");
 		}
