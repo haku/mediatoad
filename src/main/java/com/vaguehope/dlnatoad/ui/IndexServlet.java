@@ -19,11 +19,9 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
-import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -122,22 +120,10 @@ public class IndexServlet extends HttpServlet {
 
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
-			List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, pathPrefix, 100);
+			final List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, pathPrefix, 100);
 			if (topTags.size() < 1) return;
-
 			w.println("<h3>Tags</h3>");
-			for (final TagFrequency t : topTags) {
-				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
-				w.print("search?query=");
-				w.print(StringEscapeUtils.escapeHtml4(
-						UrlEscapers.urlPathSegmentEscaper().escape(
-								DbSearchSyntax.makeSingleTagSearch(t.getTag()))));
-				w.print("\">");
-				w.print(t.getTag());
-				w.print(" (");
-				w.print(t.getCount());
-				w.println(")</a>");
-			}
+			this.servletCommon.printRowOfTags(w, "", topTags);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);

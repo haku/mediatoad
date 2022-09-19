@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -19,8 +20,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.model.ModelUtil;
 
+import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.Tag;
+import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -269,6 +274,35 @@ public class ServletCommon {
 			w.print(" autofocus");
 			autofocus[0] = false;
 		}
+	}
+
+	public void printRowOfTags(final PrintWriter w, final String pathPrefix, final List<TagFrequency> tags) {
+		for (final TagFrequency t : tags) {
+			printRowTag(w, pathPrefix, t.getTag(), t.getCount());
+		}
+	}
+
+	public void printRowOfTags(final PrintWriter w, final String pathPrefix, final Collection<Tag> tags) {
+		for (final Tag t : tags) {
+			printRowTag(w, pathPrefix, t.getTag(), 0);
+		}
+	}
+
+	private static void printRowTag(final PrintWriter w, final String pathPrefix, final String tag, final int count) {
+		w.print("<a style=\"padding-right: 0.5em;\" href=\"");
+		w.print(pathPrefix);
+		w.print("search?query=");
+		w.print(StringEscapeUtils.escapeHtml4(
+				UrlEscapers.urlPathSegmentEscaper().escape(
+						DbSearchSyntax.makeSingleTagSearch(tag))));
+		w.print("\">");
+		w.print(StringEscapeUtils.escapeHtml4(tag));
+		if (count > 0) {
+			w.print(" (");
+			w.print(count);
+			w.print(")");
+		}
+		w.println("</a>");
 	}
 
 	public void appendDebugFooter(final PrintWriter w) {

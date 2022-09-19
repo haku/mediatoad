@@ -89,9 +89,7 @@ public class ItemServlet extends HttpServlet {
 		if (editMode) {
 			w.println("<form action=\"\" method=\"POST\">");
 			w.println("<input type=\"hidden\" name=\"action\" value=\"rmtags\">");
-		}
-		for (final Tag tag : tags) {
-			if (editMode) {
+			for (final Tag tag : tags) {
 				final Encoder encoder = Base64.getUrlEncoder().withoutPadding();
 				final String b64tag = encoder.encodeToString(tag.getTag().getBytes(StandardCharsets.UTF_8))
 						+ ":" + encoder.encodeToString(tag.getCls().getBytes(StandardCharsets.UTF_8));
@@ -111,15 +109,11 @@ public class ItemServlet extends HttpServlet {
 				}
 				w.println("</label><br>");
 			}
-			else {
-				w.print("<span style=\"padding-right: 0.5em;\">");
-				w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
-				w.println("</span>");
-			}
-		}
-		if (editMode) {
 			w.println("<input type=\"submit\" value=\"Delete\"  style=\"margin: 0.5em;\">");
 			w.println("</form>");
+		}
+		else {
+			this.servletCommon.printRowOfTags(w, "../", tags);
 		}
 
 		if (allowEditTags) {
