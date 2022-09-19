@@ -99,7 +99,7 @@ public class ServletCommon {
 		w.print(")");
 		w.println("</title>");
 
-		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0, maximum-scale=1.0\">");
+		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
 
 		w.println("<style>");
 		w.println("body, div, input, label, p, span {font-family: sans-serif;}");
