@@ -2,7 +2,11 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -12,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.text.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -24,6 +30,7 @@ import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class ItemServlet extends HttpServlet {
 
+	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
 	private static final long serialVersionUID = 3431697675845091273L;
 
 	private final ServletCommon servletCommon;
@@ -74,36 +81,53 @@ public class ItemServlet extends HttpServlet {
 		w.print("<h2>");
 		w.print(item.getTitle());
 		w.println("</h2>");
-
-		w.println("<div style=\"padding-top: 1em;\">");
-
+		w.println("<div>");
 		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");
+
 		final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
+		final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
+		if (editMode) {
+			w.println("<form action=\"\" method=\"POST\">");
+			w.println("<input type=\"hidden\" name=\"action\" value=\"rmtags\">");
+		}
 		for (final Tag tag : tags) {
-			w.print("<span style=\"padding-right: 0.5em;\">");
-			w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
-			if (tag.getCls().length() > 0) {
-				w.print(" (");
-				w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
-				w.print(")");
+			if (editMode) {
+				final Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+				final String b64tag = encoder.encodeToString(tag.getTag().getBytes(StandardCharsets.UTF_8))
+						+ ":" + encoder.encodeToString(tag.getCls().getBytes(StandardCharsets.UTF_8));
+				w.print("<input type=\"checkbox\" name=\"b64tag\"  style=\"margin: 0.5em;\" value=\"");
+				w.print(b64tag);
+				w.print("\" id=\"");
+				w.print(b64tag);
+				w.print("\">");
+				w.print("<label style=\"margin: 0.5em;\" for=\"");
+				w.print(b64tag);
+				w.print("\">");
+				w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
+				if (tag.getCls().length() > 0) {
+					w.print(" (");
+					w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
+					w.print(")");
+				}
+				w.println("</label><br>");
 			}
-			if (allowEditTags) {
-				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
-				w.println("<input type=\"hidden\" name=\"action\" value=\"rmtag\">");
-				w.println("<input type=\"hidden\" name=\"tag\" value=\"" + tag.getTag() + "\">");
-				w.println("<input type=\"hidden\" name=\"cls\" value=\"" + tag.getCls() + "\">");
-				w.println("<input type=\"submit\" value=\"X\">");
-				w.println("</form>");
+			else {
+				w.print("<span style=\"padding-right: 0.5em;\">");
+				w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
+				w.println("</span>");
 			}
-			w.println("</span>");
+		}
+		if (editMode) {
+			w.println("<input type=\"submit\" value=\"Delete\"  style=\"margin: 0.5em;\">");
+			w.println("</form>");
 		}
 
 		if (allowEditTags) {
 			w.println("</br>");
 			w.println("<div style=\"padding-top: 0.5em\">");
+			w.println("<a href=\"?edit=true\">Edit</a>");
 			w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 			w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-			w.println("<label style=\"padding-right: 0.5em;\" for=\"tag\">Add Tag:</label>");
 			w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
 			w.println("<input type=\"submit\" value=\"Add\">");
 			w.println("</form>");
@@ -156,21 +180,38 @@ public class ItemServlet extends HttpServlet {
 			catch (final SQLException e) {
 				throw new IOException(e);
 			}
+			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
 			resp.addHeader("Location", item.getId());
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
 		}
-		else if ("rmtag".equalsIgnoreCase(req.getParameter("action"))) {
-			final String tag = readRequiredParam(req, resp, "tag", 1);
-			final String cls = readRequiredParam(req, resp, "cls", 0);
-			if (tag == null || cls == null) return;
+		else if ("rmtags".equalsIgnoreCase(req.getParameter("action"))) {
+			final String[] b64tagsandclss = readRequiredParams(req, resp, "b64tag", 1);
+			if (b64tagsandclss == null) return;
+
+			final String[] tags = new String[b64tagsandclss.length];
+			final String[] clss = new String[tags.length];
+			for (int i = 0; i < b64tagsandclss.length; i++) {
+				final String b64tagandcls = b64tagsandclss[i];
+				final int x = b64tagandcls.indexOf(":");
+				if (x <= 0) {
+					ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid: " + b64tagandcls);
+					return;
+				}
+				tags[i] = new String(Base64.getDecoder().decode(b64tagandcls.substring(0, x)), StandardCharsets.UTF_8);
+				clss[i] = new String(Base64.getDecoder().decode(b64tagandcls.substring(x + 1)), StandardCharsets.UTF_8);
+			}
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-				w.setTagModifiedAndDeleted(item.getId(), tag, cls, true, System.currentTimeMillis());
+				for (int i = 0; i < tags.length; i++) {
+					w.setTagModifiedAndDeleted(item.getId(), tags[i], clss[i], true, System.currentTimeMillis());
+				}
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
 			}
+			// TODO decode b64tagsandclss.
+			LOG.info("{} rm tags from {}: {}", username, item.getId(), Arrays.toString(b64tagsandclss));
 			resp.addHeader("Location", item.getId());
-			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag removed.");
+			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tags removed.");
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");
@@ -203,6 +244,21 @@ public class ItemServlet extends HttpServlet {
 			return null;
 		}
 		return p;
+	}
+
+	private static String[] readRequiredParams(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
+		final String[] vals = req.getParameterValues(param);
+		if (vals == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
+			return null;
+		}
+		for (final String val : vals) {
+			if (val.length() < minLength) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid value: " + param);
+				return null;
+			}
+		}
+		return vals;
 	}
 
 }

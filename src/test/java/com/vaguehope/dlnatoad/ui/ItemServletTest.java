@@ -120,6 +120,7 @@ public class ItemServletTest {
 	public void itAddsTag() throws Exception {
 		final String itemId = givenReqForUnprotectedItem();
 		final String tagToAdded = givenAddTagParams();
+		ReqAttr.USERNAME.set(this.req, "userfoo");
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.doPost(this.req, this.resp);
@@ -137,11 +138,12 @@ public class ItemServletTest {
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.addTag(itemId, tagToRm, 1);
 		}
+		ReqAttr.USERNAME.set(this.req, "userfoo");
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Tag removed.\n", this.resp.getContentAsString());
+		assertEquals("Tags removed.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertFalse(this.mediaDb.getTags(itemId, false).iterator().hasNext());
 	}
@@ -162,11 +164,9 @@ public class ItemServletTest {
 	}
 
 	private String givenRmTagParams() {
-		final String tag = "mytag";
-		this.req.setParameter("action", "rmtag");
-		this.req.setParameter("tag", tag);
-		this.req.setParameter("cls", "");
-		return tag;
+		this.req.setParameter("action", "rmtags");
+		this.req.addParameter("b64tag", "bXl0YWc=:");
+		return "mytag";
 	}
 
 }
