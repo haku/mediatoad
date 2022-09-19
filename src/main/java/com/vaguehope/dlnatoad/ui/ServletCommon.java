@@ -168,10 +168,11 @@ public class ServletCommon {
 		w.print(contentNode.getItemCount());
 		w.println(" items)</h3><ul>");
 
-		contentNode.withEachNode(c -> appendDirectory(w, c, username));
+		final boolean[] autofocus = new boolean[] { true };
+		contentNode.withEachNode(c -> appendDirectory(w, c, username, autofocus));
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
-		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, imagesToThumb));
-		appendImageThumbnails(w, imagesToThumb);
+		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
+		appendImageThumbnails(w, imagesToThumb, autofocus);
 
 		w.println("</ul>");
 	}
@@ -181,41 +182,46 @@ public class ServletCommon {
 		w.print(items.size());
 		w.println("</h3><ul>");
 
+		final boolean[] autofocus = new boolean[] { true };
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		for (final ContentItem item : items) {
-			appendItemOrGetImageToThumb(w, item, imagesToThumb);
+			appendItemOrGetImageToThumb(w, item, autofocus, imagesToThumb);
 		}
-		appendImageThumbnails(w, imagesToThumb);
+		appendImageThumbnails(w, imagesToThumb, autofocus);
 
 		w.println("</ul>");
 	}
 
-	private void appendItemOrGetImageToThumb(final PrintWriter w, final ContentItem item, final List<ContentItem> imagesToThumb) throws IOException {
+	private void appendItemOrGetImageToThumb(final PrintWriter w, final ContentItem item, final boolean[] autofocus, final List<ContentItem> imagesToThumb) throws IOException {
 		if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
 			imagesToThumb.add(item);
 		}
 		else {
-			appendItem(w, item);
+			appendItem(w, item, autofocus);
 		}
 	}
 
-	private static void appendDirectory(final PrintWriter w, final ContentNode node, final String username) {
+	private static void appendDirectory(final PrintWriter w, final ContentNode node, final String username, final boolean[] autofocus) {
 		if (!node.isUserAuth(username)) return;
 
 		w.print("<li><a href=\"");
 		w.print(node.getId());
-		w.print("\">");
+		w.print("\"");
+		maybeSetAutofocus(w, autofocus);
+		w.print(">");
 		w.print(node.getTitle());
 		w.println("</a></li>");
 	}
 
-	private static void appendItem(final PrintWriter w, final ContentItem item) throws IOException {
+	private static void appendItem(final PrintWriter w, final ContentItem item, final boolean[] autofocus) throws IOException {
 		w.print("<li><a href=\"");
 		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");
 		w.print(item.getFormat().getExt());
-		w.print("\">");
+		w.print("\"");
+		maybeSetAutofocus(w, autofocus);
+		w.print(">");
 		w.print(item.getFile().getName());
 		w.print("</a> [<a href=\"");
 		w.print(C.CONTENT_PATH_PREFIX);
@@ -244,12 +250,14 @@ public class ServletCommon {
 		w.println("</li>");
 	}
 
-	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb) throws IOException {
+	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb, final boolean[] autofocus) throws IOException {
 		for (final ContentItem item : imagesToThumb) {
 			w.print("<span><a href=\"");
 			w.print(C.ITEM_PATH_PREFIX);
 			w.print(item.getId());
-			w.print("\">");
+			w.print("\"");
+			maybeSetAutofocus(w, autofocus);
+			w.print(">");
 			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
 			w.print(C.THUMBS_PATH_PREFIX);
 			w.print(item.getId());
@@ -257,6 +265,13 @@ public class ServletCommon {
 			w.print(item.getTitle());
 			w.print("\">");
 			w.println("</a></span>");
+		}
+	}
+
+	private static void maybeSetAutofocus(final PrintWriter w, final boolean[] autofocus) {
+		if (autofocus[0]) {
+			w.print(" autofocus");
+			autofocus[0] = false;
 		}
 	}
 
