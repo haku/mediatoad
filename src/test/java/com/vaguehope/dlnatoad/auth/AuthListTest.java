@@ -4,6 +4,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,6 +87,16 @@ public class AuthListTest {
 		assertEquals(id, actual1.getId());
 		final AuthList actual2 = AuthList.ofNames("bar", "foo", "bat");
 		assertEquals(id, actual2.getId());
+	}
+
+	@Test
+	public void itDoesEquals() throws Exception {
+		final AuthList actual1 = AuthList.ofNames("foo", "bar", "bat");
+		final AuthList actual2 = AuthList.ofNames("bar", "foo", "bat");
+		assertTrue(actual1.equals(actual2));
+
+		final AuthList actual3 = AuthList.ofNames("bar", "foo");
+		assertFalse(actual1.equals(actual3));
 	}
 
 	private AuthList writeListAndReadDir(final String list) throws IOException {

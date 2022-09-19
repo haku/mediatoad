@@ -38,20 +38,13 @@ public class ContentNode extends AbstractContent {
 	}
 
 	public ContentNode (final String id, final String parentId, final String title, final File dir, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
-		super(id, parentId, modTitle(title, authList));
+		super(id, parentId, title);
 		if (parentId == null)  throw new IllegalArgumentException("parentId must not be null.");
 		this.file = dir;
 		this.authList = authList;
 		this.sortKey = sortKey;
 		this.items = itemsCollection;
 		reload();
-	}
-
-	private static String modTitle(final String title, final AuthList al) {
-		if (al != null) {
-			return title + " (restricted)";
-		}
-		return title;
 	}
 
 	public AuthList getAuthList() {

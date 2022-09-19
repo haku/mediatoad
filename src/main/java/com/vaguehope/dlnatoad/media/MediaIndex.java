@@ -266,7 +266,11 @@ public class MediaIndex implements FileListener {
 		if (existingNode != null) return existingNode;
 
 		final AuthList authList = file != null ? AuthList.forDir(file) : null;
-		final ContentNode newNode = new ContentNode(id, parentNode.getId(), title, file, authList, sortName);
+		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList())
+				? title + " (restricted)"
+				: title;
+
+		final ContentNode newNode = new ContentNode(id, parentNode.getId(), modTitle, file, authList, sortName);
 		if (parentNode.addNodeIfAbsent(newNode)) {
 			this.contentTree.addNode(newNode);
 			return newNode;

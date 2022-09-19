@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -126,6 +127,20 @@ public class AuthList {
 
 	public int size() {
 		return this.usernames.size();
+	}
+
+	@Override
+	public int hashCode() {
+		return this.id.hashCode();
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj == null) return false;
+		if (this == obj) return true;
+		if (!(obj instanceof AuthList)) return false;
+		final AuthList that = (AuthList) obj;
+		return Objects.equals(this.id, that.id);
 	}
 
 }
