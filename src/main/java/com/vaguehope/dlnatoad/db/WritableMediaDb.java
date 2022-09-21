@@ -201,11 +201,15 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void setFileMissing(final String file, final boolean missing) throws SQLException {
+		setFileMissing(file, missing, true);
+	}
+
+	protected void setFileMissing(final String file, final boolean missing, final boolean dbMustChange) throws SQLException {
 		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE files SET missing=? WHERE file=?;")) {
 			st.setBoolean(1, missing);
 			st.setString(2, file);
 			final int n = st.executeUpdate();
-			if (n < 1) throw new SQLException(String.format("No update occured setting missing=%s for file \"%s\".", missing, file));
+			if (dbMustChange && n < 1) throw new SQLException(String.format("No update occured setting missing=%s for file \"%s\".", missing, file));
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to set missing=%s for file \"%s\".", missing, file), e);

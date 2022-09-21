@@ -130,7 +130,8 @@ public class MediaMetadataStore {
 				addOrUpdateFileData(w, f.getFile(), f.getAuth(), f.getCallback());
 				break;
 			case GONE:
-				w.setFileMissing(f.getFile().getAbsolutePath(), true);
+				// This is best effort as the file might have already been merged into another depending on message order.
+				w.setFileMissing(f.getFile().getAbsolutePath(), true, /* dbMustChange= */false);
 				break;
 			default:
 				LOG.error("Task missing action: {}", f);
