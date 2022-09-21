@@ -119,6 +119,14 @@ public class MediaIndexTest {
 	}
 
 	@Test
+	public void itDoesNotErrorOnModifiedSubtitles() throws Exception {
+		// This is just to check for exceptions from fileModififed() handling a ContentGroup.SUBTITLES.
+		final File file = mockFile("foo.srt");
+		this.undertest.fileModified(this.tmp.getRoot(), file, null);
+		waitForEmptyQueue();
+	}
+
+	@Test
 	public void itHandlesDeletedFile() throws Exception {
 		final File file = mockFile("foo.mkv");
 		this.undertest.fileFound(this.tmp.getRoot(), file, null, null);

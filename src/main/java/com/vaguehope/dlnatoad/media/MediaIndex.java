@@ -82,9 +82,16 @@ public class MediaIndex implements FileListener {
 		final MediaFormat format = MediaFormat.identify(file);
 		if (format == null) return EventResult.NOT_ADDED;
 
-		final ContentNode dirContainer = dirToContentNode(rootDir, file.getParentFile(), format);
 
-		this.mediaId.contentIdAsync(format.getContentGroup(), file, dirContainer.getAuthId(), new MediaIdCallback() {
+		final BigInteger authId;
+		if (format.getContentGroup() == ContentGroup.SUBTITLES) {
+			authId = BigInteger.ZERO;
+		} else {
+			final ContentNode dirContainer = dirToContentNode(rootDir, file.getParentFile(), format);
+			authId = dirContainer.getAuthId();
+		}
+
+		this.mediaId.contentIdAsync(format.getContentGroup(), file, authId, new MediaIdCallback() {
 			@Override
 			public void onResult(final String itemId) throws IOException {
 				// If ID has changed, remove and re-add.
