@@ -13,82 +13,76 @@ import java.security.NoSuchAlgorithmException;
 
 public final class HashHelper {
 
-	private static final int BUFFERSIZE = 1024 * 64;
+	static final int BUFFERSIZE = 1024 * 64; // 64kb.
 
-	private HashHelper () {
-		throw new AssertionError();
+	private HashHelper() {
 	}
 
-	public static BigInteger sha1(final String s) {
-		final MessageDigest md = MD_SHA1_FACTORY.get();
-		return new BigInteger(1, md.digest(s.getBytes(StandardCharsets.UTF_8)));
-	}
-
-	public static String sha1AsString(final String s) {
-		return sha1(s).toString(16); // NOSONAR Hex is not a magic number.
-	}
-
-	public static BigInteger sha1 (final File file) throws IOException {
-		return sha1(file, createByteBuffer());
-	}
-
-	public static BigInteger sha1 (final File file, final ByteBuffer buffer) throws IOException {
-		return hashFile(file, buffer, MD_SHA1_FACTORY);
-	}
-
-	@Deprecated
-	public static String md5 (final String text) {
-		final MessageDigest md = MD_MD5_FACTORY.get();
-		md.update(text.getBytes(StandardCharsets.UTF_8), 0, text.length());
-		return new BigInteger(1, md.digest()).toString(16);
-	}
-
-	private static ByteBuffer createByteBuffer () {
+	public static ByteBuffer createByteBuffer() {
 		return ByteBuffer.allocateDirect(BUFFERSIZE);
 	}
 
-	private static final ThreadLocal<MessageDigest> MD_SHA1_FACTORY = new ThreadLocal<MessageDigest>() {
-		@Override
-		protected MessageDigest initialValue () {
-			try {
-				return MessageDigest.getInstance("SHA1");
-			}
-			catch (final NoSuchAlgorithmException e) {
-				throw new IllegalStateException("JVM should always know about SHA1.", e);
-			}
+	public static BigInteger sha1(final String s) {
+		final MessageDigest md = SHA1_FACTORY.get();
+		return new BigInteger(1, md.digest(s.getBytes(StandardCharsets.UTF_8)));
+	}
+
+	public static BigInteger sha1(final File file) throws IOException {
+		return sha1(file, createByteBuffer());
+	}
+
+	public static BigInteger sha1(final File file, final ByteBuffer buffer) throws IOException {
+		return hashFile(file, buffer, SHA1_FACTORY);
+	}
+
+	public static BigInteger md5(final File file, final ByteBuffer buffer) throws IOException {
+		return hashFile(file, buffer, MD5_FACTORY);
+	}
+
+	public static BigInteger md5(final String s) {
+		final MessageDigest md = MD5_FACTORY.get();
+		return new BigInteger(1, md.digest(s.getBytes(StandardCharsets.UTF_8)));
+	}
+
+	public static class Md5AndSha1 {
+		private final BigInteger md5;
+		private final BigInteger sha1;
+
+		public Md5AndSha1(final BigInteger md5, final BigInteger sha1) {
+			if (md5.equals(BigInteger.ZERO)) throw new IllegalArgumentException("MD5 can not be zero.");
+			if (sha1.equals(BigInteger.ZERO)) throw new IllegalArgumentException("SHA1 can not be zero.");
+			this.md5 = md5;
+			this.sha1 = sha1;
+		}
+
+		public BigInteger getMd5() {
+			return this.md5;
+		}
+
+		public BigInteger getSha1() {
+			return this.sha1;
 		}
 
 		@Override
-		public MessageDigest get () {
-			final MessageDigest md = super.get();
-			md.reset();
-			return md;
+		public String toString() {
+			return String.format("Md5AndSha1{%s, %s}", this.md5.toString(16), this.sha1.toString(16));
 		}
-	};
+	}
 
-	private static ThreadLocal<MessageDigest> MD_MD5_FACTORY = new ThreadLocal<MessageDigest>() {
-		@Override
-		protected MessageDigest initialValue () {
-			try {
-				return MessageDigest.getInstance("MD5");
-			}
-			catch (final NoSuchAlgorithmException e) {
-				throw new IllegalStateException("JVM should always know about MD5.", e);
-			}
-		}
+	public static Md5AndSha1 generateMd5AndSha1(final File file, final ByteBuffer buffer) throws IOException {
+		final MessageDigest md5 = MD5_FACTORY.get();
+		final MessageDigest sha1 = SHA1_FACTORY.get();
+		multiMd(file, buffer, md5, sha1);
+		return new Md5AndSha1(new BigInteger(1, md5.digest()), new BigInteger(1, sha1.digest()));
+	}
 
-		@Override
-		public MessageDigest get () {
-			final MessageDigest md = super.get();
-			md.reset();
-			return md;
-		}
-	};
-
-	private static BigInteger hashFile (final File file, final ByteBuffer buffer, final ThreadLocal<MessageDigest> mdFactory) throws FileNotFoundException, IOException {
+	private static BigInteger hashFile(final File file, final ByteBuffer buffer, final ThreadLocal<MessageDigest> mdFactory) throws FileNotFoundException, IOException {
 		final MessageDigest md = mdFactory.get();
-		md.reset();
+		singleMd(file, buffer, md);
+		return new BigInteger(1, md.digest());
+	}
 
+	private static void singleMd(final File file, final ByteBuffer buffer, final MessageDigest md) throws IOException {
 		try (final FileInputStream is = new FileInputStream(file)) {
 			try (final FileChannel fc = is.getChannel()) {
 				while (fc.position() < fc.size()) {
@@ -97,11 +91,50 @@ public final class HashHelper {
 					buffer.flip();
 					md.update(buffer);
 				}
-				return new BigInteger(1, md.digest());
 			}
 		}
-		catch (final FileNotFoundException e) {
-			throw new FileNotFoundException("Not found: " + file.getAbsolutePath());
+	}
+
+	private static void multiMd(final File file, final ByteBuffer buffer, final MessageDigest md0, final MessageDigest md1) throws IOException {
+		try (final FileInputStream is = new FileInputStream(file)) {
+			try (final FileChannel fc = is.getChannel()) {
+				while (fc.position() < fc.size()) {
+					buffer.clear();
+					fc.read(buffer);
+					buffer.flip();
+					md0.update(buffer);
+					buffer.rewind();
+					md1.update(buffer);
+				}
+			}
+		}
+	}
+
+	private static final MdFactory MD5_FACTORY = new MdFactory("MD5");
+	private static final MdFactory SHA1_FACTORY = new MdFactory("SHA1");
+
+	private static class MdFactory extends ThreadLocal<MessageDigest> {
+		private final String algorithm;
+
+		public MdFactory(final String algorithm) {
+			this.algorithm = algorithm;
+		}
+
+		@Override
+		protected MessageDigest initialValue() {
+			try {
+				return MessageDigest.getInstance(this.algorithm);
+			}
+			catch (final NoSuchAlgorithmException e) {
+				throw new IllegalStateException("Algorithm not found: " + this.algorithm, e);
+			}
+		}
+
+		@Override
+		public MessageDigest get() {
+			final MessageDigest md = super.get();
+			md.reset();
+			return md;
 		}
 	}
 
