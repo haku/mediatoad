@@ -1,12 +1,14 @@
 package com.vaguehope.dlnatoad.db.search;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class DbSearchSyntax {
 
 	public static String makeSingleTagSearch(String tag) {
 		final String quote;
-		if (tag.indexOf(" ") >= 0) {
-			if (tag.indexOf("\"") >= 0) {
-				if (tag.indexOf("'") >= 0) {
+		if (StringUtils.containsAny(tag, ' ', '(', ')', '\t', '　')) {
+			if (tag.indexOf('"') >= 0) {
+				if (tag.indexOf('\'') >= 0) {
 					tag = tag.replace("'", "\\'");
 				}
 				quote = "'";
