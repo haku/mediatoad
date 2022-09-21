@@ -160,7 +160,6 @@ public class MediaMetadataStore {
 			final FileData newFileData = generateNewFileData(w, file);
 			id = canonicaliseAndStoreId(w, newFileData);
 		}
-		// If file does not exist, return what we have so the old ID can be used to remove the file from memory.
 		else if (file.exists() && !oldFileData.upToDate(file)) {
 			final FileData updatedFileData = generateUpdatedFileData(w, file, oldFileData);
 			id = canonicaliseAndStoreId(w, updatedFileData);
@@ -170,6 +169,7 @@ public class MediaMetadataStore {
 			if (file.exists() && oldFileData.isMissing()) {
 				w.setFileMissing(file.getAbsolutePath(), false);
 			}
+			// Return what we have even if file does not exist so the old ID can be used to remove the file from memory.
 			id = canonicaliseAndStoreId(w, oldFileData);
 		}
 		if (oldFileData == null || !oldFileData.hasAuth(auth)) {
