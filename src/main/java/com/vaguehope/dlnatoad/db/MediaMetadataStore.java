@@ -189,11 +189,11 @@ public class MediaMetadataStore {
 
 	private FileData generateNewFileData(final WritableMediaDb w, final File file) throws IOException, SQLException {
 		FileData fileData = FileData.forFile(file); // Slow.
-		Collection<FileAndData> filesToRemove = null;
+		Collection<FileAndId> filesToRemove = null;
 
 		// A preexisting ID will only be used only if no other files with that hash still exist.
 		// Otherwise a new ID will be generated and stored in the files table.
-		final Collection<FileAndData> otherFiles = w.filesWithHash(fileData.getHash());
+		final Collection<FileAndId> otherFiles = w.filesWithHash(fileData.getHash());
 		excludeFilesThatStillExist(otherFiles);
 		final Set<String> otherIds = distinctIds(otherFiles);
 		if (otherIds.size() == 1) {
@@ -219,13 +219,13 @@ public class MediaMetadataStore {
 
 	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, final FileData oldFileData) throws SQLException, IOException {
 		FileData fileData = FileData.forFile(file).withId(oldFileData.getId()); // Slow.
-		Collection<FileAndData> filesToRemove = null;
+		Collection<FileAndId> filesToRemove = null;
 
 		// ID from hashes table will be copied into files table only if all other files with that hash are missing.
 		// Otherwise ID in files table with be unchanged.
 		final String prevHashCanonicalId = w.canonicalIdForHash(oldFileData.getHash());
 		if (prevHashCanonicalId != null && !prevHashCanonicalId.equals(oldFileData.getId())) {
-			final Collection<FileAndData> otherFiles = w.filesWithHash(oldFileData.getHash());
+			final Collection<FileAndId> otherFiles = w.filesWithHash(oldFileData.getHash());
 			excludeFile(otherFiles, file); // Remove self.
 			if (allMissing(otherFiles)) {
 				fileData = fileData.withNewId(prevHashCanonicalId);
@@ -256,36 +256,36 @@ public class MediaMetadataStore {
 		}
 	}
 
-	protected void removeFiles(final WritableMediaDb w, final Collection<FileAndData> files) throws SQLException {
-		for (final FileAndData file : files) {
+	protected void removeFiles(final WritableMediaDb w, final Collection<FileAndId> files) throws SQLException {
+		for (final FileAndId file : files) {
 			w.removeFile(file.getFile());
 		}
 	}
 
-	private static void excludeFilesThatStillExist(final Collection<FileAndData> files) {
-		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+	private static void excludeFilesThatStillExist(final Collection<FileAndId> files) {
+		for (final Iterator<FileAndId> i = files.iterator(); i.hasNext();) {
 			if (i.next().getFile().exists()) i.remove();
 		}
 	}
 
-	private static void excludeFile(final Collection<FileAndData> files, final File file) {
+	private static void excludeFile(final Collection<FileAndId> files, final File file) {
 		final int startSize = files.size();
-		for (final Iterator<FileAndData> i = files.iterator(); i.hasNext();) {
+		for (final Iterator<FileAndId> i = files.iterator(); i.hasNext();) {
 			if (file.equals(i.next().getFile())) i.remove();
 		}
 		if (files.size() != startSize - 1) throw new IllegalStateException("Expected to only remove one item from list.");
 	}
 
-	private static Set<String> distinctIds(final Collection<FileAndData> files) {
+	private static Set<String> distinctIds(final Collection<FileAndId> files) {
 		final Set<String> ids = new HashSet<>();
-		for (final FileAndData f : files) {
-			ids.add(f.getData().getId());
+		for (final FileAndId f : files) {
+			ids.add(f.getId());
 		}
 		return ids;
 	}
 
-	private static boolean allMissing(final Collection<FileAndData> files) {
-		for (final FileAndData file : files) {
+	private static boolean allMissing(final Collection<FileAndId> files) {
+		for (final FileAndId file : files) {
 			if (file.getFile().exists()) return false;
 		}
 		return true;

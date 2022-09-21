@@ -89,30 +89,16 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	// TODO could this method only return ID and File?
-	protected Collection<FileAndData> filesWithHash (final String hash) throws SQLException {
-		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT file, size, modified, hash, id, auth, missing FROM files WHERE hash=?;");
-		try {
+	protected Collection<FileAndId> filesWithHash(final String hash) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("SELECT file,id FROM files WHERE hash=?;")) {
 			st.setString(1, hash);
-			final ResultSet rs = st.executeQuery();
-			try {
-				final Collection<FileAndData> ret = new ArrayList<>();
+			try (final ResultSet rs = st.executeQuery()) {
+				final Collection<FileAndId> ret = new ArrayList<>();
 				while (rs.next()) {
-					ret.add(new FileAndData(
-							new File(rs.getString(1)),
-							new FileData(
-									rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getString(5),
-									new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0)));
+					ret.add(new FileAndId(new File(rs.getString(1)), rs.getString(2)));
 				}
 				return ret;
 			}
-			finally {
-				rs.close();
-			}
-		}
-		finally {
-			st.close();
 		}
 	}
 
