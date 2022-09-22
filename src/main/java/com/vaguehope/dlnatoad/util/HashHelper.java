@@ -35,6 +35,10 @@ public final class HashHelper {
 		return hashFile(file, buffer, SHA1_FACTORY);
 	}
 
+	public static BigInteger md5(final File file) throws IOException {
+		return md5(file, createByteBuffer());
+	}
+
 	public static BigInteger md5(final File file, final ByteBuffer buffer) throws IOException {
 		return hashFile(file, buffer, MD5_FACTORY);
 	}
@@ -67,6 +71,10 @@ public final class HashHelper {
 		public String toString() {
 			return String.format("Md5AndSha1{%s, %s}", this.md5.toString(16), this.sha1.toString(16));
 		}
+	}
+
+	public static Md5AndSha1 generateMd5AndSha1(final File file) throws IOException {
+		return generateMd5AndSha1(file, createByteBuffer());
 	}
 
 	public static Md5AndSha1 generateMd5AndSha1(final File file, final ByteBuffer buffer) throws IOException {

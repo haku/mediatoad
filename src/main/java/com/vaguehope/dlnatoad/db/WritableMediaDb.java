@@ -67,7 +67,7 @@ public class WritableMediaDb implements Closeable {
 
 	protected FileData readFileData (final File file) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT size, modified, hash, id, auth, missing FROM files WHERE file=?;");
+				"SELECT size, modified, hash, md5, id, auth, missing FROM files WHERE file=?;");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);
@@ -75,8 +75,8 @@ public class WritableMediaDb implements Closeable {
 			try {
 				if (!rs.next()) return null;
 				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4),
-						new BigInteger(rs.getString(5), 16), rs.getInt(6) != 0);
+						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), rs.getString(5),
+						new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0);
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return fileData;
 			}
@@ -130,13 +130,14 @@ public class WritableMediaDb implements Closeable {
 
 	protected void storeFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"INSERT INTO files (file,size,modified,hash,id) VALUES (?,?,?,?,?);");
+				"INSERT INTO files (file,size,modified,hash,md5,id) VALUES (?,?,?,?,?,?);");
 		try {
 			st.setString(1, file.getAbsolutePath());
 			st.setLong(2, fileData.getSize());
 			st.setLong(3, fileData.getModified());
 			st.setString(4, fileData.getHash());
-			st.setString(5, fileData.getId());
+			st.setString(5, fileData.getMd5());
+			st.setString(6, fileData.getId());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No insert occured inserting file '" + file.getAbsolutePath() + "'.");
 		}
@@ -150,14 +151,15 @@ public class WritableMediaDb implements Closeable {
 
 	protected void updateFileData (final File file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
-				"UPDATE files SET size=?,modified=?,hash=?,id=?,missing=? WHERE file=?;");
+				"UPDATE files SET size=?,modified=?,hash=?,md5=?,id=?,missing=? WHERE file=?;");
 		try {
 			st.setLong(1, fileData.getSize());
 			st.setLong(2, fileData.getModified());
 			st.setString(3, fileData.getHash());
-			st.setString(4, fileData.getId());
-			st.setBoolean(5, fileData.isMissing());
-			st.setString(6, file.getAbsolutePath());
+			st.setString(4, fileData.getMd5());
+			st.setString(5, fileData.getId());
+			st.setBoolean(6, fileData.isMissing());
+			st.setString(7, file.getAbsolutePath());
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException("No update occured updating file '" + file.getAbsolutePath() + "'.");
 		}

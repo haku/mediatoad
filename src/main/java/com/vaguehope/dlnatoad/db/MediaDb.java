@@ -47,6 +47,7 @@ public class MediaDb {
 		}
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "missing", "INT(1) NOT NULL DEFAULT 0");
+		Sqlite.addColumnIfMissing(this.dbConn, "files", "md5", "STRING");
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
 					+ "file_id STRING NOT NULL, "

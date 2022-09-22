@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
+import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MediaMetadataStore {
 
@@ -165,10 +166,19 @@ public class MediaMetadataStore {
 			id = canonicaliseAndStoreId(w, updatedFileData);
 		}
 		else {
-			// File has not changed but missing flag needs unsetting.
-			if (file.exists() && oldFileData.isMissing()) {
-				w.setFileMissing(file.getAbsolutePath(), false);
+			if (file.exists()) {
+				// File has not changed but missing flag needs unsetting.
+				if (oldFileData.isMissing()) {
+					w.setFileMissing(file.getAbsolutePath(), false);
+				}
+
+				// Back fill MD5 if needed.
+				if (oldFileData.getMd5() == null) {
+					final String md5 = HashHelper.md5(file).toString(16);
+					w.updateFileData(file, oldFileData.withMd5(md5));
+				}
 			}
+
 			// Return what we have even if file does not exist so the old ID can be used to remove the file from memory.
 			id = canonicaliseAndStoreId(w, oldFileData);
 		}

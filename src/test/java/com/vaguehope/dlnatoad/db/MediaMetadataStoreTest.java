@@ -276,6 +276,22 @@ public class MediaMetadataStoreTest {
 	}
 
 	@Test
+	public void itUpdateMd5IfNotSet() throws Exception {
+		final File f = mockMediaFile("media-1.ext");
+		FileUtils.writeStringToFile(f, "abcdefg", Charset.forName("UTF-8"));
+
+		callIdForFile(f);
+		// Simulate old DB with no MD5 values.
+		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
+			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", null, "some-id", BigInteger.ZERO, false));
+		}
+		assertEquals(null, getFileData(f).getMd5());  // Verify simulation.
+
+		callIdForFile(f);
+		assertEquals("7ac66c0f148de9519b8bd264312c4d64", getFileData(f).getMd5());
+	}
+
+	@Test
 	public void itRunsGenericCallback() throws Exception {
 		final Runnable cb = mock(Runnable.class);
 		this.undertest.putCallbackInQueue(cb);
