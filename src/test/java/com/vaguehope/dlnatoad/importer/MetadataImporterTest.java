@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -72,21 +73,34 @@ public class MetadataImporterTest {
 	public void itImportsMinimalDropFile() throws Exception {
 		final long now = this.time.now();
 
-		final File mediaFile = this.tmp.newFile();
-		FileUtils.writeStringToFile(mediaFile, "abc123", "UTF-8");
-		final String sha1 = HashHelper.sha1(mediaFile).toString(16);
+		final File mediaFileA = this.tmp.newFile();
+		FileUtils.writeStringToFile(mediaFileA, "abc123", "UTF-8");
+		final String sha1 = HashHelper.sha1(mediaFileA).toString(16);
 
-		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
-		this.mediaMetadataStore.idForFile(mediaFile, BigInteger.ZERO, cb);
-		final String fileId = cb.getMediaId();
+		final File mediaFileB = this.tmp.newFile();
+		FileUtils.writeStringToFile(mediaFileB, "def456", "UTF-8");
+		final String md5 = HashHelper.md5(mediaFileB).toString(16);
+		assertNotEquals(sha1, md5);
+
+		final StoringMediaIdCallback cbA = new StoringMediaIdCallback();
+		this.mediaMetadataStore.idForFile(mediaFileA, BigInteger.ZERO, cbA);
+		final String fileIdA = cbA.getMediaId();
+
+		final StoringMediaIdCallback cbB = new StoringMediaIdCallback();
+		this.mediaMetadataStore.idForFile(mediaFileB, BigInteger.ZERO, cbB);
+		final String fileIdB = cbB.getMediaId();
+		assertNotEquals(fileIdA, fileIdB);
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			w.addTag(fileId, "should-not-change", now);
-			w.addTag(fileId, "will-be-deleted", now);
+			w.addTag(fileIdA, "should-not-change", now);
+			w.addTag(fileIdA, "will-be-deleted", now);
 		}
 
 		final String sha1UpperCase = sha1.toUpperCase();
-		assertFalse(sha1UpperCase.equals(sha1));  // Check they do not match anymore.
+		assertNotEquals(sha1UpperCase, sha1);  // Check they do not match anymore.
+
+		final String md5UpperCase = md5.toUpperCase();
+		assertNotEquals(md5UpperCase, md5);  // Check they do not match anymore.
 
 		final File dropFile = new File(this.dropDir, "my drop file.json");
 		FileUtils.writeStringToFile(dropFile, "["
@@ -102,12 +116,20 @@ public class MetadataImporterTest {
 				+ "]},"
 				+ "{\"sha1\": \"abc123\", \"tags\": ["
 				+ "{\"tag\":\"should-not-be-imported\",\"mod\":123,\"del\":false},"
+				+ "]},"
+				+ "{\"md5\": \"" + md5UpperCase + "\", \"tags\": ["
+				+ "{\"tag\":\"new-tag-via-md5\",\"cls\":\"place\"}"
+				+ "]},"
+				+ "{\"md5\": \"abc123\", \"tags\": ["
+				+ "{\"tag\":\"should-not-be-imported\",\"mod\":123,\"del\":false},"
 				+ "]}"
 				+ "]", "UTF-8");
 
 		this.undertest.processDropDir();
+		assertFalse(dropFile.exists());
+		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
 
-		assertThat(this.mediaDb.getTags(fileId, true), containsInAnyOrder(
+		assertThat(this.mediaDb.getTags(fileIdA, true), containsInAnyOrder(
 				new Tag("foo", 123, false),
 				new Tag("should-not-change", now, false),
 				new Tag("will-be-deleted", now + 1, true),
@@ -115,10 +137,11 @@ public class MetadataImporterTest {
 				new Tag("bat", 123, true)
 				));
 
-		assertFalse(dropFile.exists());
-		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
+		assertThat(this.mediaDb.getTags(fileIdB, true), containsInAnyOrder(
+				new Tag("new-tag-via-md5", "place", now, false)
+				));
 
-		assertEquals(4, this.undertest.getCountOfImportedTags());
+		assertEquals(5, this.undertest.getCountOfImportedTags());
 	}
 
 	@Test

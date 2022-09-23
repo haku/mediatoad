@@ -38,5 +38,18 @@
         "del": false
       }
     ]
+  },
+  {
+    "md5": "b8ed9178293e9dcde989f8c0ede65052",
+    "tags": [
+      {
+        "tag": "this",
+        "cls": "here"
+      },
+      {
+        "tag": "that",
+        "cls": "there"
+      }
+    ]
   }
 ]

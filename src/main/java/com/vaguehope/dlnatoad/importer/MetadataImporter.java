@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,11 +30,11 @@ public class MetadataImporter {
 
 	private final File dropDir;
 	private final MediaDb mediaDb;
-	private boolean verboseLog;
+	private final boolean verboseLog;
 	private final Time time;
 	private final AtomicLong countOfImportedTags = new AtomicLong(0L);
 
-	public MetadataImporter(final File dropDir, final MediaDb mediaDb, boolean verboseLog) {
+	public MetadataImporter(final File dropDir, final MediaDb mediaDb, final boolean verboseLog) {
 		this(dropDir, mediaDb, verboseLog, Time.DEFAULT);
 	}
 
@@ -96,19 +99,34 @@ public class MetadataImporter {
 		long changeCount = 0;
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			for (final HashAndTags hat : md.getHashAndTags()) {
-				final String cid = w.canonicalIdForHash(hat.getSha1().toString(16));
-				if (cid == null) continue;
+				final String id;
+				final String hashUsed;
+				if (hat.getSha1() != null) {
+					final String sha1 = hat.getSha1().toString(16);
+					id = w.canonicalIdForHash(sha1);
+					hashUsed = "sha1:" + sha1;
+				}
+				else if (hat.getMd5() != null) {
+					final String md5 = hat.getMd5().toString(16);
+					id = canonicalIdForMd5(w, md5);
+					hashUsed = "md5:" + md5;
+				}
+				else {
+					throw new IllegalStateException("Entry must have sha1 or md5.");
+				}
+				if (id == null) continue;
+
 				for (final ImportedTag tag : hat.getTags()) {
 					if (tag == null) throw new IllegalStateException("Null tag in list.");
 					final String cls = StringUtils.trimToEmpty(tag.getCls());
 					final boolean modified;
 					if (tag.getMod() != 0) {
-						modified = w.mergeTag(cid, tag.getTag(), cls, tag.getMod(), tag.isDel());
-						if (this.verboseLog && modified) LOG.info("{} Merged: {} {}", changeCount, hat.getSha1().toString(16), tag);
+						modified = w.mergeTag(id, tag.getTag(), cls, tag.getMod(), tag.isDel());
+						if (this.verboseLog && modified) LOG.info("{} Merged: {} {}", changeCount, hashUsed, tag);
 					}
 					else if (!tag.isDel()) {
-						modified = w.addTagIfNotDeleted(cid, tag.getTag(), cls, this.time.now());
-						if (this.verboseLog && modified) LOG.info("{} Added new: {} {}", changeCount, hat.getSha1().toString(16), tag);
+						modified = w.addTagIfNotDeleted(id, tag.getTag(), cls, this.time.now());
+						if (this.verboseLog && modified) LOG.info("{} Added new: {} {}", changeCount, hashUsed, tag);
 					}
 					else {
 						continue;
@@ -120,7 +138,26 @@ public class MetadataImporter {
 		return changeCount;
 	}
 
-	private static void renameDropFile(final File file, String suffix) throws IOException {
+	// Perhaps this should be inside WritableMediaDb replacing hashesForMd5() ?
+	private static String canonicalIdForMd5(final WritableMediaDb w, final String md5) throws SQLException {
+		final Collection<String> hashes = w.hashesForMd5(md5);
+		if (hashes.size() < 1) return null;
+
+		final Set<String> ids = new HashSet<>();
+		for (final String hash : hashes) {
+			final String id = w.canonicalIdForHash(hash);
+			if (id != null) ids.add(id);
+		}
+		if (ids.size() == 0) {
+			return null;
+		}
+		else if (ids.size() == 1) {
+			return ids.iterator().next();
+		}
+		throw new IllegalStateException("MD5 " + md5 + " maps to multiple canonical IDs: " + ids);
+	}
+
+	private static void renameDropFile(final File file, final String suffix) throws IOException {
 		final File newFile = new File(file.getAbsolutePath() + suffix);
 		FileUtils.moveFile(file, newFile);
 	}

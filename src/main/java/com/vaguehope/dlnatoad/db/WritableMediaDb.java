@@ -237,6 +237,19 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
+	public Collection<String> hashesForMd5(final String md5) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("SELECT hash FROM files WHERE md5=?;")) {
+			st.setString(1, md5);
+			try (final ResultSet rs = st.executeQuery()) {
+				final Collection<String> ret = new ArrayList<>();
+				while (rs.next()) {
+					ret.add(rs.getString(1));
+				}
+				return ret;
+			}
+		}
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	//	Durations.
 

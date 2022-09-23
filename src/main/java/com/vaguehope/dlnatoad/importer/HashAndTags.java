@@ -8,15 +8,29 @@ import java.util.Objects;
 class HashAndTags {
 
 	private final BigInteger sha1;
+	private final BigInteger md5;
 	private final List<ImportedTag> tags;
 
-	public HashAndTags(final BigInteger sha1, final List<ImportedTag> tags) {
+	public static HashAndTags sha1(final BigInteger sha1, final List<ImportedTag> tags) {
+		return new HashAndTags(sha1, null, tags);
+	}
+
+	public static HashAndTags md5(final BigInteger md5, final List<ImportedTag> tags) {
+		return new HashAndTags(null, md5, tags);
+	}
+
+	private HashAndTags(final BigInteger sha1, final BigInteger md5, final List<ImportedTag> tags) {
 		this.sha1 = sha1;
+		this.md5 = md5;
 		this.tags = tags;
 	}
 
 	public BigInteger getSha1() {
 		return this.sha1;
+	}
+
+	public BigInteger getMd5() {
+		return this.md5;
 	}
 
 	public Collection<ImportedTag> getTags() {
@@ -25,12 +39,12 @@ class HashAndTags {
 
 	@Override
 	public String toString() {
-		return String.format("HashAndTags{%s, %s}", this.sha1, this.tags);
+		return String.format("HashAndTags{%s, %s, %s}", this.sha1, this.md5, this.tags);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.sha1, this.tags);
+		return Objects.hash(this.sha1, this.md5, this.tags);
 	}
 
 	@Override
@@ -40,6 +54,7 @@ class HashAndTags {
 		if (!(obj instanceof HashAndTags)) return false;
 		final HashAndTags that = (HashAndTags) obj;
 		return Objects.equals(this.sha1, that.sha1)
+				&& Objects.equals(this.md5, that.md5)
 				&& Objects.equals(this.tags, that.tags);
 	}
 
@@ -49,7 +64,7 @@ class HashAndTags {
 		private final long mod;
 		private final boolean del;
 
-		public ImportedTag(final String tag, String cls, final long mod, final boolean del) {
+		public ImportedTag(final String tag, final String cls, final long mod, final boolean del) {
 			this.tag = tag;
 			this.cls = cls;
 			this.mod = mod;
