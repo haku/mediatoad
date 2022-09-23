@@ -202,6 +202,19 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
+	public Collection<String> getTagsSimple(final String fileId) throws SQLException {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT DISTINCT tag FROM tags WHERE file_id=?;")) {
+			st.setString(1, fileId);
+			try (final ResultSet rs = st.executeQuery()) {
+				final Collection<String> ret = new ArrayList<>();
+				while (rs.next()) {
+					ret.add(rs.getString(1));
+				}
+				return ret;
+			}
+		}
+	}
+
 	public Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {
 		return getTagsFromConn(this.dbConn, fileId, includeDeleted);
 	}
@@ -238,7 +251,7 @@ public class MediaDb {
 
 	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final String pathPrefix, final int countLimit) throws SQLException {
 		final StringBuilder sql = new StringBuilder();
-		sql.append("SELECT tag, count(1) AS freq FROM files, tags WHERE id=file_id AND deleted=0 AND");
+		sql.append("SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq FROM files, tags WHERE id=file_id AND deleted=0 AND");
 		if (pathPrefix != null) {
 			sql.append(" file LIKE ? ESCAPE ? AND");
 		}

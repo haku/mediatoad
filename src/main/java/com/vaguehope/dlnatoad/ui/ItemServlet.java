@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Collection;
-import java.util.Collections;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -60,22 +59,6 @@ public class ItemServlet extends HttpServlet {
 			return;
 		}
 
-		final Collection<Tag> tags;
-		final FileData fileData;
-		if (this.mediaDb != null) {
-			try {
-				tags = this.mediaDb.getTags(item.getId(), false);
-				fileData = this.mediaDb.getFileData(item.getFile());
-			}
-			catch (final SQLException e) {
-				throw new IOException(e);
-			}
-		}
-		else {
-			tags = Collections.emptyList();
-			fileData = null;
-		}
-
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
@@ -89,48 +72,32 @@ public class ItemServlet extends HttpServlet {
 		w.println("<div>");
 		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");
 
-		final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
-		final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
-		if (editMode) {
-			w.println("<form action=\"\" method=\"POST\">");
-			w.println("<input type=\"hidden\" name=\"action\" value=\"rmtags\">");
-			for (final Tag tag : tags) {
-				final Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-				final String b64tag = encoder.encodeToString(tag.getTag().getBytes(StandardCharsets.UTF_8))
-						+ ":" + encoder.encodeToString(tag.getCls().getBytes(StandardCharsets.UTF_8));
-				w.print("<input type=\"checkbox\" name=\"b64tag\"  style=\"margin: 0.5em;\" value=\"");
-				w.print(b64tag);
-				w.print("\" id=\"");
-				w.print(b64tag);
-				w.print("\">");
-				w.print("<label style=\"margin: 0.5em;\" for=\"");
-				w.print(b64tag);
-				w.print("\">");
-				w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
-				if (tag.getCls().length() > 0) {
-					w.print(" (");
-					w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
-					w.print(")");
+		if (this.mediaDb != null) {
+			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
+			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
+			try {
+				if (editMode) {
+					printEditTags(item, w);
 				}
-				w.println("</label><br>");
+				else {
+					printSimpleTags(item, w);
+				}
 			}
-			w.println("<input type=\"submit\" value=\"Delete\"  style=\"margin: 0.5em;\">");
-			w.println("</form>");
-		}
-		else {
-			this.servletCommon.printRowOfTags(w, "../", tags);
-		}
+			catch (final SQLException e) {
+				throw new IOException(e);
+			}
 
-		if (allowEditTags) {
-			w.println("</br>");
-			w.println("<div style=\"padding-top: 0.5em\">");
-			w.println("<a href=\"?edit=true\">Edit</a>");
-			w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
-			w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-			w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
-			w.println("<input type=\"submit\" value=\"Add\">");
-			w.println("</form>");
-			w.println("</div>");
+			if (allowEditTags) {
+				w.println("</br>");
+				w.println("<div style=\"padding-top: 0.5em\">");
+				w.println("<a href=\"?edit=true\">Edit</a>");
+				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
+				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
+				w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
+				w.println("<input type=\"submit\" value=\"Add\">");
+				w.println("</form>");
+				w.println("</div>");
+			}
 		}
 
 		w.println("</div>");
@@ -142,16 +109,56 @@ public class ItemServlet extends HttpServlet {
 		w.print(item.getFormat().getExt());
 		w.print("\">");
 
-		// add MD5
-		if (fileData != null) {
-			w.println("<pre>");
-			w.println(FileHelper.readableFileSize(fileData.getSize()));
-			w.print("MD5: ");
-			w.println(fileData.getMd5());
-			w.println("</pre>");
+		if (this.mediaDb != null) {
+			try {
+				final FileData fileData = this.mediaDb.getFileData(item.getFile());
+				if (fileData != null) {
+					w.println("<pre>");
+					w.println(FileHelper.readableFileSize(fileData.getSize()));
+					w.print("MD5: ");
+					w.println(fileData.getMd5());
+					w.println("</pre>");
+				}
+			}
+			catch (final SQLException e) {
+				throw new IOException(e);
+			}
 		}
 
 		this.servletCommon.endBody(w);
+	}
+
+	private void printSimpleTags(final ContentItem item, final PrintWriter w) throws SQLException {
+		final Collection<String> tags = this.mediaDb.getTagsSimple(item.getId());
+		this.servletCommon.printRowOfTagsSimple(w, "../", tags);
+	}
+
+	private void printEditTags(final ContentItem item, final PrintWriter w) throws SQLException {
+		final Collection<Tag> tags = this.mediaDb.getTags(item.getId(), false);
+		w.println("<form action=\"\" method=\"POST\">");
+		w.println("<input type=\"hidden\" name=\"action\" value=\"rmtags\">");
+		for (final Tag tag : tags) {
+			final Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+			final String b64tag = encoder.encodeToString(tag.getTag().getBytes(StandardCharsets.UTF_8))
+					+ ":" + encoder.encodeToString(tag.getCls().getBytes(StandardCharsets.UTF_8));
+			w.print("<input type=\"checkbox\" name=\"b64tag\"  style=\"margin: 0.5em;\" value=\"");
+			w.print(b64tag);
+			w.print("\" id=\"");
+			w.print(b64tag);
+			w.print("\">");
+			w.print("<label style=\"margin: 0.5em;\" for=\"");
+			w.print(b64tag);
+			w.print("\">");
+			w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
+			if (tag.getCls().length() > 0) {
+				w.print(" (");
+				w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
+				w.print(")");
+			}
+			w.println("</label><br>");
+		}
+		w.println("<input type=\"submit\" value=\"Delete\"  style=\"margin: 0.5em;\">");
+		w.println("</form>");
 	}
 
 	@Override

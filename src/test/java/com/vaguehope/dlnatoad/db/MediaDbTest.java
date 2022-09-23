@@ -39,6 +39,20 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itGetsSimpleTags() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", fileId, BigInteger.ZERO, false));
+			assertTrue(w.addTag(fileId, "my-tag", "", 1234567890L));
+			assertTrue(w.addTag(fileId, "my-tag", "source", 1234567891L));
+			assertTrue(w.addTag(fileId, "my-tag", "other", 1234567892L));
+		}
+
+		final Collection<String> actual = this.undertest.getTagsSimple(fileId);
+		assertThat(actual, contains("my-tag"));
+	}
+
+	@Test
 	public void itAddsAndReadsAndRemovesATag() throws Exception {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
@@ -191,6 +205,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			for (int i = 0; i < 10; i++) {
 				addMockFiles(w, "id-" + i, BigInteger.ZERO, "tag1");
+				w.addTag("id-" + i, "tag1", "place", 1234567891L);
 			}
 			for (int i = 10; i < 20; i++) {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");

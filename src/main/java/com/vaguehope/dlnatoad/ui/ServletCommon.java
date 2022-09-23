@@ -288,6 +288,12 @@ public class ServletCommon {
 		}
 	}
 
+	public void printRowOfTagsSimple(final PrintWriter w, final String pathPrefix, final Collection<String> tags) {
+		for (final String t : tags) {
+			printRowTag(w, pathPrefix, t, 0);
+		}
+	}
+
 	private static void printRowTag(final PrintWriter w, final String pathPrefix, final String tag, final int count) {
 		w.print("<a style=\"padding-right: 0.5em;\" href=\"");
 		w.print(pathPrefix);
