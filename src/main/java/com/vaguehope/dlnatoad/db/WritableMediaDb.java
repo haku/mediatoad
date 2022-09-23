@@ -66,27 +66,7 @@ public class WritableMediaDb implements Closeable {
 	// The read methods are here so they are reading from the same transaction as the writes around them.
 
 	protected FileData readFileData (final File file) throws SQLException {
-		final PreparedStatement st = this.conn.prepareStatement(
-				"SELECT size, modified, hash, md5, id, auth, missing FROM files WHERE file=?;");
-		try {
-			st.setString(1, file.getAbsolutePath());
-			st.setMaxRows(2);
-			final ResultSet rs = st.executeQuery();
-			try {
-				if (!rs.next()) return null;
-				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), rs.getString(5),
-						new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0);
-				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
-				return fileData;
-			}
-			finally {
-				rs.close();
-			}
-		}
-		finally {
-			st.close();
-		}
+		return MediaDb.readFileDataFromConn(this.conn, file);
 	}
 
 	protected Collection<FileAndId> filesWithHash(final String hash) throws SQLException {

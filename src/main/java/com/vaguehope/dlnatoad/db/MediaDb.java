@@ -92,6 +92,7 @@ public class MediaDb {
 	/**
 	 * Only for unit tests.
 	 */
+	// TODO replace with readFileData() ?
 	BigInteger readFileAuth(final File file) throws SQLException {
 		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT auth FROM files WHERE file=?;")) {
 			st.setString(1, file.getAbsolutePath());
@@ -101,6 +102,25 @@ public class MediaDb {
 				final BigInteger ret = new BigInteger(rs.getString(1), 16);
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return ret;
+			}
+		}
+	}
+
+	public FileData getFileData(final File file) throws SQLException {
+		return MediaDb.readFileDataFromConn(this.dbConn, file);
+	}
+
+	protected static FileData readFileDataFromConn(final Connection conn, final File file) throws SQLException {
+		try (final PreparedStatement st = conn.prepareStatement("SELECT size, modified, hash, md5, id, auth, missing FROM files WHERE file=?;")) {
+			st.setString(1, file.getAbsolutePath());
+			st.setMaxRows(2);
+			try (final ResultSet rs = st.executeQuery()) {
+				if (!rs.next()) return null;
+				final FileData fileData = new FileData(
+						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), rs.getString(5),
+						new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0);
+				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
+				return fileData;
 			}
 		}
 	}

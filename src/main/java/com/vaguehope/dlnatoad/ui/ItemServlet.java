@@ -21,12 +21,14 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.FileData;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class ItemServlet extends HttpServlet {
 
@@ -59,9 +61,11 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final Collection<Tag> tags;
+		final FileData fileData;
 		if (this.mediaDb != null) {
 			try {
 				tags = this.mediaDb.getTags(item.getId(), false);
+				fileData = this.mediaDb.getFileData(item.getFile());
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
@@ -69,6 +73,7 @@ public class ItemServlet extends HttpServlet {
 		}
 		else {
 			tags = Collections.emptyList();
+			fileData = null;
 		}
 
 		ServletCommon.setHtmlContentType(resp);
@@ -136,6 +141,15 @@ public class ItemServlet extends HttpServlet {
 		w.print(".");
 		w.print(item.getFormat().getExt());
 		w.print("\">");
+
+		// add MD5
+		if (fileData != null) {
+			w.println("<pre>");
+			w.println(FileHelper.readableFileSize(fileData.getSize()));
+			w.print("MD5: ");
+			w.println(fileData.getMd5());
+			w.println("</pre>");
+		}
 
 		this.servletCommon.endBody(w);
 	}
