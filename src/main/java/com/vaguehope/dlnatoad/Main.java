@@ -55,6 +55,7 @@ import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
+import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
@@ -306,6 +307,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet()), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, mediaDb, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();
