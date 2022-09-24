@@ -42,6 +42,9 @@ public class ProgressLogFileListener implements FileListener {
 				this.byteCounter = 0;
 			}
 			this.fileCounter += 1;
+
+			// FIXME move to afterFileProc?
+			// files are now processed async so this does not work anymore.
 			this.byteCounter += file.length();
 		}
 	}
