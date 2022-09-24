@@ -16,7 +16,7 @@
 		<args4j.version>2.33</args4j.version>
 		<cling.version>2.1.2</cling.version>
 		<teleal.version>1.0.14</teleal.version>
-		<jetty.version>8.1.19.v20160209</jetty.version>
+		<jetty.version>9.4.45.v20220203</jetty.version>
 		<antlr.version>4.9.3</antlr.version>
 		<commonsio.version>2.11.0</commonsio.version>
 		<slf4j.version>1.7.32</slf4j.version>

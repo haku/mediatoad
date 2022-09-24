@@ -7,12 +7,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
@@ -33,6 +34,7 @@ public class ContentServletTest {
 	private MockContent mockContent;
 
 	private Server server;
+	private String hostAddress;
 
 	@Before
 	public void before() throws Exception {
@@ -67,17 +69,20 @@ public class ContentServletTest {
 		assertNull(this.undertest.getResource("/some_id"));
 	}
 
+	@SuppressWarnings("resource")
 	private void startServer() throws Exception {
 		this.server = new Server();
 
-		final SelectChannelConnector connector = new SelectChannelConnector();
+		final ServerConnector connector = new ServerConnector(this.server);
+		this.hostAddress = InetAddress.getLocalHost().getHostAddress();
+		connector.setHost(this.hostAddress);
 		connector.setPort(0); // auto-bind to available port
 		this.server.addConnector(connector);
 
 		final ServletContextHandler contextHandler = new ServletContextHandler();
+		MediaFormat.addTo(contextHandler.getMimeTypes());
 		contextHandler.setContextPath("/");
 		contextHandler.addServlet(new ServletHolder(this.undertest), "/");
-		MediaFormat.addTo(contextHandler.getMimeTypes());
 		this.server.setHandler(contextHandler);
 		this.server.start();
 	}
@@ -95,7 +100,9 @@ public class ContentServletTest {
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1");
 		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
-		final URL url = new URL("http://localhost:" + this.server.getConnectors()[0].getLocalPort() + "/" + item1.getId());
+		final URL url = new URL("http://" + this.hostAddress + ":"
+				+ ((ServerConnector) this.server.getConnectors()[0]).getLocalPort()
+				+ "/" + item1.getId());
 		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		try {
 			assertEquals(200, conn.getResponseCode());

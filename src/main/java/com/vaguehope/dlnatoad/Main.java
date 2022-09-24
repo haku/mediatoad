@@ -15,11 +15,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -173,7 +174,7 @@ public final class Main {
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
 		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, bindAddresses, hostName);
 
-		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, server.getConnectors()[0].getPort());
+		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
 
 		final NodeConverter nodeConverter = new NodeConverter(externalUrls);
@@ -233,11 +234,11 @@ public final class Main {
 
 			if (bindAddresses != null) {
 				for (final InetAddress address : bindAddresses) {
-					server.addConnector(createHttpConnector(address, port));
+					server.addConnector(createHttpConnector(server, address, port));
 				}
 			}
 			else {
-				server.addConnector(createHttpConnector(null, port));
+				server.addConnector(createHttpConnector(server, null, port));
 			}
 
 			try {
@@ -330,9 +331,8 @@ public final class Main {
 		return rewrites;
 	}
 
-	private static SelectChannelConnector createHttpConnector (final InetAddress bindAddress, final int port) {
-		final SelectChannelConnector connector = new SelectChannelConnector();
-		connector.setStatsOn(false);
+	private static Connector createHttpConnector(final Server server, final InetAddress bindAddress, final int port) {
+		final ServerConnector connector = new ServerConnector(server);
 		if (bindAddress != null) connector.setHost(bindAddress.getHostName());
 		connector.setPort(port);
 		return connector;
