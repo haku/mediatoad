@@ -31,7 +31,7 @@ public class ImageResizer {
 		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());
 		if (size < 16 || size > 1000) throw new IllegalArgumentException("Invalid size: " + size);
 
-		final File outF = new File(this.cacheDir, HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size);
+		final File outF = new File(this.cacheDir, HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size + ".jpg");
 		if (outF.exists() && outF.lastModified() > inF.lastModified()) return outF;
 
 		// TODO do something better than this nasty rate-limiting hack.
@@ -39,7 +39,6 @@ public class ImageResizer {
 			return scaleImageToFile(inF, size, quality, outF);
 		}
 	}
-
 
 	private static File scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
 		final BufferedImage inImg = ImageIO.read(inF);

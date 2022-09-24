@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +12,9 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.util.MyFileServlet;
 
-public class ThumbsServlet extends DefaultServlet {
+public class ThumbsServlet extends MyFileServlet {
 
 	private static final int THUMB_SIZE_PIXELS = 200;
 	private static final float THUMB_QUALITY = 0.8f;
@@ -26,6 +26,7 @@ public class ThumbsServlet extends DefaultServlet {
 	private final ImageResizer imageResizer;
 
 	public ThumbsServlet(final ContentTree contentTree, final ImageResizer imageResizer) {
+		super();
 		this.contentTree = contentTree;
 		this.imageResizer = imageResizer;
 	}
