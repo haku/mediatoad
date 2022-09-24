@@ -40,7 +40,7 @@ public abstract class MyFileServlet extends DefaultServlet {
 	// This is to resolve mime type based on resource file name like Jetty 8 did.
 	// Jetty 9's org.eclipse.jetty.server.ResourceContentFactory uses pathInContext.
 	// pathInContext does not have any file extension.
-	private class MyContentFactory implements ContentFactory {
+	private static class MyContentFactory implements ContentFactory {
 
 		private final ResourceFactory factory;
 
