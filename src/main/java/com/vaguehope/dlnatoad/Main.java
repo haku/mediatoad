@@ -307,7 +307,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet()), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, mediaDb, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();

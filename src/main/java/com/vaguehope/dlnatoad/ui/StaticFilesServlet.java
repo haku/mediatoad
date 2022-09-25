@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -22,17 +23,24 @@ public class StaticFilesServlet extends DefaultServlet {
 
 	private final Resource rootRes;
 
-	public StaticFilesServlet() {
+	public StaticFilesServlet(final File overrideWebRoot) {
 		super();
+		if (overrideWebRoot != null) {
+			this.rootRes = Resource.newResource(overrideWebRoot);
+		}
+		else {
+			this.rootRes = classpathRootRes();
+		}
+	}
 
+	private static Resource classpathRootRes() {
 		final URL f = StaticFilesServlet.class.getClassLoader().getResource("wui/" + KEY_FILE);
 		if (f == null) {
 			throw new IllegalStateException("Unable to find wui directory.");
 		}
-
 		try {
 			final URI rootUri = URI.create(f.toURI().toASCIIString().replaceFirst("/" + KEY_FILE + "$", "/"));
-			this.rootRes = Resource.newResource(rootUri);
+			return Resource.newResource(rootUri);
 		}
 		catch (final URISyntaxException | MalformedURLException e) {
 			throw new IllegalStateException(e);

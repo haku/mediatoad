@@ -29,7 +29,7 @@ public class StaticFilesServletTest {
 
 	@Before
 	public void before() throws Exception {
-		this.undertest = new StaticFilesServlet();
+		this.undertest = new StaticFilesServlet(null);
 	}
 
 	@SuppressWarnings("resource")

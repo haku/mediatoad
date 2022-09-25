@@ -28,6 +28,7 @@ public class Args {
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
+	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public static class ArgsException extends Exception {
@@ -126,6 +127,10 @@ public class Args {
 	public File getDropDir() throws ArgsException {
 		if (this.dropDir != null && this.db == null) throw new ArgsException("--dropdir requires --db to be set.");
 		return checkIsDirOrNull(this.dropDir);
+	}
+
+	public File getWebRoot() throws ArgsException {
+		return checkIsDirOrNull(this.webRoot);
 	}
 
 	private static File checkIsDirOrNull(final String path) throws ArgsException {
