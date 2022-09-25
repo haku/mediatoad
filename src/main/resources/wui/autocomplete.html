@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <title>Autocomplete Prototype</title>
+    <link rel="stylesheet" href="autocomplete.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+  <style>
+    #autoComplete {
+      width: 40em;
+    }
+  </style>
+  </head>
+  <body>
+    <p>type 't=b'.</p>
+    <div class="addTag_wrapper">
+      <input id="addTag" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+    </div>
+    <script>
+      const addTagAc = new autoComplete({
+        name: "addTag",
+        selector: "#addTag",
+        placeHolder: "add tag",
+        data: {
+          src: ["t=foo", "t=bar", "t=bat", "t=bbbbb", "t=blue", "t=black", "t=boat", "t=bog", "t=baloon", "t=desu", "t=more", "t=thing"],
+          cache: true,
+          //src: async (query) => {
+          //  try {
+          //    const source = await fetch(`https://www.api.com/${query}`);
+          //    const data = await source.json();
+          //    return data;
+          //  } catch (error) {
+          //    return error;
+          //  }
+          //},
+        },
+        resultsList: {
+          maxResults: 10,
+        },
+        resultItem: {
+          highlight: true,
+        },
+        query: (query) => {
+          const x = addTagAc.input.selectionStart;
+          const e = query.lastIndexOf('t=', x);
+          if (e < 0) return '';
+          // TODO check for spaces, etc.
+          // TODO what about quotes?
+          const q = query.substring(e, x);
+          console.log('query', '"' + query + '"', x, '"' + q + '"');
+          return q;
+        },
+        trigger: (query) => {
+          // This is mostly pointless right now but will make more sense
+          // once query() is stricter about spaces etc.
+          const t = query.startsWith('t=');
+          console.log('trigger', t);
+          return t;
+        },
+        //submit: true,
+        events: {
+          input: {
+            selection: (event) => {
+              const input = addTagAc.input;
+              const feedback = event.detail;
+              const selection = feedback.selection.value.trim();
+
+              const x = input.selectionStart;
+              const oldText = input.value;
+              const e = oldText.lastIndexOf('t=', x);
+              const newText = oldText.substring(0, e)
+                  + selection
+                  + oldText.substring(x);
+              input.value = newText;
+              const newX = x - (x - e) + selection.length;
+              input.setSelectionRange(newX, newX);
+            }
+          }
+        },
+      });
+    </script>
+  </body>
+</html>

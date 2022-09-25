@@ -1,0 +1,58 @@
+.addTag_wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.addTag_wrapper > input {
+  width: 40em;
+}
+
+.addTag_wrapper > input::placeholder {
+  transition: all 0.3s ease;
+}
+
+.addTag_wrapper > ul {
+  position: absolute;
+  max-height: 20em;
+  overflow-y: scroll;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+  border: 1px solid;
+  z-index: 1000;
+  outline: none;
+}
+
+.addTag_wrapper > ul > li {
+  padding: 0.2em;
+  list-style: none;
+  text-align: left;
+  transition: all 0.1s ease-in-out;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+.addTag_wrapper > ul > li::selection {
+  color: HighlightText;
+  background-color: Highlight;
+}
+
+.addTag_wrapper > ul > li mark {
+  background-color: transparent;
+  color: ButtonText;
+  font-weight: bold;
+}
+
+.addTag_wrapper > ul > li mark::selection {
+  color: HighlightText;
+  background-color: Highlight;
+}
+
+.addTag_wrapper > ul > li[aria-selected="true"] {
+  background-color: Highlight;
+}
