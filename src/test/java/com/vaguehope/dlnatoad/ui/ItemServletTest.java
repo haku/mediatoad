@@ -159,7 +159,7 @@ public class ItemServletTest {
 	private String givenAddTagParams() {
 		final String tag = "mytag";
 		this.req.setParameter("action", "addtag");
-		this.req.setParameter("tag", tag);
+		this.req.setParameter("tag", tag + " ");
 		return tag;
 	}
 

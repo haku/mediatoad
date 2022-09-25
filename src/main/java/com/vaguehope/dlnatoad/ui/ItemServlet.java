@@ -253,7 +253,7 @@ public class ItemServlet extends HttpServlet {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
 			return null;
 		}
-		final String p = vals != null ? vals[0] : null;
+		final String p = vals != null ? vals[0].trim() : null;
 		if (p == null || p.length() < minLength) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
 			return null;
