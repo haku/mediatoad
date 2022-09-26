@@ -187,7 +187,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
-			final String tag = readRequiredParam(req, resp, "tag", 1);
+			final String tag = ServletCommon.readRequiredParam(req, resp, "tag", 1);
 			if (tag == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 				w.addTag(item.getId(), tag, System.currentTimeMillis());
@@ -200,7 +200,7 @@ public class ItemServlet extends HttpServlet {
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
 		}
 		else if ("rmtags".equalsIgnoreCase(req.getParameter("action"))) {
-			final String[] b64tagsandclss = readRequiredParams(req, resp, "b64tag", 1);
+			final String[] b64tagsandclss = ServletCommon.readRequiredParams(req, resp, "b64tag", 1);
 			if (b64tagsandclss == null) return;
 
 			final String[] tags = new String[b64tagsandclss.length];
@@ -245,35 +245,6 @@ public class ItemServlet extends HttpServlet {
 			return null;
 		}
 		return item;
-	}
-
-	private static String readRequiredParam(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
-		final String[] vals = req.getParameterValues(param);
-		if (vals != null && vals.length > 1) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
-			return null;
-		}
-		final String p = vals != null ? vals[0].trim() : null;
-		if (p == null || p.length() < minLength) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
-			return null;
-		}
-		return p;
-	}
-
-	private static String[] readRequiredParams(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
-		final String[] vals = req.getParameterValues(param);
-		if (vals == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
-			return null;
-		}
-		for (final String val : vals) {
-			if (val.length() < minLength) {
-				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid value: " + param);
-				return null;
-			}
-		}
-		return vals;
 	}
 
 }

@@ -237,6 +237,31 @@ public class MediaDbTest {
 				new TagFrequency("tag2", 6)));
 	}
 
+	@Test
+	public void itGetsAutocompleteSuggestions() throws Exception {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			for (int i = 0; i < 10; i++) {
+				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar", "barbat");
+				w.addTag("id-" + i, "foobar", "place", 1234567891L);
+				if (i > 5) w.addTag("id-" + i, "batfoo", 1234567891L);
+				if (i > 6) w.addTag("id-" + i, "foored", 1234567891L);
+				if (i > 7) w.addTag("id-" + i, "foogreen", 1234567891L);
+			}
+			for (int i = 10; i < 20; i++) {
+				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar", "popping", "pingpop");
+				w.mergeTag("id-" + i, "foodeleted", "", 1234567890L, true);
+			}
+		}
+		assertThat(this.undertest.getAutocompleteSuggestions("fo", 3, false), contains(
+				new TagFrequency("foobar", 20),
+				new TagFrequency("batfoo", 4),
+				new TagFrequency("foored", 3)));
+		assertThat(this.undertest.getAutocompleteSuggestions("foo", 3, true), contains(
+				new TagFrequency("foobar", 20),
+				new TagFrequency("foored", 3),
+				new TagFrequency("foogreen", 2)));
+	}
+
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {
 		final File f = new File("/media/" + id + ".wav");
 		w.storeFileData(f, new FileData(12, 123456, "myhash-" + id, "mymd5=" + id, id, null, false));

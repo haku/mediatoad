@@ -269,13 +269,35 @@ public class MediaDb {
 			}
 			st.setInt(param++, countLimit);
 			st.setMaxRows(countLimit);
-			try (final ResultSet rs = st.executeQuery()) {
-				final List<TagFrequency> ret = new ArrayList<>(countLimit);
-				while (rs.next()) {
-					ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
-				}
-				return ret;
+			return readTagFrequencyResultSet(countLimit, st);
+		}
+	}
+
+	public List<TagFrequency> getAutocompleteSuggestions(final String fragment, final int countLimit, final boolean startsWithOnly) throws SQLException {
+		final String sql = "SELECT tag, COUNT(DISTINCT file_id) AS count"
+				+ " FROM tags"
+				+ " WHERE tag LIKE ? ESCAPE ? AND deleted=0"
+				+ " GROUP BY tag"
+				+ " ORDER BY count DESC, tag ASC"
+				+ " LIMIT ?;";
+		try (final PreparedStatement st = this.dbConn.prepareStatement(sql)) {
+			String matcher = Sqlite.escapeSearch(fragment) + "%";
+			if (!startsWithOnly) matcher = "%" + matcher;
+			st.setString(1, matcher);
+			st.setString(2, Sqlite.SEARCH_ESC);
+			st.setInt(3, countLimit);
+			st.setMaxRows(countLimit);
+			return readTagFrequencyResultSet(countLimit, st);
+		}
+	}
+
+	private static List<TagFrequency> readTagFrequencyResultSet(final int count, final PreparedStatement st) throws SQLException {
+		try (final ResultSet rs = st.executeQuery()) {
+			final List<TagFrequency> ret = new ArrayList<>(count);
+			while (rs.next()) {
+				ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
 			}
+			return ret;
 		}
 	}
 

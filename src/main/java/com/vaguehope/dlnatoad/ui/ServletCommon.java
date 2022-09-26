@@ -366,4 +366,33 @@ public class ServletCommon {
 		return null;
 	}
 
+	public static String readRequiredParam(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
+		final String[] vals = req.getParameterValues(param);
+		if (vals != null && vals.length > 1) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
+			return null;
+		}
+		final String p = vals != null ? vals[0].trim() : null;
+		if (p == null || p.length() < minLength) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
+			return null;
+		}
+		return p;
+	}
+
+	public static String[] readRequiredParams(final HttpServletRequest req, final HttpServletResponse resp, final String param, final int minLength) throws IOException {
+		final String[] vals = req.getParameterValues(param);
+		if (vals == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: " + param);
+			return null;
+		}
+		for (final String val : vals) {
+			if (val.length() < minLength) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid value: " + param);
+				return null;
+			}
+		}
+		return vals;
+	}
+
 }
