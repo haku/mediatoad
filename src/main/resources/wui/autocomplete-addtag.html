@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <title>Autocomplete Add Tag Prototype</title>
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0">
+    <link rel="stylesheet" href="autocomplete.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
+  </head>
+  <body>
+    <p>Start typing a tag</p>
+    <div class="addTag_wrapper">
+      <input id="addTag" style="width: 15em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+    </div>
+    <input type="submit" value="Add">
+    <script>
+      const addTagAc = new autoComplete({
+        name: "addTag",
+        selector: "#addTag",
+        placeHolder: "add tag",
+        data: {
+          src: async (query) => {
+            try {
+              const source = await fetch(`../ac?mode=addtag&fragment=${escape(query)}`);
+              const data = await source.json();
+              return data;
+            } catch (error) {
+              return error;
+            }
+          },
+          keys: ['tag'],
+        },
+        resultsList: {
+          maxResults: 50,
+          //tabSelect: true,
+        },
+        resultItem: {
+          highlight: true,
+          element: (item, data) => {
+            item.innerHTML = `<span>${data.match}</span><span>(${data.value.count})</span>`;
+          },
+        },
+        //submit: true,
+        events: {
+          input: {
+            selection: (event) => {
+              const input = addTagAc.input;
+              const feedback = event.detail;
+              const selection = feedback.selection;
+              input.value = selection.value.tag;
+            }
+          }
+        },
+      });
+    </script>
+  </body>
+</html>

@@ -3,38 +3,30 @@
   position: relative;
 }
 
-.addTag_wrapper > input {
-  width: 40em;
-}
-
-.addTag_wrapper > input::placeholder {
-  transition: all 0.3s ease;
-}
-
 .addTag_wrapper > ul {
   position: absolute;
-  max-height: 20em;
+  max-height: 15rem;
   overflow-y: scroll;
   top: 100%;
   left: 0;
   right: 0;
   padding: 0;
-  margin: 0.5rem 0 0 0;
+  margin: 0 0 0 0;
   border: 1px solid;
   z-index: 1000;
   outline: none;
 }
 
 .addTag_wrapper > ul > li {
-  padding: 0.2em;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem;
   list-style: none;
   text-align: left;
-  transition: all 0.1s ease-in-out;
   border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: all 0.2s ease;
 }
 
 .addTag_wrapper > ul > li::selection {
