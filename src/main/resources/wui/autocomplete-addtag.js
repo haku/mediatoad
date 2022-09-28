@@ -1,6 +1,7 @@
 const addTagAc = new autoComplete({
   name: "addTag",
   selector: "#addTag",
+  wrapper: false,
   placeHolder: "add tag",
   data: {
     src: async (query) => {

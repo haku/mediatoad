@@ -8,14 +8,15 @@
   </head>
   <body>
     <p>type 't=b'.</p>
-    <div class="addTag_wrapper">
+    <div class="autocomplete_wrapper search_wrapper">
       <input id="search" style="width: 40em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
     </div>
     <input type="submit" value="Search">
     <script>
       const searchAc = new autoComplete({
-        name: "addTag",  // TODO to update this need to change css.
+        name: "search",
         selector: "#search",
+        wrapper: false,
         placeHolder: "search",
         data: {
           src: ["t=foo", "t=bar", "t=bat", "t=bbbbb", "t=blue", "t=black", "t=boat", "t=bog", "t=baloon", "t=desu", "t=more", "t=thing"],

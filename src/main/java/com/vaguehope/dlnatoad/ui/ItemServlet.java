@@ -95,7 +95,7 @@ public class ItemServlet extends HttpServlet {
 				w.println("<a href=\"?edit=true\">Edit</a>");
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-				w.println("<div class=\"addTag_wrapper\">");
+				w.println("<div class=\"autocomplete_wrapper addTag_wrapper\">");
 				w.println("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\""
 						+ " style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
 				w.println("</div>");

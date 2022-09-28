@@ -1,9 +1,9 @@
-.addTag_wrapper {
+.autocomplete_wrapper {
   display: inline-block;
   position: relative;
 }
 
-.addTag_wrapper > ul {
+.autocomplete_wrapper > ul {
   position: absolute;
   max-height: 15rem;
   overflow-y: scroll;
@@ -18,7 +18,7 @@
   background-color: Window;
 }
 
-.addTag_wrapper > ul > li {
+.autocomplete_wrapper > ul > li {
   display: flex;
   justify-content: space-between;
   padding: 0.2rem;
@@ -30,22 +30,22 @@
   text-overflow: ellipsis;
 }
 
-.addTag_wrapper > ul > li::selection {
+.autocomplete_wrapper > ul > li::selection {
   color: HighlightText;
   background-color: Highlight;
 }
 
-.addTag_wrapper > ul > li mark {
+.autocomplete_wrapper > ul > li mark {
   background-color: transparent;
   color: ButtonText;
   font-weight: bold;
 }
 
-.addTag_wrapper > ul > li mark::selection {
+.autocomplete_wrapper > ul > li mark::selection {
   color: HighlightText;
   background-color: Highlight;
 }
 
-.addTag_wrapper > ul > li[aria-selected="true"] {
+.autocomplete_wrapper > ul > li[aria-selected="true"] {
   background-color: Highlight;
 }
