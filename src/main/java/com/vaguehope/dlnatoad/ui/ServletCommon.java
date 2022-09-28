@@ -107,6 +107,7 @@ public class ServletCommon {
 
 		w.println("<style>");
 		w.println("body, div, input, label, p, span {font-family: sans-serif;}");
+		w.println("a:link, a:visited {text-decoration: none;}");
 		w.println("</style>");
 
 		w.println("</head>");
