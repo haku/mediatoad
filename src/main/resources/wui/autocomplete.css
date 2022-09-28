@@ -15,6 +15,7 @@
   border: 1px solid;
   z-index: 1000;
   outline: none;
+  background-color: Window;
 }
 
 .addTag_wrapper > ul > li {

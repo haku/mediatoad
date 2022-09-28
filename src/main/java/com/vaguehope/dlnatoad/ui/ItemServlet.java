@@ -62,7 +62,9 @@ public class ItemServlet extends HttpServlet {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, item.getTitle());
+		this.servletCommon.headerAndStartBody(w, item.getTitle(),
+				"<link rel=\"stylesheet\" href=\"../w/autocomplete.css\">",
+				"<script src=\"https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js\"></script>");
 		this.servletCommon.printLinkRow(req, w, "../");
 		w.println("<br>");
 
@@ -93,9 +95,13 @@ public class ItemServlet extends HttpServlet {
 				w.println("<a href=\"?edit=true\">Edit</a>");
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-				w.println("<input type=\"text\" id=\"tag\" name=\"tag\" value=\"\">");
+				w.println("<div class=\"addTag_wrapper\">");
+				w.println("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\""
+						+ " style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
+				w.println("</div>");
 				w.println("<input type=\"submit\" value=\"Add\">");
 				w.println("</form>");
+				w.println("<script src=\"../w/autocomplete-addtag.js\"></script>");
 				w.println("</div>");
 			}
 		}
@@ -187,7 +193,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
-			final String tag = ServletCommon.readRequiredParam(req, resp, "tag", 1);
+			final String tag = ServletCommon.readRequiredParam(req, resp, "addTag", 1);
 			if (tag == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 				w.addTag(item.getId(), tag, System.currentTimeMillis());

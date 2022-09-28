@@ -83,7 +83,7 @@ public class ServletCommon {
 		resp.setContentType("text/html; charset=utf-8");
 	}
 
-	public void headerAndStartBody(final PrintWriter w, final String title) {
+	public void headerAndStartBody(final PrintWriter w, final String title, final String... extraHeaderLines) {
 		w.println("<!DOCTYPE html>");
 		w.println("<html>");
 		w.println("<head>");
@@ -101,6 +101,9 @@ public class ServletCommon {
 		w.println("</title>");
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
+		for (final String line : extraHeaderLines) {
+			w.println(line);
+		}
 
 		w.println("<style>");
 		w.println("body, div, input, label, p, span {font-family: sans-serif;}");
