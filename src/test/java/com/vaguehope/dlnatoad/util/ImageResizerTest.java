@@ -9,6 +9,7 @@ import java.io.InputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -31,6 +32,14 @@ public class ImageResizerTest {
 			FileUtils.copyInputStreamToFile(is, in);
 		}
 		final File f = this.undertest.resizeFile(in, 24, 0.8f);
+		assertTrue(f.exists());
+		assertThat(f.length(), greaterThan(1L));
+	}
+
+	@Ignore
+	@Test
+	public void itDecodesLocalFile() throws Exception {
+		final File f = this.undertest.resizeFile(new File("/home/user/Art/test.jpg"), 200, 0.8f);
 		assertTrue(f.exists());
 		assertThat(f.length(), greaterThan(1L));
 	}
