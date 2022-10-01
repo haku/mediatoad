@@ -7,6 +7,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -14,14 +15,19 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ImageResizer {
 
 	private static final Object[] LOCK = new Object[0];
+	private static final Logger LOG = LoggerFactory.getLogger(ImageResizer.class);
 
 	private final File cacheDir;
 
 	public ImageResizer(final File cacheDir) {
 		this.cacheDir = cacheDir;
+		LOG.info("Supported formats: {}", Arrays.toString(ImageIO.getReaderFileSuffixes()));
 	}
 
 	/**

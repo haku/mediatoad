@@ -219,6 +219,14 @@
 			<version>3.36.0.3</version>
 		</dependency>
 
+		<!-- File Decoding -->
+
+		<dependency> <!-- https://github.com/haraldk/TwelveMonkeys -->
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-webp</artifactId>
+			<version>3.8.3</version>
+		</dependency>
+
 		<!-- Util -->
 
 		<dependency>

@@ -31,6 +31,7 @@ public enum MediaFormat {
 	JPEG("jpeg", "image/jpeg", ContentGroup.IMAGE),
 	JPG("jpg", "image/jpeg", ContentGroup.IMAGE),
 	PNG("png", "image/png", ContentGroup.IMAGE),
+	WEBP("webp", "image/webp", ContentGroup.IMAGE),
 
 	AAC("aac", "audio/aac", ContentGroup.AUDIO),
 	AC3("ac3", "audio/ac3", ContentGroup.AUDIO),
