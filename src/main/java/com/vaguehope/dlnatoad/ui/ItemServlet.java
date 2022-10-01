@@ -44,6 +44,7 @@ public class ItemServlet extends HttpServlet {
 		this.mediaDb = mediaDb;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final ContentItem item = getItemFromPath(req, resp);
@@ -60,7 +61,6 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		ServletCommon.setHtmlContentType(resp);
-		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, item.getTitle(),
 				"<link rel=\"stylesheet\" href=\"../w/autocomplete.css\">",
@@ -69,7 +69,7 @@ public class ItemServlet extends HttpServlet {
 		w.println("<br>");
 
 		w.print("<h2>");
-		w.print(item.getTitle());
+		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
 		w.println("</h2>");
 		w.println("<div>");
 		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");
@@ -113,7 +113,17 @@ public class ItemServlet extends HttpServlet {
 		w.print(item.getId());
 		w.print(".");
 		w.print(item.getFormat().getExt());
-		w.print("\">");
+		w.println("\">");
+		w.println("<br>");
+
+		w.print("<a href=\"../");
+		w.print(C.CONTENT_PATH_PREFIX);
+		w.print(item.getId());
+		w.print(".");
+		w.print(item.getFormat().getExt());
+		w.print("\" download=\"");
+		w.print(StringEscapeUtils.escapeHtml4(item.getFile().getName()));
+		w.println("\">Download</a>");
 
 		if (this.mediaDb != null) {
 			try {
