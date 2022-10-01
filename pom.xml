@@ -31,17 +31,38 @@
 		<plugins>
 
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<id>enforce-maven</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.2</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
-				<version>2.6</version>
+				<version>3.4.2</version>
 				<configuration>
 					<archive>
 						<manifest>
 							<mainClass>com.vaguehope.dlnatoad.Main</mainClass>
 						</manifest>
 					</archive>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
+					<descriptors>
+						<descriptor>src/assembly/jar-with-dependencies.xml</descriptor>
+					</descriptors>
 				</configuration>
 				<executions>
 					<execution>
@@ -60,14 +81,6 @@
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-<!-- 					<useSystemClassLoader>false</useSystemClassLoader> -->
 				</configuration>
 			</plugin>
 
@@ -112,6 +125,15 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>versions-maven-plugin</artifactId>
+				<version>2.9.0</version>
+				<configuration>
+					<rulesUri>file:///${project.basedir}/maven-version-rules.xml</rulesUri>
+				</configuration>
 			</plugin>
 
 		</plugins>
