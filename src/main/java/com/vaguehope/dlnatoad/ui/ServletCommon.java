@@ -303,7 +303,7 @@ public class ServletCommon {
 		w.print(pathPrefix);
 		w.print("search?query=");
 		w.print(StringEscapeUtils.escapeHtml4(
-				UrlEscapers.urlPathSegmentEscaper().escape(
+				UrlEscapers.urlFormParameterEscaper().escape(
 						DbSearchSyntax.makeSingleTagSearch(tag))));
 		w.print("\">");
 		w.print(StringEscapeUtils.escapeHtml4(tag));

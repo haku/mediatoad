@@ -21,8 +21,9 @@ public class DbSearchSyntaxTest {
 	}
 
 	@Test
-	public void itDoesSomething() throws Exception {
-		assertEquals("t=%22foo%20bar%22", UrlEscapers.urlPathSegmentEscaper().escape("t=\"foo bar\""));
+	public void itUrlEscapesAsExpected() throws Exception {
+		assertEquals("t%3D%22foo+bar%22", UrlEscapers.urlFormParameterEscaper().escape("t=\"foo bar\""));
+		assertEquals("t%3D6%2Bthings", UrlEscapers.urlFormParameterEscaper().escape("t=6+things"));
 	}
 
 }
