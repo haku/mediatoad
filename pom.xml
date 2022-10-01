@@ -19,6 +19,7 @@
 		<jetty.version>9.4.45.v20220203</jetty.version>
 		<antlr.version>4.9.3</antlr.version>
 		<commonsio.version>2.11.0</commonsio.version>
+		<twelvemonkeys-imageio.version>3.8.3</twelvemonkeys-imageio.version>
 		<slf4j.version>1.7.32</slf4j.version>
 		<junit.version>4.13.2</junit.version>
 	</properties>
@@ -246,7 +247,12 @@
 		<dependency> <!-- https://github.com/haraldk/TwelveMonkeys -->
 			<groupId>com.twelvemonkeys.imageio</groupId>
 			<artifactId>imageio-webp</artifactId>
-			<version>3.8.3</version>
+			<version>${twelvemonkeys-imageio.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-jpeg</artifactId>
+			<version>${twelvemonkeys-imageio.version}</version>
 		</dependency>
 
 		<!-- Util -->

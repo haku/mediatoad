@@ -8,12 +8,16 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.FileImageOutputStream;
+import javax.imageio.stream.ImageInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +51,7 @@ public class ImageResizer {
 	}
 
 	private static File scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
-		final BufferedImage inImg = ImageIO.read(inF);
+		final BufferedImage inImg = readImage(inF);
 
 		if (inImg.getWidth() < 1 || inImg.getHeight() < 1) throw new IllegalArgumentException("Image too small: " + inF.getAbsolutePath());
 
@@ -68,6 +72,35 @@ public class ImageResizer {
 		final BufferedImage outImg = scaleImage(inImg, width, height);
 		writeImageViaTmpFile(outImg, quality, outF);
 		return outF;
+	}
+
+	private static BufferedImage readImage(final File file) throws IOException {
+		try (ImageInputStream input = ImageIO.createImageInputStream(file)) {
+			final Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+			if (!readers.hasNext()) {
+				throw new IOException("No reader for: " + file);
+			}
+
+			IOException lastException = null;
+			while (readers.hasNext()) {
+				final ImageReader reader = readers.next();
+				input.reset();
+				try {
+					final ImageReadParam param = reader.getDefaultReadParam();
+					reader.setInput(input, true, true);
+					return reader.read(0, param);
+				}
+				catch (final IOException e) {
+					lastException = e;
+					LOG.warn("Failed to decode \"{}\" with {}.", file.getAbsolutePath(), reader.getClass());
+				}
+				finally {
+					reader.dispose();
+				}
+			}
+			if (lastException != null) throw lastException;
+		}
+		return null;
 	}
 
 	private static BufferedImage scaleImage (final BufferedImage inImg, final int width, final int height) {
