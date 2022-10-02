@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.model.action.ActionInvocation;
 import org.fourthline.cling.model.message.UpnpResponse;
@@ -31,6 +32,7 @@ import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
+import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
@@ -44,6 +46,8 @@ import com.vaguehope.dlnatoad.util.FileHelper;
 public class SearchServlet extends HttpServlet {
 
 	static final String PARAM_QUERY = "query";
+	static final String PARAM_PAGE_LIMIT = "limit";
+	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
 
 	private static final int MAX_RESULTS = 500;
@@ -70,12 +74,12 @@ public class SearchServlet extends HttpServlet {
 		this.searchEngine = searchEngine;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
 
 		ServletCommon.setHtmlContentType(resp);
-		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, StringUtils.defaultString(query, "Search"));
 		this.servletCommon.printLinkRow(req, w);
@@ -86,16 +90,36 @@ public class SearchServlet extends HttpServlet {
 
 			try {
 				final List<ContentItem> results;
+				final int nextLimit;
+				final int nextOffset;
 				if (this.mediaDb != null) {
 					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, MAX_RESULTS, 0);
+
+					final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_LIMIT, MAX_RESULTS, i -> i > 0);
+					if (limit == null) return;
+					final Integer offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
+					if (offset == null) return;
+
+					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, limit, offset);
 					results = this.contentTree.getItemsForIds(ids, username);
+					nextLimit = limit;
+					nextOffset = ids.size() >= limit ? offset + limit : 0;
 				}
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
 					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, username);
+					nextLimit = MAX_RESULTS;  // Not implemented.
+					nextOffset = 0;
 				}
 				this.servletCommon.printItemsAndImages(w, results);
+
+				if (nextOffset > 0) {
+					w.print("<a href=\"?query=");
+					w.print(StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query)));
+					w.print("&" + PARAM_PAGE_LIMIT + "=" + nextLimit);
+					w.print("&" + PARAM_PAGE_OFFSET + "=" + nextOffset);
+					w.println("\">Next Page</a>");
+				}
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));

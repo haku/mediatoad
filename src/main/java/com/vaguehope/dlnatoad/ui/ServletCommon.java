@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -397,6 +398,31 @@ public class ServletCommon {
 			}
 		}
 		return vals;
+	}
+
+	public static Integer readIntParamWithDefault(final HttpServletRequest req, final HttpServletResponse resp,
+			final String param, final int defVal,
+			final Function<Integer, Boolean> validator) throws IOException {
+		final String[] vals = req.getParameterValues(param);
+		if (vals != null && vals.length > 1) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
+			return null;
+		}
+		final String p = vals != null ? StringUtils.trimToNull(vals[0]) : null;
+		if (p == null) return defVal;
+		final int i;
+		try {
+			i = Integer.parseInt(p);
+		}
+		catch (final NumberFormatException e) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param not a number: " + param);
+			return null;
+		}
+		if (!validator.apply(i)) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param not valid: " + param);
+			return null;
+		}
+		return i;
 	}
 
 }
