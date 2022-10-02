@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -41,8 +42,8 @@ public class DbSearchParserTest {
 				"SELECT id FROM files WHERE" +
 				" missing=0" +
 				" AND auth IN ('0')" +
-				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) )" +
-				"  ORDER BY file COLLATE NOCASE ASC;",
+				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) ) " +
+				" ORDER BY file COLLATE NOCASE ASC",
 				"hello");
 	}
 
@@ -51,6 +52,22 @@ public class DbSearchParserTest {
 		final String id = this.mockMediaMetadataStore.addFileWithTags("hello", "how", "are", "you");
 		this.mockMediaMetadataStore.addMissingFileWithTags("hello");
 		runQuery("hello", id);
+	}
+
+	@Test
+	public void itPagesSearchResults() throws Exception {
+		List<String> ids = new ArrayList<>();
+		for (int i = 0; i < 60; i++) {
+			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
+		}
+
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, new String[] { "file" }, new SortDirection[] { SortDirection.ASC });
+
+		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
+		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));
+
+		final List<String> page1 = parsed.execute(this.mediaDb, 50, 50);
+		assertThat(page1, contains(ids.subList(50, 60).toArray(new String[] {})));
 	}
 
 	@Test

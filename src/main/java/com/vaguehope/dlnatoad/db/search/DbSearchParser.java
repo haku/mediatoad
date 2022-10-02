@@ -70,7 +70,6 @@ public class DbSearchParser {
 		else {
 			sql.append(_SQL_MEDIAFILES_SEARCHORDERBY);
 		}
-		sql.append(";");
 		return new DbSearch(sql.toString(), terms);
 	}
 
@@ -216,11 +215,11 @@ public class DbSearchParser {
 		}
 
 		public List<String> execute (final MediaDb db) throws SQLException {
-			return execute(db, -1);
+			return execute(db, -1, 0);
 		}
 
-		public List<String> execute (final MediaDb db, final int maxResults) throws SQLException {
-			try (final PreparedStatement ps = db.prepare(this.sql)) {
+		public List<String> execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
+			try (final PreparedStatement ps = db.prepare(maybeAddLimit(this.sql, maxResults, offset))) {
 				int parmIn = 1;
 				for (final String term : this.terms) {
 					if ("OR".equals(term)) continue;
@@ -249,6 +248,11 @@ public class DbSearchParser {
 					return parseRecordSet(rs);
 				}
 			}
+		}
+
+		private static String maybeAddLimit(final String sql, final int maxResults, final int offset) {
+			if (maxResults < 0) return sql;
+			return String.format("%s LIMIT %d OFFSET %d", sql, maxResults, offset);
 		}
 
 		private static List<String> parseRecordSet(final ResultSet rs) throws SQLException {

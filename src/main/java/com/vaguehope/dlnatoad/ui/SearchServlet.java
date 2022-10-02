@@ -88,7 +88,7 @@ public class SearchServlet extends HttpServlet {
 				final List<ContentItem> results;
 				if (this.mediaDb != null) {
 					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, MAX_RESULTS);
+					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, MAX_RESULTS, 0);
 					results = this.contentTree.getItemsForIds(ids, username);
 				}
 				else {
