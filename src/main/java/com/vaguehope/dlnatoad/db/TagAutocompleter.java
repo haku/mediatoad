@@ -8,6 +8,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +23,8 @@ import com.google.common.collect.Multiset;
  */
 public class TagAutocompleter {
 
-	private static final int MAX_SUGGESTIONS = 20; // TODO Remove from AutocompleteServlet?
+	private static final int MAX_SUGGESTIONS = 20;
+	private static final long START_DELAY_SECONDS = TimeUnit.MINUTES.toSeconds(1);  // Add an extra delay as a fudge factor.
 	private static final Logger LOG = LoggerFactory.getLogger(TagAutocompleter.class);
 
 	private final MediaDb db;
@@ -30,6 +33,25 @@ public class TagAutocompleter {
 
 	public TagAutocompleter(final MediaDb db) {
 		this.db = db;
+	}
+
+	public void start(final ScheduledExecutorService schExSvc) {
+		schExSvc.submit(() -> {
+			// TODO change to scheduleWithFixedDelay() and have a way to check if the DB has changed before running.
+			schExSvc.schedule(new Worker(), START_DELAY_SECONDS, TimeUnit.SECONDS);
+		});
+	}
+
+	private class Worker implements Runnable {
+		@Override
+		public void run() {
+			try {
+				generateIndex();
+			}
+			catch (final Exception e) {
+				LOG.error("Exception while generating autocomplete index.", e);
+			}
+		}
 	}
 
 	public List<TagFrequency> suggestTags(final String input) {
@@ -41,6 +63,8 @@ public class TagAutocompleter {
 	}
 
 	private static List<TagFrequency> binarySearch(final FragmentAndTag[] idx, final String input) {
+		if (idx == null) return Collections.emptyList();
+
 		final FragmentPrefixComp comp = new FragmentPrefixComp(input);
 		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(input, "unused", -1), comp);
 		if (randomIndex < 0) return Collections.emptyList();

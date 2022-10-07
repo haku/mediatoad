@@ -38,6 +38,7 @@ import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.DbCleaner;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
+import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.dlnaserver.DlnaService;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
@@ -146,14 +147,17 @@ public final class Main {
 		final File dbFile = args.getDb();
 		final MediaDb mediaDb;
 		final MediaMetadataStore mediaMetadataStore;
+		final TagAutocompleter tagAutocompleter;
 		if (dbFile != null) {
 			LOG.info("DB: {}", dbFile.getAbsolutePath());
 			mediaDb = new MediaDb(dbFile);
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
+			tagAutocompleter = new TagAutocompleter(mediaDb);
 		}
 		else {
 			mediaDb = null;
 			mediaMetadataStore = null;
+			tagAutocompleter = null;
 		}
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
 		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
@@ -166,6 +170,7 @@ public final class Main {
 				if (dropDir != null) {
 					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
 				}
+				tagAutocompleter.start(fsExSvc);
 			}
 		};
 
@@ -174,7 +179,7 @@ public final class Main {
 		};
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
-		final Server server = startContentServer(contentTree, mediaId, mediaDb, upnpService, args, bindAddresses, hostName);
+		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -214,6 +219,7 @@ public final class Main {
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
+			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final Args args,
 			final List<InetAddress> bindAddresses,
@@ -229,7 +235,7 @@ public final class Main {
 		}
 
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, mediaId, mediaDb, upnpService, args, hostName);
+			final HandlerList handler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, hostName);
 
 			final Server server = new Server();
 			server.setHandler(wrapWithRewrites(handler));
@@ -264,6 +270,7 @@ public final class Main {
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
+			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final Args args,
 			final String hostName) throws ArgsException, IOException {
@@ -307,7 +314,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(mediaDb)), "/" + C.AUTOCOMPLETE_PATH);
+		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, mediaDb, contentServlet, args.isPrintAccessLog())), "/*");

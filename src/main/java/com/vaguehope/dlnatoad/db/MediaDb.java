@@ -274,6 +274,7 @@ public class MediaDb {
 	}
 
 	// FIXME this does not honour auth.
+	@Deprecated
 	public List<TagFrequency> getAutocompleteSuggestions(final String fragment, final int countLimit, final boolean startsWithOnly) throws SQLException {
 		final String sql = "SELECT tag, COUNT(DISTINCT file_id) AS count"
 				+ " FROM tags"

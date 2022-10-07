@@ -12,22 +12,21 @@ import org.junit.Test;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
-import com.google.common.collect.ImmutableList;
-import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 
 public class AutocompleteServletTest {
 
 	private AutocompleteServlet undertest;
-	private MediaDb mediaDb;
+	private TagAutocompleter tagAutocompleter;
 
 	private MockHttpServletRequest req;
 	private MockHttpServletResponse resp;
 
 	@Before
 	public void before() throws Exception {
-		this.mediaDb = mock(MediaDb.class);
-		this.undertest = new AutocompleteServlet(this.mediaDb);
+		this.tagAutocompleter = mock(TagAutocompleter.class);
+		this.undertest = new AutocompleteServlet(this.tagAutocompleter);
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 	}
@@ -38,9 +37,9 @@ public class AutocompleteServletTest {
 		this.req.setParameter("fragment", "foo");
 
 		final List<TagFrequency> res1 = listOfTagFrequency("foo", 2);
-		final List<TagFrequency> res2 = ImmutableList.<TagFrequency>builder().addAll(res1).addAll(listOfTagFrequency("barfoo", 3)).build();
-		when(this.mediaDb.getAutocompleteSuggestions("foo", 20, true)).thenReturn(res1);
-		when(this.mediaDb.getAutocompleteSuggestions("foo", 22, false)).thenReturn(res2);
+		final List<TagFrequency> res2 = listOfTagFrequency("barfoo", 3);
+		when(this.tagAutocompleter.suggestTags("foo")).thenReturn(res1);
+		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(res2);
 
 		this.undertest.doGet(this.req, this.resp);
 
