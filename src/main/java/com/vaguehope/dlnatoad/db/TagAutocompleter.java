@@ -25,80 +25,45 @@ public class TagAutocompleter {
 	private static final Logger LOG = LoggerFactory.getLogger(TagAutocompleter.class);
 
 	private final MediaDb db;
-	private TagFrequency[] tagsArr;
+	private FragmentAndTag[] tagsArr;
 	private FragmentAndTag[] fragmentsArr;
 
 	public TagAutocompleter(final MediaDb db) {
 		this.db = db;
 	}
 
-	// TODO reduce duplication.
-	// use FragmentAndTag with fragment=tag?
-
 	public List<TagFrequency> suggestTags(final String input) {
-		final TagPrefixComp comp = new TagPrefixComp(input);
-		final int randomIndex = Arrays.binarySearch(this.tagsArr, new TagFrequency(input, -1), comp);
-		int rangeStarts = randomIndex;
-		int rangeEnds = randomIndex;
-		while (rangeStarts > -1 && this.tagsArr[rangeStarts].getTag().toLowerCase().startsWith(input.toLowerCase())) {
-			rangeStarts--;
-		}
-		while (rangeEnds < this.tagsArr.length
-				&& this.tagsArr[rangeEnds].getTag().toLowerCase().startsWith(input.toLowerCase())
-				&& rangeEnds - rangeStarts < MAX_SUGGESTIONS) {
-			rangeEnds++;
-		}
-		if (rangeEnds - rangeStarts > MAX_SUGGESTIONS) {
-			rangeEnds = rangeStarts + MAX_SUGGESTIONS + 1;
-		}
-		final TagFrequency[] matches = Arrays.copyOfRange(this.tagsArr, rangeStarts + 1, rangeEnds);
-
-		return Arrays.asList(matches);
+		return binarySearch(this.tagsArr, input);
 	}
 
 	public List<TagFrequency> suggestFragments(final String input) {
+		return binarySearch(this.fragmentsArr, input);
+	}
+
+	private static List<TagFrequency> binarySearch(final FragmentAndTag[] idx, final String input) {
 		final FragmentPrefixComp comp = new FragmentPrefixComp(input);
-		final int randomIndex = Arrays.binarySearch(this.fragmentsArr, new FragmentAndTag(input, "unused", -1), comp);
+		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(input, "unused", -1), comp);
+		if (randomIndex < 0) return Collections.emptyList();
+
 		int rangeStarts = randomIndex;
 		int rangeEnds = randomIndex;
-		while (rangeStarts > -1 && this.fragmentsArr[rangeStarts].fragment.toLowerCase().startsWith(input.toLowerCase())) {
+		while (rangeStarts > -1
+				&& idx[rangeStarts].fragment.toLowerCase().startsWith(input.toLowerCase())) {
 			rangeStarts--;
 		}
-		while (rangeEnds < this.fragmentsArr.length
-				&& this.fragmentsArr[rangeEnds].fragment.toLowerCase().startsWith(input.toLowerCase())
-				&& rangeEnds - rangeStarts < MAX_SUGGESTIONS) {
+		while (rangeEnds < idx.length
+				&& idx[rangeEnds].fragment.toLowerCase().startsWith(input.toLowerCase())) {
 			rangeEnds++;
 		}
-		if (rangeEnds - rangeStarts > MAX_SUGGESTIONS) {
-			rangeEnds = rangeStarts + MAX_SUGGESTIONS + 1;
-		}
-		final FragmentAndTag[] matches = Arrays.copyOfRange(this.fragmentsArr, rangeStarts + 1, rangeEnds);
+		final FragmentAndTag[] matches = Arrays.copyOfRange(idx, rangeStarts + 1, rangeEnds);
+		Arrays.sort(matches, FragmentAndTag.Order.COUNT_DESC);
 
 		final List<TagFrequency> ret = new ArrayList<>();
-		for (final FragmentAndTag f : matches) {
+		for (int i = 0; i < matches.length && i < MAX_SUGGESTIONS; i++) {
+			final FragmentAndTag f = matches[i];
 			ret.add(new TagFrequency(f.tag, f.fileCount));
 		}
 		return ret;
-	}
-
-	private static class TagPrefixComp implements Comparator<TagFrequency> {
-		private final String prefix;
-
-		public TagPrefixComp(final String prefix) {
-			this.prefix = prefix;
-		}
-
-		@Override
-		public int compare(final TagFrequency o1, final TagFrequency o2) {
-			final String p1;
-			if (o1.getTag().length() < this.prefix.length()) {
-				p1 = o1.getTag();
-			}
-			else {
-				p1 = o1.getTag().substring(0, this.prefix.length());
-			}
-			return p1.compareToIgnoreCase(o2.getTag());
-		}
 	}
 
 	private static class FragmentPrefixComp implements Comparator<FragmentAndTag> {
@@ -123,14 +88,22 @@ public class TagAutocompleter {
 
 	public void generateIndex() throws SQLException {
 		final List<TagFrequency> tags = this.db.getAllTagsNotMissingNotDeleted();
-		LOG.info("Tags loaded: {}", tags.size());
-		this.tagsArr = tags.toArray(new TagFrequency[tags.size()]);
-		generateFragments(tags);
+		generateTagsIndex(tags);
+		generateFragmentsIndex(tags);
 	}
 
-	private void generateFragments(final List<TagFrequency> tags) {
+	private void generateTagsIndex(final List<TagFrequency> tags) {
+		final List<FragmentAndTag> idx = new ArrayList<>(tags.size());
+		for (final TagFrequency tf : tags) {
+			idx.add(new FragmentAndTag(tf.getTag(), tf.getTag(), tf.getCount()));
+		}
+		LOG.info("Tags index: {}", idx.size());
+		this.tagsArr = idx.toArray(new FragmentAndTag[idx.size()]);
+	}
+
+	private void generateFragmentsIndex(final List<TagFrequency> tags) {
 		final List<FragmentAndTag> fragments = makeFragments(tags);
-		LOG.info("Fragments: {}", fragments.size());
+		LOG.info("Fragments index: {}", fragments.size());
 
 		fragments.sort(FragmentAndTag.Order.FRAGMENT_ASC);
 		final Multiset<String> fragmentCounts = HashMultiset.create();

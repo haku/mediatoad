@@ -19,6 +19,7 @@ import org.junit.rules.TemporaryFolder;
 import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.MockMediaMetadataStore.Batch;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
 public class DbSearchParserTest {
@@ -31,7 +32,7 @@ public class DbSearchParserTest {
 
 	@Before
 	public void before() throws Exception {
-		this.mockMediaMetadataStore = new MockMediaMetadataStore(this.tmp);
+		this.mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
 		this.mediaDb = this.mockMediaMetadataStore.getMediaDb();
 		addNoiseToDb();
 	}
@@ -56,7 +57,7 @@ public class DbSearchParserTest {
 
 	@Test
 	public void itPagesSearchResults() throws Exception {
-		List<String> ids = new ArrayList<>();
+		final List<String> ids = new ArrayList<>();
 		for (int i = 0; i < 60; i++) {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
@@ -276,11 +277,11 @@ public class DbSearchParserTest {
 		final String term = "some awesome? band desu";
 
 		final String term1 = term.replace('?', '"');
-		String expected1 = mockMediaTrackWithNameContaining(term1);
+		final String expected1 = mockMediaTrackWithNameContaining(term1);
 		runQuery("'" + term1 + "'", expected1);
 
 		final String term2 = term.replace('?', '\'');
-		String expected2 = mockMediaTrackWithNameContaining(term2);
+		final String expected2 = mockMediaTrackWithNameContaining(term2);
 		runQuery("\"" + term2 + "\"", expected2);
 	}
 
@@ -290,11 +291,11 @@ public class DbSearchParserTest {
 		mockMediaFileWithTags("watcha " + term + " noise");
 
 		final String term1 = term.replace('?', '"');
-		String expected1 = mockMediaTrackWithNameContaining(term1);
+		final String expected1 = mockMediaTrackWithNameContaining(term1);
 		runQuery("f~'" + term1 + "'", expected1);
 
 		final String term2 = term.replace('?', '\'');
-		String expected2 = mockMediaTrackWithNameContaining(term2);
+		final String expected2 = mockMediaTrackWithNameContaining(term2);
 		runQuery("f~\"" + term2 + "\"", expected2);
 	}
 
@@ -470,8 +471,10 @@ public class DbSearchParserTest {
 // Helpers.
 
 	private void addNoiseToDb () throws Exception {
-		for (int i = 0; i < 10; i++) {
-			this.mockMediaMetadataStore.addFileWithRandomTags();
+		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			for (int i = 0; i < 10; i++) {
+				b.addFileWithRandomTags();
+			}
 		}
 	}
 

@@ -300,7 +300,7 @@ public class MediaDb {
 				+ " AND missing=0"
 				+ " AND deleted=0"
 				+ " GROUP BY tag"
-				+ " ORDER BY tag ASC, freq DESC;";
+				+ " ORDER BY tag ASC, freq DESC;";  // Sort order depended on by TagAutocompleter.
 		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
 			return readTagFrequencyResultSet(1000, st);
 		}
