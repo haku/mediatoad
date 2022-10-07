@@ -98,9 +98,12 @@ public class MediaMetadataStore {
 		Runnable genericCallback = null;
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			FileTask f;
+			FileTask f = null;
 			do {
-				f = this.fileQueue.poll();
+				try {
+					f = this.fileQueue.poll(10, TimeUnit.MILLISECONDS);
+				}
+				catch (InterruptedException e) {/* ignore */}
 				if (f != null) {
 					genericCallback = f.getGenericCallback();
 					if (genericCallback != null) break;
