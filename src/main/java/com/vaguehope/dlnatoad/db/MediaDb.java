@@ -273,6 +273,7 @@ public class MediaDb {
 		}
 	}
 
+	// FIXME this does not honour auth.
 	public List<TagFrequency> getAutocompleteSuggestions(final String fragment, final int countLimit, final boolean startsWithOnly) throws SQLException {
 		final String sql = "SELECT tag, COUNT(DISTINCT file_id) AS count"
 				+ " FROM tags"
@@ -288,6 +289,20 @@ public class MediaDb {
 			st.setInt(3, countLimit);
 			st.setMaxRows(countLimit);
 			return readTagFrequencyResultSet(countLimit, st);
+		}
+	}
+
+	// FIXME this does not honour auth.
+	public List<TagFrequency> getAllTagsNotMissingNotDeleted() throws SQLException {
+		final String sql = "SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
+				+ " FROM files, tags"
+				+ " WHERE id=file_id"
+				+ " AND missing=0"
+				+ " AND deleted=0"
+				+ " GROUP BY tag"
+				+ " ORDER BY tag ASC, freq DESC;";
+		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
+			return readTagFrequencyResultSet(1000, st);
 		}
 	}
 
