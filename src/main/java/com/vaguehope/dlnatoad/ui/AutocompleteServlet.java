@@ -85,7 +85,7 @@ public class AutocompleteServlet extends HttpServlet {
 			return addPrefix(this.tagAutocompleter.suggestTags(fragment.substring(2)), "t=");
 		}
 		else if (fragment.startsWith("t~")) {
-			return addPrefix(this.tagAutocompleter.suggestFragments(fragment.substring(2)), "t~");
+			return addPrefix(this.tagAutocompleter.suggestFragments(fragment.substring(2)), "t=");
 		}
 		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
 	}

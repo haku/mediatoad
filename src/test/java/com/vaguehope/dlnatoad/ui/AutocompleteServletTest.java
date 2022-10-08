@@ -82,9 +82,9 @@ public class AutocompleteServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals("["
-				+ "{\"tag\":\"t~barfoo0\",\"count\":1},"
-				+ "{\"tag\":\"t~barfoo1\",\"count\":2},"
-				+ "{\"tag\":\"t~barfoo2\",\"count\":3}"
+				+ "{\"tag\":\"t\\u003dbarfoo0\",\"count\":1},"
+				+ "{\"tag\":\"t\\u003dbarfoo1\",\"count\":2},"
+				+ "{\"tag\":\"t\\u003dbarfoo2\",\"count\":3}"
 				+ "]",
 				this.resp.getContentAsString());
 	}
