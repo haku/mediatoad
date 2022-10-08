@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.db;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 public class TagFrequency {
@@ -38,6 +39,23 @@ public class TagFrequency {
 		final TagFrequency that = (TagFrequency) obj;
 		return Objects.equals(this.tag, that.tag)
 				&& Objects.equals(this.count, that.count);
+	}
+
+	public enum Order implements Comparator<TagFrequency> {
+		COUNT_DESC {
+			@Override
+			public int compare(final TagFrequency a, final TagFrequency b) {
+				final int c = Integer.compare(b.count, a.count);
+				if (c != 0) return c;
+				return TAG_ASC.compare(a, b);
+			}
+		},
+		TAG_ASC {
+			@Override
+			public int compare(final TagFrequency a, final TagFrequency b) {
+				return a.tag.compareTo(b.tag);
+			}
+		}
 	}
 
 }

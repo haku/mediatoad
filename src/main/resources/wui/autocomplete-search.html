@@ -8,77 +8,12 @@
   </head>
   <body>
     <p>type 't=b'.</p>
-    <div class="autocomplete_wrapper search_wrapper">
-      <input id="search" style="width: 40em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
-    </div>
-    <input type="submit" value="Search">
-    <script>
-      const searchAc = new autoComplete({
-        name: "search",
-        selector: "#search",
-        wrapper: false,
-        placeHolder: "search",
-        data: {
-          src: ["t=foo", "t=bar", "t=bat", "t=bbbbb", "t=blue", "t=black", "t=boat", "t=bog", "t=baloon", "t=desu", "t=more", "t=thing"],
-          cache: true,
-          //src: async (query) => {
-          //  try {
-          //    const source = await fetch(`https://www.api.com/${query}`);
-          //    const data = await source.json();
-          //    return data;
-          //  } catch (error) {
-          //    return error;
-          //  }
-          //},
-        },
-        resultsList: {
-          maxResults: 50,
-          //tabSelect: true,
-        },
-        resultItem: {
-          highlight: true,
-          element: (item, data) => {
-            item.innerHTML = `<span>${data.match}</span>`;
-          },
-        },
-        query: (query) => {
-          const x = searchAc.input.selectionStart;
-          const e = query.lastIndexOf('t=', x);
-          if (e < 0) return '';
-          // TODO check for spaces, etc.
-          // TODO what about quotes?
-          const q = query.substring(e, x);
-          console.log('query', '"' + query + '"', x, '"' + q + '"');
-          return q;
-        },
-        trigger: (query) => {
-          // This is mostly pointless right now but will make more sense
-          // once query() is stricter about spaces etc.
-          const t = query.startsWith('t=');
-          console.log('trigger', t);
-          return t;
-        },
-        //submit: true,
-        events: {
-          input: {
-            selection: (event) => {
-              const input = searchAc.input;
-              const feedback = event.detail;
-              const selection = feedback.selection.value.trim();
-
-              const x = input.selectionStart;
-              const oldText = input.value;
-              const e = oldText.lastIndexOf('t=', x);
-              const newText = oldText.substring(0, e)
-                  + selection
-                  + oldText.substring(x);
-              input.value = newText;
-              const newX = x - (x - e) + selection.length;
-              input.setSelectionRange(newX, newX);
-            }
-          }
-        },
-      });
-    </script>
+    <form style="display:inline;" action="">
+      <div class="autocomplete_wrapper search_wrapper">
+        <input id="search" style="width: 40em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+      </div>
+      <input type="submit" value="Search">
+    </form>
+    <script src="autocomplete-search.js"></script>
   </body>
 </html>

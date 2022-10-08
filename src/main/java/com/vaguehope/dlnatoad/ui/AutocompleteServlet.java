@@ -60,8 +60,7 @@ public class AutocompleteServlet extends HttpServlet {
 			tags = forAddTag(fragment);
 		}
 		else if ("search".equalsIgnoreCase(mode)) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "TODO: implement search suggestions.");
-			return;
+			tags = forSearch(fragment);
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid mode.");
@@ -76,6 +75,26 @@ public class AutocompleteServlet extends HttpServlet {
 		final List<TagFrequency> ret = new ArrayList<>();
 		ret.addAll(this.tagAutocompleter.suggestTags(fragment));
 		ret.addAll(this.tagAutocompleter.suggestFragments(fragment));
+		ret.sort(TagFrequency.Order.COUNT_DESC);
+		return ret;
+	}
+
+	private List<TagFrequency> forSearch(final String fragment) {
+		// TODO -t matches.
+		if (fragment.startsWith("t=")) {
+			return addPrefix(this.tagAutocompleter.suggestTags(fragment.substring(2)), "t=");
+		}
+		else if (fragment.startsWith("t~")) {
+			return addPrefix(this.tagAutocompleter.suggestFragments(fragment.substring(2)), "t~");
+		}
+		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
+	}
+
+	private static List<TagFrequency> addPrefix(final List<TagFrequency> tags, final String prefix) {
+		final List<TagFrequency> ret = new ArrayList<>(tags.size());
+		for (final TagFrequency tf : tags) {
+			ret.add(new TagFrequency(prefix + tf.getTag(), tf.getCount()));
+		}
 		return ret;
 	}
 

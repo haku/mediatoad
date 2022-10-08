@@ -43,8 +43,49 @@ public class AutocompleteServletTest {
 
 		this.undertest.doGet(this.req, this.resp);
 
-		assertEquals("[{\"tag\":\"foo0\",\"count\":1},{\"tag\":\"foo1\",\"count\":2},"
-				+ "{\"tag\":\"barfoo0\",\"count\":1},{\"tag\":\"barfoo1\",\"count\":2},{\"tag\":\"barfoo2\",\"count\":3}]",
+		assertEquals("["
+				+ "{\"tag\":\"barfoo2\",\"count\":3},"
+				+ "{\"tag\":\"barfoo1\",\"count\":2},"
+				+ "{\"tag\":\"foo1\",\"count\":2},"
+				+ "{\"tag\":\"barfoo0\",\"count\":1},"
+				+ "{\"tag\":\"foo0\",\"count\":1}"
+				+ "]",
+				this.resp.getContentAsString());
+	}
+
+	@Test
+	public void itSuggestsForSearchEquals() throws Exception {
+		this.req.setParameter("mode", "search");
+		this.req.setParameter("fragment", "t=bar");
+
+		final List<TagFrequency> res1 = listOfTagFrequency("barfoo", 3);
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(res1);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals("["
+				+ "{\"tag\":\"t\\u003dbarfoo0\",\"count\":1},"
+				+ "{\"tag\":\"t\\u003dbarfoo1\",\"count\":2},"
+				+ "{\"tag\":\"t\\u003dbarfoo2\",\"count\":3}"
+				+ "]",
+				this.resp.getContentAsString());
+	}
+
+	@Test
+	public void itSuggestsForSearch() throws Exception {
+		this.req.setParameter("mode", "search");
+		this.req.setParameter("fragment", "t~foo");
+
+		final List<TagFrequency> res1 = listOfTagFrequency("barfoo", 3);
+		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(res1);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals("["
+				+ "{\"tag\":\"t~barfoo0\",\"count\":1},"
+				+ "{\"tag\":\"t~barfoo1\",\"count\":2},"
+				+ "{\"tag\":\"t~barfoo2\",\"count\":3}"
+				+ "]",
 				this.resp.getContentAsString());
 	}
 
