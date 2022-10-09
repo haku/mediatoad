@@ -62,9 +62,7 @@ public class ItemServlet extends HttpServlet {
 
 		ServletCommon.setHtmlContentType(resp);
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, item.getTitle(),
-				"<link rel=\"stylesheet\" href=\"../w/autocomplete.css\">",
-				"<script src=\"https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js\"></script>");
+		this.servletCommon.headerAndStartBody(w, item.getTitle());
 		this.servletCommon.printLinkRow(req, w, "../");
 		w.println("<br>");
 
@@ -96,8 +94,8 @@ public class ItemServlet extends HttpServlet {
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
 				w.println("<div class=\"autocomplete_wrapper addTag_wrapper\">");
-				w.println("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\"");
-				if ("addtag".equals(req.getParameter("autofocus"))) w.println(" autofocus");
+				w.print("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\"");
+				if ("addtag".equals(req.getParameter("autofocus"))) w.print(" autofocus");
 				w.println(" style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
 				w.println("</div>");
 				w.println("<input type=\"submit\" value=\"Add\">");

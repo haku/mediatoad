@@ -74,7 +74,7 @@ public class IndexServletTest {
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
 		this.contentServlet = mock(ContentServlet.class);
-		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.imageResizer, "hostName", this.contentServingHistory, this.exSvc),
+		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.imageResizer, "hostName", this.contentServingHistory, this.exSvc, true),
 				this.contentTree, null, this.contentServlet, true);
 
 		this.req = new MockHttpServletRequest();

@@ -42,17 +42,20 @@ public class ServletCommon {
 	private final ImageResizer imageResizer;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
+	private final boolean mediaDbEnabled;
 
 	public ServletCommon(
 			final ContentTree contentTree,
 			final ImageResizer imageResizer,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
-			final ExecutorService exSvc) {
+			final ExecutorService exSvc,
+			final boolean mediaDbEnabled) {
 		this.contentTree = contentTree;
 		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
+		this.mediaDbEnabled = mediaDbEnabled;
 	}
 
 	public static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {
@@ -102,6 +105,10 @@ public class ServletCommon {
 		w.println("</title>");
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
+		if (this.mediaDbEnabled) {
+			w.println("<link rel=\"stylesheet\" href=\"../w/autocomplete.css\">");
+			w.println("<script src=\"https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js\"></script>");
+		}
 		for (final String line : extraHeaderLines) {
 			w.println(line);
 		}
@@ -138,9 +145,12 @@ public class ServletCommon {
 		w.print("<form style=\"display:inline;\" action=\"");
 		w.print(pathPrefix);
 		w.println("search\" method=\"GET\">");
-		w.print("<input type=\"text\" id=\"query\" name=\"query\" value=\"");
+		w.println("<div class=\"autocomplete_wrapper search_wrapper\">");
+		w.print("<input type=\"text\" id=\"search\" name=\"query\" value=\"");
 		w.print(StringEscapeUtils.escapeHtml4(query));
-		w.println("\">");
+		w.println("\" style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
+		w.println("</div>");
+
 		if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req)) {
 			final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 			final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
@@ -151,6 +161,9 @@ public class ServletCommon {
 		}
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
+		if (this.mediaDbEnabled) {
+			w.println("<script src=\"../w/autocomplete-search.js\"></script>");
+		}
 
 		if (username != null) {
 			w.print("<span>Username: ");
