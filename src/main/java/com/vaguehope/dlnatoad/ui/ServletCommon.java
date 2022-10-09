@@ -133,7 +133,9 @@ public class ServletCommon {
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
 		final String username = ReqAttr.USERNAME.get(req);
 
-		w.println("<a href=\"./\">Home</a>");
+		w.print("<a href=\"");
+		w.print(pathPrefix);
+		w.println("./\">Home</a>");
 
 		if (ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
 			w.print("<a href=\"");
