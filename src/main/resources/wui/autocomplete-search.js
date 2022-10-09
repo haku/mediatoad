@@ -9,6 +9,14 @@ function isValidSearchTerm(term) {
 function removeMatchOpertor(term) {
   return term.replace(/^-?[tT][=~]/, '');
 }
+function pathPrefix() {
+  // TODO something less ugly for knowing when to need a relative path.
+  const p = window.location.pathname;
+  if (p.includes('/i/') || p.includes('/w/')) {
+    return '../';
+  }
+  return '';
+}
 const searchAc = new autoComplete({
   name: "search",
   selector: "#search",
@@ -17,7 +25,7 @@ const searchAc = new autoComplete({
   data: {
     src: async (query) => {
       try {
-        const source = await fetch(`../ac?mode=search&fragment=${escape(query)}`);
+        const source = await fetch(`${pathPrefix()}ac?mode=search&fragment=${escape(query)}`);
         const data = await source.json();
         return data;
       } catch (error) {
