@@ -1,3 +1,4 @@
+// Docs: https://tarekraafat.github.io/autoComplete.js/#/configuration
 function lastSearchTermStart(query, x) {
   return ['t=', 't~', 'T=', 'T~'].map(p => query.lastIndexOf(p, x)).reduce((l, x) => x > l ? x : l);
 }
