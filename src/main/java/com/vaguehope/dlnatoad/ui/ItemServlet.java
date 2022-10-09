@@ -96,8 +96,9 @@ public class ItemServlet extends HttpServlet {
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
 				w.println("<div class=\"autocomplete_wrapper addTag_wrapper\">");
-				w.println("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\""
-						+ " style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
+				w.println("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\"");
+				if ("addtag".equals(req.getParameter("autofocus"))) w.println(" autofocus");
+				w.println(" style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
 				w.println("</div>");
 				w.println("<input type=\"submit\" value=\"Add\">");
 				w.println("</form>");
@@ -212,7 +213,7 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
-			resp.addHeader("Location", item.getId());
+			resp.addHeader("Location", item.getId() + "?autofocus=addtag");
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
 		}
 		else if ("rmtags".equalsIgnoreCase(req.getParameter("action"))) {
