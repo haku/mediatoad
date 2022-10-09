@@ -4,8 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.servlet.ServletException;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -55,36 +58,43 @@ public class AutocompleteServletTest {
 
 	@Test
 	public void itSuggestsForSearchEquals() throws Exception {
-		this.req.setParameter("mode", "search");
-		this.req.setParameter("fragment", "t=bar");
-
-		final List<TagFrequency> res1 = listOfTagFrequency("barfoo", 3);
-		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(res1);
-
-		this.undertest.doGet(this.req, this.resp);
-
-		assertEquals("["
-				+ "{\"tag\":\"t\\u003dbarfoo0\",\"count\":1},"
-				+ "{\"tag\":\"t\\u003dbarfoo1\",\"count\":2},"
-				+ "{\"tag\":\"t\\u003dbarfoo2\",\"count\":3}"
-				+ "]",
-				this.resp.getContentAsString());
+		setSearchParams("t=bar");
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(listOfTagFrequency("barfoo", 3));
+		assertSearchResult("");
 	}
 
 	@Test
-	public void itSuggestsForSearch() throws Exception {
+	public void itSuggestsForSearchEqualsNegative() throws Exception {
+		setSearchParams("-t=bar");
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(listOfTagFrequency("barfoo", 3));
+		assertSearchResult("-");
+	}
+
+	@Test
+	public void itSuggestsForSearchPartial() throws Exception {
+		setSearchParams("t~foo");
+		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(listOfTagFrequency("barfoo", 3));
+		assertSearchResult("");
+	}
+	@Test
+
+	public void itSuggestsForSearchPartialNegative() throws Exception {
+		setSearchParams("-t~foo");
+		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(listOfTagFrequency("barfoo", 3));
+		assertSearchResult("-");
+	}
+
+	private void setSearchParams(String fragment) {
 		this.req.setParameter("mode", "search");
-		this.req.setParameter("fragment", "t~foo");
+		this.req.setParameter("fragment", fragment);
+	}
 
-		final List<TagFrequency> res1 = listOfTagFrequency("barfoo", 3);
-		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(res1);
-
+	private void assertSearchResult(final String resPrefix) throws ServletException, IOException {
 		this.undertest.doGet(this.req, this.resp);
-
 		assertEquals("["
-				+ "{\"tag\":\"t\\u003dbarfoo0\",\"count\":1},"
-				+ "{\"tag\":\"t\\u003dbarfoo1\",\"count\":2},"
-				+ "{\"tag\":\"t\\u003dbarfoo2\",\"count\":3}"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo1\",\"count\":2},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo2\",\"count\":3}"
 				+ "]",
 				this.resp.getContentAsString());
 	}

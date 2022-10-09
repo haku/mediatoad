@@ -15,6 +15,7 @@ import com.google.gson.GsonBuilder;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 
 public class AutocompleteServlet extends HttpServlet {
 
@@ -80,12 +81,20 @@ public class AutocompleteServlet extends HttpServlet {
 	}
 
 	private List<TagFrequency> forSearch(final String fragment) {
-		// TODO -t matches.
-		if (fragment.startsWith("t=")) {
-			return addPrefix(this.tagAutocompleter.suggestTags(fragment.substring(2)), "t=");
+		final String toMatch = DbSearchSyntax.removeMatchOperator(fragment);
+		if (DbSearchSyntax.isTagMatchExact(fragment)) {
+			return addPrefix(this.tagAutocompleter.suggestTags(toMatch), "t=");
 		}
-		else if (fragment.startsWith("t~")) {
-			return addPrefix(this.tagAutocompleter.suggestFragments(fragment.substring(2)), "t=");
+		else if (DbSearchSyntax.isTagNotMatchExact(fragment)) {
+			return addPrefix(this.tagAutocompleter.suggestTags(toMatch), "-t=");
+		}
+		else if (DbSearchSyntax.isTagMatchPartial(fragment)) {
+			// TODO merge suggestTags() results?
+			return addPrefix(this.tagAutocompleter.suggestFragments(toMatch), "t=");
+		}
+		else if (DbSearchSyntax.isTagNotMatchPartial(fragment)) {
+			// TODO merge suggestTags() results?
+			return addPrefix(this.tagAutocompleter.suggestFragments(toMatch), "-t=");
 		}
 		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
 	}
