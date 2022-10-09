@@ -62,7 +62,7 @@ public class ItemServlet extends HttpServlet {
 
 		ServletCommon.setHtmlContentType(resp);
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, item.getTitle());
+		this.servletCommon.headerAndStartBody(w, "../", item.getTitle());
 		this.servletCommon.printLinkRow(req, w, "../");
 		w.println("<br>");
 

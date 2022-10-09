@@ -87,7 +87,11 @@ public class ServletCommon {
 		resp.setContentType("text/html; charset=utf-8");
 	}
 
-	public void headerAndStartBody(final PrintWriter w, final String title, final String... extraHeaderLines) {
+	public void headerAndStartBody(final PrintWriter w, final String title) {
+		headerAndStartBody(w, "", title);
+	}
+
+	public void headerAndStartBody(final PrintWriter w, final String pathPrefix, final String title, final String... extraHeaderLines) {
 		w.println("<!DOCTYPE html>");
 		w.println("<html>");
 		w.println("<head>");
@@ -106,7 +110,9 @@ public class ServletCommon {
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
 		if (this.mediaDbEnabled) {
-			w.println("<link rel=\"stylesheet\" href=\"../w/autocomplete.css\">");
+			w.print("<link rel=\"stylesheet\" href=\"");
+			w.print(pathPrefix);
+			w.println("w/autocomplete.css\">");
 			w.println("<script src=\"https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js\"></script>");
 		}
 		for (final String line : extraHeaderLines) {
@@ -164,7 +170,9 @@ public class ServletCommon {
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
 		if (this.mediaDbEnabled) {
-			w.println("<script src=\"../w/autocomplete-search.js\"></script>");
+			w.print("<script src=\"");
+			w.print(pathPrefix);
+			w.println("w/autocomplete-search.js\"></script>");
 		}
 
 		if (username != null) {
