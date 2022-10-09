@@ -69,9 +69,8 @@ public class ItemServlet extends HttpServlet {
 		w.print("<h2>");
 		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
 		w.println("</h2>");
-		w.println("<div>");
-		w.println("<span style=\"padding-right: 0.5em;\">Tags:</span>");
 
+		w.println("<div>");
 		if (this.mediaDb != null) {
 			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
 			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
@@ -88,7 +87,6 @@ public class ItemServlet extends HttpServlet {
 			}
 
 			if (allowEditTags) {
-				w.println("</br>");
 				w.println("<div style=\"padding-top: 0.5em\">");
 				w.println("<a href=\"?edit=true\">Edit</a>");
 				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
@@ -104,7 +102,6 @@ public class ItemServlet extends HttpServlet {
 				w.println("</div>");
 			}
 		}
-
 		w.println("</div>");
 
 		w.print("<img style=\"max-width: 100%; max-height: 50em; padding-top: 1em;\" src=\"../");
@@ -145,7 +142,9 @@ public class ItemServlet extends HttpServlet {
 
 	private void printSimpleTags(final ContentItem item, final PrintWriter w) throws SQLException {
 		final Collection<String> tags = this.mediaDb.getTagsSimple(item.getId());
+		if (tags.size() < 1) return;
 		this.servletCommon.printRowOfTagsSimple(w, "../", tags);
+		w.println("</br>");
 	}
 
 	private void printEditTags(final ContentItem item, final PrintWriter w) throws SQLException {
