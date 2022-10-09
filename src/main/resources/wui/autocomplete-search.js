@@ -25,6 +25,7 @@ const searchAc = new autoComplete({
       item.innerHTML = `<span>${data.match}</span>`;
     },
   },
+  submit: true,
   query: (query) => {
     const x = searchAc.input.selectionStart;
     const e = query.lastIndexOf('t=', x);
@@ -42,7 +43,6 @@ const searchAc = new autoComplete({
     console.log('trigger', t);
     return t;
   },
-  //submit: true,
   events: {
     input: {
       selection: (event) => {
@@ -59,7 +59,13 @@ const searchAc = new autoComplete({
         input.value = newText;
         const newX = x - (x - e) + selection.length;
         input.setSelectionRange(newX, newX);
-      }
+      },
+      open: (event) => {
+        searchAc.submit = false;
+      },
+      close: (event) => {
+        searchAc.submit = true;
+      },
     }
   },
 });
