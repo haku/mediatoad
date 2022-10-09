@@ -1,3 +1,13 @@
+function lastSearchTermStart(query, x) {
+  return ['t=', 't~', 'T=', 'T~'].map(p => query.lastIndexOf(p, x)).reduce((l, x) => x > l ? x : l);
+}
+function isValidSearchTerm(term) {
+  // This will make make more sense once quotes etc work?
+  return /^-?[tT][=~][^ ]+$/.test(term);
+}
+function removeMatchOpertor(term) {
+  return term.replace(/^-?[tT][=~]/, '');
+}
 const searchAc = new autoComplete({
   name: "search",
   selector: "#search",
@@ -22,26 +32,27 @@ const searchAc = new autoComplete({
   resultItem: {
     highlight: true,
     element: (item, data) => {
-      item.innerHTML = `<span>${data.match}</span>`;
+      item.innerHTML = `<span>${data.match}</span><span>(${data.value.count})</span>`;
     },
   },
   submit: true,
   query: (query) => {
     const x = searchAc.input.selectionStart;
-    const e = query.lastIndexOf('t=', x);
+    const e = lastSearchTermStart(query, x);
     if (e < 0) return '';
     // TODO check for spaces, etc.
     // TODO what about quotes?
-    const q = query.substring(e, x);
-    console.log('query', '"' + query + '"', x, '"' + q + '"');
-    return q;
+    return query.substring(e, x);
+    // This is then validated by trigger().
   },
-  trigger: (query) => {
-    // This is mostly pointless right now but will make more sense
-    // once query() is stricter about spaces etc.
-    const t = query.startsWith('t=');
-    console.log('trigger', t);
-    return t;
+  trigger: isValidSearchTerm,
+  searchEngine: (query, record) => {
+    const q = removeMatchOpertor(query);
+    const x = record.indexOf(q);
+    if (x >= 0) {
+        record = record.replace(q, `<mark>${q}</mark>`);
+    }
+    return record;
   },
   events: {
     input: {
@@ -52,7 +63,7 @@ const searchAc = new autoComplete({
 
         const x = input.selectionStart;
         const oldText = input.value;
-        const e = oldText.lastIndexOf('t=', x);
+        const e = lastSearchTermStart(oldText, x);
         const newText = oldText.substring(0, e)
             + selection
             + oldText.substring(x);
