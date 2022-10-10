@@ -58,7 +58,7 @@ public class AutocompleteServlet extends HttpServlet {
 
 		final List<TagFrequency> tags;
 		if ("addtag".equalsIgnoreCase(mode)) {
-			tags = forAddTag(fragment);
+			tags = mergedPrefixAndFragmentSuggestions(fragment);
 		}
 		else if ("search".equalsIgnoreCase(mode)) {
 			tags = forSearch(fragment);
@@ -72,7 +72,7 @@ public class AutocompleteServlet extends HttpServlet {
 		this.gson.toJson(tags, resp.getWriter());
 	}
 
-	private List<TagFrequency> forAddTag(final String fragment) throws IOException {
+	private List<TagFrequency> mergedPrefixAndFragmentSuggestions(final String fragment) {
 		final List<TagFrequency> ret = new ArrayList<>();
 		ret.addAll(this.tagAutocompleter.suggestTags(fragment));
 		ret.addAll(this.tagAutocompleter.suggestFragments(fragment));
@@ -89,12 +89,10 @@ public class AutocompleteServlet extends HttpServlet {
 			return addPrefix(this.tagAutocompleter.suggestTags(toMatch), "-t=");
 		}
 		else if (DbSearchSyntax.isTagMatchPartial(fragment)) {
-			// TODO merge suggestTags() results?
-			return addPrefix(this.tagAutocompleter.suggestFragments(toMatch), "t=");
+			return addPrefix(mergedPrefixAndFragmentSuggestions(toMatch), "t=");
 		}
 		else if (DbSearchSyntax.isTagNotMatchPartial(fragment)) {
-			// TODO merge suggestTags() results?
-			return addPrefix(this.tagAutocompleter.suggestFragments(toMatch), "-t=");
+			return addPrefix(mergedPrefixAndFragmentSuggestions(toMatch), "-t=");
 		}
 		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
 	}

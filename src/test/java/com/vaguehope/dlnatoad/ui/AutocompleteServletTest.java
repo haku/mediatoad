@@ -60,28 +60,40 @@ public class AutocompleteServletTest {
 	public void itSuggestsForSearchEquals() throws Exception {
 		setSearchParams("t=bar");
 		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(listOfTagFrequency("barfoo", 3));
-		assertSearchResult("");
+		assertEqualSearchResult("");
 	}
 
 	@Test
 	public void itSuggestsForSearchEqualsNegative() throws Exception {
 		setSearchParams("-t=bar");
 		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(listOfTagFrequency("barfoo", 3));
-		assertSearchResult("-");
+		assertEqualSearchResult("-");
+	}
+
+	private void assertEqualSearchResult(final String resPrefix) throws ServletException, IOException {
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals("["
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo2\",\"count\":3},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo1\",\"count\":2},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1}"
+				+ "]",
+				this.resp.getContentAsString());
 	}
 
 	@Test
 	public void itSuggestsForSearchPartial() throws Exception {
 		setSearchParams("t~foo");
+		when(this.tagAutocompleter.suggestTags("foo")).thenReturn(listOfTagFrequency("foobar", 1));
 		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(listOfTagFrequency("barfoo", 3));
-		assertSearchResult("");
+		assertPartialSearchResult("");
 	}
-	@Test
 
+	@Test
 	public void itSuggestsForSearchPartialNegative() throws Exception {
 		setSearchParams("-t~foo");
+		when(this.tagAutocompleter.suggestTags("foo")).thenReturn(listOfTagFrequency("foobar", 1));
 		when(this.tagAutocompleter.suggestFragments("foo")).thenReturn(listOfTagFrequency("barfoo", 3));
-		assertSearchResult("-");
+		assertPartialSearchResult("-");
 	}
 
 	private void setSearchParams(String fragment) {
@@ -89,19 +101,20 @@ public class AutocompleteServletTest {
 		this.req.setParameter("fragment", fragment);
 	}
 
-	private void assertSearchResult(final String resPrefix) throws ServletException, IOException {
+	private void assertPartialSearchResult(final String resPrefix) throws ServletException, IOException {
 		this.undertest.doGet(this.req, this.resp);
 		assertEquals("["
-				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo2\",\"count\":3},"
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo1\",\"count\":2},"
-				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo2\",\"count\":3}"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1},"
+				+ "{\"tag\":\"" + resPrefix + "t\\u003dfoobar0\",\"count\":1}"
 				+ "]",
 				this.resp.getContentAsString());
 	}
 
 	private static List<TagFrequency> listOfTagFrequency(final String prefix, final int count) {
 		final List<TagFrequency> l = new ArrayList<>(count);
-		for (int i = 0; i < count; i++) {
+		for (int i = count - 1; i >= 0; i--) {
 			l.add(new TagFrequency(prefix + i, i + 1));
 		}
 		return l;
