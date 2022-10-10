@@ -3,6 +3,8 @@ package com.vaguehope.dlnatoad.ui;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -56,7 +58,7 @@ public class AutocompleteServlet extends HttpServlet {
 		final String fragment = ServletCommon.readRequiredParam(req, resp, "fragment", 1);
 		if (fragment == null) return;
 
-		final List<TagFrequency> tags;
+		final Collection<TagFrequency> tags;
 		if ("addtag".equalsIgnoreCase(mode)) {
 			tags = mergedPrefixAndFragmentSuggestions(fragment);
 		}
@@ -72,12 +74,12 @@ public class AutocompleteServlet extends HttpServlet {
 		this.gson.toJson(tags, resp.getWriter());
 	}
 
-	private List<TagFrequency> mergedPrefixAndFragmentSuggestions(final String fragment) {
+	private Collection<TagFrequency> mergedPrefixAndFragmentSuggestions(final String fragment) {
 		final List<TagFrequency> ret = new ArrayList<>();
 		ret.addAll(this.tagAutocompleter.suggestTags(fragment));
 		ret.addAll(this.tagAutocompleter.suggestFragments(fragment));
 		ret.sort(TagFrequency.Order.COUNT_DESC);
-		return ret;
+		return new LinkedHashSet<>(ret);
 	}
 
 	private List<TagFrequency> forSearch(final String fragment) {
@@ -97,7 +99,7 @@ public class AutocompleteServlet extends HttpServlet {
 		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
 	}
 
-	private static List<TagFrequency> addPrefix(final List<TagFrequency> tags, final String prefix) {
+	private static List<TagFrequency> addPrefix(final Collection<TagFrequency> tags, final String prefix) {
 		final List<TagFrequency> ret = new ArrayList<>(tags.size());
 		for (final TagFrequency tf : tags) {
 			ret.add(new TagFrequency(prefix + tf.getTag(), tf.getCount()));
