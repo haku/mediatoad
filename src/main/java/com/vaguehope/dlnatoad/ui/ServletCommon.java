@@ -137,17 +137,9 @@ public class ServletCommon {
 	}
 
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
-		final String username = ReqAttr.USERNAME.get(req);
-
 		w.print("<a href=\"");
 		w.print(pathPrefix);
 		w.println("./\">Home</a>");
-
-		if (ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
-			w.print("<a href=\"");
-			w.print(pathPrefix);
-			w.println("upnp\">UPNP</a>");
-		}
 
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
 		w.print("<form style=\"display:inline;\" action=\"");
@@ -175,6 +167,7 @@ public class ServletCommon {
 			w.println("w/autocomplete-search.js\"></script>");
 		}
 
+		final String username = ReqAttr.USERNAME.get(req);
 		if (username != null) {
 			w.print("<span>Username: ");
 			w.print(username);
@@ -339,7 +332,7 @@ public class ServletCommon {
 		w.println("</a>");
 	}
 
-	public void appendDebugFooter(final PrintWriter w) {
+	public void appendDebugFooter(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
 		w.println("<p>");
 
 		w.print(this.contentServingHistory.getActiveCount());
@@ -355,6 +348,12 @@ public class ServletCommon {
 		w.println(" items.</br>");
 
 		w.println("</p>");
+
+		if (ReqAttr.ALLOW_UPNP_INSPECTOR.get(req)) {
+			w.print("<a href=\"");
+			w.print(pathPrefix);
+			w.println("upnp\">UPNP</a>");
+		}
 	}
 
 	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
