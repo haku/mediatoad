@@ -106,7 +106,7 @@ public class ImageResizer {
 				throw new IOException("No reader for: " + file);
 			}
 
-			IOException lastException = null;
+			Exception lastException = null;
 			while (readers.hasNext()) {
 				final ImageReader reader = readers.next();
 				try {
@@ -115,7 +115,7 @@ public class ImageResizer {
 					reader.setInput(input, true, true);
 					return reader.read(0, param);
 				}
-				catch (final IOException e) {
+				catch (final Exception e) {
 					input.reset();
 					lastException = e;
 					LOG.warn("Failed to decode \"{}\" with {}: {}", file.getAbsolutePath(), reader.getClass(), e.toString());
@@ -124,7 +124,10 @@ public class ImageResizer {
 					reader.dispose();
 				}
 			}
-			if (lastException != null) throw lastException;
+			if (lastException != null) {
+				if (lastException instanceof IOException) throw (IOException) lastException;
+				throw new IOException(lastException);
+			}
 		}
 		return null;
 	}
