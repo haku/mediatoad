@@ -109,15 +109,16 @@ public class ImageResizer {
 			IOException lastException = null;
 			while (readers.hasNext()) {
 				final ImageReader reader = readers.next();
-				input.reset();
 				try {
 					final ImageReadParam param = reader.getDefaultReadParam();
+					input.mark();
 					reader.setInput(input, true, true);
 					return reader.read(0, param);
 				}
 				catch (final IOException e) {
+					input.reset();
 					lastException = e;
-					LOG.warn("Failed to decode \"{}\" with {}.", file.getAbsolutePath(), reader.getClass());
+					LOG.warn("Failed to decode \"{}\" with {}: {}", file.getAbsolutePath(), reader.getClass(), e.toString());
 				}
 				finally {
 					reader.dispose();
