@@ -1,6 +1,10 @@
 // Docs: https://tarekraafat.github.io/autoComplete.js/#/configuration
 function lastSearchTermStart(query, x) {
-  return ['t=', 't~', 'T=', 'T~'].map(p => query.lastIndexOf(p, x)).reduce((l, x) => x > l ? x : l);
+  let e = ['t=', 't~', 'T=', 'T~'].map(p => query.lastIndexOf(p, x)).reduce((l, x) => x > l ? x : l);
+  if (e < 0 && /^[^ ]+$/.test(query.substring(0, x))) {
+    e = 0;
+  }
+  return e;
 }
 function isValidSearchTerm(term) {
   // This will make make more sense once quotes etc work?
@@ -51,8 +55,11 @@ const searchAc = new autoComplete({
     if (e < 0) return '';
     // TODO check for spaces, etc.
     // TODO what about quotes?
-    return query.substring(e, x);
-    // This is then validated by trigger().
+    let ret = query.substring(e, x);
+    if (!/^-?[tT][=~]/.test(ret)) {
+      ret = 't~' + ret;
+    }
+    return ret;  // This is then validated by trigger().
   },
   trigger: isValidSearchTerm,
   searchEngine: (query, record) => {
