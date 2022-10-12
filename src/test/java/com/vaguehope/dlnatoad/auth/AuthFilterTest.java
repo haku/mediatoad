@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -308,7 +309,7 @@ public class AuthFilterTest {
 		this.req.addHeader("Authorization", "Basic aDRja2VyOmh1bnRlcg==");
 	}
 
-	private void setValidSessionToken() {
+	private void setValidSessionToken() throws IOException {
 		setSessionTokenCookie("my-session-token");
 		when(this.authTokens.usernameForToken("my-session-token")).thenReturn("h4cker");
 	}

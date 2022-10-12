@@ -24,6 +24,7 @@ public class Args {
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "Print log lines for various events.") private boolean verboseLog;
 	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
+	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
@@ -110,6 +111,10 @@ public class Args {
 
 	public File getUserfile() {
 		return this.userfile != null ? new File(this.userfile) : null;
+	}
+
+	public File getSessionDir() throws ArgsException {
+		return checkIsDirOrNull(this.sessionDir);
 	}
 
 	public boolean isAddUser() {

@@ -293,7 +293,7 @@ public final class Main {
 
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
-		final AuthTokens authTokens = new AuthTokens();
+		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
 		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog()));
 		servletHandler.addFilter(authFilterHolder, "/*", null);
 
