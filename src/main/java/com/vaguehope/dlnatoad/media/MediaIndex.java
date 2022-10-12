@@ -300,7 +300,8 @@ public class MediaIndex implements FileListener {
 			@Override
 			public void onError(final IOException e) {
 				if (e instanceof FileNotFoundException) {
-					LOG.warn("File disappeared: {}", file.getAbsolutePath());
+					// Includes permission denied, e.g. java.io.FileNotFoundException: /foo/bar/file.png (Permission denied)
+					LOG.warn("Error adding item to media index: {}", e.toString());
 				}
 				else {
 					LOG.warn("Error adding item to media index.", e);
