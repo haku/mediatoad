@@ -86,7 +86,7 @@ public class AuthList {
 			final String l = line.trim();
 			if (l.length() < 1 || l.startsWith("#") || l.startsWith("//")) continue;
 
-			if (!C.USERNAME_PATTERN.matcher(l).find()) {
+			if (!C.USERNAME_PATTERN.matcher(l).matches()) {
 				LOG.warn("Invalid AUTH file {} contains username that does not match: {}", authFile.getAbsolutePath(), C.USERNAME_PATTERN);
 				return Collections.emptySet();
 			}
