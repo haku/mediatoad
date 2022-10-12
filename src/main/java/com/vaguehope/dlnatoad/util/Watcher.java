@@ -270,9 +270,16 @@ public class Watcher {
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final List<File> files, final File rootDir, final EventType eventType) {
+	protected void initialScanFiles (final List<File> files, final File rootDir) {
+		final Kind<Path> kind = StandardWatchEventKinds.ENTRY_CREATE;
 		for (final File file : files) {
-			callListener(kind, file, rootDir, eventType);
+			if (!file.canRead()) {
+				LOG.debug("Waiting for access: {}", file);
+				this.waitingFiles.add(new WaitingFile(file.toPath(), rootDir, kind, this.time)); // Wait for file to be accessible.
+			}
+			else {
+				callListener(kind, file, rootDir, EventType.SCAN);
+			}
 		}
 	}
 
@@ -321,7 +328,7 @@ public class Watcher {
 
 		@Override
 		public void onDirWithFiles (final File dir, final List<File> files) {
-			this.host.callListener(StandardWatchEventKinds.ENTRY_CREATE, files, this.rootDir, EventType.SCAN);
+			this.host.initialScanFiles(files, this.rootDir);
 			this.totalFiles += files.size();
 		}
 
