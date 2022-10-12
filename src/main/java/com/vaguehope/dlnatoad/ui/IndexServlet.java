@@ -106,6 +106,8 @@ public class IndexServlet extends HttpServlet {
 		this.servletCommon.printLinkRow(req, w);
 
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
+
+		w.flush(); // TODO this is a hack until printTopTags() has caching / is faster.
 		printTopTags(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(req, w, "");
 		this.servletCommon.endBody(w);
