@@ -69,6 +69,16 @@ public class ContentNode extends AbstractContent {
 		return this.sortKey;
 	}
 
+	public List<ContentNode> nodesUserHasAuth(final String username) {
+		synchronized (this.nodes) {
+			final List<ContentNode> ret = new ArrayList<>(this.nodes.size());
+			for (final ContentNode node : this.nodes) {
+				if (node.isUserAuth(username)) ret.add(node);
+			}
+			return ret;
+		}
+	}
+
 	public <E extends Exception> void withEachNode (final ExConsumer<ContentNode, E> consumer) throws E {
 		synchronized (this.nodes) {
 			for (final ContentNode node : this.nodes) {

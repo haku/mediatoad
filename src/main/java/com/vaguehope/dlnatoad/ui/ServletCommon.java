@@ -182,16 +182,20 @@ public class ServletCommon {
 	}
 
 	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
+		final List<ContentNode> nodes = contentNode.nodesUserHasAuth(username);
+
 		w.print("<h3>");
 		w.print(contentNode.getTitle());
 		w.print(" (");
-		w.print(contentNode.getNodeCount());
+		w.print(nodes.size());
 		w.print(" dirs, ");
 		w.print(contentNode.getItemCount());
 		w.println(" items)</h3><ul>");
 
 		final boolean[] autofocus = new boolean[] { true };
-		contentNode.withEachNode(c -> appendDirectory(w, c, username, autofocus));
+		for (final ContentNode node : nodes) {
+			appendDirectory(w, node, autofocus);
+		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
 		appendImageThumbnails(w, imagesToThumb, autofocus);
@@ -223,9 +227,7 @@ public class ServletCommon {
 		}
 	}
 
-	private static void appendDirectory(final PrintWriter w, final ContentNode node, final String username, final boolean[] autofocus) {
-		if (!node.isUserAuth(username)) return;
-
+	private static void appendDirectory(final PrintWriter w, final ContentNode node, final boolean[] autofocus) {
 		w.print("<li><a href=\"");
 		w.print(node.getId());
 		w.print("\"");
