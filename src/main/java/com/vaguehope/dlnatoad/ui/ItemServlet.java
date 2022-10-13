@@ -2,34 +2,43 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.FileData;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class ItemServlet extends HttpServlet {
+
+	private static final int PREV_NEXT_SEARCH_DISTANCE = 10;
 
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
 	private static final long serialVersionUID = 3431697675845091273L;
@@ -64,7 +73,8 @@ public class ItemServlet extends HttpServlet {
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, "../", item.getTitle());
 		this.servletCommon.printLinkRow(req, w, "../");
-		w.println("<br>");
+
+		printPrevNextLinks(req, resp, item, username, w);
 
 		w.print("<h2>");
 		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
@@ -144,6 +154,80 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		this.servletCommon.endBody(w);
+	}
+
+	private void printPrevNextLinks(
+			final HttpServletRequest req,
+			final HttpServletResponse resp,
+			final ContentItem item,
+			final String username,
+			final PrintWriter w) throws IOException {
+		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
+		if (query == null || this.mediaDb == null) return;
+
+		final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
+		if (offsetParam == null) return;
+
+		final int searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		final List<String> ids;
+		try {
+			ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
+		}
+		catch (final SQLException e) {
+			w.println("<p>Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()) + "</p>");
+			return;
+		}
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
+
+		int prevI = -1;
+		int nextI = -1;
+		for (int i = 0; i < results.size(); i++) {
+			if (item.getId().equals(results.get(i).getId())) {
+				prevI = i - 1;
+				nextI = i + 1;
+				break;
+			}
+		}
+
+		ContentItem prevItem = null;
+		ContentItem nextItem = null;
+		if (prevI >= 0) {
+			for (int i = prevI; i >= 0; i--) {
+				final ContentItem ci = results.get(i);
+				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				prevItem = ci;
+				break;
+			}
+		}
+		if (nextI >= 0 && nextI < results.size()) {
+			for (int i = nextI; i < results.size(); i++) {
+				final ContentItem ci = results.get(nextI);
+				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				nextItem = ci;
+				break;
+			}
+		}
+
+		final String linkQuery = "?" + SearchServlet.PARAM_QUERY + "="
+				+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query))
+				+ "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
+
+		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
+		if (prevItem != null) {
+			w.print("<a href=\"");
+			w.print(prevItem.getId());
+			w.print(linkQuery + (offsetParam - 1));
+			w.println("\">&lt;= Previous</a>");
+		}
+		if (nextItem != null) {
+			if (prevItem == null) w.println("<span></span>");
+			w.print("<a href=\"");
+			w.print(nextItem.getId());
+			w.print(linkQuery + (offsetParam + 1));
+			w.println("\">Next =&gt;</a>");
+		}
+		w.println("</div>");
 	}
 
 	private void printSimpleTags(final ContentItem item, final PrintWriter w) throws SQLException {

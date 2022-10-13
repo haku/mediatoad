@@ -90,6 +90,7 @@ public class SearchServlet extends HttpServlet {
 
 			try {
 				final List<ContentItem> results;
+				final Integer offset;
 				final int nextLimit;
 				final int nextOffset;
 				if (this.mediaDb != null) {
@@ -97,7 +98,7 @@ public class SearchServlet extends HttpServlet {
 
 					final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_LIMIT, MAX_RESULTS, i -> i > 0);
 					if (limit == null) return;
-					final Integer offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
+					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
 					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, limit, offset);
@@ -108,13 +109,18 @@ public class SearchServlet extends HttpServlet {
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
 					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, username);
+					offset = null;
 					nextLimit = MAX_RESULTS;  // Not implemented.
 					nextOffset = 0;
 				}
 
-				final String linkQuery = "?" + SearchServlet.PARAM_QUERY + "="
+				final String linkQuery = "?" + PARAM_QUERY + "="
 						+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-				this.servletCommon.printItemsAndImages(w, results, linkQuery);
+
+				this.servletCommon.printItemsAndImages(w, results, i -> {
+					if (offset == null) return linkQuery;
+					return linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + i.getIndex());
+				});
 
 				if (nextOffset > 0) {
 					w.print("<a href=\"");

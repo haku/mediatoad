@@ -34,6 +34,7 @@ import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.util.IndexAnd;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ServletCommon {
@@ -137,6 +138,8 @@ public class ServletCommon {
 	}
 
 	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
+		w.println("<div>");
+
 		w.print("<a href=\"");
 		w.print(pathPrefix);
 		w.println("./\">Home</a>");
@@ -179,6 +182,8 @@ public class ServletCommon {
 			w.println("<input type=\"submit\" value=\"Login\">");
 			w.println("</form>");
 		}
+
+		w.println("</div>");
 	}
 
 	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
@@ -198,22 +203,7 @@ public class ServletCommon {
 		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
-		appendImageThumbnails(w, imagesToThumb, null, autofocus);
-
-		w.println("</ul>");
-	}
-
-	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items, final String linkQuery) throws IOException {
-		w.print("<h3>Local items: ");
-		w.print(items.size());
-		w.println("</h3><ul>");
-
-		final boolean[] autofocus = new boolean[] { true };
-		final List<ContentItem> imagesToThumb = new ArrayList<>();
-		for (final ContentItem item : items) {
-			appendItemOrGetImageToThumb(w, item, autofocus, imagesToThumb);
-		}
-		appendImageThumbnails(w, imagesToThumb, linkQuery, autofocus);
+		appendImageThumbnails(w, imagesToThumb, autofocus);
 
 		w.println("</ul>");
 	}
@@ -225,6 +215,30 @@ public class ServletCommon {
 		else {
 			appendItem(w, item, autofocus);
 		}
+	}
+
+	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items, final Function<IndexAnd<ContentItem>, String> linkQuery) throws IOException {
+		w.print("<h3>Local items: ");
+		w.print(items.size());
+		w.println("</h3><ul>");
+
+		final boolean[] autofocus = new boolean[] { true };
+		final List<IndexAnd<ContentItem>> imagesToThumb = new ArrayList<>();
+		for (int i = 0; i < items.size(); i++) {
+			final ContentItem item = items.get(i);
+			if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+				imagesToThumb.add(new IndexAnd<>(i, item));
+			}
+			else {
+				appendItem(w, item, autofocus);
+			}
+		}
+
+		for (final IndexAnd<ContentItem> indexAnd : imagesToThumb) {
+			appendImageThumbnail(w, indexAnd.getItem(), linkQuery.apply(indexAnd), autofocus);
+		}
+
+		w.println("</ul>");
 	}
 
 	private static void appendDirectory(final PrintWriter w, final ContentNode node, final boolean[] autofocus) {
@@ -274,23 +288,34 @@ public class ServletCommon {
 		w.println("</li>");
 	}
 
-	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb, final String linkQuery, final boolean[] autofocus) throws IOException {
+	private static void appendImageThumbnails(
+			final PrintWriter w,
+			final List<ContentItem> imagesToThumb,
+			final boolean[] autofocus) throws IOException {
 		for (final ContentItem item : imagesToThumb) {
-			w.print("<span><a href=\"");
-			w.print(C.ITEM_PATH_PREFIX);
-			w.print(item.getId());
-			if (linkQuery != null) w.print(linkQuery);
-			w.print("\"");
-			maybeSetAutofocus(w, autofocus);
-			w.print(">");
-			w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
-			w.print(C.THUMBS_PATH_PREFIX);
-			w.print(item.getId());
-			w.print("\" title=\"");
-			w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
-			w.print("\">");
-			w.println("</a></span>");
+			appendImageThumbnail(w, item, null, autofocus);
 		}
+	}
+
+	private static void appendImageThumbnail(
+			final PrintWriter w,
+			final ContentItem item,
+			final String linkQuery,
+			final boolean[] autofocus) throws IOException {
+		w.print("<span><a href=\"");
+		w.print(C.ITEM_PATH_PREFIX);
+		w.print(item.getId());
+		if (linkQuery != null) w.print(linkQuery);
+		w.print("\"");
+		maybeSetAutofocus(w, autofocus);
+		w.print(">");
+		w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
+		w.print(C.THUMBS_PATH_PREFIX);
+		w.print(item.getId());
+		w.print("\" title=\"");
+		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
+		w.print("\">");
+		w.println("</a></span>");
 	}
 
 	private static void maybeSetAutofocus(final PrintWriter w, final boolean[] autofocus) {
