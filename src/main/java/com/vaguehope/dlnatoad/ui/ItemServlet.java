@@ -121,6 +121,12 @@ public class ItemServlet extends HttpServlet {
 		w.print(StringEscapeUtils.escapeHtml4(item.getFile().getName()));
 		w.println("\">Download</a>");
 
+		w.print("<a style=\"padding-left: 1em;\" href=\"../");
+		w.print(node.getId());
+		w.print("\">");
+		w.print(StringEscapeUtils.escapeHtml4(node.getTitle()));
+		w.println("</a>");
+
 		if (this.mediaDb != null) {
 			try {
 				final FileData fileData = this.mediaDb.getFileData(item.getFile());
