@@ -203,8 +203,11 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
+	/**
+	 * Does not return deleted tags.
+	 */
 	public Collection<String> getTagsSimple(final String fileId) throws SQLException {
-		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT DISTINCT tag FROM tags WHERE file_id=?;")) {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT DISTINCT tag FROM tags WHERE file_id=? AND deleted=0;")) {
 			st.setString(1, fileId);
 			try (final ResultSet rs = st.executeQuery()) {
 				final Collection<String> ret = new ArrayList<>();

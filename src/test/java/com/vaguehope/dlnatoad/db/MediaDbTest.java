@@ -46,6 +46,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", "", 1234567890L));
 			assertTrue(w.addTag(fileId, "my-tag", "source", 1234567891L));
 			assertTrue(w.addTag(fileId, "my-tag", "other", 1234567892L));
+			assertTrue(w.mergeTag(fileId, "deleted", "", 1234567899L, true));
 		}
 
 		final Collection<String> actual = this.undertest.getTagsSimple(fileId);
