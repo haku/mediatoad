@@ -111,11 +111,14 @@ public class SearchServlet extends HttpServlet {
 					nextLimit = MAX_RESULTS;  // Not implemented.
 					nextOffset = 0;
 				}
-				this.servletCommon.printItemsAndImages(w, results);
+
+				final String linkQuery = "?" + SearchServlet.PARAM_QUERY + "="
+						+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+				this.servletCommon.printItemsAndImages(w, results, linkQuery);
 
 				if (nextOffset > 0) {
-					w.print("<a href=\"?query=");
-					w.print(StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query)));
+					w.print("<a href=\"");
+					w.print(linkQuery);
 					w.print("&" + PARAM_PAGE_LIMIT + "=" + nextLimit);
 					w.print("&" + PARAM_PAGE_OFFSET + "=" + nextOffset);
 					w.println("\">Next Page</a>");

@@ -185,7 +185,7 @@ public class ServletCommon {
 		final List<ContentNode> nodes = contentNode.nodesUserHasAuth(username);
 
 		w.print("<h3>");
-		w.print(contentNode.getTitle());
+		w.print(StringEscapeUtils.escapeHtml4(contentNode.getTitle()));
 		w.print(" (");
 		w.print(nodes.size());
 		w.print(" dirs, ");
@@ -198,12 +198,12 @@ public class ServletCommon {
 		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
-		appendImageThumbnails(w, imagesToThumb, autofocus);
+		appendImageThumbnails(w, imagesToThumb, null, autofocus);
 
 		w.println("</ul>");
 	}
 
-	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items) throws IOException {
+	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items, final String linkQuery) throws IOException {
 		w.print("<h3>Local items: ");
 		w.print(items.size());
 		w.println("</h3><ul>");
@@ -213,7 +213,7 @@ public class ServletCommon {
 		for (final ContentItem item : items) {
 			appendItemOrGetImageToThumb(w, item, autofocus, imagesToThumb);
 		}
-		appendImageThumbnails(w, imagesToThumb, autofocus);
+		appendImageThumbnails(w, imagesToThumb, linkQuery, autofocus);
 
 		w.println("</ul>");
 	}
@@ -233,7 +233,7 @@ public class ServletCommon {
 		w.print("\"");
 		maybeSetAutofocus(w, autofocus);
 		w.print(">");
-		w.print(node.getTitle());
+		w.print(StringEscapeUtils.escapeHtml4(node.getTitle()));
 		w.println("</a></li>");
 	}
 
@@ -274,11 +274,12 @@ public class ServletCommon {
 		w.println("</li>");
 	}
 
-	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb, final boolean[] autofocus) throws IOException {
+	private static void appendImageThumbnails(final PrintWriter w, final List<ContentItem> imagesToThumb, final String linkQuery, final boolean[] autofocus) throws IOException {
 		for (final ContentItem item : imagesToThumb) {
 			w.print("<span><a href=\"");
 			w.print(C.ITEM_PATH_PREFIX);
 			w.print(item.getId());
+			if (linkQuery != null) w.print(linkQuery);
 			w.print("\"");
 			maybeSetAutofocus(w, autofocus);
 			w.print(">");
@@ -286,7 +287,7 @@ public class ServletCommon {
 			w.print(C.THUMBS_PATH_PREFIX);
 			w.print(item.getId());
 			w.print("\" title=\"");
-			w.print(item.getTitle());
+			w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
 			w.print("\">");
 			w.println("</a></span>");
 		}
