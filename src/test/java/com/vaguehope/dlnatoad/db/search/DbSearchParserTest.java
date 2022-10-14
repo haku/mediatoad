@@ -19,6 +19,7 @@ import org.junit.rules.TemporaryFolder;
 import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore.Batch;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
@@ -461,6 +462,19 @@ public class DbSearchParserTest {
 		runQuery("t=one t>1", t2, t3, t4, t5);
 		runQuery("t=one t>2", t3, t4, t5);
 		runQuery("t=one t>3", t4, t5);
+		runQuery("t=one t>4", t5);
+	}
+
+	@Test
+	public void itDoesNotDoubleCountSameTagWithDifferentClasses() throws Exception {
+		final String t4 = mockMediaFileWithTags("one", "two", "three", "four");
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.addTag(t4, "one", "class1", System.currentTimeMillis());
+			w.addTag(t4, "one", "class2", System.currentTimeMillis());
+			w.addTag(t4, "one", "class3", System.currentTimeMillis());
+		}
+		final String t5 = mockMediaFileWithTags("one", "two", "three", "four", "five");
+		runQuery("t=one t<5", t4);
 		runQuery("t=one t>4", t5);
 	}
 

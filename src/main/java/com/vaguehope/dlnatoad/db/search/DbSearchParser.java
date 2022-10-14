@@ -37,10 +37,10 @@ public class DbSearchParser {
 			" NOT " + _SQL_MEDIAFILES_WHERES_TAG;
 
 	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_LESS_THAN =
-			" (id NOT IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING count(1) >= ?))";
+			" (id NOT IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING COUNT(DISTINCT tag) >= ?))";
 
 	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_GREATER_THAN =
-			" (id IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING count(1) > ?))";
+			" (id IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING COUNT(DISTINCT tag) > ?))";
 
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
