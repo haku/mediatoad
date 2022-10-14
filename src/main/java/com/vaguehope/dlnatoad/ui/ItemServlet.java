@@ -196,14 +196,16 @@ public class ItemServlet extends HttpServlet {
 			for (int i = prevI; i >= 0; i--) {
 				final ContentItem ci = results.get(i);
 				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				prevI = i;
 				prevItem = ci;
 				break;
 			}
 		}
 		if (nextI >= 0 && nextI < results.size()) {
 			for (int i = nextI; i < results.size(); i++) {
-				final ContentItem ci = results.get(nextI);
+				final ContentItem ci = results.get(i);
 				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				nextI = i;
 				nextItem = ci;
 				break;
 			}
@@ -217,14 +219,14 @@ public class ItemServlet extends HttpServlet {
 		if (prevItem != null) {
 			w.print("<a href=\"");
 			w.print(prevItem.getId());
-			w.print(linkQuery + (offsetParam - 1));
+			w.print(linkQuery + (searchOffset + prevI));
 			w.println("\">&lt;= Previous</a>");
 		}
 		if (nextItem != null) {
 			if (prevItem == null) w.println("<span></span>");
 			w.print("<a href=\"");
 			w.print(nextItem.getId());
-			w.print(linkQuery + (offsetParam + 1));
+			w.print(linkQuery + (searchOffset + nextI));
 			w.println("\">Next =&gt;</a>");
 		}
 		w.println("</div>");
