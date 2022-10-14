@@ -16,8 +16,10 @@ public class DbSearchParser {
 
 	private static final int MAX_SEARCH_TERMS = 10;
 
+	// join against hashes so that only canonical IDs are returned,
+	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
-			"SELECT id FROM files WHERE missing=0 AND";
+			"SELECT id FROM files INNER JOIN hashes USING (id) WHERE missing=0 AND";
 
 	private static final String _SQL_AND = " AND";
 	private static final String _SQL_OR = " OR";

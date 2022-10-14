@@ -40,7 +40,7 @@ public class DbSearchParserTest {
 	@Test
 	public void itParsesSingleTermQuery() throws Exception {
 		runParser("hello",
-				"SELECT id FROM files WHERE" +
+				"SELECT id FROM files INNER JOIN hashes USING (id) WHERE" +
 				" missing=0" +
 				" AND auth IN ('0')" +
 				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) ) " +
