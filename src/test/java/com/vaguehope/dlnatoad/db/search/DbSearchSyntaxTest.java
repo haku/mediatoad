@@ -26,4 +26,30 @@ public class DbSearchSyntaxTest {
 		assertEquals("t%3D6%2Bthings", UrlEscapers.urlFormParameterEscaper().escape("t=6+things"));
 	}
 
+	@Test
+	public void itExtractsCounts() throws Exception {
+		assertEquals(0, DbSearchSyntax.removeCountOperator("t<0"));
+		assertEquals(0, DbSearchSyntax.removeCountOperator("T<0"));
+
+		assertEquals(1, DbSearchSyntax.removeCountOperator("t<1"));
+		assertEquals(1, DbSearchSyntax.removeCountOperator("T<1"));
+
+		assertEquals(3, DbSearchSyntax.removeCountOperator("t<3"));
+		assertEquals(3, DbSearchSyntax.removeCountOperator("T<3"));
+
+		assertEquals(1, DbSearchSyntax.removeCountOperator("t<"));
+		assertEquals(1, DbSearchSyntax.removeCountOperator("T<"));
+
+		assertEquals(1, DbSearchSyntax.removeCountOperator("t<a"));
+
+		assertEquals(0, DbSearchSyntax.removeCountOperator("t>0"));
+		assertEquals(0, DbSearchSyntax.removeCountOperator("T>0"));
+
+		assertEquals(1, DbSearchSyntax.removeCountOperator("t>1"));
+		assertEquals(1, DbSearchSyntax.removeCountOperator("T>1"));
+
+		assertEquals(2, DbSearchSyntax.removeCountOperator("t>2"));
+		assertEquals(2, DbSearchSyntax.removeCountOperator("T>2"));
+	}
+
 }

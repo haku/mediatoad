@@ -36,6 +36,12 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERES_NOT_TAG =
 			" NOT " + _SQL_MEDIAFILES_WHERES_TAG;
 
+	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_LESS_THAN =
+			" (id NOT IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING count(1) >= ?))";
+
+	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_GREATER_THAN =
+			" (id IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING count(1) > ?))";
+
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
@@ -136,6 +142,12 @@ public class DbSearchParser {
 				else if (DbSearchSyntax.isTagNotMatchPartial(term) || DbSearchSyntax.isTagNotMatchExact(term)) {
 					sql.append(_SQL_MEDIAFILES_WHERES_NOT_TAG);
 				}
+				else if (DbSearchSyntax.isTagCountLessThan(term)) {
+					sql.append(_SQL_MEDIAFILES_WHERES_TAG_COUNT_LESS_THAN);
+				}
+				else if (DbSearchSyntax.isTagCountGreaterThan(term)) {
+					sql.append(_SQL_MEDIAFILES_WHERES_TAG_COUNT_GREATER_THAN);
+				}
 				else {
 					sql.append(_SQL_MEDIAFILES_WHERES_FILEORTAG);
 				}
@@ -205,6 +217,9 @@ public class DbSearchParser {
 					else if (DbSearchSyntax.isTagMatchExact(term) || DbSearchSyntax.isTagNotMatchExact(term)) {
 						ps.setString(parmIn++, Sqlite.escapeSearch(QuoteRemover.unquote(DbSearchSyntax.removeMatchOperator(term))));
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
+					}
+					else if (DbSearchSyntax.isTagCountLessThan(term) || DbSearchSyntax.isTagCountGreaterThan(term)) {
+						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
 					}
 					else {
 						final String escapedTerm = Sqlite.escapeSearch(QuoteRemover.unquote(term));

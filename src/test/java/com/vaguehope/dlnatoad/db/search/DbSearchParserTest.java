@@ -427,6 +427,44 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itMatchesItemWithNoTags() throws Exception {
+		final String notag0 = mockMediaTrackWithNameContaining("somepath");
+		final String notag1 = mockMediaTrackWithNameContaining("otherpath");
+		mockMediaFileWithTags("abc", "desu");
+		mockMediaFileWithTags("def", "hello");
+		runQuery("t<1", notag0, notag1);
+	}
+
+	@Test
+	public void itMatchesItemWith1OrLessTags() throws Exception {
+		final String notag0 = mockMediaTrackWithNameContaining("somepath");
+		final String notag1 = mockMediaTrackWithNameContaining("otherpath");
+		final String onetag0 = mockMediaFileWithTags("abc");
+		final String onetag1 = mockMediaFileWithTags("def");
+		mockMediaFileWithTags("abc", "desu");
+		mockMediaFileWithTags("def", "hello");
+		runQuery("t<2", notag0, notag1, onetag0, onetag1);
+	}
+
+	@Test
+	public void itMatchesItemWithManyTags() throws Exception {
+		mockMediaTrackWithNameContaining("somepath");
+		mockMediaTrackWithNameContaining("otherpath");
+
+		final String t1 = mockMediaFileWithTags("one");
+		final String t2 = mockMediaFileWithTags("one", "two");
+		final String t3 = mockMediaFileWithTags("one", "two", "three");
+		final String t4 = mockMediaFileWithTags("one", "two", "three", "four");
+		final String t5 = mockMediaFileWithTags("one", "two", "three", "four", "five");
+
+		runQuery("t=one t>0", t1, t2, t3, t4, t5);
+		runQuery("t=one t>1", t2, t3, t4, t5);
+		runQuery("t=one t>2", t3, t4, t5);
+		runQuery("t=one t>3", t4, t5);
+		runQuery("t=one t>4", t5);
+	}
+
+	@Test
 	public void itDoesNotCrashWithBadQuery() throws Exception {
 		final String term = "t=\"a very long tag that does not fit on the screen properl";
 		runParser(term, null, term);

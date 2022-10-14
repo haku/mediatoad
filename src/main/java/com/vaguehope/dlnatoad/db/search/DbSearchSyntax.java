@@ -59,5 +59,31 @@ public class DbSearchSyntax {
 		return term.substring(x + 1);
 	}
 
+	public static boolean isTagCountLessThan (final String term) {
+		return term.startsWith("t<") || term.startsWith("T<");
+	}
+
+	public static boolean isTagCountGreaterThan (final String term) {
+		return term.startsWith("t>") || term.startsWith("T>");
+	}
+
+	/**
+	 * If input is invalid default value is 1.
+	 */
+	public static int removeCountOperator(final String term) {
+		int x = term.indexOf('<');
+		if (x < 0) x = term.indexOf('>');
+		if (x < 0) throw new IllegalArgumentException("term does not contain '<' or '>': " + term);
+		final String s = term.substring(x + 1);
+
+		if (s.length() < 1) return 1;
+
+		try {
+			return Integer.parseInt(s);
+		}
+		catch (NumberFormatException e) {
+			return 1;
+		}
+	}
 
 }
