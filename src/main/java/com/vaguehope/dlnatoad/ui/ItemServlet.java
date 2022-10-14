@@ -211,24 +211,37 @@ public class ItemServlet extends HttpServlet {
 			}
 		}
 
-		final String linkQuery = "?" + SearchServlet.PARAM_QUERY + "="
-				+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query))
-				+ "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
+		final String searchQueryParam = "?" + SearchServlet.PARAM_QUERY + "="
+				+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+		final String allResultsPath = "../search" + searchQueryParam;  // TODO extract path to constant.
+		final String linkQuery = searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
 
 		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
+
 		if (prevItem != null) {
 			w.print("<a href=\"");
 			w.print(prevItem.getId());
 			w.print(linkQuery + (searchOffset + prevI));
 			w.println("\">&lt;= Previous</a>");
 		}
+		else {
+			w.println("<span></span>");
+		}
+
+		w.print("<a href=\"");
+		w.print(allResultsPath);
+		w.println("\">All</a>");
+
 		if (nextItem != null) {
-			if (prevItem == null) w.println("<span></span>");
 			w.print("<a href=\"");
 			w.print(nextItem.getId());
 			w.print(linkQuery + (searchOffset + nextI));
 			w.println("\">Next =&gt;</a>");
 		}
+		else {
+			w.println("<span></span>");
+		}
+
 		w.println("</div>");
 	}
 
