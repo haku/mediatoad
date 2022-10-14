@@ -195,8 +195,15 @@ public class ServletCommon {
 		w.print(nodes.size());
 		w.print(" dirs, ");
 		w.print(contentNode.getItemCount());
-		w.println(" items)</h3><ul>");
+		w.print(" items)");
+		if (contentNode.getParentId() != null && !ContentGroup.ROOT.getId().equals(contentNode.getId())) {
+			w.print(" <a href=\"");
+			w.print(contentNode.getParentId());
+			w.print("\">up</a>");
+		}
+		w.print("</h3>");
 
+		w.println("<ul>");
 		final boolean[] autofocus = new boolean[] { true };
 		for (final ContentNode node : nodes) {
 			appendDirectory(w, node, autofocus);
@@ -204,7 +211,6 @@ public class ServletCommon {
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
 		appendImageThumbnails(w, imagesToThumb, autofocus);
-
 		w.println("</ul>");
 	}
 
