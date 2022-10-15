@@ -456,8 +456,20 @@ public class ServletCommon {
 		return vals;
 	}
 
+	public static String readParamWithDefault(final HttpServletRequest req, final HttpServletResponse resp,
+			final String param, final String defVal) throws IOException {
+		final String[] vals = req.getParameterValues(param);
+		if (vals != null && vals.length > 1) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param has multiple values: " + param);
+			return null;
+		}
+		final String p = vals != null ? StringUtils.trimToNull(vals[0]) : null;
+		if (p == null) return defVal;
+		return p;
+	}
+
 	public static Integer readIntParamWithDefault(final HttpServletRequest req, final HttpServletResponse resp,
-			final String param, final int defVal,
+			final String param, final Integer defVal,
 			final Function<Integer, Boolean> validator) throws IOException {
 		final String[] vals = req.getParameterValues(param);
 		if (vals != null && vals.length > 1) {
@@ -479,6 +491,24 @@ public class ServletCommon {
 			return null;
 		}
 		return i;
+	}
+
+	public static String query(final HttpServletRequest req) {
+		final String q = req.getQueryString();
+		if (q == null) return "";
+		return "?" + q;
+	}
+
+	public static String queryWithParam(final HttpServletRequest req, final String name, final String value) {
+		return queryWithParam(req, name + "=" + UrlEscapers.urlFormParameterEscaper().escape(value));
+	}
+
+	public static String queryWithParam(final HttpServletRequest req, final String nameAndValue) {
+		final String q = req.getQueryString();
+		if (q == null) {
+			return "?" + nameAndValue;
+		}
+		return "?" + q + "&" + nameAndValue;
 	}
 
 }

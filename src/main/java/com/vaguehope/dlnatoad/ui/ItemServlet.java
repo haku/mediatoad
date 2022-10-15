@@ -39,6 +39,10 @@ import com.vaguehope.dlnatoad.util.FileHelper;
 public class ItemServlet extends HttpServlet {
 
 	private static final int PREV_NEXT_SEARCH_DISTANCE = 10;
+	private static final String PARAM_PREV_ID = "previd";
+	private static final String PARAM_PREV_OFFSET = "prevoffset";
+	private static final String PARAM_NEXT_ID = "nextid";
+	private static final String PARAM_NEXT_OFFSET = "nextoffset";
 
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
 	private static final long serialVersionUID = 3431697675845091273L;
@@ -74,7 +78,7 @@ public class ItemServlet extends HttpServlet {
 		this.servletCommon.headerAndStartBody(w, "../", item.getTitle());
 		this.servletCommon.printLinkRow(req, w, "../");
 
-		printPrevNextLinks(req, resp, item, username, w);
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, username, w);
 
 		w.print("<h2>");
 		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
@@ -98,8 +102,12 @@ public class ItemServlet extends HttpServlet {
 
 			if (allowEditTags) {
 				w.println("<div style=\"padding-top: 0.5em\">");
-				w.println("<a href=\"?edit=true\">Edit</a>");
-				w.println("<form style=\"display:inline;\" action=\"\" method=\"POST\">");
+				w.print("<a href=\"");
+				w.print("?edit=true&" + editReqQueryParms);
+				w.println("\">Edit</a>");
+				w.print("<form style=\"display:inline;\" action=\"?");
+				w.print(editReqQueryParms);
+				w.println("\" method=\"POST\">");
 				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
 				w.println("<div class=\"autocomplete_wrapper addTag_wrapper\">");
 				w.print("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\"");
@@ -156,17 +164,29 @@ public class ItemServlet extends HttpServlet {
 		this.servletCommon.endBody(w);
 	}
 
-	private void printPrevNextLinks(
+	/**
+	 * Returns query params for paths to self for POSTs.
+	 * No leading "?".
+	 */
+	private String printPrevNextLinks(
 			final HttpServletRequest req,
 			final HttpServletResponse resp,
 			final ContentItem item,
 			final String username,
 			final PrintWriter w) throws IOException {
 		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
-		if (query == null || this.mediaDb == null) return;
+		if (query == null || this.mediaDb == null) return "";
+
+		final String prevIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_PREV_ID, null);
+		final String nextIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NEXT_ID, null);
+		final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
+		final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
+		if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
+			return printPrevNextLinksHtml(w, query, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
+		}
 
 		final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
-		if (offsetParam == null) return;
+		if (offsetParam == null) return "";
 
 		final int searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
@@ -176,7 +196,7 @@ public class ItemServlet extends HttpServlet {
 		}
 		catch (final SQLException e) {
 			w.println("<p>Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()) + "</p>");
-			return;
+			return "";
 		}
 		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
 
@@ -211,18 +231,39 @@ public class ItemServlet extends HttpServlet {
 			}
 		}
 
-		final String searchQueryParam = "?" + SearchServlet.PARAM_QUERY + "="
+		final String prevId = prevItem != null ? prevItem.getId() : null;
+		final String nextId = nextItem != null ? nextItem.getId() : null;
+		final int prevOffset = searchOffset + prevI;
+		final int nextOffset = searchOffset + nextI;
+
+		return printPrevNextLinksHtml(w, query, prevId, nextId, prevOffset, nextOffset);
+	}
+
+	private static String printPrevNextLinksHtml(
+			final PrintWriter w,
+			final String query,
+			final String prevId,
+			final String nextId,
+			final Integer prevOffset,
+			final Integer nextOffset) {
+		final String searchQueryParam = SearchServlet.PARAM_QUERY + "="
 				+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-		final String allResultsPath = "../search" + searchQueryParam;  // TODO extract path to constant.
-		final String linkQuery = searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
+		final String allResultsPath = "../search?" + searchQueryParam;  // TODO extract path to constant.
+		final String linkQuery = "?" + searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
+
+		final StringBuilder editReqQueryParms = new StringBuilder();
+		editReqQueryParms.append(searchQueryParam);
 
 		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
 
-		if (prevItem != null) {
+		if (prevId != null) {
 			w.print("<a href=\"");
-			w.print(prevItem.getId());
-			w.print(linkQuery + (searchOffset + prevI));
+			w.print(prevId);
+			w.print(linkQuery + prevOffset);
 			w.println("\">&lt;= Previous</a>");
+
+			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId)
+					.append("&").append(PARAM_PREV_OFFSET).append("=").append(prevOffset);
 		}
 		else {
 			w.println("<span></span>");
@@ -232,17 +273,22 @@ public class ItemServlet extends HttpServlet {
 		w.print(allResultsPath);
 		w.println("\">All</a>");
 
-		if (nextItem != null) {
+		if (nextId != null) {
 			w.print("<a href=\"");
-			w.print(nextItem.getId());
-			w.print(linkQuery + (searchOffset + nextI));
+			w.print(nextId);
+			w.print(linkQuery + nextOffset);
 			w.println("\">Next =&gt;</a>");
+
+			editReqQueryParms.append("&").append(PARAM_NEXT_ID).append("=").append(nextId)
+					.append("&").append(PARAM_NEXT_OFFSET).append("=").append(nextOffset);
 		}
 		else {
 			w.println("<span></span>");
 		}
 
 		w.println("</div>");
+
+		return editReqQueryParms.toString();
 	}
 
 	private void printSimpleTags(final ContentItem item, final PrintWriter w) throws SQLException {
@@ -315,7 +361,7 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
-			resp.addHeader("Location", item.getId() + "?autofocus=addtag");
+			resp.addHeader("Location", item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"));
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
 		}
 		else if ("rmtags".equalsIgnoreCase(req.getParameter("action"))) {
@@ -344,7 +390,7 @@ public class ItemServlet extends HttpServlet {
 			}
 			// TODO decode b64tagsandclss.
 			LOG.info("{} rm tags from {}: {}", username, item.getId(), Arrays.toString(b64tagsandclss));
-			resp.addHeader("Location", item.getId());
+			resp.addHeader("Location", item.getId() + ServletCommon.query(req));
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tags removed.");
 		}
 		else {
