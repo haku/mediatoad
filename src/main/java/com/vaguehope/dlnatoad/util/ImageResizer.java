@@ -23,6 +23,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +67,15 @@ public class ImageResizer {
 		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());
 		if (size < 16 || size > 1000) throw new IllegalArgumentException("Invalid size: " + size);
 
-		final File outF = new File(this.cacheDir, HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size + ".jpg");
+		final String outName = HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size + ".jpg";
+		final File outDir = new File(new File(this.cacheDir, outName.substring(0, 1)), outName.substring(1, 2));
+		final File outF = new File(outDir, outName);
+
 		if (outF.exists() && outF.lastModified() > inF.lastModified()) return outF;
 
 		// TODO do something better than this nasty rate-limiting hack.
 		synchronized (LOCK) {
+			FileUtils.forceMkdir(outDir);
 			return scaleImageToFile(inF, size, quality, outF);
 		}
 	}
