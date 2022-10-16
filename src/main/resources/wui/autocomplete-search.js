@@ -48,7 +48,6 @@ const searchAc = new autoComplete({
       item.innerHTML = `<span>${data.match}</span><span>(${data.value.count})</span>`;
     },
   },
-  submit: true,
   query: (query) => {
     const x = searchAc.input.selectionStart;
     const e = lastSearchTermStart(query, x);
@@ -72,6 +71,26 @@ const searchAc = new autoComplete({
   },
   events: {
     input: {
+      keydown: (event) => {
+        switch (event.keyCode) {
+          case 13:  // enter
+            if (searchAc.cursor >= 0) {
+              event.preventDefault();
+              searchAc.select(searchAc.cursor);
+            }
+            break;
+
+          case 27:  // escape
+            searchAc.close();
+            break;
+
+          case 38:  // up
+          case 40:  // down
+            event.preventDefault();
+            searchAc.goTo(searchAc.cursor + (event.keyCode === 40 ? 1 : -1));
+            break;
+        }
+      },
       selection: (event) => {
         const input = searchAc.input;
         const feedback = event.detail;
@@ -87,11 +106,8 @@ const searchAc = new autoComplete({
         const newX = x - (x - e) + selection.length;
         input.setSelectionRange(newX, newX);
       },
-      open: (event) => {
-        searchAc.submit = false;
-      },
       close: (event) => {
-        searchAc.submit = true;
+        searchAc.cursor = -1;
       },
     }
   },
