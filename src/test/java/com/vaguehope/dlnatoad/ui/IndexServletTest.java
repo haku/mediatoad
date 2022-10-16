@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +56,6 @@ public class IndexServletTest {
 
 	private ContentTree contentTree;
 	private MockContent mockContent;
-	private ExecutorService exSvc;
 	private ImageResizer imageResizer;
 	private ContentServingHistory contentServingHistory;
 	private IndexServlet undertest;
@@ -70,11 +68,10 @@ public class IndexServletTest {
 	public void before() throws Exception {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
-		this.exSvc = mock(ExecutorService.class);
 		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		this.contentServingHistory = new ContentServingHistory();
 		this.contentServlet = mock(ContentServlet.class);
-		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.imageResizer, "hostName", this.contentServingHistory, this.exSvc, true),
+		this.undertest = new IndexServlet(new ServletCommon(this.contentTree, this.imageResizer, "hostName", this.contentServingHistory, true),
 				this.contentTree, null, this.contentServlet, true);
 
 		this.req = new MockHttpServletRequest();

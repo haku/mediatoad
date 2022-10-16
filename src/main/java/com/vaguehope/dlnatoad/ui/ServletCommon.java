@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -50,7 +49,6 @@ public class ServletCommon {
 			final ImageResizer imageResizer,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
-			final ExecutorService exSvc,
 			final boolean mediaDbEnabled) {
 		this.contentTree = contentTree;
 		this.imageResizer = imageResizer;

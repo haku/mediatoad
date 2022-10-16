@@ -303,16 +303,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
 		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
-
-		final ExecutorService svExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("sv", Thread.MIN_PRIORITY));
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				svExSvc.shutdown();
-			}
-		});
-		final ServletCommon servletCommon = new ServletCommon(contentTree, imageResizer, hostName, contentServingHistory, svExSvc, mediaDb != null);
+		final ServletCommon servletCommon = new ServletCommon(contentTree, imageResizer, hostName, contentServingHistory, mediaDb != null);
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
