@@ -35,6 +35,7 @@ import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
 import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.auth.UsersCli;
+import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.DbCleaner;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
@@ -301,6 +302,8 @@ public final class Main {
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
+		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
+
 		final ExecutorService svExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS,
 				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("sv", Thread.MIN_PRIORITY));
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -317,7 +320,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, mediaDb, contentServlet, args.isPrintAccessLog())), "/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, dbCache, contentServlet, args.isPrintAccessLog())), "/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });

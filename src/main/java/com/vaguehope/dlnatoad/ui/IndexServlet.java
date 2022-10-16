@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.ReqAttr;
-import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -39,14 +39,14 @@ public class IndexServlet extends HttpServlet {
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
-	private final MediaDb mediaDb;
+	private final DbCache dbCache;
 	private final ContentServlet contentServlet;
 	private final boolean printAccessLog;
 
-	public IndexServlet (final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final ContentServlet contentServlet, final boolean printAccessLog) {
+	public IndexServlet (final ServletCommon servletCommon, final ContentTree contentTree, final DbCache dbCache, final ContentServlet contentServlet, final boolean printAccessLog) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
-		this.mediaDb = mediaDb;
+		this.dbCache = dbCache;
 		this.contentServlet = contentServlet;
 		this.printAccessLog = printAccessLog;
 	}
@@ -107,14 +107,13 @@ public class IndexServlet extends HttpServlet {
 
 		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
 
-		w.flush(); // TODO this is a hack until printTopTags() has caching / is faster.
 		printTopTags(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(req, w, "");
 		this.servletCommon.endBody(w);
 	}
 
 	private void printTopTags(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
-		if (this.mediaDb == null) return;
+		if (this.dbCache == null) return;
 
 		final File dir = contentNode.getFile();
 		final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
@@ -122,7 +121,7 @@ public class IndexServlet extends HttpServlet {
 
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
-			final List<TagFrequency> topTags = this.mediaDb.getTopTags(authIds, pathPrefix, 100);
+			final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
 			if (topTags.size() < 1) return;
 			w.println("<h3>Tags</h3>");
 			this.servletCommon.printRowOfTags(w, "", topTags);
