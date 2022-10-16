@@ -86,7 +86,7 @@ public class AuthTokens {
 				continue;
 			}
 
-			this.persistedTokens.put(token, username);
+			this.persistedTokens.put(token, username);  // TODO preserve file date as expire date?
 		}
 
 		LOG.info("Loaded {} sessions from: {}", this.persistedTokens.size(), this.sessionDir.getAbsolutePath());
