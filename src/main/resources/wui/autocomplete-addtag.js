@@ -59,3 +59,17 @@ const addTagAc = new autoComplete({
     }
   },
 });
+document.addEventListener('keydown', (e) => {
+  switch (e.target.tagName.toLowerCase()) {
+    case "input":
+    case "textarea":
+      break;
+    default:
+      const key = e.key.toLowerCase();
+      if (key === 't') {
+        event.preventDefault();
+        addTagAc.input.focus();
+      }
+      break;
+  }
+});
