@@ -60,25 +60,23 @@ const addTagAc = new autoComplete({
   },
 });
 document.addEventListener('keydown', (e) => {
-  switch (e.target.tagName.toLowerCase()) {
-    case 'input':
-    case 'textarea':
+  if (!e.altKey) {
+    switch (e.target.tagName.toLowerCase()) {
+      case 'input':
+      case 'textarea':
+        return;
+    }
+  }
+  switch (e.key) {
+    case 't':
+      event.preventDefault();
+      addTagAc.input.focus();
       break;
-    default:
-      const key = e.key.toLowerCase();
-      switch (key) {
-        case 't':
-          event.preventDefault();
-          addTagAc.input.focus();
-          break;
-        case 'n':
-        case 'p':
-          event.preventDefault();
-          let a = document.getElementById(key === 'n' ? 'next' : 'previous');
-          if (a) a.click();
-          break;
-
-      }
+    case 'n':
+    case 'p':
+      event.preventDefault();
+      let a = document.getElementById(e.key === 'n' ? 'next' : 'previous');
+      if (a) a.click();
       break;
   }
 });

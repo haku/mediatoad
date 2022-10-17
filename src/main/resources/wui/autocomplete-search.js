@@ -113,16 +113,17 @@ const searchAc = new autoComplete({
   },
 });
 document.addEventListener('keydown', (e) => {
-  switch (e.target.tagName.toLowerCase()) {
-    case "input":
-    case "textarea":
-      break;
-    default:
-      const key = e.key.toLowerCase();
-      if (key === '/') {
-        event.preventDefault();
-        searchAc.input.focus();
-      }
+  if (!e.altKey) {
+    switch (e.target.tagName.toLowerCase()) {
+      case 'input':
+      case 'textarea':
+        return;
+    }
+  }
+  switch (e.key) {
+    case '/':
+      event.preventDefault();
+      searchAc.input.focus();
       break;
   }
 });
