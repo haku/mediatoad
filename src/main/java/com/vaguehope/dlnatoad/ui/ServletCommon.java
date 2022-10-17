@@ -195,7 +195,7 @@ public class ServletCommon {
 		w.print(contentNode.getItemCount());
 		w.print(" items)");
 		if (contentNode.getParentId() != null && !ContentGroup.ROOT.getId().equals(contentNode.getId())) {
-			w.print(" <a href=\"");
+			w.print(" <a id=\"up\" href=\"");
 			w.print(contentNode.getParentId());
 			w.print("\">up</a>");
 		}
@@ -208,7 +208,7 @@ public class ServletCommon {
 		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
-		appendImageThumbnails(w, imagesToThumb, autofocus);
+		appendImageThumbnails(w, contentNode, imagesToThumb, autofocus);
 		w.println("</ul>");
 	}
 
@@ -294,10 +294,12 @@ public class ServletCommon {
 
 	private static void appendImageThumbnails(
 			final PrintWriter w,
+			final ContentNode node,
 			final List<ContentItem> imagesToThumb,
 			final boolean[] autofocus) throws IOException {
+		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId();
 		for (final ContentItem item : imagesToThumb) {
-			appendImageThumbnail(w, item, null, autofocus);
+			appendImageThumbnail(w, item, linkQuery, autofocus);
 		}
 	}
 

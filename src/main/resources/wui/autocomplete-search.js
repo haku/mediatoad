@@ -112,6 +112,10 @@ const searchAc = new autoComplete({
     }
   },
 });
+function clickLinkById(id) {
+  let a = document.getElementById(id);
+  if (a) a.click();
+}
 document.addEventListener('keydown', (e) => {
   if (!e.altKey) {
     switch (e.target.tagName.toLowerCase()) {
@@ -124,6 +128,10 @@ document.addEventListener('keydown', (e) => {
     case '/':
       event.preventDefault();
       searchAc.input.focus();
+      break;
+    case 'u':
+      event.preventDefault();
+      clickLinkById('up');
       break;
   }
 });

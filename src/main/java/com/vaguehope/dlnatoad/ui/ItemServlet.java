@@ -39,6 +39,7 @@ import com.vaguehope.dlnatoad.util.FileHelper;
 public class ItemServlet extends HttpServlet {
 
 	private static final int PREV_NEXT_SEARCH_DISTANCE = 10;
+	static final String PARAM_NODE_ID = "node";
 	private static final String PARAM_PREV_ID = "previd";
 	private static final String PARAM_PREV_OFFSET = "prevoffset";
 	private static final String PARAM_NEXT_ID = "nextid";
@@ -66,7 +67,19 @@ public class ItemServlet extends HttpServlet {
 			return;
 		}
 
-		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		final ContentNode node;
+		final String nodeIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NODE_ID, null);
+		if (nodeIdParam != null) {
+			node = this.contentTree.getNode(nodeIdParam);
+			if (node != null && !node.hasItemWithId(item.getId())) {  // Otherwise node param would be a security bypass.
+				ServletCommon.returnForbidden(resp);
+				return;
+			}
+		}
+		else {
+			node = this.contentTree.getNode(item.getParentId());
+		}
+
 		final String username = ReqAttr.USERNAME.get(req);
 		if (node == null || !node.isUserAuth(username)) {
 			ServletCommon.returnDenied(resp, username);
@@ -103,7 +116,7 @@ public class ItemServlet extends HttpServlet {
 			if (allowEditTags) {
 				w.println("<div style=\"padding-top: 0.5em; display: flex; justify-content: center;\">");
 				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
-				w.print("?edit=true&" + editReqQueryParms);
+				w.print("?edit=true" + editReqQueryParms);
 				w.println("\">Edit</a>");
 				w.print("<form style=\"display:inline;\" action=\"?");
 				w.print(editReqQueryParms);
@@ -167,7 +180,7 @@ public class ItemServlet extends HttpServlet {
 
 	/**
 	 * Returns query params for paths to self for POSTs.
-	 * No leading "?".
+	 * return always starts with '?'.
 	 */
 	private String printPrevNextLinks(
 			final HttpServletRequest req,
@@ -253,6 +266,9 @@ public class ItemServlet extends HttpServlet {
 		return printPrevNextLinksHtml(w, query, node, prevId, nextId, prevOffset, nextOffset);
 	}
 
+	/**
+	 * return always starts with '?'.
+	 */
 	private static String printPrevNextLinksHtml(
 			final PrintWriter w,
 			final String query,
@@ -268,15 +284,16 @@ public class ItemServlet extends HttpServlet {
 		if (query != null) {
 			final String searchQueryParam = SearchServlet.PARAM_QUERY + "="
 					+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-			editReqQueryParms.append(searchQueryParam);
+			editReqQueryParms.append("&").append(searchQueryParam);
 			allPath = "../search?" + searchQueryParam;  // TODO extract path to constant.
 			allTitle = "All Results";
 			linkQuery = "?" + searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
 		}
 		else {
+			editReqQueryParms.append("&").append(PARAM_NODE_ID).append("=").append(node.getId());
 			allPath = "../" + node.getId();
 			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
-			linkQuery = null;
+			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId();
 		}
 
 		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
@@ -284,7 +301,8 @@ public class ItemServlet extends HttpServlet {
 		if (prevId != null) {
 			w.print("<a id=\"previous\" href=\"");
 			w.print(prevId);
-			if (linkQuery != null) w.print(linkQuery + prevOffset);
+			if (linkQuery != null) w.print(linkQuery);
+			if (prevOffset != null) w.print(prevOffset);
 			w.println("\">&lt;= Previous</a>");
 
 			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId);
@@ -294,14 +312,15 @@ public class ItemServlet extends HttpServlet {
 			w.println("<span></span>");
 		}
 
-		w.print("<a href=\"");
+		w.print("<a id=\"up\" href=\"");
 		w.print(allPath);
 		w.println("\">" + allTitle + "</a>");
 
 		if (nextId != null) {
 			w.print("<a id=\"next\" href=\"");
 			w.print(nextId);
-			if (linkQuery != null) w.print(linkQuery + nextOffset);
+			if (linkQuery != null) w.print(linkQuery);
+			if (nextOffset != null) w.print(nextOffset);
 			w.println("\">Next =&gt;</a>");
 
 			editReqQueryParms.append("&").append(PARAM_NEXT_ID).append("=").append(nextId);

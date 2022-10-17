@@ -73,10 +73,12 @@ document.addEventListener('keydown', (e) => {
       addTagAc.input.focus();
       break;
     case 'n':
+      event.preventDefault();
+      clickLinkById('next');
+      break;
     case 'p':
       event.preventDefault();
-      let a = document.getElementById(e.key === 'n' ? 'next' : 'previous');
-      if (a) a.click();
+      clickLinkById('previous');
       break;
   }
 });
