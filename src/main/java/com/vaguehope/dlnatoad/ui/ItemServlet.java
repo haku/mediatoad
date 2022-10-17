@@ -101,8 +101,8 @@ public class ItemServlet extends HttpServlet {
 			}
 
 			if (allowEditTags) {
-				w.println("<div style=\"padding-top: 0.5em\">");
-				w.print("<a href=\"");
+				w.println("<div style=\"padding-top: 0.5em; display: flex; justify-content: center;\">");
+				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
 				w.print("?edit=true&" + editReqQueryParms);
 				w.println("\">Edit</a>");
 				w.print("<form style=\"display:inline;\" action=\"?");
@@ -122,13 +122,14 @@ public class ItemServlet extends HttpServlet {
 		}
 		w.println("</div>");
 
+		w.println("<div style=\"text-align: center;\">");
 		w.print("<img style=\"max-width: 100%; max-height: 50em; padding-top: 1em;\" src=\"../");
 		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");
 		w.print(item.getFormat().getExt());
 		w.println("\">");
-		w.println("<br>");
+		w.println("</div>");
 
 		w.print("<a href=\"../");
 		w.print(C.CONTENT_PATH_PREFIX);
