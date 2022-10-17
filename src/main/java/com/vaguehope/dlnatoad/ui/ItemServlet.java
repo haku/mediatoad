@@ -257,7 +257,7 @@ public class ItemServlet extends HttpServlet {
 		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
 
 		if (prevId != null) {
-			w.print("<a href=\"");
+			w.print("<a id=\"previous\" href=\"");
 			w.print(prevId);
 			w.print(linkQuery + prevOffset);
 			w.println("\">&lt;= Previous</a>");
@@ -274,7 +274,7 @@ public class ItemServlet extends HttpServlet {
 		w.println("\">All</a>");
 
 		if (nextId != null) {
-			w.print("<a href=\"");
+			w.print("<a id=\"next\" href=\"");
 			w.print(nextId);
 			w.print(linkQuery + nextOffset);
 			w.println("\">Next =&gt;</a>");
