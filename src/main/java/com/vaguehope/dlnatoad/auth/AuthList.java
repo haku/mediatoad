@@ -42,7 +42,7 @@ public class AuthList {
 		}
 
 		final Set<String> names = getNamesForDir(dir);
-		if (names == null) return null;
+		if (names == null) return null;  // TODO arg for default auth list?
 		if (names.isEmpty()) return EMPTY_AUTH_LIST;
 		return new AuthList(names);
 	}
