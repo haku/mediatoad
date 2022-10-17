@@ -78,7 +78,7 @@ public class ItemServlet extends HttpServlet {
 		this.servletCommon.headerAndStartBody(w, "../", item.getTitle());
 		this.servletCommon.printLinkRow(req, w, "../");
 
-		final String editReqQueryParms = printPrevNextLinks(req, resp, item, username, w);
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, w);
 
 		w.print("<h2>");
 		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
@@ -172,33 +172,46 @@ public class ItemServlet extends HttpServlet {
 			final HttpServletRequest req,
 			final HttpServletResponse resp,
 			final ContentItem item,
+			final ContentNode node,
 			final String username,
 			final PrintWriter w) throws IOException {
 		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
-		if (query == null || this.mediaDb == null) return "";
-
 		final String prevIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_PREV_ID, null);
 		final String nextIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NEXT_ID, null);
-		final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
-		final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
-		if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
-			return printPrevNextLinksHtml(w, query, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
-		}
+		final List<ContentItem> results;
+		final Integer searchOffset;
+		if (query != null) {
+			if (this.mediaDb == null) return "";
 
-		final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
-		if (offsetParam == null) return "";
+			final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
+			final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
+			if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
+				return printPrevNextLinksHtml(w, query, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
+			}
 
-		final int searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
-		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-		final List<String> ids;
-		try {
-			ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
+			final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
+			if (offsetParam == null) return "";
+
+			searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
+			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+			final List<String> ids;
+			try {
+				ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
+			}
+			catch (final SQLException e) {
+				w.println("<p>Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()) + "</p>");
+				return "";
+			}
+			results = this.contentTree.getItemsForIds(ids, username);
 		}
-		catch (final SQLException e) {
-			w.println("<p>Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()) + "</p>");
-			return "";
+		else {
+			if (prevIdParam != null || nextIdParam != null) {
+				return printPrevNextLinksHtml(w, null, node, prevIdParam, nextIdParam, null, null);
+			}
+
+			searchOffset = null;
+			results = node.getCopyOfItems();
 		}
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
 
 		int prevI = -1;
 		int nextI = -1;
@@ -233,54 +246,65 @@ public class ItemServlet extends HttpServlet {
 
 		final String prevId = prevItem != null ? prevItem.getId() : null;
 		final String nextId = nextItem != null ? nextItem.getId() : null;
-		final int prevOffset = searchOffset + prevI;
-		final int nextOffset = searchOffset + nextI;
+		final Integer prevOffset = searchOffset != null ? searchOffset + prevI : null;
+		final Integer nextOffset = searchOffset != null ? searchOffset + nextI : null;
 
-		return printPrevNextLinksHtml(w, query, prevId, nextId, prevOffset, nextOffset);
+		return printPrevNextLinksHtml(w, query, node, prevId, nextId, prevOffset, nextOffset);
 	}
 
 	private static String printPrevNextLinksHtml(
 			final PrintWriter w,
 			final String query,
+			final ContentNode node,
 			final String prevId,
 			final String nextId,
 			final Integer prevOffset,
 			final Integer nextOffset) {
-		final String searchQueryParam = SearchServlet.PARAM_QUERY + "="
-				+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-		final String allResultsPath = "../search?" + searchQueryParam;  // TODO extract path to constant.
-		final String linkQuery = "?" + searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
-
 		final StringBuilder editReqQueryParms = new StringBuilder();
-		editReqQueryParms.append(searchQueryParam);
+		final String linkQuery;
+		final String allPath;
+		final String allTitle;
+		if (query != null) {
+			final String searchQueryParam = SearchServlet.PARAM_QUERY + "="
+					+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+			editReqQueryParms.append(searchQueryParam);
+			allPath = "../search?" + searchQueryParam;  // TODO extract path to constant.
+			allTitle = "All Results";
+			linkQuery = "?" + searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
+		}
+		else {
+			allPath = "../" + node.getId();
+			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
+			linkQuery = null;
+		}
 
 		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
 
 		if (prevId != null) {
 			w.print("<a id=\"previous\" href=\"");
 			w.print(prevId);
-			w.print(linkQuery + prevOffset);
+			if (linkQuery != null) w.print(linkQuery + prevOffset);
 			w.println("\">&lt;= Previous</a>");
 
-			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId)
-					.append("&").append(PARAM_PREV_OFFSET).append("=").append(prevOffset);
+			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId);
+			if (prevOffset != null) editReqQueryParms.append("&").append(PARAM_PREV_OFFSET).append("=").append(prevOffset);
 		}
 		else {
 			w.println("<span></span>");
 		}
 
 		w.print("<a href=\"");
-		w.print(allResultsPath);
-		w.println("\">All</a>");
+		w.print(allPath);
+		w.println("\">" + allTitle + "</a>");
 
 		if (nextId != null) {
 			w.print("<a id=\"next\" href=\"");
 			w.print(nextId);
-			w.print(linkQuery + nextOffset);
+			if (linkQuery != null) w.print(linkQuery + nextOffset);
 			w.println("\">Next =&gt;</a>");
 
-			editReqQueryParms.append("&").append(PARAM_NEXT_ID).append("=").append(nextId)
-					.append("&").append(PARAM_NEXT_OFFSET).append("=").append(nextOffset);
+			editReqQueryParms.append("&").append(PARAM_NEXT_ID).append("=").append(nextId);
+			if (nextOffset != null) editReqQueryParms.append("&").append(PARAM_NEXT_OFFSET).append("=").append(nextOffset);
 		}
 		else {
 			w.println("<span></span>");
