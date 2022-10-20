@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.db;
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -67,7 +68,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				inv.getArgument(0, Runnable.class).run();
 				return null;
 			}
-		}).when(schEx).execute(any(Runnable.class));
+		}).when(schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 		return schEx;
 	}
 

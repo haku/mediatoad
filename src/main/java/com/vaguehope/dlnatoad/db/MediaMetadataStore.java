@@ -25,7 +25,8 @@ import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MediaMetadataStore {
 
-	private static final long MEDIA_ID_BATCH_NANOS = TimeUnit.SECONDS.toNanos(10);
+	private static final long FILE_BATCH_START_DELAY_MILLIS = 100;  // Yield to other activities / DB writers.
+	private static final long FILE_BATCH_MAX_DURATION_NANOS = TimeUnit.SECONDS.toNanos(10);
 	private static final int DURATION_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
 
@@ -76,7 +77,7 @@ public class MediaMetadataStore {
 
 	private void scheduleFileIdBatchIfNeeded() {
 		if (this.fileIdWorkerRunning.compareAndSet(false, true)) {
-			this.exSvc.execute(new FileWorker());
+			this.exSvc.schedule(new FileWorker(), FILE_BATCH_START_DELAY_MILLIS, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -111,7 +112,7 @@ public class MediaMetadataStore {
 					count += 1;
 				}
 			}
-			while (f != null && System.nanoTime() - startTime < MEDIA_ID_BATCH_NANOS);
+			while (f != null && System.nanoTime() - startTime < FILE_BATCH_MAX_DURATION_NANOS);
 			this.fileIdWorkerRunning.compareAndSet(true, false);
 			// we have said we are not running anymore, any new work added to the queue
 			// will add a new batch.  if there is any work still on the queue, schedule a

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -60,7 +61,7 @@ public class MediaMetadataStoreTest {
 				inv.getArgument(0, Runnable.class).run();
 				return null;
 			}
-		}).when(this.schEx).execute(any(Runnable.class));
+		}).when(this.schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
 		this.undertest = new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true);
 

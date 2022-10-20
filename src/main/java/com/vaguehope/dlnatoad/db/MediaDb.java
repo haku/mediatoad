@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
@@ -326,8 +327,9 @@ public class MediaDb {
 		final SQLiteConfig c = new SQLiteConfig();
 		c.setEncoding(Encoding.UTF8);
 		c.setSharedCache(true);
-		c.setTransactionMode(TransactionMode.DEFERRED);
+		c.setTransactionMode(TransactionMode.IMMEDIATE);
 		c.enforceForeignKeys(true);
+		c.setBusyTimeout((int) TimeUnit.SECONDS.toMillis(30));  // Should be longer than MediaMetadataStore.FILE_BATCH_MAX_DURATION.
 		return c;
 	}
 

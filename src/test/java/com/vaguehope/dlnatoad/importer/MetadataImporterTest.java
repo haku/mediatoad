@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -47,7 +49,6 @@ public class MetadataImporterTest {
 	private File dropDir;
 	private MetadataImporter undertest;
 
-
 	@Before
 	public void before() throws Exception {
 		this.schEx = mock(ScheduledExecutorService.class);
@@ -57,7 +58,7 @@ public class MetadataImporterTest {
 				inv.getArgument(0, Runnable.class).run();
 				return null;
 			}
-		}).when(this.schEx).execute(any(Runnable.class));
+		}).when(this.schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
 		this.time = new Time.FakeTime();
 		this.mediaDb = new InMemoryMediaDb();
