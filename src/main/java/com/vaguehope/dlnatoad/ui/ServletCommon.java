@@ -248,12 +248,11 @@ public class ServletCommon {
 				appendItem(w, item, autofocus);
 			}
 		}
+		w.println("</ul>");
 
 		for (final IndexAnd<ContentItem> indexAnd : imagesToThumb) {
 			appendImageThumbnail(w, indexAnd.getItem(), linkQuery.apply(indexAnd), autofocus);
 		}
-
-		w.println("</ul>");
 	}
 
 	private static void appendDirectory(final PrintWriter w, final ContentNode node, final boolean[] autofocus) {
