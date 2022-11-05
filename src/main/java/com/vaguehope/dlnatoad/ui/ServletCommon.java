@@ -142,8 +142,21 @@ public class ServletCommon {
 		w.print(pathPrefix);
 		w.println("./\">Home</a>");
 
+		final String username = ReqAttr.USERNAME.get(req);
+		if (username != null) {
+			w.print("<span>[ ");
+			w.print(username);
+			w.println(" ]</span>");
+		}
+		else {
+			w.println("<form style=\"display:inline;\" action=\"\" method=\"GET\">");
+			w.println("<input type=\"hidden\" name=\"action\" value=\"login\">");
+			w.println("<input type=\"submit\" value=\"Login\">");
+			w.println("</form>");
+		}
+
 		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
-		w.print("<form style=\"display:inline;\" action=\"");
+		w.print("<form style=\"display:inline-block;\" action=\"");
 		w.print(pathPrefix);
 		w.println("search\" method=\"GET\">");
 		w.println("<div class=\"autocomplete_wrapper search_wrapper\">");
@@ -155,10 +168,12 @@ public class ServletCommon {
 		if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req)) {
 			final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
 			final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
+			w.println("<span style=\"display:inline-block;\">");
 			w.print("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" ");
 			w.print(remoteChecked);
 			w.println(">");
 			w.println("<label for=\"remote\">remote</label>");
+			w.println("</span>");
 		}
 		w.println("<input type=\"submit\" value=\"Search\">");
 		w.println("</form>");
@@ -166,19 +181,6 @@ public class ServletCommon {
 			w.print("<script src=\"");
 			w.print(pathPrefix);
 			w.println("w/autocomplete-search.js\"></script>");
-		}
-
-		final String username = ReqAttr.USERNAME.get(req);
-		if (username != null) {
-			w.print("<span>Username: ");
-			w.print(username);
-			w.println("</span>");
-		}
-		else {
-			w.println("<form style=\"display:inline;\" action=\"\" method=\"GET\">");
-			w.println("<input type=\"hidden\" name=\"action\" value=\"login\">");
-			w.println("<input type=\"submit\" value=\"Login\">");
-			w.println("</form>");
 		}
 
 		w.println("</div>");
