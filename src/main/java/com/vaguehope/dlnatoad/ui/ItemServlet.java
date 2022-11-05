@@ -135,8 +135,8 @@ public class ItemServlet extends HttpServlet {
 		}
 		w.println("</div>");
 
-		w.println("<div style=\"text-align: center;\">");
-		w.print("<img style=\"max-width: 100%; max-height: 50em; padding-top: 1em;\" src=\"../");
+		w.println("<div class=\"mainimage\">");
+		w.print("<img src=\"../");
 		w.print(C.CONTENT_PATH_PREFIX);
 		w.print(item.getId());
 		w.print(".");

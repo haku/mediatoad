@@ -1,0 +1,17 @@
+.thumbnail {
+  margin: 0.5em 0.5em 0 0.5em;
+  vertical-align: middle;
+}
+.thumbnail img {
+  max-width: 6em;
+  max-height: 5em;
+}
+
+.mainimage {
+  padding-top: 1em;
+  text-align: center;
+}
+.mainimage img {
+  max-width: 100%;
+  max-height: 50em;
+}

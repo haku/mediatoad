@@ -13,14 +13,22 @@ input {
   color: #fff;
 }
 
+.mainimage img {
+  background-image:
+  linear-gradient(45deg,  #8883 25%, #8881 25%),
+  linear-gradient(-45deg, #8883 25%, #8881 25%),
+  linear-gradient(45deg,  #8881 75%, #8883 75%),
+  linear-gradient(-45deg, #8881 75%, #8883 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
 .autocomplete_wrapper > ul {
   background: #091f2c;
   border: #69c6b0 0.1em solid;
   border-radius: 0.2em;
 }
 .autocomplete_wrapper > ul > li[aria-selected="true"] {
-  /*color: inherit;
-  background-color: #005b4f;*/
   color: #000;
   background-color: #f3b1cb;
 }

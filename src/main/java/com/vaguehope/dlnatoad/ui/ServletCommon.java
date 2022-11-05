@@ -119,7 +119,10 @@ public class ServletCommon {
 			w.println(line);
 		}
 
-		// After the above css file for priority reasons.
+		w.print("<link rel=\"stylesheet\" href=\"");
+		w.print(pathPrefix);
+		w.println("w/layout.css\">");
+		// After the autocomplete css file for priority reasons.
 		w.print("<link rel=\"stylesheet\" href=\"");
 		w.print(pathPrefix);
 		w.println("w/colours.css\">");
@@ -216,8 +219,8 @@ public class ServletCommon {
 		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
 		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
-		appendImageThumbnails(w, contentNode, imagesToThumb, autofocus);
 		w.println("</ul>");
+		appendImageThumbnails(w, contentNode, imagesToThumb, autofocus);
 	}
 
 	private void appendItemOrGetImageToThumb(final PrintWriter w, final ContentItem item, final boolean[] autofocus, final List<ContentItem> imagesToThumb) throws IOException {
@@ -316,14 +319,14 @@ public class ServletCommon {
 			final ContentItem item,
 			final String linkQuery,
 			final boolean[] autofocus) throws IOException {
-		w.print("<span><a href=\"");
+		w.print("<span class=\"thumbnail\"><a href=\"");
 		w.print(C.ITEM_PATH_PREFIX);
 		w.print(item.getId());
 		if (linkQuery != null) w.print(linkQuery);
 		w.print("\"");
 		maybeSetAutofocus(w, autofocus);
 		w.print(">");
-		w.print("<img style=\"max-width: 6em; max-height: 5em; margin: 0.5em 0.5em 0 0.5em;\" src=\"");
+		w.print("<img src=\"");
 		w.print(C.THUMBS_PATH_PREFIX);
 		w.print(item.getId());
 		w.print("\" title=\"");
