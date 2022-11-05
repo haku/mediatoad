@@ -37,15 +37,11 @@
 
 .autocomplete_wrapper > ul > li mark {
   background-color: transparent;
-  color: ButtonText;
+  color: inherit;
   font-weight: bold;
 }
 
-.autocomplete_wrapper > ul > li mark::selection {
-  color: HighlightText;
-  background-color: Highlight;
-}
-
 .autocomplete_wrapper > ul > li[aria-selected="true"] {
+  color: HighlightText;
   background-color: Highlight;
 }

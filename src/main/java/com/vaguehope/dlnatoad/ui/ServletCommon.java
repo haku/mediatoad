@@ -108,6 +108,7 @@ public class ServletCommon {
 		w.println("</title>");
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
+
 		if (this.mediaDbEnabled) {
 			w.print("<link rel=\"stylesheet\" href=\"");
 			w.print(pathPrefix);
@@ -117,6 +118,11 @@ public class ServletCommon {
 		for (final String line : extraHeaderLines) {
 			w.println(line);
 		}
+
+		// After the above css file for priority reasons.
+		w.print("<link rel=\"stylesheet\" href=\"");
+		w.print(pathPrefix);
+		w.println("w/colours.css\">");
 
 		w.println("<style>");
 		w.println("body, div, input, label, p, span {font-family: sans-serif;}");

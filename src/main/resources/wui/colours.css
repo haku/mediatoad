@@ -1,0 +1,26 @@
+body {
+  background: #071925;
+  color: #fff;
+}
+a {
+  color: #f3b1cb;
+}
+input {
+  padding: 0.2em 0.5em;
+  border-radius: 0.2em;
+  background: #071925;
+  border: #69c6b0 0.1em solid;
+  color: #fff;
+}
+
+.autocomplete_wrapper > ul {
+  background: #091f2c;
+  border: #69c6b0 0.1em solid;
+  border-radius: 0.2em;
+}
+.autocomplete_wrapper > ul > li[aria-selected="true"] {
+  /*color: inherit;
+  background-color: #005b4f;*/
+  color: #000;
+  background-color: #f3b1cb;
+}
