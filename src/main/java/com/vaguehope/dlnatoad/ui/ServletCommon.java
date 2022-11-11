@@ -28,6 +28,7 @@ import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -195,30 +196,24 @@ public class ServletCommon {
 		w.println("</div>");
 	}
 
-	public void printDirectoriesAndItems(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {
-		final List<ContentNode> nodes = contentNode.nodesUserHasAuth(username);
-
-		w.print("<h3>");
-		w.print(StringEscapeUtils.escapeHtml4(contentNode.getTitle()));
-		w.print(" (");
-		w.print(nodes.size());
-		w.print(" dirs, ");
-		w.print(contentNode.getItemCount());
-		w.print(" items)");
-		if (contentNode.getParentId() != null && !ContentGroup.ROOT.getId().equals(contentNode.getId())) {
-			w.print(" <a id=\"up\" href=\"");
-			w.print(contentNode.getParentId());
-			w.print("\">up</a>");
-		}
-		w.print("</h3>");
-
+	public void printNodeSubNodesAndItems(final PrintWriter w, final ContentNode contentNode, final List<ContentNode> nodesUserHasAuth, final Order sort) throws IOException {
 		w.println("<ul>");
 		final boolean[] autofocus = new boolean[] { true };
-		for (final ContentNode node : nodes) {
+		for (final ContentNode node : nodesUserHasAuth) {
 			appendDirectory(w, node, autofocus);
 		}
 		final List<ContentItem> imagesToThumb = new ArrayList<>();
-		contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
+		if (sort != null) {
+			final List<ContentItem> items = contentNode.getCopyOfItems();
+			items.sort(sort);
+			for (final ContentItem i : items) {
+				appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb);
+			}
+		}
+		else {
+			contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
+		}
+
 		w.println("</ul>");
 		appendImageThumbnails(w, contentNode, imagesToThumb, autofocus);
 	}

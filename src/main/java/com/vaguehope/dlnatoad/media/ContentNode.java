@@ -127,16 +127,10 @@ public class ContentNode extends AbstractContent {
 		}
 	}
 
-	/**
-	 * This should only be used by unit tests.
-	 */
 	public List<ContentNode> getCopyOfNodes() {
 		return new ArrayList<>(this.nodes);
 	}
 
-	/**
-	 * This should only be used by unit tests.
-	 */
 	public List<ContentItem> getCopyOfItems() {
 		return new ArrayList<>(this.items);
 	}

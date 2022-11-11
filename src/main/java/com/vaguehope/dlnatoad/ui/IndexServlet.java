@@ -24,6 +24,7 @@ import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -98,18 +99,64 @@ public class IndexServlet extends HttpServlet {
 		printDir(req, resp, contentNode, username);
 	}
 
+	@SuppressWarnings("resource")
 	private void printDir (final HttpServletRequest req, final HttpServletResponse resp, final ContentNode contentNode, final String username) throws IOException {
 		ServletCommon.setHtmlContentType(resp);
-		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
 		this.servletCommon.headerAndStartBody(w, contentNode.getTitle());
 		this.servletCommon.printLinkRow(req, w);
 
-		this.servletCommon.printDirectoriesAndItems(w, contentNode, username);
+		final List<ContentNode> nodesUserHasAuth = contentNode.nodesUserHasAuth(username);
+		printTitle(contentNode, w, nodesUserHasAuth);
+		printSortLinks(w);
+
+		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, "sort", "");
+		if (sortRaw == null) return;
+		final Order sort;
+		if ("modified".equalsIgnoreCase(sortRaw)) {
+			sort = ContentItem.Order.MODIFIED_DESC;
+		}
+		else {
+			sort = null;
+		}
+
+		this.servletCommon.printNodeSubNodesAndItems(w, contentNode, nodesUserHasAuth, sort);
 
 		printTopTags(w, contentNode, username);
 		this.servletCommon.appendDebugFooter(req, w, "");
 		this.servletCommon.endBody(w);
+	}
+
+	private static void printTitle(final ContentNode contentNode, final PrintWriter w, final List<ContentNode> nodesUserHasAuth) {
+		w.print("<h3>");
+		w.print(StringEscapeUtils.escapeHtml4(contentNode.getTitle()));
+
+		final int nodeCount = nodesUserHasAuth.size();
+		final int itemCount = contentNode.getItemCount();
+		w.print(" (");
+		if (nodeCount > 0) {
+			w.print(nodeCount);
+			w.print(" dirs");
+		}
+		if (itemCount > 0) {
+			if (nodeCount > 0) w.print(", ");
+			w.print(itemCount);
+			w.print(" items");
+		}
+		w.print(")");
+
+		if (contentNode.getParentId() != null && !ContentGroup.ROOT.getId().equals(contentNode.getId())) {
+			w.print(" <a id=\"up\" href=\"");
+			w.print(contentNode.getParentId());
+			w.print("\">up</a>");
+		}
+		w.print("</h3>");
+	}
+
+	private static void printSortLinks(final PrintWriter w) {
+		w.println("<div class=\"list_link_row\">");
+		w.println("<span><a href=\"?sort=modified\">Sort by Modified</a></span>");
+		w.println("</div>");
 	}
 
 	private void printTopTags(final PrintWriter w, final ContentNode contentNode, final String username) throws IOException {

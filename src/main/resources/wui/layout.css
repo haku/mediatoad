@@ -1,3 +1,8 @@
+.list_link_row {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .thumbnail {
   display: inline-block;
   margin: 0.5em 0.5em 0 0.5em;
