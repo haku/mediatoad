@@ -60,7 +60,7 @@ public class ItemServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getContentAsString(),
-				containsString("<img style=\"max-width: 100%; max-height: 50em; padding-top: 1em;\" src=\"../c/id00.mp4\">"));
+				containsString("<img src=\"../c/id00.mp4\">"));
 		assertThat(this.resp.getContentAsString(), not(containsString("Add")));  // TODO make better along with following test.
 	}
 
