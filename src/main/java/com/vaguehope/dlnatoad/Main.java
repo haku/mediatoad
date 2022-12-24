@@ -54,6 +54,7 @@ import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.ui.AutocompleteServlet;
+import com.vaguehope.dlnatoad.ui.DirServlet;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
 import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
@@ -309,6 +310,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
+		servletHandler.addServlet(new ServletHolder(new DirServlet(contentTree)), "/" + C.DIR_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, dbCache, contentServlet, args.isPrintAccessLog())), "/*");

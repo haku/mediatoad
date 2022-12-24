@@ -26,6 +26,7 @@ public interface C {
 	String REVERSE_PROXY_PATH = "dlnatoad";
 	String CONTENT_PATH_PREFIX = "c/";
 	String AUTOCOMPLETE_PATH = "ac";
+	String DIR_PATH_PREFIX = "d/";
 	String ITEM_PATH_PREFIX = "i/";
 	String STATIC_FILES_PATH_PREFIX = "w/";
 	String THUMBS_PATH_PREFIX = "t/";

@@ -1,6 +1,7 @@
 .list_link_row {
   display: flex;
   justify-content: flex-end;
+  gap: 1em;
 }
 
 .thumbnail {

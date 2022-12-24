@@ -19,6 +19,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.TagFrequency;
@@ -28,6 +29,7 @@ import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.StringHelper;
 import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 
@@ -108,7 +110,7 @@ public class IndexServlet extends HttpServlet {
 
 		final List<ContentNode> nodesUserHasAuth = contentNode.nodesUserHasAuth(username);
 		printTitle(contentNode, w, nodesUserHasAuth);
-		printSortLinks(w);
+		printLinksRow(contentNode, w);
 
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, "sort", "");
 		if (sortRaw == null) return;
@@ -153,9 +155,24 @@ public class IndexServlet extends HttpServlet {
 		w.print("</h3>");
 	}
 
-	private static void printSortLinks(final PrintWriter w) {
+	private static void printLinksRow(final ContentNode node, final PrintWriter w) {
 		w.println("<div class=\"list_link_row\">");
 		w.println("<span><a href=\"?sort=modified\">Sort by Modified</a></span>");
+
+		if (node.getItemCount() > 0) {
+			final long[] size = { 0 };
+			node.withEachItem(i -> {size[0] += i.getFileLength();});
+
+			w.print("<span><a href=\"");
+			w.print(C.DIR_PATH_PREFIX);
+			w.print(node.getId());
+			w.print(".zip\" download=\"");
+			w.print(node.getFile() != null ? node.getFile().getName() : node.getTitle());
+			w.print(".zip\">As .zip (");
+			w.print(FileHelper.readableFileSize(size[0]));
+			w.println(")</a></span>");
+		}
+
 		w.println("</div>");
 	}
 
