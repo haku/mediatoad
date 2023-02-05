@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+// TODO clear cache when a tag is added?
 public class DbCache {
 
 	private static final int TOP_TAG_COUNT = 100; // TODO make cache param? sublist cache entries?
@@ -18,7 +19,7 @@ public class DbCache {
 	private final MediaDb db;
 
 	private final Cache<TopTagsKey, List<TagFrequency>> topTags = CacheBuilder.newBuilder()
-			.expireAfterAccess(1, TimeUnit.DAYS)
+			.expireAfterWrite(1, TimeUnit.DAYS)
 			.build();
 
 	public DbCache(final MediaDb db) {
