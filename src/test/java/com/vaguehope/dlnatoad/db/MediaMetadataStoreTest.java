@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -262,6 +263,37 @@ public class MediaMetadataStoreTest {
 		fillFile(f2);
 		assertEquals(id1, callIdForFile(f2));
 		assertEquals(id1, getFileData(f2).getId());
+	}
+
+	// This is needed for search to work correctly.
+	@Test
+	public void itUpdatesCanonicalWhenOnlyOneFileExists() throws Exception {
+		final File f1 = mockMediaFile("media-1.ext");
+		final String id1 = callIdForFile(f1);
+
+		final File f2 = this.tmp.newFile("media-2.ext");
+		FileUtils.copyFile(f1, f2, false);
+
+		final String id2 = callIdForFile(f2);
+		assertEquals(id1, id2);  // Overall thing returns canonical ID.
+
+		// eg file is deleted while watcher is not running.
+		f1.delete();
+		// Do not update missing in DB cos that is not used in this logic.
+
+		final String id2b = callIdForFile(f2);
+		assertEquals(id2, id2b);
+
+		final FileData fd1 = getFileData(f1);
+		assertNull(fd1);  // should have been removed.
+
+		final FileData fd2 = getFileData(f2);
+		assertNotNull(fd2);
+
+		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
+			final String canonicalId = w.canonicalIdForHash(fd2.getHash());
+			assertEquals(fd2.getId(), canonicalId);
+		}
 	}
 
 	@Test

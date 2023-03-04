@@ -69,6 +69,19 @@ public class WritableMediaDb implements Closeable {
 		return MediaDb.readFileDataFromConn(this.conn, file);
 	}
 
+	protected Collection<File> filesWithId(final String id) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("SELECT file FROM files WHERE id=?;")) {
+			st.setString(1, id);
+			try (final ResultSet rs = st.executeQuery()) {
+				final Collection<File> ret = new ArrayList<>();
+				while (rs.next()) {
+					ret.add(new File(rs.getString(1)));
+				}
+				return ret;
+			}
+		}
+	}
+
 	protected Collection<FileAndId> filesWithHash(final String hash) throws SQLException {
 		try (final PreparedStatement st = this.conn.prepareStatement("SELECT file,id FROM files WHERE hash=?;")) {
 			st.setString(1, hash);
@@ -210,7 +223,7 @@ public class WritableMediaDb implements Closeable {
 			if (n < 1) throw new SQLException("No update occured inserting hash '" + hash + "'.");
 		}
 		catch (final SQLException e) {
-			throw new SQLException(String.format("Failed to store canonical ID for hash %s \"%s\".", hash, id), e);
+			throw new SQLException(String.format("Failed to store canonical ID '%s' for hash '%s'.", id, hash), e);
 		}
 		finally {
 			st.close();

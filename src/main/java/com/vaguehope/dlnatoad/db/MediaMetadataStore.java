@@ -185,6 +185,15 @@ public class MediaMetadataStore {
 
 			// Return what we have even if file does not exist so the old ID can be used to remove the file from memory.
 			id = canonicaliseAndStoreId(w, oldFileData);
+
+			// If this file is not the canonical file, should it be?
+			// This check is needed cos .upToDate() does not check the files entry for the canonical file is up to date.
+			if (!id.equals(oldFileData.getId())) {
+				final Collection<File> canonicalFiles = w.filesWithId(id);
+				if (allMissingFiles(canonicalFiles)) {
+					processUpdatedFileData(w, file, oldFileData, oldFileData);
+				}
+			}
 		}
 		if (oldFileData == null || !oldFileData.hasAuth(auth)) {
 			w.updateFileAuth(file, auth);
@@ -232,7 +241,12 @@ public class MediaMetadataStore {
 	}
 
 	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, final FileData oldFileData) throws SQLException, IOException {
-		FileData fileData = FileData.forFile(file).withId(oldFileData.getId()); // Slow.
+		final FileData newFileData = FileData.forFile(file).withId(oldFileData.getId()); // Slow.
+		return processUpdatedFileData(w, file, newFileData, oldFileData);
+	}
+
+	private FileData processUpdatedFileData(final WritableMediaDb w, final File file, final FileData newFileData, final FileData oldFileData) throws SQLException, IOException {
+		FileData fileData = newFileData;
 		Collection<FileAndId> filesToRemove = null;
 
 		// ID from hashes table will be copied into files table only if all other files with that hash are missing.
@@ -296,6 +310,13 @@ public class MediaMetadataStore {
 			ids.add(f.getId());
 		}
 		return ids;
+	}
+
+	private static boolean allMissingFiles(final Collection<File> files) {
+		for (final File file : files) {
+			if (file.exists()) return false;
+		}
+		return true;
 	}
 
 	private static boolean allMissing(final Collection<FileAndId> files) {
