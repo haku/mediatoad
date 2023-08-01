@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.FileData;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -99,7 +100,7 @@ public class ItemServlet extends HttpServlet {
 
 		w.println("<div>");
 		if (this.mediaDb != null) {
-			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req);
+			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req) && (!node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
 			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
 			try {
 				if (editMode) {
@@ -390,7 +391,7 @@ public class ItemServlet extends HttpServlet {
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
 		final String username = ReqAttr.USERNAME.get(req);
-		if (node == null || !node.isUserAuth(username)) {
+		if (node == null || !node.isUserAuth(username) || (node.hasAuthList() && !node.isUserAuthWithPermission(username, Permission.EDITTAGS))) {
 			ServletCommon.returnDenied(resp, username);
 			return;
 		}

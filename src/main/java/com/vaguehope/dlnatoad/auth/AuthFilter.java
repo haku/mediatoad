@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.auth.Users.User;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
@@ -65,19 +66,22 @@ public class AuthFilter implements Filter {
 		final HttpServletRequest req = (HttpServletRequest) request;
 		final HttpServletResponse resp = (HttpServletResponse) response;
 
-		String username = null;
+		User user = null;
 		final Cookie tokenCookie = ServletCommon.findCookie(req, Auth.TOKEN_COOKIE_NAME);
 		if (tokenCookie != null) {
-			username = this.authTokens.usernameForToken(tokenCookie.getValue());
-			// Continue even if token is invalid as auth may be attached or may not be required.
-
-			// Clean up invalid tokens.
-			if (username == null) {
+			final String username = this.authTokens.usernameForToken(tokenCookie.getValue());
+			if (username != null) {
+				user = this.users.getUser(username);
+			}
+			else {
+				// Clean up invalid tokens.
 				clearTokenCookie(resp);
 			}
+
+			// Continue even if token is invalid as auth may be attached or may not be required.
 		}
 
-		if (this.users != null && username == null && (isPost(req) || isLoginRequest(req))) {
+		if (this.users != null && user == null && (isPost(req) || isLoginRequest(req))) {
 			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 			if (authHeader64 != null
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
@@ -90,34 +94,26 @@ public class AuthFilter implements Filter {
 					logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
 					return;
 				}
-				final String user = authHeader.substring(0, x);
+				final String username = authHeader.substring(0, x);
 				final String pass = authHeader.substring(x + 1);
-				if (user == null || pass == null || user.isEmpty() || pass.isEmpty()) {
+				if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
 					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected missing creds for user: {}", user);
+					logRequest(req, resp, "Rejected missing creds for user: {}", username);
 					return;
 				}
-				if (!this.users.validUser(user, pass)) {
+				user = this.users.validUser(username, pass);
+				if (user == null) {
 					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected invalid creds for user: {}", user);
+					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
 					return;
 				}
-				setTokenCookie(user, resp);
-				username = user;
-				logRequest(req, resp, "Accepted creds for user: {}", username);
+				setTokenCookie(user.getUsername(), resp);
+				logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
 			}
 			else {
 				send401AndMaybePromptLogin(req, resp);
 				return;
 			}
-		}
-
-		if (username != null) {
-			ReqAttr.USERNAME.set(req, username);
-			// ATM all auth users get all permissions.
-			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
-			ReqAttr.ALLOW_UPNP_INSPECTOR.set(req, Boolean.TRUE);
-			ReqAttr.ALLOW_EDIT_TAGS.set(req, Boolean.TRUE);
 		}
 
 		final boolean needsAuth;
@@ -137,10 +133,21 @@ public class AuthFilter implements Filter {
 			return;
 		}
 
-		if (needsAuth && username == null) {
+		if (needsAuth && user == null) {
 			send401AndMaybePromptLogin(req, resp);
 			logRequest(req, resp, "Rejected request from unknown user when auth is required.");
 			return;
+		}
+
+
+		if (user != null) {
+			ReqAttr.USERNAME.set(req, user.getUsername());
+			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
+			ReqAttr.ALLOW_UPNP_INSPECTOR.set(req, Boolean.TRUE);
+
+			if (user.hasPermission(Permission.EDITTAGS)) {
+				ReqAttr.ALLOW_EDIT_TAGS.set(req, Boolean.TRUE);
+			}
 		}
 
 //		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
@@ -158,9 +165,9 @@ public class AuthFilter implements Filter {
 		chain.doFilter(request, response);
 	}
 
-	private void logRequest(HttpServletRequest req, HttpServletResponse resp, String msg, String... args) {
+	private void logRequest(final HttpServletRequest req, final HttpServletResponse resp, final String msg, final String... args) {
 		if (!this.printAccessLog) return;
-		Object[] allArgs = new Object[4 + args.length];
+		final Object[] allArgs = new Object[4 + args.length];
 		allArgs[0] = resp.getStatus();
 		allArgs[1] = req.getMethod();
 		allArgs[2] = req.getPathInfo();

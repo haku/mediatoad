@@ -6,14 +6,19 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -40,11 +45,10 @@ public class AuthList {
 		if (!dir.exists() || !dir.isDirectory()) {
 			throw new IOException("Can not load AUTH file for non existing directory: " + dir.getAbsolutePath());
 		}
-
-		final Set<String> names = getNamesForDir(dir);
-		if (names == null) return null;  // TODO arg for default auth list?
-		if (names.isEmpty()) return EMPTY_AUTH_LIST;
-		return new AuthList(names);
+		final AuthList list = getAuthListForDir(dir);
+		if (list == null) return null;
+		if (list.size() == 0) return EMPTY_AUTH_LIST;
+		return list;
 	}
 
 	/**
@@ -54,59 +58,83 @@ public class AuthList {
 		return new AuthList(new HashSet<>(Arrays.asList(names)));
 	}
 
-	private static final Cache<String, Optional<Set<String>>> AUTH_FILE_CACHE = CacheBuilder.newBuilder()
-			.expireAfterWrite(5, TimeUnit.SECONDS)
+	private static final Cache<String, Optional<AuthList>> AUTH_FILE_CACHE = CacheBuilder.newBuilder()
+			.expireAfterWrite(1, TimeUnit.MINUTES)
 			.build();
 
-	private static Set<String> getNamesForDir(final File dir) throws IOException {
+	private static AuthList getAuthListForDir(final File dir) throws IOException {
 		try {
-			return AUTH_FILE_CACHE.get(dir.getAbsolutePath(), () -> Optional.ofNullable(readNamesForDir(dir))).orElse(null);
+			return AUTH_FILE_CACHE.get(dir.getAbsolutePath(), () -> Optional.ofNullable(readAuthListForDir(dir))).orElse(null);
 		}
 		catch (final ExecutionException e) {
 			throw new IOException(e);
 		}
 	}
 
-	private static Set<String> readNamesForDir(final File dir) throws IOException {
+	private static AuthList readAuthListForDir(final File dir) throws IOException {
 		final File parentDir = dir.getAbsoluteFile().getParentFile();
-		final Set<String> parentNames = parentDir != null ? getNamesForDir(parentDir) : null;
+		final AuthList parentList = parentDir != null ? getAuthListForDir(parentDir) : null;
 
 		final File authFile = new File(dir, AUTH_FILE_NAME);
-		if (!authFile.exists()) return parentNames;
+		if (!authFile.exists()) return parentList;
 
-		final Set<String> names = readNamesFromAuthFile(authFile);
-		if (parentNames != null) names.retainAll(parentNames);
-		return names;
+		final Map<String, Set<Permission>> usernamesAndPermissions = readNamesAndPermissionsFromAuthFile(authFile);
+		final Set<String> names = usernamesAndPermissions.keySet();
+		if (parentList != null) names.retainAll(parentList.usernames());
+		return new AuthList(usernamesAndPermissions);
 	}
 
-	private static Set<String> readNamesFromAuthFile(final File authFile) throws IOException {
+	private static Map<String, Set<Permission>> readNamesAndPermissionsFromAuthFile(final File authFile) throws IOException {
 		final List<String> lines = FileUtils.readLines(authFile, Charset.forName("UTF-8"));
-		Set<String> names = null;
-		for (final String line : lines) {
-			final String l = line.trim();
-			if (l.length() < 1 || l.startsWith("#") || l.startsWith("//")) continue;
+		Map<String, Set<Permission>> ret = null;
+		for (String line : lines) {
+			line = line.trim();
+			if (line.length() < 1 || line.startsWith("#") || line.startsWith("//")) continue;
 
-			if (!C.USERNAME_PATTERN.matcher(l).matches()) {
-				LOG.warn("Invalid AUTH file {} contains username that does not match: {}", authFile.getAbsolutePath(), C.USERNAME_PATTERN);
-				return Collections.emptySet();
+			final String[] lineParts = line.split(" ");
+			final String name = lineParts[0];
+
+			if (!C.USERNAME_PATTERN.matcher(name).matches()) {
+				LOG.warn("Invalid AUTH file {} contains username that does not match {}: {}", authFile.getAbsolutePath(), C.USERNAME_PATTERN, name);
+				return Collections.emptyMap();
 			}
 
-			if (names == null) names = new HashSet<>();
-			names.add(l);
+			Set<Permission> permissions = null;
+			if (lineParts.length > 1) {
+				for (int i = 1; i < lineParts.length; i++) {
+					final String part = lineParts[i];
+					final Permission permission = Permission.fromKey(part);
+					if (permission != null) {
+						if (permissions == null) permissions = EnumSet.noneOf(Permission.class);
+						permissions.add(permission);
+					}
+					else {
+						LOG.warn("Invalid AUTH file {} contains invalid permission: {}", authFile.getAbsolutePath(), part);
+						return Collections.emptyMap();
+					}
+				}
+			}
+
+			if (ret == null) ret = new HashMap<>();
+			ret.put(name, permissions != null ? permissions : Collections.emptySet());
 		}
-		return names != null ? names : Collections.emptySet();
+		return ret != null ? ret : Collections.emptyMap();
 	}
 
 	private final BigInteger id;
-	private final Set<String> usernames;
+	private final Map<String, Set<Permission>> usernamesAndPermissions;
 
 	/**
 	 * usernames can not be null but it can be empty, which means no one is allowed.
 	 */
 	private AuthList(final Set<String> usernames) {
-		if (usernames == null) throw new IllegalStateException("Set usernames can not be null.");
-		this.usernames = Collections.unmodifiableSet(new TreeSet<>(usernames));  // Sort the list.
-		this.id = HashHelper.sha1(StringUtils.join(this.usernames, "\n"));
+		this(usernames.stream().collect(Collectors.toMap(Function.identity(), u -> Collections.emptySet())));
+	}
+
+	private AuthList(final Map<String, Set<Permission>> usernamesAndPermissions) {
+		if (usernamesAndPermissions == null) throw new IllegalStateException("Usernames can not be null.");
+		this.usernamesAndPermissions = Collections.unmodifiableMap(new TreeMap<>(usernamesAndPermissions));  // Sort the list.
+		this.id = HashHelper.sha1(StringUtils.join(this.usernamesAndPermissions.keySet(), "\n"));
 
 		// Probably excessive, but better to be sure.
 		if (this.id.equals(BigInteger.ZERO)) throw new IllegalStateException("AuthList can not SHA1 to 0.");
@@ -117,16 +145,23 @@ public class AuthList {
 	}
 
 	public Set<String> usernames() {
-		return this.usernames;
+		return this.usernamesAndPermissions.keySet();
 	}
 
 	public boolean hasUser(final String username) {
 		if (username == null) return false;
-		return this.usernames.contains(username);
+		return this.usernamesAndPermissions.containsKey(username);
+	}
+
+	public boolean hasUserWithPermission(final String username, final Permission permission) {
+		if (username == null) return false;
+		final Set<Permission> permissions = this.usernamesAndPermissions.get(username);
+		if (permissions == null) return false;
+		return permissions.contains(permission);
 	}
 
 	public int size() {
-		return this.usernames.size();
+		return this.usernamesAndPermissions.size();
 	}
 
 	@Override

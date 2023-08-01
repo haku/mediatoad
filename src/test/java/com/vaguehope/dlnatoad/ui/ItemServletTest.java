@@ -8,6 +8,7 @@ import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -67,7 +69,7 @@ public class ItemServletTest {
 	@Test
 	public void itRendersItemWithAddTagBox() throws Exception {
 		givenReqForUnprotectedItem();
-		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
+		givenUserWithEditTagsPermission();
 
 		this.undertest.doGet(this.req, this.resp);
 
@@ -77,12 +79,24 @@ public class ItemServletTest {
 	}
 
 	@Test
-	public void itDoesNotRenderProtectedItem() throws Exception {
-		final AuthList authlist = mock(AuthList.class);
-		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", this.contentTree.getRootNode(), authlist);
-		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
+	public void itRendersProtectedItemWithAddTagBox() throws Exception {
+		final AuthList authlist = makeAuthListWithEdittags();
+		givenReqForItem(authlist);
+		givenUserWithEditTagsPermission();
 
-		this.req.setPathInfo("/" + protecItems.get(0).getId());
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		// TODO this assert could be much better.
+		assertThat(this.resp.getContentAsString(), containsString("<input type=\"submit\" value=\"Add\">"));
+	}
+
+	@Test
+	public void itDoesNotRenderProtectedItemWhenNoAuth() throws Exception {
+		final AuthList authlist = mock(AuthList.class);
+		final ContentItem item = givenReqForItem(authlist);
+
+		this.req.setPathInfo("/" + item.getId());
 		this.undertest.doGet(this.req, this.resp);
 		assertEquals(401, this.resp.getStatus());
 
@@ -117,43 +131,91 @@ public class ItemServletTest {
 	}
 
 	@Test
-	public void itAddsTag() throws Exception {
-		final String itemId = givenReqForUnprotectedItem();
+	public void itBlocksAddingTagsToProtectedItemIfNotPermitted() throws Exception {
+		final AuthList authlist = makeAuthList();
+		givenReqForItem(authlist);
+		givenAddTagParams();
+		givenUserWithEditTagsPermission();
+
+		this.undertest.doPost(this.req, this.resp);
+
+		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals(403, this.resp.getStatus());
+		verifyNoInteractions(this.mediaDb);
+	}
+
+	@Test
+	public void itAddsTagToUnprotectedItem() throws Exception {
+		final ContentItem item = givenReqForUnprotectedItem();
 		final String tagToAdded = givenAddTagParams();
-		ReqAttr.USERNAME.set(this.req, "userfoo");
-		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
+		givenUserWithEditTagsPermission();
 
 		this.undertest.doPost(this.req, this.resp);
 
 		assertEquals("Tag added.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
-		assertEquals(tagToAdded, this.mediaDb.getTags(itemId, false).iterator().next().getTag());
+		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
 	}
 
 	@Test
-	public void itRemovesTag() throws Exception {
-		final String itemId = givenReqForUnprotectedItem();
+	public void itAddsTagToProtectedItemIfPermitted() throws Exception {
+		final AuthList authlist = makeAuthListWithEdittags();
+		final ContentItem item = givenReqForItem(authlist);
+		final String tagToAdded = givenAddTagParams();
+		givenUserWithEditTagsPermission();
+
+		this.undertest.doPost(this.req, this.resp);
+
+		assertEquals("Tag added.\n", this.resp.getContentAsString());
+		assertEquals(303, this.resp.getStatus());
+		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
+	}
+
+	@Test
+	public void itRemovesTagFromUnprotectedItem() throws Exception {
+		final ContentItem item = givenReqForUnprotectedItem();
 		final String tagToRm = givenRmTagParams();
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			w.addTag(itemId, tagToRm, 1);
+			w.addTag(item.getId(), tagToRm, 1);
 		}
-		ReqAttr.USERNAME.set(this.req, "userfoo");
-		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
+		givenUserWithEditTagsPermission();
 
 		this.undertest.doPost(this.req, this.resp);
 
 		assertEquals("Tags removed.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
-		assertFalse(this.mediaDb.getTags(itemId, false).iterator().hasNext());
+		assertFalse(this.mediaDb.getTags(item.getId(), false).iterator().hasNext());
 	}
 
-	private String givenReqForUnprotectedItem() throws IOException {
-		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode());
+	private static AuthList makeAuthList() {
+		final AuthList authlist = mock(AuthList.class);
+		when(authlist.hasUser("userfoo")).thenReturn(true);
+		return authlist;
+	}
+
+	private static AuthList makeAuthListWithEdittags() {
+		final AuthList authlist = makeAuthList();
+		when(authlist.hasUserWithPermission("userfoo", Permission.EDITTAGS)).thenReturn(true);
+		return authlist;
+	}
+
+	private ContentItem givenReqForUnprotectedItem() throws IOException {
+		return givenReqForItem(null);
+	}
+
+	private ContentItem givenReqForItem(final AuthList authlist) throws IOException {
+		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), authlist);
 		final List<ContentItem> items = this.mockContent.givenMockItems(10, dir);
-		final String itemId = items.get(0).getId();
-		this.req.setPathInfo("/" + itemId);
-		return itemId;
+
+		final ContentItem item = items.get(0);
+		this.req.setPathInfo("/" + item.getId());
+		return item;
+	}
+
+	private void givenUserWithEditTagsPermission() {
+		ReqAttr.USERNAME.set(this.req, "userfoo");
+		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 	}
 
 	private String givenAddTagParams() {

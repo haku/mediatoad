@@ -39,6 +39,7 @@ public class AuthListTest {
 		assertEquals(0, writeListAndReadDir("foo bar").size());
 		assertEquals(0, writeListAndReadDir("foobar(").size());
 		assertEquals(0, writeListAndReadDir("valid\nfoobar(").size());
+		assertEquals(0, writeListAndReadDir("foo +bar").size());
 	}
 
 	@Test
@@ -55,6 +56,17 @@ public class AuthListTest {
 				+ "anothername\n";
 		final AuthList actual = writeListAndReadDir(list);
 		assertThat(actual.usernames(), containsInAnyOrder("ausername", "anothername"));
+	}
+
+	@Test
+	public void itLoadsValidAuthListWithPermissions() throws Exception {
+		final String list = "//some comment\n"
+				+ "canwrite +edittags\n"
+				+ "readonly\n";
+		final AuthList actual = writeListAndReadDir(list);
+		assertThat(actual.usernames(), containsInAnyOrder("canwrite", "readonly"));
+		assertTrue(actual.hasUserWithPermission("canwrite", Permission.EDITTAGS));
+		assertFalse(actual.hasUserWithPermission("readonly", Permission.EDITTAGS));
 	}
 
 	@Test
@@ -78,6 +90,25 @@ public class AuthListTest {
 		writeListAndReadDir(dir1, "usera\nuserb\nuser1\nuser2");
 		final AuthList actual = writeListAndReadDir(dir2, "usera\nuserb\nuserc\nuser1\nuser2\nuser3");
 		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
+	}
+
+	@Test
+	public void itUsesTheIntersectionOfAuthFilesInParentDirsWithPermissionsTakenFromTheLeaf() throws Exception {
+		final File dir0 = this.tmp.newFolder();
+		final File dir1 = mkDir(dir0, "dir1");
+		final File dir2 = mkDir(dir1, "dir2");
+
+		final AuthList dir0A = writeListAndReadDir(dir0, "usera\nuser1");
+		final AuthList dir1A = writeListAndReadDir(dir1, "usera\nuserb\nuser1 +edittags\nuser2");
+		final AuthList dir2A = writeListAndReadDir(dir2, "usera +edittags\nuserb\nuserc\nuser1\nuser2\nuser3");
+
+		assertFalse(dir0A.hasUserWithPermission("usera", Permission.EDITTAGS));
+		assertFalse(dir1A.hasUserWithPermission("usera", Permission.EDITTAGS));
+		assertTrue(dir2A.hasUserWithPermission("usera", Permission.EDITTAGS));
+
+		assertFalse(dir0A.hasUserWithPermission("user1", Permission.EDITTAGS));
+		assertTrue(dir1A.hasUserWithPermission("user1", Permission.EDITTAGS));
+		assertFalse(dir2A.hasUserWithPermission("user1", Permission.EDITTAGS));
 	}
 
 	@Test

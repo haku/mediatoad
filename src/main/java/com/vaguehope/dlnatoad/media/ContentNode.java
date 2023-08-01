@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.util.ExConsumer;
 
 /**
@@ -63,6 +64,11 @@ public class ContentNode extends AbstractContent {
 	public boolean isUserAuth(final String username) {
 		if (this.authList == null) return true;
 		return this.authList.hasUser(username);
+	}
+
+	public boolean isUserAuthWithPermission(final String username, final Permission permission) {
+		if (this.authList == null) return false;
+		return this.authList.hasUserWithPermission(username, permission);
 	}
 
 	public String getSortKey() {

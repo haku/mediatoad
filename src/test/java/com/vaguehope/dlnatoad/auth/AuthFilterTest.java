@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.auth.Users.User;
 import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class AuthFilterTest {
@@ -302,7 +303,9 @@ public class AuthFilterTest {
 
 	private void setValidCreds() {
 		this.req.addHeader("Authorization", "Basic aDRja2VyOmh1bnRlcjI=");
-		when(this.users.validUser("h4cker", "hunter2")).thenReturn(true);
+		final User user = new User("h4cker", null, null);
+		when(this.users.validUser("h4cker", "hunter2")).thenReturn(user);
+		when(this.users.getUser("h4cker")).thenReturn(user);
 	}
 
 	private void setInvalidCreds() {
@@ -312,6 +315,8 @@ public class AuthFilterTest {
 	private void setValidSessionToken() throws IOException {
 		setSessionTokenCookie("my-session-token");
 		when(this.authTokens.usernameForToken("my-session-token")).thenReturn("h4cker");
+		final User user = new User("h4cker", null, null);
+		when(this.users.getUser("h4cker")).thenReturn(user);
 	}
 
 	private void setInvalidSessionToken() {
