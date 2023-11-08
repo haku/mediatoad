@@ -10,6 +10,7 @@ ExecStart=/usr/bin/java \
           -XX:+PerfDisableSharedMem \
           -XX:-UsePerfData \
           -jar /home/librarian/dlnatoad/dlnatoad.jar \
+          --idfile /home/librarian/dlnatoad/systemid \
           --tree /home/librarian/dlnatoad/tree \
           --db /home/librarian/dlnatoad/db \
           --thumbs /home/librarian/dlnatoad/thumbs

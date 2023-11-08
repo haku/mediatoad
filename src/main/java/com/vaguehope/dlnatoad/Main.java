@@ -43,6 +43,7 @@ import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.dlnaserver.DlnaService;
 import com.vaguehope.dlnatoad.dlnaserver.MediaServer;
 import com.vaguehope.dlnatoad.dlnaserver.NodeConverter;
+import com.vaguehope.dlnatoad.dlnaserver.SystemId;
 import com.vaguehope.dlnatoad.importer.MetadataImporter;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
@@ -198,7 +199,8 @@ public final class Main {
 		watcherThread.setDaemon(true);
 		watcherThread.start();
 
-		upnpService.getRegistry().addDevice(new MediaServer(contentTree, nodeConverter, hostName, args.isPrintAccessLog(), externalUrls.getSelfUri()).getDevice());
+		final SystemId systemId = new SystemId(args);
+		upnpService.getRegistry().addDevice(new MediaServer(systemId, contentTree, nodeConverter, hostName, args.isPrintAccessLog(), externalUrls.getSelfUri()).getDevice());
 
 		// Periodic rescan to catch missed devices.
 		final ScheduledExecutorService upnpExSvc = new ScheduledThreadPoolExecutor(1,

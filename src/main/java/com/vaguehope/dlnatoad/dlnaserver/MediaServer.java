@@ -16,10 +16,7 @@ import org.fourthline.cling.model.meta.ManufacturerDetails;
 import org.fourthline.cling.model.meta.ModelDetails;
 import org.fourthline.cling.model.types.DeviceType;
 import org.fourthline.cling.model.types.UDADeviceType;
-import org.fourthline.cling.model.types.UDN;
 import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -32,13 +29,10 @@ public class MediaServer {
 
 	private static final String DEVICE_TYPE = "MediaServer";
 	private static final int VERSION = 1;
-	private static final Logger LOG = LoggerFactory.getLogger(MediaServer.class);
 
 	private final LocalDevice localDevice;
 
-	public MediaServer (final ContentTree contentTree, final NodeConverter nodeConverter, final String hostName, final boolean printAccessLog, final URI presentationUri) throws ValidationException, IOException {
-		final UDN usi = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
-		LOG.info("uniqueSystemIdentifier: {}", usi);
+	public MediaServer (final SystemId systemId, final ContentTree contentTree, final NodeConverter nodeConverter, final String hostName, final boolean printAccessLog, final URI presentationUri) throws ValidationException, IOException {
 		final DeviceType type = new UDADeviceType(DEVICE_TYPE, VERSION);
 		final DeviceDetails details = new DeviceDetails(
 				C.METADATA_MODEL_NAME + " (" + hostName + ")",
@@ -58,7 +52,7 @@ public class MediaServer {
 		final LocalService<ConnectionManagerService> connManSrv = new AnnotationLocalServiceBinder().read(ConnectionManagerService.class);
 		connManSrv.setManager(new DefaultServiceManager<>(connManSrv, ConnectionManagerService.class));
 
-		this.localDevice = new LocalDevice(new DeviceIdentity(usi, C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, icon, new LocalService[] { contDirSrv, connManSrv });
+		this.localDevice = new LocalDevice(new DeviceIdentity(systemId.getUsi(), C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, icon, new LocalService[] { contDirSrv, connManSrv });
 	}
 
 	public LocalDevice getDevice () {

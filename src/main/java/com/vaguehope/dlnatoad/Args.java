@@ -23,6 +23,7 @@ public class Args {
 	@Option(name = "-s", aliases = { "--simplify" }, usage = "Simplify directory structure.") private boolean simplifyHierarchy;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "Print log lines for various events.") private boolean verboseLog;
+	@Option(name = "--idfile", usage = "Path for system UUID persistance.") private String idfile;
 	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
 	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
@@ -107,6 +108,10 @@ public class Args {
 
 	public boolean isVerboseLog() {
 		return this.verboseLog;
+	}
+
+	public File getIdfile() {
+		return this.idfile != null ? new File(this.idfile) : null;
 	}
 
 	public File getUserfile() {
