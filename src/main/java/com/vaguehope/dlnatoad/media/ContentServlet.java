@@ -11,10 +11,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.net.HttpHeaders;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.util.MyFileServlet;
-import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ContentServlet extends MyFileServlet {
 
@@ -23,13 +21,11 @@ public class ContentServlet extends MyFileServlet {
 
 	private final ContentTree contentTree; // NOSONAR
 	private final ContentServingHistory contentServingHistory;
-	private final boolean printAccessLog;
 
-	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory, final boolean printAccessLog) {
+	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory) {
 		super();
 		this.contentTree = contentTree;
 		this.contentServingHistory = contentServingHistory;
-		this.printAccessLog = printAccessLog;
 	}
 
 	@Override
@@ -42,15 +38,6 @@ public class ContentServlet extends MyFileServlet {
 		}
 		finally {
 			this.contentServingHistory.recordEnd(remoteAddr, requestURI);
-			if (this.printAccessLog) {
-				final String ranges = StringHelper.join(req.getHeaders(HttpHeaders.RANGE), ",");
-				if (ranges != null) {
-					LOG.info("{} {} {} (r:{}) {}", resp.getStatus(), req.getMethod(), requestURI, ranges, remoteAddr);
-				}
-				else {
-					LOG.info("{} {} {} {}", resp.getStatus(), req.getMethod(), requestURI, remoteAddr);
-				}
-			}
 		}
 	}
 

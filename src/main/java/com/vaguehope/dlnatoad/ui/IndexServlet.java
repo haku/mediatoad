@@ -16,8 +16,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.text.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -35,40 +33,28 @@ import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 
 public class IndexServlet extends HttpServlet {
 
-	private static final String DO_NOT_LOG_ATTR = "do_not_log";
 	private static final ThreadSafeDateFormatter RFC1123_DATE = new ThreadSafeDateFormatter("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-	private static final Logger LOG = LoggerFactory.getLogger(IndexServlet.class);
 	private static final long serialVersionUID = -8907271726001369264L;
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
 	private final DbCache dbCache;
 	private final ContentServlet contentServlet;
-	private final boolean printAccessLog;
 
-	public IndexServlet (final ServletCommon servletCommon, final ContentTree contentTree, final DbCache dbCache, final ContentServlet contentServlet, final boolean printAccessLog) {
+	public IndexServlet (final ServletCommon servletCommon, final ContentTree contentTree, final DbCache dbCache, final ContentServlet contentServlet) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.dbCache = dbCache;
 		this.contentServlet = contentServlet;
-		this.printAccessLog = printAccessLog;
 	}
 
 	@Override
 	protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		try {
-			if ("PROPFIND".equals(req.getMethod())) {
-				doPropfind(req, resp);
-				return;
-			}
-			super.service(req, resp);
+		if ("PROPFIND".equals(req.getMethod())) {
+			doPropfind(req, resp);
+			return;
 		}
-		finally {
-			if (this.printAccessLog && req.getAttribute(DO_NOT_LOG_ATTR) == null) {
-				// TODO should log getRequestURI() instead?
-				LOG.info("{} {} {} {}", resp.getStatus(), req.getMethod(), req.getPathInfo(), req.getRemoteAddr());
-			}
-		}
+		super.service(req, resp);
 	}
 
 	@Override
@@ -87,7 +73,6 @@ public class IndexServlet extends HttpServlet {
 		final ContentNode contentNode = this.contentTree.getNode(id);
 		// ContentServlet does extra parsing and Index only handles directories anyway.
 		if (contentNode == null) {
-			req.setAttribute(DO_NOT_LOG_ATTR, Boolean.TRUE);
 			this.contentServlet.service(req, resp);
 			return;
 		}

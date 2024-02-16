@@ -68,6 +68,7 @@ import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
+import com.vaguehope.dlnatoad.util.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.util.Watcher;
 
 public final class Main {
@@ -295,6 +296,10 @@ public final class Main {
 		servletHandler.setMaxFormContentSize(1024);
 		servletHandler.setMaxFormKeys(10);
 
+		if (args.isPrintAccessLog()) {
+			servletHandler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		}
+
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
@@ -302,7 +307,7 @@ public final class Main {
 		servletHandler.addFilter(authFilterHolder, "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory, args.isPrintAccessLog());
+		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory);
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
 		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
@@ -315,7 +320,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new DirServlet(contentTree)), "/" + C.DIR_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, dbCache, contentServlet, args.isPrintAccessLog())), "/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(servletCommon, contentTree, dbCache, contentServlet)), "/*");
 
 		final HandlerList handler = new HandlerList();
 		handler.setHandlers(new Handler[] { servletHandler });
