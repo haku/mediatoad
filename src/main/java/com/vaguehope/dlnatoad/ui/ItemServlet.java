@@ -94,9 +94,14 @@ public class ItemServlet extends HttpServlet {
 
 		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, w);
 
-		w.print("<h2>");
-		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
-		w.println("</h2>");
+		w.println("<div class=\"mainimage\">");
+		w.print("<img src=\"../");
+		w.print(C.CONTENT_PATH_PREFIX);
+		w.print(item.getId());
+		w.print(".");
+		w.print(item.getFormat().getExt());
+		w.println("\">");
+		w.println("</div>");
 
 		w.println("<div>");
 		if (this.mediaDb != null) {
@@ -115,7 +120,7 @@ public class ItemServlet extends HttpServlet {
 			}
 
 			if (allowEditTags) {
-				w.println("<div style=\"padding-top: 0.5em; display: flex; justify-content: center;\">");
+				w.println("<div style=\"padding: 0.5em; display: flex; justify-content: center;\">");
 				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
 				w.print("?edit=true" + editReqQueryParms);
 				w.println("\">Edit</a>");
@@ -134,15 +139,6 @@ public class ItemServlet extends HttpServlet {
 				w.println("</div>");
 			}
 		}
-		w.println("</div>");
-
-		w.println("<div class=\"mainimage\">");
-		w.print("<img src=\"../");
-		w.print(C.CONTENT_PATH_PREFIX);
-		w.print(item.getId());
-		w.print(".");
-		w.print(item.getFormat().getExt());
-		w.println("\">");
 		w.println("</div>");
 
 		w.print("<a href=\"../");
@@ -164,11 +160,12 @@ public class ItemServlet extends HttpServlet {
 			try {
 				final FileData fileData = this.mediaDb.getFileData(item.getFile());
 				if (fileData != null) {
-					w.println("<pre>");
+					w.print("<div style=\"padding: 0.5em; font-family: monospace; white-space: pre-wrap;\">");
+					w.println(item.getTitle());
 					w.println(FileHelper.readableFileSize(fileData.getSize()));
 					w.print("MD5: ");
 					w.println(fileData.getMd5());
-					w.println("</pre>");
+					w.println("</div>");
 				}
 			}
 			catch (final SQLException e) {
