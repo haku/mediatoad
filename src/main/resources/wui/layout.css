@@ -1,3 +1,7 @@
+h2 {
+  overflow: scroll;
+}
+
 .list_link_row {
   display: flex;
   justify-content: flex-end;
