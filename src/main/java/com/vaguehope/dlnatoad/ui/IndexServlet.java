@@ -110,7 +110,11 @@ public class IndexServlet extends HttpServlet {
 		this.servletCommon.printNodeSubNodesAndItems(w, contentNode, nodesUserHasAuth, sort);
 
 		printTopTags(w, contentNode, username);
-		this.servletCommon.appendDebugFooter(req, w, "");
+
+		if (ContentGroup.ROOT.getId().equals(contentNode.getId())) {
+			this.servletCommon.appendDebugFooter(req, w, "");
+		}
+
 		this.servletCommon.endBody(w);
 	}
 

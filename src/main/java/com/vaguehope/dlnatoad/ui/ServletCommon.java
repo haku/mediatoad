@@ -374,10 +374,11 @@ public class ServletCommon {
 	public void appendDebugFooter(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
 		w.println("<p>");
 
+		w.print("active playbacks: ");
 		w.print(this.contentServingHistory.getActiveCount());
-		w.print(" active playbacks, ");
+		w.print(", ");
 		w.print(this.contentServingHistory.getRecentlyActiveCount(TimeUnit.MINUTES.toSeconds(15)));
-		w.print(" active in last 15 minutes.");
+		w.print(" in last 15 minutes.");
 		w.println("</br>");
 
 		w.print("content: ");
@@ -385,6 +386,16 @@ public class ServletCommon {
 		w.print(" nodes, ");
 		w.print(this.contentTree.getItemCount());
 		w.println(" items.</br>");
+
+		final long totalMemory = Runtime.getRuntime().totalMemory();
+		final long usedMemory = totalMemory - Runtime.getRuntime().freeMemory();
+		w.print("heap: ");
+		w.print(FileHelper.readableFileSize(usedMemory));
+		w.print(" of ");
+		w.print(FileHelper.readableFileSize(totalMemory));
+		w.print(" (max ");
+		w.print(FileHelper.readableFileSize(Runtime.getRuntime().maxMemory()));
+		w.println(").</br>");
 
 		w.println("</p>");
 
