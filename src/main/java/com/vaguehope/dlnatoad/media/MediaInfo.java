@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.ffmpeg.Ffprobe;
 import com.vaguehope.dlnatoad.ffmpeg.FfprobeInfo;
@@ -48,26 +49,28 @@ public class MediaInfo {
 		@Override
 		public void run () {
 			try {
-				this.item.setDurationMillis(readDurationMillis());
+				final FileInfo info = readInfo();
+				if (info != null && info.hasDuration()) this.item.setDurationMillis(info.getDurationMillis());
+				// TODO also read width, height.
 			}
 			catch (final Exception e) {
-				LOG.warn("Failed to read duration: \"{}\" {}", this.file.getAbsolutePath(), e.toString());
+				LOG.warn("Failed to read info: \"{}\" {}", this.file.getAbsolutePath(), e.toString());
 			}
 		}
 
-		private long readDurationMillis () throws IOException, SQLException, InterruptedException {
-			final long storedDurationMillis = this.mediaMetadataStore.readFileDurationMillis(this.file);
-			if (storedDurationMillis > 0) return storedDurationMillis;
+		private FileInfo readInfo () throws IOException, SQLException, InterruptedException {
+			final FileInfo storedInfo = this.mediaMetadataStore.readFileInfo(this.file);
+			if (storedInfo != null) return storedInfo;
 
-			final FfprobeInfo info = Ffprobe.inspect(this.file);
-			final Long readDuration = info.getDurationMillis();
-			if (readDuration != null && readDuration > 0) {
-				this.mediaMetadataStore.storeFileDurationMillisAsync(this.file, readDuration);
-				return readDuration;
+			final FfprobeInfo probeInfo = Ffprobe.inspect(this.file);
+			if (probeInfo.hasDuration() || probeInfo.hasWidthAndHeight()) {
+				final FileInfo info = new FileInfo(probeInfo.getDurationMillis(), probeInfo.getWidth(), probeInfo.getHeight());
+				this.mediaMetadataStore.storeFileInfoAsync(this.file, info);
+				return info;
 			}
 
-			LOG.warn("Failed to read duration: {}", this.file.getAbsolutePath());
-			return 0;
+			LOG.warn("Failed to read info: {}", this.file.getAbsolutePath());
+			return null;
 		}
 
 	}

@@ -244,18 +244,20 @@ public class WritableMediaDb implements Closeable {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	//	Durations.
+	//	Infos.
 
-	protected void storeDurations(final List<FileAndDuration> toStore) throws SQLException {
-		final List<FileAndDuration> toInsert = new ArrayList<>();
+	protected void storeInfos(final List<FileAndInfo> toStore) throws SQLException {
+		final List<FileAndInfo> toInsert = new ArrayList<>();
 
 		final PreparedStatement stUpdate = this.conn.prepareStatement(
-				"UPDATE durations SET size=?,duration=? WHERE key=?;");
+				"UPDATE infos SET size=?,duration=?,width=?,height=? WHERE key=?;");
 		try {
-			for (final FileAndDuration fad : toStore) {
-				stUpdate.setLong(1, fad.getFile().length());
-				stUpdate.setLong(2, fad.getDuration());
-				stUpdate.setString(3, fad.getFile().getAbsolutePath());
+			for (final FileAndInfo fai : toStore) {
+				stUpdate.setLong(1, fai.getFile().length());
+				stUpdate.setLong(2, fai.getInfo().getDurationMillis());
+				stUpdate.setInt(3, fai.getInfo().getWidth());
+				stUpdate.setInt(4, fai.getInfo().getHeight());
+				stUpdate.setString(5, fai.getFile().getAbsolutePath());
 				stUpdate.addBatch();
 			}
 			final int[] nUpdated = stUpdate.executeBatch();
@@ -271,12 +273,14 @@ public class WritableMediaDb implements Closeable {
 		}
 
 		final PreparedStatement stInsert = this.conn.prepareStatement(
-				"INSERT INTO durations (key,size,duration) VALUES (?,?,?);");
+				"INSERT INTO infos (key,size,duration,width,height) VALUES (?,?,?,?,?);");
 		try {
-			for (final FileAndDuration fad : toInsert) {
-				stInsert.setString(1, fad.getFile().getAbsolutePath());
-				stInsert.setLong(2, fad.getFile().length());
-				stInsert.setLong(3, fad.getDuration());
+			for (final FileAndInfo fai : toInsert) {
+				stInsert.setString(1, fai.getFile().getAbsolutePath());
+				stInsert.setLong(2, fai.getFile().length());
+				stInsert.setLong(3, fai.getInfo().getDurationMillis());
+				stInsert.setInt(4, fai.getInfo().getWidth());
+				stInsert.setInt(5, fai.getInfo().getHeight());
 				stInsert.addBatch();
 			}
 			final int[] nInserted = stInsert.executeBatch();

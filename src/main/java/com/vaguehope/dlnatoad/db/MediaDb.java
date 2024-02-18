@@ -66,9 +66,13 @@ public class MediaDb {
 					+ "hash STRING NOT NULL PRIMARY KEY, id STRING NOT NULL);");
 			executeSql("CREATE INDEX hashes_idx ON hashes (id);");
 		}
-		if (!tableExists("durations")) {
-			executeSql("CREATE TABLE durations ("
-					+ "key STRING NOT NULL PRIMARY KEY, size INT NOT NULL, duration INT NOT NULL);");
+		if (!tableExists("infos")) {
+			executeSql("CREATE TABLE infos ("
+					+ "key STRING NOT NULL PRIMARY KEY, "
+					+ "size INT NOT NULL, "
+					+ "duration INT, "
+					+ "width INT, "
+					+ "height INT);");
 		}
 	}
 
@@ -140,25 +144,27 @@ public class MediaDb {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	// Durations.
+	// File Info; duration, width, height.
 
-	protected long readDurationCheckingFileSize (final String key, final long expectedSize) throws SQLException {
+	protected FileInfo readInfoCheckingFileSize (final String key, final long expectedSize) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
-				"SELECT size, duration FROM durations WHERE key=?;");
+				"SELECT size, duration, width, height FROM infos WHERE key=?;");
 		try {
 			st.setString(1, key);
 			st.setMaxRows(2);
 			final ResultSet rs = st.executeQuery();
 			try {
-				if (!rs.next()) return 0;
+				if (!rs.next()) return null;
 
 				final long storedSize = rs.getLong(1);
 				final long duration = rs.getLong(2);
+				final int width = rs.getInt(3);
+				final int height = rs.getInt(4);
 
 				if (rs.next()) throw new SQLException("Query for key '" + key + "' retured more than one result.");
+				if (expectedSize != storedSize) return null;
 
-				if (expectedSize != storedSize) return 0;
-				return duration;
+				return new FileInfo(duration, width, height);
 			}
 			finally {
 				rs.close();

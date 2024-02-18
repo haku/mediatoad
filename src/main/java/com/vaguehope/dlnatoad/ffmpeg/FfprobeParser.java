@@ -22,7 +22,9 @@ public class FfprobeParser implements Listener<String> {
 
 	private final Set<String> codecs = new LinkedHashSet<>();
 	private final Set<String> profiles = new LinkedHashSet<>();
-	private Long durationMillis = null;
+	private long durationMillis = 0;
+	private int width = 0;
+	private int height = 0;
 
 	@Override
 	public void onAnswer (final String line) {
@@ -40,7 +42,7 @@ public class FfprobeParser implements Listener<String> {
 				final String val = StringHelper.removeEndQuotes(parts[1]);
 				if (!"N/A".equalsIgnoreCase(val)) {
 					final long millis = parseDurationStringToMillis(val);
-					if (this.durationMillis == null || millis > this.durationMillis) this.durationMillis = millis;
+					if (millis > this.durationMillis) this.durationMillis = millis;
 				}
 			}
 			catch (final NumberFormatException e) {
@@ -53,8 +55,24 @@ public class FfprobeParser implements Listener<String> {
 				if (!"N/A".equalsIgnoreCase(val)) {
 					final double seconds = Double.parseDouble(val);
 					final long millis = (long) (seconds * 1000d);
-					if (this.durationMillis == null || millis > this.durationMillis) this.durationMillis = millis;
+					if (millis > this.durationMillis) this.durationMillis = millis;
 				}
+			}
+			catch (final NumberFormatException e) {
+				LOG.warn("Failed to parse {}: {}", line, e.toString());
+			}
+		}
+		else if (parts[0].endsWith(".width")) {
+			try {
+				this.width = Integer.parseInt(parts[1], 10);
+			}
+			catch (final NumberFormatException e) {
+				LOG.warn("Failed to parse {}: {}", line, e.toString());
+			}
+		}
+		else if (parts[0].endsWith(".height")) {
+			try {
+				this.height = Integer.parseInt(parts[1], 10);
 			}
 			catch (final NumberFormatException e) {
 				LOG.warn("Failed to parse {}: {}", line, e.toString());
@@ -76,7 +94,7 @@ public class FfprobeParser implements Listener<String> {
 	}
 
 	public FfprobeInfo build () {
-		return new FfprobeInfo(this.codecs, this.profiles, this.durationMillis);
+		return new FfprobeInfo(this.codecs, this.profiles, this.durationMillis, this.width, this.height);
 	}
 
 }

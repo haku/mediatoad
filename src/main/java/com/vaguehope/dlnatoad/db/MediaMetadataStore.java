@@ -27,12 +27,12 @@ public class MediaMetadataStore {
 
 	private static final long FILE_BATCH_START_DELAY_MILLIS = 100;  // Yield to other activities / DB writers.
 	private static final long FILE_BATCH_MAX_DURATION_NANOS = TimeUnit.SECONDS.toNanos(10);
-	private static final int DURATION_WRITE_INTERVAL_SECONDS = 30;
+	private static final int INFO_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
 
 	private final BlockingQueue<FileTask> fileQueue = new LinkedBlockingQueue<>();
 	private final AtomicBoolean fileIdWorkerRunning = new AtomicBoolean(false);
-	private final BlockingQueue<FileAndDuration> storeDuraionQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<FileAndInfo> storeDuraionQueue = new LinkedBlockingQueue<>();
 
 	private final MediaDb mediaDb;
 	private final ScheduledExecutorService exSvc;
@@ -42,7 +42,7 @@ public class MediaMetadataStore {
 		this.mediaDb = mediaDb;
 		this.exSvc = exSvc;
 		this.verboseLog = verboseLog;
-		exSvc.scheduleWithFixedDelay(new DurationWorker(), 0, DURATION_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+		exSvc.scheduleWithFixedDelay(new InfoWorker(), 0, INFO_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
 	public MediaDb getMediaDb() {
@@ -328,30 +328,30 @@ public class MediaMetadataStore {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	public long readFileDurationMillis(final File file) throws SQLException {
-		return this.mediaDb.readDurationCheckingFileSize(file.getAbsolutePath(), file.length());
+	public FileInfo readFileInfo(final File file) throws SQLException {
+		return this.mediaDb.readInfoCheckingFileSize(file.getAbsolutePath(), file.length());
 	}
 
-	public void storeFileDurationMillisAsync(final File file, final long duration) throws SQLException, InterruptedException {
-		this.storeDuraionQueue.put(new FileAndDuration(file, duration));
+	public void storeFileInfoAsync(final File file, final FileInfo info) throws SQLException, InterruptedException {
+		this.storeDuraionQueue.put(new FileAndInfo(file, info));
 	}
 
-	private class DurationWorker implements Runnable {
+	private class InfoWorker implements Runnable {
 
 		@Override
 		public void run() {
 			try {
-				final List<FileAndDuration> todo = new ArrayList<>();
+				final List<FileAndInfo> todo = new ArrayList<>();
 				MediaMetadataStore.this.storeDuraionQueue.drainTo(todo);
 				if (todo.size() > 0) {
 					try (final WritableMediaDb w = MediaMetadataStore.this.mediaDb.getWritable()) {
-						w.storeDurations(todo);
+						w.storeInfos(todo);
 					}
-					LOG.info("Batch duration write for {} files.", todo.size());
+					LOG.info("Batch info write for {} files.", todo.size());
 				}
 			}
 			catch (final Exception e) {
-				LOG.error("Scheduled batch duration writer error.", e);
+				LOG.error("Scheduled batch info writer error.", e);
 			}
 		}
 

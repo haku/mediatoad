@@ -324,9 +324,7 @@ public class MediaIndex implements FileListener {
 			if (contentGroup == ContentGroup.VIDEO) {
 				findSubtitlesForItem(item, file);
 			}
-			// TODO mediaInfo on reads duration ATM, but could also ready width/height for all types.
-			// TODO remove this condition once width/height are read.
-			if (contentGroup == ContentGroup.VIDEO || contentGroup == ContentGroup.AUDIO) {
+			if (contentGroup == ContentGroup.VIDEO || contentGroup == ContentGroup.AUDIO || contentGroup == ContentGroup.IMAGE) {
 				this.mediaInfo.readInfoAsync(file, item);
 			}
 

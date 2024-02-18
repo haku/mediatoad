@@ -332,29 +332,32 @@ public class MediaMetadataStoreTest {
 	}
 
 	@Test
-	public void itStoresAndRetrivesDuration () throws Exception {
+	public void itStoresAndRetrivesInfo () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 640, 480));
 		this.durationWorker.run();
-		assertEquals(1234567890123L, this.undertest.readFileDurationMillis(f1));
+		assertEquals(1234567890123L, this.undertest.readFileInfo(f1).getDurationMillis());
+		assertEquals(640, this.undertest.readFileInfo(f1).getWidth());
+		assertEquals(480, this.undertest.readFileInfo(f1).getHeight());
 	}
 
 	@Test
-	public void itReturnsZeroWhenFileSizeChangesUpdates () throws Exception {
+	public void itReturnsNullWhenFileSizeChangesUpdates () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 0, 0));
 		this.durationWorker.run();
 		FileUtils.writeStringToFile(f1, "abc", Charset.forName("UTF-8"));
-		assertEquals(0L, this.undertest.readFileDurationMillis(f1));
+		assertEquals(null, this.undertest.readFileInfo(f1));
 	}
 
 	@Test
 	public void itUpdatesStoredDuration () throws Exception {
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileDurationMillisAsync(f1, 1234567890123L);
+		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 0, 0));
 		this.durationWorker.run();
-		this.undertest.storeFileDurationMillisAsync(f1, 12345678901234L);
+		this.undertest.storeFileInfoAsync(f1, new FileInfo(12345678901234L, 0, 0));
 		this.durationWorker.run();
+		assertEquals(12345678901234L, this.undertest.readFileInfo(f1).getDurationMillis());
 	}
 
 	private File mockMediaFile (final String name) throws IOException {
