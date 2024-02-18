@@ -18,6 +18,8 @@ public class ContentItem extends AbstractContent {
 	private final List<ContentItem> attachments = new ArrayList<>();
 
 	private volatile long durationMillis;
+	private volatile int width;
+	private volatile int height;
 	private volatile ContentItem art;
 	private volatile Metadata metadata;
 	private volatile long fileLength = 0L;
@@ -52,6 +54,11 @@ public class ContentItem extends AbstractContent {
 
 	public void setMetadata(final Metadata metadata) {
 		this.metadata = metadata;
+	}
+
+	public void setWidthAndHeight(int width, int height) {
+		this.width = width;
+		this.height = height;
 	}
 
 	/**
@@ -115,6 +122,14 @@ public class ContentItem extends AbstractContent {
 
 	public long getDurationMillis() {
 		return this.durationMillis;
+	}
+
+	public int getWidth() {
+		return this.width;
+	}
+
+	public int getHeight() {
+		return this.height;
 	}
 
 	public ContentItem getArt() {

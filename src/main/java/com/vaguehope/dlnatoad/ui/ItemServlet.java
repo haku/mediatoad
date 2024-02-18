@@ -162,6 +162,11 @@ public class ItemServlet extends HttpServlet {
 				if (fileData != null) {
 					w.print("<div style=\"padding: 0.5em; font-family: monospace; white-space: pre-wrap;\">");
 					w.println(item.getTitle());
+
+					w.print(item.getWidth());
+					w.print(" × ");
+					w.println(item.getHeight());
+
 					w.println(FileHelper.readableFileSize(fileData.getSize()));
 					w.print("MD5: ");
 					w.println(fileData.getMd5());

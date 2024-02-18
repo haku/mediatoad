@@ -50,8 +50,14 @@ public class MediaInfo {
 		public void run () {
 			try {
 				final FileInfo info = readInfo();
-				if (info != null && info.hasDuration()) this.item.setDurationMillis(info.getDurationMillis());
-				// TODO also read width, height.
+				if (info != null) {
+					if (info.hasDuration()) {
+						this.item.setDurationMillis(info.getDurationMillis());
+					}
+					if (info.hasWidthAndHeight()) {
+						this.item.setWidthAndHeight(info.getWidth(), info.getHeight());
+					}
+				}
 			}
 			catch (final Exception e) {
 				LOG.warn("Failed to read info: \"{}\" {}", this.file.getAbsolutePath(), e.toString());
