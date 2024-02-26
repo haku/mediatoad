@@ -64,8 +64,9 @@ public class FfprobeParser implements Listener<String> {
 		}
 		else if (parts[0].endsWith(".width")) {
 			try {
-				if (!"N/A".equalsIgnoreCase(parts[1])) {
-					this.width = Integer.parseInt(parts[1], 10);
+				final String val = StringHelper.removeEndQuotes(parts[1]);
+				if (!"N/A".equalsIgnoreCase(val)) {
+					this.width = Integer.parseInt(val, 10);
 				}
 			}
 			catch (final NumberFormatException e) {
@@ -74,8 +75,9 @@ public class FfprobeParser implements Listener<String> {
 		}
 		else if (parts[0].endsWith(".height")) {
 			try {
-				if (!"N/A".equalsIgnoreCase(parts[1])) {
-					this.height = Integer.parseInt(parts[1], 10);
+				final String val = StringHelper.removeEndQuotes(parts[1]);
+				if (!"N/A".equalsIgnoreCase(val)) {
+					this.height = Integer.parseInt(val, 10);
 				}
 			}
 			catch (final NumberFormatException e) {
