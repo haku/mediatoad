@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -83,6 +85,25 @@ public class ServletCommon {
 		ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
 	}
 
+	public Map<String, Object> baseTemplateScope(final HttpServletRequest req, final String title, final String pathPrefix) {
+		final Map<String, Object> scopes = new HashMap<>();
+		scopes.put("db_enabled", this.mediaDbEnabled);
+		scopes.put("path_prefix", pathPrefix);
+		scopes.put("username", ReqAttr.USERNAME.get(req));
+		scopes.put("allow_remote_search", ReqAttr.ALLOW_REMOTE_SEARCH.get(req));
+		scopes.put("page_title", pageTitle(title));
+		return scopes;
+	}
+
+	private String pageTitle(final String title) {
+		String ret = "";
+		if (StringUtils.isNotBlank(title)) {
+			ret = title + " - ";
+		}
+		ret += C.METADATA_MODEL_NAME + " (" + this.hostName + ")";
+		return ret;
+	}
+
 	public static void setHtmlContentType(final HttpServletResponse resp) {
 		resp.setContentType("text/html; charset=utf-8");
 	}
@@ -98,14 +119,7 @@ public class ServletCommon {
 		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
 
 		w.print("<title>");
-		if (StringUtils.isNotBlank(title)) {
-			w.print(title);
-			w.print(" - ");
-		}
-		w.print(C.METADATA_MODEL_NAME);
-		w.print(" (");
-		w.print(this.hostName);
-		w.print(")");
+		w.print(pageTitle(title));
 		w.println("</title>");
 
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
