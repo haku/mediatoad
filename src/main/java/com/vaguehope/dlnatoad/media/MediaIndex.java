@@ -121,7 +121,7 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public void fileGone(final File file) throws IOException {
+	public void fileGone(final File file, final boolean isDir) throws IOException {
 		final MediaFormat format = MediaFormat.identify(file);
 		if (format != null) {
 			switch (format.getContentGroup()) {

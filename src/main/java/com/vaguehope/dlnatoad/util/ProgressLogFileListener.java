@@ -98,8 +98,8 @@ public class ProgressLogFileListener implements FileListener {
 	}
 
 	@Override
-	public void fileGone (final File file) throws IOException {
-		this.deligate.fileGone(file);
+	public void fileGone (final File file, final boolean isDir) throws IOException {
+		this.deligate.fileGone(file, isDir);
 	}
 
 }

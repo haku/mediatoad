@@ -1,7 +1,9 @@
 package com.vaguehope.dlnatoad.util;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -75,7 +77,7 @@ public class WatcherTest {
 						Arrays.toString(invocation.getArguments())));
 				if (invocationNumber >= waitForEventCount) {
 					System.out.println(String.format(
-							"All %cs of %s expected events received, shutting down watcher.",
+							"All %s of %s expected events received, shutting down watcher.",
 							invocationNumber,
 							waitForEventCount));
 					WatcherTest.this.undertest.shutdown();
@@ -85,7 +87,7 @@ public class WatcherTest {
 		};
 		doAnswer(answer).when(this.listener).fileFound(any(File.class), any(File.class), any(EventType.class), nullable(Runnable.class));
 		doAnswer(answer).when(this.listener).fileModified(any(File.class), any(File.class), nullable(Runnable.class));
-		doAnswer(answer).when(this.listener).fileGone(any(File.class));
+		doAnswer(answer).when(this.listener).fileGone(any(File.class), anyBoolean());
 		this.undertestRunFuture = this.schEx.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -204,7 +206,31 @@ public class WatcherTest {
 		waitForWatcher(10);
 
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
-		verify(this.listener, timeout(10000)).fileGone(f1);
+		verify(this.listener, timeout(10000)).fileGone(f1, false);
+	}
+
+	@Test
+	public void itHandlesDirBeingMoved() throws Exception {
+		final File d1 = this.tmp.newFolder("dir1");
+		final File d2 = new File(d1, "dir2");
+		if (!d2.mkdir()) fail("Failed ot mkdir: " + d2);
+		final File f1 = new File(d2, "file1.mp4");
+		FileUtils.touch(f1);
+
+		startWatcher(3, 10);
+		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
+
+		final File d2NewName = new File(d1, "dir2NewName");
+		if (!d2.renameTo(d2NewName)) fail("Rename failed.");
+
+		waitForWatcher(10);
+		verify(this.listener, timeout(10000)).fileGone(d2, true);
+
+		File f1NewName = new File(d2NewName, f1.getName());
+		verify(this.listener).fileFound(this.tmpRoot, f1NewName, EventType.SCAN, null);
+
+		// Note: no delete event for f1 :(
+		verifyNoMoreInteractions(this.listener);
 	}
 
 }

@@ -132,7 +132,7 @@ public class MediaIndexTest {
 		this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		waitForEmptyQueue();
 
-		this.undertest.fileGone(file);
+		this.undertest.fileGone(file, false);
 		final List<ContentNode> videoDirs = this.contentTree.getNode(ContentGroup.VIDEO.getId()).getCopyOfNodes();
 		assertEquals(0, videoDirs.size());
 		verify(this.mediaId).fileGoneAsync(file);
@@ -261,7 +261,7 @@ public class MediaIndexTest {
 		waitForEmptyQueue();
 
 		FileUtils.deleteDirectory(dir);
-		this.undertest.fileGone(file2);
+		this.undertest.fileGone(file2, false);
 		waitForEmptyQueue();
 
 		final List<File> actualFiles = getFiles(this.contentTree.getItems());
@@ -315,7 +315,7 @@ public class MediaIndexTest {
 		final ContentItem attachment = this.contentTree.getItem(item.getCopyOfAttachments().get(0).getId());
 		assertEquals(srtFile, attachment.getFile());
 
-		this.undertest.fileGone(srtFile);
+		this.undertest.fileGone(srtFile, false);
 		waitForEmptyQueue();
 
 		final ContentItem itemStillInTree = this.contentTree.getItem(item.getId());

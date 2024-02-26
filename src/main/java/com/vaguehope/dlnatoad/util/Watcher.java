@@ -14,6 +14,7 @@ import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -43,7 +44,7 @@ public class Watcher {
 	public interface FileListener {
 		EventResult fileFound (File rootDir, File file, EventType eventType, Runnable onUsed) throws IOException;
 		EventResult fileModified (final File rootDir, File file, Runnable onUsed) throws IOException;
-		void fileGone (File file) throws IOException;
+		void fileGone (File file, boolean isDir) throws IOException;
 	}
 
 	/**
@@ -69,8 +70,8 @@ public class Watcher {
 	private final AtomicLong watchEvents = new AtomicLong(0);
 
 	private final WatchService watchService;
-	private final HashMap<WatchKey, Path> watchKeys = new HashMap<>();
-	private final HashMap<WatchKey, File> watchKeyRoots = new HashMap<>();
+	private final Map<WatchKey, Path> watchKeys = new HashMap<>();
+	private final Map<WatchKey, File> watchKeyRoots = new HashMap<>();
 	private final Queue<WaitingFile> waitingFiles = new DelayQueue<>();
 
 	private volatile boolean running = true;
@@ -161,7 +162,7 @@ public class Watcher {
 			while ((modFile = this.waitingFiles.poll()) != null) {
 				if (modFile.isReady()) {
 					try {
-						readReadyPath(modFile.getEventKind(), modFile.getPath(), modFile.getRootDir());
+						readReadyPath(modFile.getEventKind(), modFile.getPath(), modFile.getFile().isDirectory(), modFile.getRootDir());
 					}
 					catch (final Exception e) {
 						LOG.warn("Failed to process waiting file that should have been ready: {} {}: {}",
@@ -229,7 +230,11 @@ public class Watcher {
 			final Path path = dir.resolve(ev.context());
 			LOG.debug("Event: {} {}", ev.kind().name(), path);
 
-			if (!Files.isDirectory(path) && !this.filter.accept(path.toFile())) {
+			// Files.isDirectory() will return false for deleted dirs.
+			// containsValue() is a linear search.
+			final boolean isDir = Files.isDirectory(path) || this.watchKeys.containsValue(path);
+
+			if (!isDir && !this.filter.accept(path.toFile())) {
 				LOG.debug("Ignoring: {}", path);
 				this.watchEvents.incrementAndGet();
 				continue;
@@ -242,7 +247,7 @@ public class Watcher {
 					this.waitingFiles.add(new WaitingFile(path, rootDir, ev.kind(), this.time)); // Wait for file to be accessible.
 				}
 				else if (Files.isDirectory(path)) {
-					readReadyPath(ev.kind(), path, rootDir);
+					readReadyPath(ev.kind(), path, isDir, rootDir);
 				}
 				else {
 					LOG.debug("Waiting for ready: {} {}", path, ev.kind());
@@ -250,7 +255,7 @@ public class Watcher {
 				}
 			}
 			else if (ev.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-				readReadyPath(ev.kind(), path, rootDir);
+				readReadyPath(ev.kind(), path, isDir, rootDir);
 			}
 			else {
 				LOG.error("Unexpected event type: {}", ev.kind());
@@ -261,12 +266,12 @@ public class Watcher {
 		}
 	}
 
-	private void readReadyPath(final Kind<Path> kind, final Path path, final File rootDir) throws IOException {
+	private void readReadyPath(final Kind<Path> kind, final Path path, boolean isDir, final File rootDir) throws IOException {
 		if (Files.isDirectory(path) && kind == StandardWatchEventKinds.ENTRY_CREATE) {
 			registerRecursive(rootDir, path.toFile());
 		}
 		else {
-			callListener(kind, path.toFile(), rootDir, EventType.NOTIFY);
+			callListener(kind, path.toFile(), isDir, rootDir, EventType.NOTIFY);
 		}
 	}
 
@@ -278,12 +283,12 @@ public class Watcher {
 				this.waitingFiles.add(new WaitingFile(file.toPath(), rootDir, kind, this.time)); // Wait for file to be accessible.
 			}
 			else {
-				callListener(kind, file, rootDir, EventType.SCAN);
+				callListener(kind, file, file.isDirectory(), rootDir, EventType.SCAN);
 			}
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final File file, final File rootDir, final EventType eventType) {
+	protected void callListener (final Kind<Path> kind, final File file, boolean isDir, final File rootDir, final EventType eventType) {
 		LOG.debug("Calling listener: {} {}", file.getAbsolutePath(), kind);
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
@@ -293,7 +298,7 @@ public class Watcher {
 				this.listener.fileModified(rootDir, file, null);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
-				this.listener.fileGone(file);
+				this.listener.fileGone(file, isDir);
 			}
 		}
 		catch (final Exception e) { // NOSONAR do not allow errors to kill watcher.
