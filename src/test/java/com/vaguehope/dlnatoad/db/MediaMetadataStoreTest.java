@@ -333,31 +333,37 @@ public class MediaMetadataStoreTest {
 
 	@Test
 	public void itStoresAndRetrivesInfo () throws Exception {
+		final String id = "myfile1";
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 640, 480));
+
+		this.undertest.storeFileInfoAsync(id, f1, new FileInfo(1234567890123L, 640, 480));
 		this.durationWorker.run();
-		assertEquals(1234567890123L, this.undertest.readFileInfo(f1).getDurationMillis());
-		assertEquals(640, this.undertest.readFileInfo(f1).getWidth());
-		assertEquals(480, this.undertest.readFileInfo(f1).getHeight());
+		assertEquals(1234567890123L, this.undertest.readFileInfo(id, f1).getDurationMillis());
+		assertEquals(640, this.undertest.readFileInfo(id, f1).getWidth());
+		assertEquals(480, this.undertest.readFileInfo(id, f1).getHeight());
 	}
 
 	@Test
 	public void itReturnsNullWhenFileSizeChangesUpdates () throws Exception {
+		final String id = "myfile1";
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 0, 0));
+
+		this.undertest.storeFileInfoAsync(id, f1, new FileInfo(1234567890123L, 0, 0));
 		this.durationWorker.run();
 		FileUtils.writeStringToFile(f1, "abc", Charset.forName("UTF-8"));
-		assertEquals(null, this.undertest.readFileInfo(f1));
+		assertEquals(null, this.undertest.readFileInfo(id, f1));
 	}
 
 	@Test
 	public void itUpdatesStoredDuration () throws Exception {
+		final String id = "myfile1";
 		final File f1 = mockMediaFile("media-1.ext");
-		this.undertest.storeFileInfoAsync(f1, new FileInfo(1234567890123L, 0, 0));
+
+		this.undertest.storeFileInfoAsync(id, f1, new FileInfo(1234567890123L, 0, 0));
 		this.durationWorker.run();
-		this.undertest.storeFileInfoAsync(f1, new FileInfo(12345678901234L, 0, 0));
+		this.undertest.storeFileInfoAsync(id, f1, new FileInfo(12345678901234L, 0, 0));
 		this.durationWorker.run();
-		assertEquals(12345678901234L, this.undertest.readFileInfo(f1).getDurationMillis());
+		assertEquals(12345678901234L, this.undertest.readFileInfo(id, f1).getDurationMillis());
 	}
 
 	private File mockMediaFile (final String name) throws IOException {

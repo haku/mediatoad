@@ -10,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,18 +248,18 @@ public class WritableMediaDb implements Closeable {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	//	Infos.
 
-	protected void storeInfos(final List<FileAndInfo> toStore) throws SQLException {
-		final List<FileAndInfo> toInsert = new ArrayList<>();
+	protected void storeInfos(final List<FileIdAndInfo> toStore) throws SQLException {
+		final List<FileIdAndInfo> toInsert = new ArrayList<>();
 
 		final PreparedStatement stUpdate = this.conn.prepareStatement(
-				"UPDATE infos SET size=?,duration=?,width=?,height=? WHERE key=?;");
+				"UPDATE infos SET size=?,duration=?,width=?,height=? WHERE file_id=?;");
 		try {
-			for (final FileAndInfo fai : toStore) {
+			for (final FileIdAndInfo fai : toStore) {
 				stUpdate.setLong(1, fai.getFile().length());
 				stUpdate.setLong(2, fai.getInfo().getDurationMillis());
 				stUpdate.setInt(3, fai.getInfo().getWidth());
 				stUpdate.setInt(4, fai.getInfo().getHeight());
-				stUpdate.setString(5, fai.getFile().getAbsolutePath());
+				stUpdate.setString(5, fai.getFileId());
 				stUpdate.addBatch();
 			}
 			final int[] nUpdated = stUpdate.executeBatch();
@@ -272,11 +274,18 @@ public class WritableMediaDb implements Closeable {
 			stUpdate.close();
 		}
 
+		final Set<String> insertedIds = new HashSet<>();
 		final PreparedStatement stInsert = this.conn.prepareStatement(
-				"INSERT INTO infos (key,size,duration,width,height) VALUES (?,?,?,?,?);");
+				"INSERT INTO infos (file_id,size,duration,width,height) VALUES (?,?,?,?,?);");
 		try {
-			for (final FileAndInfo fai : toInsert) {
-				stInsert.setString(1, fai.getFile().getAbsolutePath());
+			for (final FileIdAndInfo fai : toInsert) {
+				if (insertedIds.contains(fai.getFileId())) {
+					LOG.info("Skipping writing info duplicate file_id into infos table in same batch: {}", fai.getFileId());
+					continue;
+				}
+				insertedIds.add(fai.getFileId());
+
+				stInsert.setString(1, fai.getFileId());
 				stInsert.setLong(2, fai.getFile().length());
 				stInsert.setLong(3, fai.getInfo().getDurationMillis());
 				stInsert.setInt(4, fai.getInfo().getWidth());

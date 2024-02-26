@@ -12,6 +12,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -91,30 +92,40 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 	}
 
 	public String addFileWithTags(final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, null, tags);
 	}
 
 	public String addMissingFileWithTags(final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, true, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, true, null, tags);
 	}
 
 	public String addFileWithAuthAndTags(final BigInteger auth, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", auth, false, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", auth, false, null, tags);
+	}
+
+	public String addFileWithInfoAndTags(final FileInfo info, String... tags) throws IOException, InterruptedException, SQLException {
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, info, tags);
 	}
 
 	public String addFileWithName(final String nameFragment) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false);
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, null);
 	}
 
 	public String addFileWithName(final String nameFragment, final String nameSuffex) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false);
+		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, null);
 	}
 
 	public String addFileWithNameAndTags(final String nameFragment, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, tags);
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, null, tags);
 	}
 
-	public String addFileWithNameExtAndTags(final String nameFragment, final String nameSuffex, final BigInteger auth, final boolean missing, final String... tags) throws IOException, InterruptedException, SQLException {
+	private String addFileWithNameExtAndTags(
+			final String nameFragment,
+			final String nameSuffex,
+			final BigInteger auth,
+			final boolean missing,
+			final FileInfo info,
+			final String... tags) throws IOException, InterruptedException, SQLException {
 		final File mediaFile = File.createTempFile("mock_media_" + nameFragment, nameSuffex, this.tmp.getRoot());
 		FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(10, 50), StandardCharsets.UTF_8);
 
@@ -128,6 +139,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				w.addTag(fileId, tag, System.currentTimeMillis());
 			}
 			w.setFileMissing(mediaFile.getAbsolutePath(), missing);
+			if (info != null) w.storeInfos(Arrays.asList(new FileIdAndInfo(fileId, mediaFile, info)));
 		}
 
 		return fileId;

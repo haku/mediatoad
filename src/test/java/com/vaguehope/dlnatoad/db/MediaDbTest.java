@@ -12,12 +12,14 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public class MediaDbTest {
@@ -198,6 +200,30 @@ public class MediaDbTest {
 			w.setFileMissing(file.getAbsolutePath(), true);
 		}
 		assertTrue(getFileData(file).isMissing());
+	}
+
+	@Test
+	public void itInsertsInfos() throws Exception {
+		List<FileIdAndInfo> infos = ImmutableList.of(
+				new FileIdAndInfo("id1", new File("/media/foo.jpg"), new FileInfo(0, 2000, 1000)),
+				new FileIdAndInfo("id2", new File("/media/bar.jpg"), new FileInfo(0, 3000, 2000))
+				);
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeInfos(infos);
+		}
+
+		assertEquals(new FileInfo(0, 2000, 1000), this.undertest.readInfoCheckingFileSize("id1", 0));
+	}
+
+	@Test
+	public void itInsertsInfosWithSameIdTwiceIn1Batch() throws Exception {
+		List<FileIdAndInfo> infos = ImmutableList.of(
+				new FileIdAndInfo("id1", new File("/media/foo.jpg"), new FileInfo(0, 2000, 1000)),
+				new FileIdAndInfo("id1", new File("/media/bar.jpg"), new FileInfo(0, 2000, 1000))
+				);
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeInfos(infos);
+		}
 	}
 
 	@Test

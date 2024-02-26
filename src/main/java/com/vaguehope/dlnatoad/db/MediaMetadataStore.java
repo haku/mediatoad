@@ -32,7 +32,7 @@ public class MediaMetadataStore {
 
 	private final BlockingQueue<FileTask> fileQueue = new LinkedBlockingQueue<>();
 	private final AtomicBoolean fileIdWorkerRunning = new AtomicBoolean(false);
-	private final BlockingQueue<FileAndInfo> storeDuraionQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<FileIdAndInfo> storeDuraionQueue = new LinkedBlockingQueue<>();
 
 	private final MediaDb mediaDb;
 	private final ScheduledExecutorService exSvc;
@@ -328,12 +328,12 @@ public class MediaMetadataStore {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	public FileInfo readFileInfo(final File file) throws SQLException {
-		return this.mediaDb.readInfoCheckingFileSize(file.getAbsolutePath(), file.length());
+	public FileInfo readFileInfo(final String fileId, final File file) throws SQLException {
+		return this.mediaDb.readInfoCheckingFileSize(fileId, file.length());
 	}
 
-	public void storeFileInfoAsync(final File file, final FileInfo info) throws SQLException, InterruptedException {
-		this.storeDuraionQueue.put(new FileAndInfo(file, info));
+	public void storeFileInfoAsync(final String fileId, final File file, final FileInfo info) throws SQLException, InterruptedException {
+		this.storeDuraionQueue.put(new FileIdAndInfo(fileId, file, info));
 	}
 
 	private class InfoWorker implements Runnable {
@@ -341,7 +341,7 @@ public class MediaMetadataStore {
 		@Override
 		public void run() {
 			try {
-				final List<FileAndInfo> todo = new ArrayList<>();
+				final List<FileIdAndInfo> todo = new ArrayList<>();
 				MediaMetadataStore.this.storeDuraionQueue.drainTo(todo);
 				if (todo.size() > 0) {
 					try (final WritableMediaDb w = MediaMetadataStore.this.mediaDb.getWritable()) {

@@ -65,13 +65,13 @@ public class MediaInfo {
 		}
 
 		private FileInfo readInfo () throws IOException, SQLException, InterruptedException {
-			final FileInfo storedInfo = this.mediaMetadataStore.readFileInfo(this.file);
+			final FileInfo storedInfo = this.mediaMetadataStore.readFileInfo(this.item.getId(), this.file);
 			if (storedInfo != null) return storedInfo;
 
 			final FfprobeInfo probeInfo = Ffprobe.inspect(this.file);
 			if (probeInfo.hasDuration() || probeInfo.hasWidthAndHeight()) {
 				final FileInfo info = new FileInfo(probeInfo.getDurationMillis(), probeInfo.getWidth(), probeInfo.getHeight());
-				this.mediaMetadataStore.storeFileInfoAsync(this.file, info);
+				this.mediaMetadataStore.storeFileInfoAsync(this.item.getId(), this.file, info);
 				return info;
 			}
 

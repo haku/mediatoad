@@ -68,7 +68,7 @@ public class MediaDb {
 		}
 		if (!tableExists("infos")) {
 			executeSql("CREATE TABLE infos ("
-					+ "key STRING NOT NULL PRIMARY KEY, "
+					+ "file_id STRING NOT NULL PRIMARY KEY, "
 					+ "size INT NOT NULL, "
 					+ "duration INT, "
 					+ "width INT, "
@@ -146,11 +146,11 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// File Info; duration, width, height.
 
-	protected FileInfo readInfoCheckingFileSize (final String key, final long expectedSize) throws SQLException {
+	protected FileInfo readInfoCheckingFileSize (final String fileId, final long expectedSize) throws SQLException {
 		final PreparedStatement st = this.dbConn.prepareStatement(
-				"SELECT size, duration, width, height FROM infos WHERE key=?;");
+				"SELECT size, duration, width, height FROM infos WHERE file_id=?;");
 		try {
-			st.setString(1, key);
+			st.setString(1, fileId);
 			st.setMaxRows(2);
 			final ResultSet rs = st.executeQuery();
 			try {
@@ -161,7 +161,7 @@ public class MediaDb {
 				final int width = rs.getInt(3);
 				final int height = rs.getInt(4);
 
-				if (rs.next()) throw new SQLException("Query for key '" + key + "' retured more than one result.");
+				if (rs.next()) throw new SQLException("Query for file_id '" + fileId + "' retured more than one result.");
 				if (expectedSize != storedSize) return null;
 
 				return new FileInfo(duration, width, height);
