@@ -128,6 +128,7 @@ public class ContentTree {
 			final Entry<String, ContentNode> e = nodeIttr.next();
 			if (file.equals(e.getValue().getFile())) {
 				nodeIttr.remove();
+				removeNodesAndItemsInNode(e.getValue());
 				removeNodeFromParent(e.getValue());
 				removeCount += 1;
 			}
@@ -145,6 +146,19 @@ public class ContentTree {
 		}
 
 		return removeCount;
+	}
+
+	private void removeNodesAndItemsInNode(final ContentNode node) {
+		node.withEachNode((n) -> {
+			this.contentNodes.remove(n.getId());
+
+			// in theory this recursively getting a lock on a node via withEachNode() while within a lock
+			// could deadlock, but lets see if that ever happens in practice before switching to a list copy.
+			removeNodesAndItemsInNode(n);
+		});
+		node.withEachItem((i) -> {
+			this.contentItems.remove(i.getId());
+		});
 	}
 
 	private void removeNodeFromParent(final ContentNode node) {

@@ -68,6 +68,18 @@ public class ContentTreeTest {
 	}
 
 	@Test
+	public void itRemovesItemsWhenNodeIsRemoved() throws Exception {
+		final ContentNode aa = this.mockContent.addMockDir("aa");
+		final ContentNode bb = this.mockContent.addMockDir("bb", aa);
+		final ContentItem b = this.mockContent.addMockItem("b", bb);
+
+		this.undertest.removeFile(aa.getFile());
+		assertThat(this.undertest.getNodes(), not(hasItem(aa)));
+		assertThat(this.undertest.getNodes(), not(hasItem(bb)));
+		assertThat(this.undertest.getItems(), not(hasItem(b)));
+	}
+
+	@Test
 	public void itReturnsASetOfItems() throws Exception {
 		final List<String> openItems = itemIds(this.mockContent.givenMockItems(100));
 
