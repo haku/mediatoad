@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,6 +18,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
@@ -482,6 +484,21 @@ public class DbSearchParserTest {
 	public void itDoesNotCrashWithBadQuery() throws Exception {
 		final String term = "t=\"a very long tag that does not fit on the screen properl";
 		runParser(term, null, term);
+	}
+
+	@Test
+	public void itSearchesByWidthAndHeight() throws Exception {
+		final String t1 = this.mockMediaMetadataStore.addFileWithInfoAndTags(new FileInfo(TimeUnit.SECONDS.toMillis(123), 1920, 1080), "tag");
+		final String t2 = this.mockMediaMetadataStore.addFileWithInfoAndTags(new FileInfo(TimeUnit.SECONDS.toMillis(123), 2000, 2000), "tag");
+		final String t3 = this.mockMediaMetadataStore.addFileWithInfoAndTags(new FileInfo(TimeUnit.SECONDS.toMillis(123), 3000, 3000), "tag");
+
+		runQuery("t=tag w=1920 h=1080", t1);
+		runQuery("t=tag w<2000", t1);
+
+		runQuery("t=tag w>1920", t2, t3);
+		runQuery("t=tag h>1080", t2, t3);
+
+		runQuery("t=tag w>=2000 w<3000", t2);
 	}
 
 // Template tests.

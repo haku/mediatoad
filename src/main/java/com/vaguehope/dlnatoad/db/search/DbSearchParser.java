@@ -42,6 +42,9 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_GREATER_THAN =
 			" (id IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING COUNT(DISTINCT tag) > ?))";
 
+	private static final String _SQL_MEDIAFILES_WHERE_INFOS =
+			" (id IN (SELECT file_id FROM infos WHERE WOH?))";
+
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
@@ -126,6 +129,8 @@ public class DbSearchParser {
 					}
 				}
 
+				String woh;
+
 				if ("(".equals(term)) {
 					sql.append(" ( ");
 					openBrackets += 1;
@@ -147,6 +152,9 @@ public class DbSearchParser {
 				}
 				else if (DbSearchSyntax.isTagCountGreaterThan(term)) {
 					sql.append(_SQL_MEDIAFILES_WHERES_TAG_COUNT_GREATER_THAN);
+				}
+				else if ((woh = DbSearchSyntax.widthOrHeight(term)) != null) {
+					sql.append(_SQL_MEDIAFILES_WHERE_INFOS.replace("WOH", woh));
 				}
 				else {
 					sql.append(_SQL_MEDIAFILES_WHERES_FILEORTAG);
@@ -219,6 +227,9 @@ public class DbSearchParser {
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
 					}
 					else if (DbSearchSyntax.isTagCountLessThan(term) || DbSearchSyntax.isTagCountGreaterThan(term)) {
+						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
+					}
+					else if (DbSearchSyntax.widthOrHeight(term) != null) {
 						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
 					}
 					else {

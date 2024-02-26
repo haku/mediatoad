@@ -27,6 +27,27 @@ public class DbSearchSyntaxTest {
 	}
 
 	@Test
+	public void itDeterminsWidthOrHeight() throws Exception {
+		assertEquals(null, DbSearchSyntax.widthOrHeight(""));
+		assertEquals(null, DbSearchSyntax.widthOrHeight("a"));
+		assertEquals(null, DbSearchSyntax.widthOrHeight("<"));
+		assertEquals(null, DbSearchSyntax.widthOrHeight("x="));
+		assertEquals(null, DbSearchSyntax.widthOrHeight("=1234"));
+
+		assertEquals("width=", DbSearchSyntax.widthOrHeight("w="));
+		assertEquals("width<", DbSearchSyntax.widthOrHeight("w<"));
+		assertEquals("width<=", DbSearchSyntax.widthOrHeight("w<="));
+		assertEquals("width>", DbSearchSyntax.widthOrHeight("w>"));
+		assertEquals("width>=", DbSearchSyntax.widthOrHeight("w>="));
+
+		assertEquals("height=", DbSearchSyntax.widthOrHeight("h="));
+		assertEquals("height<", DbSearchSyntax.widthOrHeight("h<"));
+		assertEquals("height<=", DbSearchSyntax.widthOrHeight("h<="));
+		assertEquals("height>", DbSearchSyntax.widthOrHeight("h>"));
+		assertEquals("height>=", DbSearchSyntax.widthOrHeight("h>="));
+	}
+
+	@Test
 	public void itExtractsCounts() throws Exception {
 		assertEquals(0, DbSearchSyntax.removeCountOperator("t<0"));
 		assertEquals(0, DbSearchSyntax.removeCountOperator("T<0"));
@@ -50,6 +71,21 @@ public class DbSearchSyntaxTest {
 
 		assertEquals(2, DbSearchSyntax.removeCountOperator("t>2"));
 		assertEquals(2, DbSearchSyntax.removeCountOperator("T>2"));
+
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("w=1920"));
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("W=1920"));
+
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("w>1920"));
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("W>1920"));
+
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("w>=1920"));
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("W>=1920"));
+
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("w<1920"));
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("W<1920"));
+
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("w<=1920"));
+		assertEquals(1920, DbSearchSyntax.removeCountOperator("W<=1920"));
 	}
 
 }
