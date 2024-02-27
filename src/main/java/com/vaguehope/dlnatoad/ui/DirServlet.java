@@ -121,6 +121,7 @@ public class DirServlet extends HttpServlet {
 
 		// TODO printTopTags(w, contentNode, username);
 
+		ServletCommon.setHtmlContentType(resp);
 		nodeIndexTemplate.execute(resp.getWriter(), scopes).flush();
 	}
 
