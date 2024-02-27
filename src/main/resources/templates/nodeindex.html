@@ -1,50 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-	<title>{{page_title}}</title>
-	<meta name="viewport" content="width=device-width, minimum-scale=1.0">
-	{{#db_enabled}}
-	<link rel="stylesheet" href="{{path_prefix}}w/autocomplete.css">
-	<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js"></script>
-	{{/db_enabled}}
-	<link rel="stylesheet" href="{{path_prefix}}w/layout.css">
-	<link rel="stylesheet" href="{{path_prefix}}w/colours.css">
-	<style>
-		body, div, input, label, p, span {font-family: sans-serif;}
-		a:link, a:visited {text-decoration: none;}
-	</style>
-</head>
-<body>
-	<div>
-		<a href="{{path_prefix}}./">Home</a>
-		{{#username}}
-		<span>[ {{username}} ]</span>
-		{{/username}}
-		{{^username}}
-		<form style="display: inline;" action="" method="GET">
-			<input type="hidden" name="action" value="login">
-			<input type="submit" value="Login">
-		</form>
-		{{/username}}
-
-		<form style="display: inline-block;" action="{{path_prefix}}search" method="GET">
-			<div class="autocomplete_wrapper search_wrapper">
-				<input type="text" id="search" name="query" value="" style="width: 20em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
-			</div>
-			{{#allow_remote_search}}
-			<span style="display:inline-block;">
-				<input type="checkbox" id="remote" name="remote" value="true">
-				<label for="remote">remote</label>
-			</span>
-			{{/allow_remote_search}}
-			<input type="submit" value="Search">
-		</form>
-		{{#db_enabled}}
-		<script src="{{path_prefix}}w/autocomplete-search.js"></script>
-		{{/db_enabled}}
-	</div>
-
+{{<page}}
+	{{$body}}
 	<h3>{{list_title}}</h3>
 	<div class="list_link_row">
 		<span><a href="?sort=modified">Sort by Modified</a></span>
@@ -54,5 +9,5 @@
 		<li><a href="{{path_prefix}}{{path}}">{{title}}</a></li>
 		{{/list_items}}
 	</ul>
-</body>
-</html>
+	{{/body}}
+{{/page}}
