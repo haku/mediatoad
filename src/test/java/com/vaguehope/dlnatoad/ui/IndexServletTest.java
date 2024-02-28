@@ -195,7 +195,7 @@ public class IndexServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/</D:href>"));
 		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Fri, 13 Feb 2009 23:31:30 UTC</D:getlastmodified>"));
 	}
 
@@ -212,8 +212,8 @@ public class IndexServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/i</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/i</D:href>"));
 	}
 
 	@Test
@@ -232,7 +232,7 @@ public class IndexServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir 0/i</D:href>"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/i</D:href>"));
 		assertThat(this.resp.getContentAsString(), containsString("<D:getcontenttype>video/mp4</D:getcontenttype>"));
 		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 03:58:10 UTC</D:getlastmodified>"));
 	}

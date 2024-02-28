@@ -70,6 +70,10 @@ public class MockContent {
 		return givenMockItems(MediaFormat.MP4, n, parent, null);
 	}
 
+	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent) throws IOException {
+		return givenMockItems(format, n, parent, null);
+	}
+
 	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, final Consumer<File> modifier) throws IOException {
 		final List<Integer> ids = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
@@ -108,7 +112,7 @@ public class MockContent {
 			dir = null;
 		}
 
-		final ContentNode node = new ContentNode(id, parent.getId(), id, dir, authlist, null);
+		final ContentNode node = new ContentNode(id.replace(" ", ""), parent.getId(), id, dir, authlist, null);
 		this.contentTree.addNode(node);
 		parent.addNodeIfAbsent(node);
 		return node;

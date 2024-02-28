@@ -3,6 +3,7 @@ package com.vaguehope.dlnatoad.ui;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.CharArrayWriter;
@@ -32,6 +33,7 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 
@@ -54,7 +56,7 @@ public class DirServletTest {
 		final ImageResizer imageResizer = new ImageResizer(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		final ServletCommon servletCommon = new ServletCommon(this.contentTree, imageResizer, "hostName", contentServingHistory, true);
-		this.undertest = new DirServlet(servletCommon, this.contentTree);
+		this.undertest = new DirServlet(servletCommon, this.contentTree, imageResizer, null);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -64,7 +66,15 @@ public class DirServletTest {
 	public void itReturnsNodeAsHtmlPage() throws Exception {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
+		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
 		final List<ContentItem> items = this.mockContent.givenMockItems(5, mockDir);
+		final List<ContentItem> thumbItems = this.mockContent.givenMockItems(MediaFormat.JPEG, 3, mockDir);
+
+		for (ContentItem i : items) {
+			when(i.getFile().length()).thenReturn(10000L);
+			i.reload();
+			i.setDurationMillis(123456);
+		}
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);
@@ -75,8 +85,25 @@ public class DirServletTest {
 		System.out.println(page);
 		assertThat(page, containsString("<title>dir 0 - DLNAtoad (hostName)</title>"));
 
-		for (final ContentItem i : items) {
-			assertThat(page, containsString("<li><a href=\"../c/" + i.getFile().getName() + "\">" + i.getFile().getName() + "</a></li>"));
+		assertThat(page, containsString(
+				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
+						+ subDir.getTitle() + "</a></li>"));
+
+		for (ContentItem i : items) {
+			assertThat(page, containsString(
+					"<li><a href=\"../c/" + i.getId() + "." + i.getFormat().getExt() + "\">"
+							+ i.getFile().getName() + "</a>"
+							+ " [<a href=\"../c/" + i.getId() + "." + i.getFormat().getExt()
+							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KB</a>]"
+							+ " (00:02:03)</li>"));
+		}
+
+		for (ContentItem thumb : thumbItems) {
+			assertThat(page, containsString(
+					"<span class=\"thumbnail\">"
+							+ "<a href=\"../i/" + thumb.getId() + "?node=" + mockDir.getId() + "\">"
+							+ "<img src=\"../t/" + thumb.getId() + "\" title=\"" + thumb.getTitle() + "\">"
+							+ "</a></span>"));
 		}
 	}
 
@@ -111,7 +138,7 @@ public class DirServletTest {
 	 * classScope:
 	 * ReflectionObjectHandler: 10000 in 1250ms = 0.13ms per template
 	 * SimpleObjectHandler:     10000 in 1900ms = 0.19ms per template
-	 * 
+	 *
 	 * also classScope is 10x faster to build than mapScope.
 	 */
 	@Ignore

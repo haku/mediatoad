@@ -1,13 +1,25 @@
 {{<page}}
 	{{$body}}
-	<h3>{{list_title}}</h3>
+	<h3>{{list_title}}{{#node_parent_id}} <a id="up" href="{{node_parent_id}}">up</a>{{/node_parent_id}}</h3>
 	<div class="list_link_row">
 		<span><a href="?sort=modified">Sort by Modified</a></span>
+		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
 	</div>
 	<ul>
 		{{#list_items}}
-		<li><a href="{{path_prefix}}{{path}}">{{title}}</a></li>
+		<li><a href="{{path_prefix}}{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path_prefix}}{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
 		{{/list_items}}
 	</ul>
+
+	{{#thumbs}}
+	<span class="thumbnail"><a href="{{path_prefix}}{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{path_prefix}}{{thumb_path}}" title="{{title}}"></a></span>
+	{{/thumbs}}
+
+	<h3>Tags</h3>
+	{{^tags}}(no tags){{/tags}}
+	{{#tags}}
+	<a style="padding-right: 0.5em;" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
+	{{/tags}}
+	
 	{{/body}}
 {{/page}}
