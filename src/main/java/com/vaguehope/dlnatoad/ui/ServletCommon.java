@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -34,6 +32,7 @@ import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.IndexAnd;
@@ -85,14 +84,13 @@ public class ServletCommon {
 		ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
 	}
 
-	public Map<String, Object> baseTemplateScope(final HttpServletRequest req, final String title, final String pathPrefix) {
-		final Map<String, Object> scopes = new HashMap<>();
-		scopes.put("db_enabled", this.mediaDbEnabled);
-		scopes.put("path_prefix", pathPrefix);
-		scopes.put("username", ReqAttr.USERNAME.get(req));
-		scopes.put("allow_remote_search", ReqAttr.ALLOW_REMOTE_SEARCH.get(req));
-		scopes.put("page_title", pageTitle(title));
-		return scopes;
+	public PageScope pageScope(final HttpServletRequest req, final String title, final String pathPrefix) {
+		return new PageScope(
+				pageTitle(title),
+				pathPrefix,
+				ReqAttr.USERNAME.get(req),
+				this.mediaDbEnabled,
+				ReqAttr.ALLOW_REMOTE_SEARCH.get(req));
 	}
 
 	private String pageTitle(final String title) {

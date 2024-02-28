@@ -20,13 +20,14 @@ import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.resolver.ClasspathResolver;
-import com.google.common.collect.ImmutableMap;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.templates.NodeIndexScope;
+import com.vaguehope.dlnatoad.ui.templates.PageScope;
 
 public class DirServlet extends HttpServlet {
 
@@ -65,7 +66,7 @@ public class DirServlet extends HttpServlet {
 
 	// https://github.com/spullara/mustache.java
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
-		final Map<String, Object> scopes = this.servletCommon.baseTemplateScope(req, node.getTitle(), "../");
+		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), "../");
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
 
 		final int nodeCount = nodesUserHasAuth.size();
@@ -79,7 +80,7 @@ public class DirServlet extends HttpServlet {
 			listTitle += itemCount + " items";
 		}
 		listTitle += ")";
-		scopes.put("list_title", listTitle);
+		final NodeIndexScope nodeIndexScope = new NodeIndexScope(listTitle);
 
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, "sort", "");
 		if (sortRaw == null) return;
@@ -91,20 +92,21 @@ public class DirServlet extends HttpServlet {
 			sort = null;
 		}
 
-		// TODO use proper objects
+		// TODO include "up" link
+		// TODO include zip download link
 		// TODO include thumbs
 		// TODO include autofocus
 		final List<Map<String, String>> listItems = new ArrayList<>();
 		for (final ContentNode n : nodesUserHasAuth) {
-			listItems.add(ImmutableMap.of("path", n.getId(), "title", n.getTitle()));
+			nodeIndexScope.addItem(n.getId(), n.getTitle());
 		}
 		// TODO include duration for items
 		// TODO include file size for items
 		// TODO include download link for items
 		final Function<ContentItem, Void> addItem = (i) -> {
-			listItems.add(ImmutableMap.of(
-					"path", C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
-					"title", i.getFile().getName()));
+			nodeIndexScope.addItem(
+					C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
+					i.getFile().getName());
 			return null;
 		};
 		if (sort != null) {
@@ -117,12 +119,11 @@ public class DirServlet extends HttpServlet {
 		else {
 			node.withEachItem(i -> addItem.apply(i));
 		}
-		scopes.put("list_items", listItems);
 
 		// TODO printTopTags(w, contentNode, username);
 
 		ServletCommon.setHtmlContentType(resp);
-		nodeIndexTemplate.execute(resp.getWriter(), scopes).flush();
+		this.nodeIndexTemplate.execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
 	}
 
 	private static void returnNodeAsZipFile(final ContentNode node, final HttpServletResponse resp) throws IOException {
