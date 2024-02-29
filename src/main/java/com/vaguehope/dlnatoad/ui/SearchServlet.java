@@ -94,7 +94,7 @@ public class SearchServlet extends HttpServlet {
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
-		final PageScope pageScope = this.servletCommon.pageScope(req, StringUtils.defaultString(query, "Search"), "../");
+		final PageScope pageScope = this.servletCommon.pageScope(req, StringUtils.defaultString(query, "Search"), null);
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
