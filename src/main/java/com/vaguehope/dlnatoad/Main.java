@@ -313,7 +313,7 @@ public final class Main {
 		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
 		final ServletCommon servletCommon = new ServletCommon(contentTree, imageResizer, hostName, contentServingHistory, mediaDb != null);
 
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService)), "/search");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService, imageResizer)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(servletCommon, upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);

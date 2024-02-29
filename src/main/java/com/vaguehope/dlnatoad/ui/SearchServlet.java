@@ -1,7 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.UpnpService;
+import org.fourthline.cling.model.ModelUtil;
 import org.fourthline.cling.model.action.ActionInvocation;
 import org.fourthline.cling.model.message.UpnpResponse;
 import org.fourthline.cling.model.meta.RemoteDevice;
@@ -32,7 +33,12 @@ import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
+import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
@@ -41,7 +47,11 @@ import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.templates.PageScope;
+import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
+import com.vaguehope.dlnatoad.ui.templates.SearchResultsScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
+import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class SearchServlet extends HttpServlet {
 
@@ -60,29 +70,31 @@ public class SearchServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
 	private final UpnpService upnpService;
+	private final ImageResizer imageResizer;
 	private final SearchEngine searchEngine;
+	private final Mustache resultsTemplate;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService) {
-		this(servletCommon, contentTree, mediaDb, upnpService, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final ImageResizer imageResizer) {
+		this(servletCommon, contentTree, mediaDb, upnpService, imageResizer, new SearchEngine());
 	}
 
-	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final ImageResizer imageResizer, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
 		this.upnpService = upnpService;
+		this.imageResizer = imageResizer;
 		this.searchEngine = searchEngine;
+
+		final MustacheFactory mf = new DefaultMustacheFactory(new ClasspathResolver("templates"));
+		this.resultsTemplate = mf.compile("searchresults.html");
 	}
 
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
-
-		ServletCommon.setHtmlContentType(resp);
-		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, StringUtils.defaultString(query, "Search"));
-		this.servletCommon.printLinkRow(req, w);
+		final PageScope pageScope = this.servletCommon.pageScope(req, StringUtils.defaultString(query, "Search"), "../");
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
@@ -117,38 +129,74 @@ public class SearchServlet extends HttpServlet {
 				final String linkQuery = "?" + PARAM_QUERY + "="
 						+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
 
-				this.servletCommon.printItemsAndImages(w, results, i -> {
-					if (offset == null) return linkQuery;
-					return linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + i.getIndex());
-				});
-
+				final String nextPagePath;
 				if (nextOffset > 0) {
-					w.print("<a href=\"");
-					w.print(linkQuery);
-					w.print("&" + PARAM_PAGE_LIMIT + "=" + nextLimit);
-					w.print("&" + PARAM_PAGE_OFFSET + "=" + nextOffset);
-					w.println("\">Next Page</a>");
+					nextPagePath = linkQuery + "&" + PARAM_PAGE_LIMIT + "=" + nextLimit + "&" + PARAM_PAGE_OFFSET + "=" + nextOffset;
 				}
+				else {
+					nextPagePath = null;
+				}
+
+				final SearchResultsScope resultsScope = new SearchResultsScope(pageScope);
+				final ResultGroupScope resultGroup = resultsScope.addResultGroup("Local items: " + results.size(), nextPagePath);
+				appendItems(resultGroup, results, linkQuery, offset);
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
 				if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req) && StringUtils.isNotBlank(remote)) {
-					remoteSearch(upnpQuery, w);
+					remoteSearch(upnpQuery, resultsScope);
 				}
+
+				ServletCommon.setHtmlContentType(resp);
+				this.resultsTemplate.execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
 			}
 			catch (final Exception e) {
-				w.print("<pre>Failed to run query: ");
-				e.printStackTrace(w);
-				w.println("</pre>");
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to run query.");
+				e.printStackTrace(resp.getWriter());  // TODO maybe do something better here...
 			}
 		}
-
-		this.servletCommon.endBody(w);
 	}
 
-	private void remoteSearch(final String searchCriteria, final PrintWriter w) throws InterruptedException, ExecutionException {
+	private void appendItems(
+			final ResultGroupScope resultGroup,
+			final List<ContentItem> items,
+			final String linkQuery,
+			final Integer offset) throws IOException {
+
+		int x = 0;
+		for (final ContentItem i : items) {
+			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
+			appendItem(resultGroup, i, q);
+			x += 1;
+		}
+	}
+
+	// TODO merge with DirServlet.appendItem()
+	private void appendItem(
+			final ResultGroupScope resultGroup,
+			final ContentItem i,
+			final String linkQuery) throws IOException {
+
+		if (this.imageResizer != null && i.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+			resultGroup.addLocalThumb(
+					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
+					C.THUMBS_PATH_PREFIX + i.getId(),
+					i.getTitle());
+		}
+		else {
+			final long fileLength = i.getFileLength();
+			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
+			resultGroup.addLocalItem(
+					C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
+					i.getFile().getName(),
+					fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
+					durationSeconds > 0 ? ModelUtil.toTimeString(durationSeconds) : null);
+		}
+	}
+
+	private void remoteSearch(final String searchCriteria, final SearchResultsScope resultsScope) throws InterruptedException, ExecutionException {
 		final Collection<RemoteService> contentDirectoryServices = findAllContentDirectoryServices();
-		searchContentDirectories(contentDirectoryServices, searchCriteria, w);
+		searchContentDirectories(contentDirectoryServices, searchCriteria, resultsScope);
 	}
 
 	private Collection<RemoteService> findAllContentDirectoryServices() {
@@ -159,7 +207,7 @@ public class SearchServlet extends HttpServlet {
 		return ret;
 	}
 
-	private void searchContentDirectories(final Collection<RemoteService> contentDirectoryServices, final String searchCriteria, final PrintWriter w) throws InterruptedException, ExecutionException {
+	private void searchContentDirectories(final Collection<RemoteService> contentDirectoryServices, final String searchCriteria, final SearchResultsScope resultsScope) throws InterruptedException, ExecutionException {
 		final Collection<CDSearch> searches = new ArrayList<>();
 		final Collection<Future<?>> futures = new ArrayList<>();
 		for (final RemoteService cd : contentDirectoryServices) {
@@ -177,33 +225,28 @@ public class SearchServlet extends HttpServlet {
 
 			final String err = s.getErr();
 			if (StringUtils.isNotBlank(err)) {
-				w.println("<h3>" + title + "</h3>");
-				w.println(err);
+				resultsScope.addErrorGroup(title, err);
 				continue;
 			}
 
 			final List<Item> items = s.getPayload().getItems();
-			w.println("<h3>" + title + " items: " + items.size() + "</h3>");
-			w.println("<ul>");
+			final ResultGroupScope resultGroup = resultsScope.addResultGroup(title + " items: " + items.size());
 			for (final Item item : items) {
-				printRemoteItem(item, w);
+				final Res res = biggestRes(item.getResources());
+				if (res == null) continue;
+
+				final String size = res.getSize() != null ? FileHelper.readableFileSize(res.getSize()) : null;
+				resultGroup.addRemoteItem(res.getValue(), item.getTitle(), size, res.getDuration());
 			}
-			w.println("</ul>");
 		}
 	}
 
-	private static void printRemoteItem(final Item item, final PrintWriter w) {
-		w.print("<li>");
-		w.print(item.getTitle());
-		for (final Res r : item.getResources()) {
-			w.print(" <a href=\"" + r.getValue() + "\">");
-			w.print(r.getProtocolInfo().getContentFormat());
-			if (r.getSize() != null) {
-				w.print(" (" + FileHelper.readableFileSize(r.getSize()) + ")");
-			}
-			w.print("</a>");
+	private static Res biggestRes(List<Res> resources) {
+		Res ret = null;
+		for (Res r : resources) {
+			if (ret == null || r.getSize() > ret.getSize()) ret = r;
 		}
-		w.println("</li>");
+		return ret;
 	}
 
 	private static class CDSearch extends Search {

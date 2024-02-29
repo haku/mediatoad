@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -141,36 +140,42 @@ public class DirServlet extends HttpServlet {
 		}
 
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId();
-		final Consumer<ContentItem> addItem = (i) -> {
-			if (this.imageResizer != null && i.getFormat().getContentGroup() == ContentGroup.IMAGE) {
-				nodeIndexScope.addThumb(
-						C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
-						C.THUMBS_PATH_PREFIX + i.getId(),
-						i.getTitle());
-			}
-			else {
-				final long fileLength = i.getFileLength();
-				final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
-				nodeIndexScope.addItem(
-						C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
-						i.getFile().getName(),
-						fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
-						durationSeconds > 0 ? ModelUtil.toTimeString(durationSeconds) : null);
-			}
-		};
 
 		if (sort != null) {
 			final List<ContentItem> items = node.getCopyOfItems();
 			items.sort(sort);
 			for (final ContentItem i : items) {
-				addItem.accept(i);
+				appendItem(nodeIndexScope, i, linkQuery);
 			}
 		}
 		else {
-			node.withEachItem(i -> addItem.accept(i));
+			node.withEachItem(i -> appendItem(nodeIndexScope, i, linkQuery));
 		}
 
 		return true;
+	}
+
+	// TODO merge with SearchServlet.appendItem()
+	private void appendItem(
+			final NodeIndexScope nodeIndexScope,
+			final ContentItem i,
+			final String linkQuery) throws IOException {
+
+		if (this.imageResizer != null && i.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+			nodeIndexScope.addThumb(
+					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
+					C.THUMBS_PATH_PREFIX + i.getId(),
+					i.getTitle());
+		}
+		else {
+			final long fileLength = i.getFileLength();
+			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
+			nodeIndexScope.addItem(
+					C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
+					i.getFile().getName(),
+					fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
+					durationSeconds > 0 ? ModelUtil.toTimeString(durationSeconds) : null);
+		}
 	}
 
 	private void maybeAppendTopTags(final NodeIndexScope nodeIndexScope, final ContentNode node, final String username) throws IOException {

@@ -54,7 +54,7 @@ public class NodeIndexScope {
 		public final String size;
 		public final String duration;
 
-		private IndexItem(final String path, final String title, final boolean autofocus, final String size, final String duration) {
+		IndexItem(final String path, final String title, final boolean autofocus, final String size, final String duration) {
 			this.path = path;
 			this.title = title;
 			this.autofocus = autofocus;
@@ -69,7 +69,7 @@ public class NodeIndexScope {
 		public final String title;
 		public final boolean autofocus;
 
-		public Thumb(final String item_path, final String thumb_path, final String title, final boolean autofocus) {
+		Thumb(final String item_path, final String thumb_path, final String title, final boolean autofocus) {
 			this.item_path = item_path;
 			this.thumb_path = thumb_path;
 			this.title = title;
