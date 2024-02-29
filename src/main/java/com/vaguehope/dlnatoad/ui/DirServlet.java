@@ -82,7 +82,9 @@ public class DirServlet extends HttpServlet {
 	// https://github.com/spullara/mustache.java
 	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
-		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), "../");
+		// If proxied from IndexServlet then paths are relative to root.
+		final String pathPrefix = req.getRequestURI().startsWith("/" + C.DIR_PATH_PREFIX) ? "../" : "";
+		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
 		final long nodeTotalFileLength = node.getTotalFileLength();
