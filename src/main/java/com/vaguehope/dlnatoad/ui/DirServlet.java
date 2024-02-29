@@ -87,10 +87,12 @@ public class DirServlet extends HttpServlet {
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
 		final long nodeTotalFileLength = node.getTotalFileLength();
 
+		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
 		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
 				listTitle,
 				node.getId(),
-				ContentGroup.ROOT.getId().equals(node.getId()) ? null : node.getParentId(),
+				isRoot ? null : node.getParentId(),
+				!isRoot,
 				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
 				FileHelper.readableFileSize(nodeTotalFileLength));
 
@@ -222,7 +224,7 @@ public class DirServlet extends HttpServlet {
 	}
 
 	private ContentNode getNodeFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
+		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 		if (id == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
 			return null;

@@ -8,6 +8,7 @@ public class NodeIndexScope {
 	public final String list_title;
 	public final String node_id;
 	public final String node_parent_id;
+	public boolean show_list_link_row;
 	public final String node_file_name;
 	public final String node_total_size;
 	public final List<IndexItem> list_items = new ArrayList<>();
@@ -18,11 +19,13 @@ public class NodeIndexScope {
 			final String list_title,
 			final String node_id,
 			final String node_parent_id,
+			final boolean show_list_link_row,
 			final String node_file_name,
 			final String node_total_size) {
 		this.list_title = list_title;
 		this.node_id = node_id;
 		this.node_parent_id = node_parent_id;
+		this.show_list_link_row = show_list_link_row;
 		this.node_file_name = node_file_name;
 		this.node_total_size = node_total_size;
 	}
