@@ -90,6 +90,7 @@ public class ServletCommon {
 				pathPrefix,
 				ReqAttr.USERNAME.get(req),
 				this.mediaDbEnabled,
+				StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY)),
 				ReqAttr.ALLOW_REMOTE_SEARCH.get(req));
 	}
 
