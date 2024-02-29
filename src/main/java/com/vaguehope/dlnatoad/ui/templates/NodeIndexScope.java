@@ -14,6 +14,7 @@ public class NodeIndexScope {
 	public final List<IndexItem> list_items = new ArrayList<>();
 	public final List<Thumb> thumbs = new ArrayList<>();
 	public final List<TopTag> tags = new ArrayList<>();
+	public String debugfooter;
 
 	public NodeIndexScope(
 			final String list_title,
@@ -44,6 +45,10 @@ public class NodeIndexScope {
 
 	public void addTopTag(final String path, final String tag, final int count) {
 		this.tags.add(new TopTag(path, tag, count));
+	}
+
+	public void setDebugfooter(final String debugfooter) {
+		this.debugfooter = debugfooter;
 	}
 
 	private boolean shouldSetAutofucus() {

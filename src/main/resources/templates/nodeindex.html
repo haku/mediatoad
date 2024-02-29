@@ -22,6 +22,12 @@
 	{{#tags}}
 	<a style="padding-right: 0.5em;" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/tags}}
-	
+
+{{#debugfooter}}
+<div style="padding: 0.5em; font-family: monospace; white-space: pre-wrap;">
+{{{debugfooter}}}
+</div>
+{{/debugfooter}}
+
 	{{/body}}
 {{/page}}

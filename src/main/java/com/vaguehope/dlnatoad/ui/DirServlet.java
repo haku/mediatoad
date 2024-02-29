@@ -104,6 +104,11 @@ public class DirServlet extends HttpServlet {
 		if (!appendItems(nodeIndexScope, node, req, resp)) return;  // false means error was written to resp.
 		maybeAppendTopTags(nodeIndexScope, node, username);
 
+		// TODO this should probable go somewhere more generic, like IndexServlet.
+		if (ContentGroup.ROOT.getId().equals(node.getId())) {
+			nodeIndexScope.setDebugfooter(this.servletCommon.debugFooter());
+		}
+
 		ServletCommon.setHtmlContentType(resp);
 		this.nodeIndexTemplate.execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
 	}
