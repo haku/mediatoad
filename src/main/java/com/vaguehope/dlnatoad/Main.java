@@ -311,7 +311,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
 		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
-		final ServletCommon servletCommon = new ServletCommon(contentTree, imageResizer, hostName, contentServingHistory, mediaDb != null);
+		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null);
 
 		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, imageResizer, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");

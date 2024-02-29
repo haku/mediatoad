@@ -48,7 +48,7 @@ public class ItemServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.mediaDb = spy(new InMemoryMediaDb());
-		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, null, true), this.contentTree, this.mediaDb);
+		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, true), this.contentTree, this.mediaDb);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

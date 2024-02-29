@@ -2,12 +2,10 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -18,42 +16,30 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.fourthline.cling.model.ModelUtil;
 
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
-import com.vaguehope.dlnatoad.db.Tag;
-import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
-import com.vaguehope.dlnatoad.media.ContentGroup;
-import com.vaguehope.dlnatoad.media.ContentItem;
-import com.vaguehope.dlnatoad.media.ContentItem.Order;
-import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
-import com.vaguehope.dlnatoad.util.ImageResizer;
-import com.vaguehope.dlnatoad.util.IndexAnd;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ServletCommon {
 
 	private final ContentTree contentTree;
-	private final ImageResizer imageResizer;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
 	private final boolean mediaDbEnabled;
 
 	public ServletCommon(
 			final ContentTree contentTree,
-			final ImageResizer imageResizer,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
 			final boolean mediaDbEnabled) {
 		this.contentTree = contentTree;
-		this.imageResizer = imageResizer;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
 		this.mediaDbEnabled = mediaDbEnabled;
@@ -207,158 +193,6 @@ public class ServletCommon {
 		}
 
 		w.println("</div>");
-	}
-
-	public void printNodeSubNodesAndItems(final PrintWriter w, final ContentNode contentNode, final List<ContentNode> nodesUserHasAuth, final Order sort) throws IOException {
-		w.println("<ul>");
-		final boolean[] autofocus = new boolean[] { true };
-		for (final ContentNode node : nodesUserHasAuth) {
-			appendDirectory(w, node, autofocus);
-		}
-		final List<ContentItem> imagesToThumb = new ArrayList<>();
-		if (sort != null) {
-			final List<ContentItem> items = contentNode.getCopyOfItems();
-			items.sort(sort);
-			for (final ContentItem i : items) {
-				appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb);
-			}
-		}
-		else {
-			contentNode.withEachItem(i -> appendItemOrGetImageToThumb(w, i, autofocus, imagesToThumb));
-		}
-
-		w.println("</ul>");
-		appendImageThumbnails(w, contentNode, imagesToThumb, autofocus);
-	}
-
-	private void appendItemOrGetImageToThumb(final PrintWriter w, final ContentItem item, final boolean[] autofocus, final List<ContentItem> imagesToThumb) throws IOException {
-		if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
-			imagesToThumb.add(item);
-		}
-		else {
-			appendItem(w, item, autofocus);
-		}
-	}
-
-	public void printItemsAndImages(final PrintWriter w, final List<ContentItem> items, final Function<IndexAnd<ContentItem>, String> linkQuery) throws IOException {
-		w.print("<h3>Local items: ");
-		w.print(items.size());
-		w.println("</h3><ul>");
-
-		final boolean[] autofocus = new boolean[] { true };
-		final List<IndexAnd<ContentItem>> imagesToThumb = new ArrayList<>();
-		for (int i = 0; i < items.size(); i++) {
-			final ContentItem item = items.get(i);
-			if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
-				imagesToThumb.add(new IndexAnd<>(i, item));
-			}
-			else {
-				appendItem(w, item, autofocus);
-			}
-		}
-		w.println("</ul>");
-
-		for (final IndexAnd<ContentItem> indexAnd : imagesToThumb) {
-			appendImageThumbnail(w, indexAnd.getItem(), linkQuery.apply(indexAnd), autofocus);
-		}
-	}
-
-	private static void appendDirectory(final PrintWriter w, final ContentNode node, final boolean[] autofocus) {
-		w.print("<li><a href=\"");
-		w.print(node.getId());
-		w.print("\"");
-		maybeSetAutofocus(w, autofocus);
-		w.print(">");
-		w.print(StringEscapeUtils.escapeHtml4(node.getTitle()));
-		w.println("</a></li>");
-	}
-
-	private static void appendItem(final PrintWriter w, final ContentItem item, final boolean[] autofocus) throws IOException {
-		w.print("<li><a href=\"");
-		w.print(C.CONTENT_PATH_PREFIX);
-		w.print(item.getId());
-		w.print(".");
-		w.print(item.getFormat().getExt());
-		w.print("\"");
-		maybeSetAutofocus(w, autofocus);
-		w.print(">");
-		w.print(item.getFile().getName());
-		w.print("</a> [<a href=\"");
-		w.print(C.CONTENT_PATH_PREFIX);
-		w.print(item.getId());
-		w.print(".");
-		w.print(item.getFormat().getExt());
-		w.print("\" download=\"");
-		w.print(item.getFile().getName());
-		w.print("\">");
-
-		final long fileLength = item.getFileLength();
-		if (fileLength > 0) {
-			w.print(FileHelper.readableFileSize(fileLength));
-		}
-
-		w.print("</a>]");
-
-		final long durationMillis = item.getDurationMillis();
-		if (durationMillis > 0) {
-			w.print(" (");
-			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(durationMillis);
-			w.print(ModelUtil.toTimeString(durationSeconds));
-			w.print(")");
-		}
-
-		w.println("</li>");
-	}
-
-	private static void appendImageThumbnails(
-			final PrintWriter w,
-			final ContentNode node,
-			final List<ContentItem> imagesToThumb,
-			final boolean[] autofocus) throws IOException {
-		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId();
-		for (final ContentItem item : imagesToThumb) {
-			appendImageThumbnail(w, item, linkQuery, autofocus);
-		}
-	}
-
-	private static void appendImageThumbnail(
-			final PrintWriter w,
-			final ContentItem item,
-			final String linkQuery,
-			final boolean[] autofocus) throws IOException {
-		w.print("<span class=\"thumbnail\"><a href=\"");
-		w.print(C.ITEM_PATH_PREFIX);
-		w.print(item.getId());
-		if (linkQuery != null) w.print(linkQuery);
-		w.print("\"");
-		maybeSetAutofocus(w, autofocus);
-		w.print(">");
-		w.print("<img src=\"");
-		w.print(C.THUMBS_PATH_PREFIX);
-		w.print(item.getId());
-		w.print("\" title=\"");
-		w.print(StringEscapeUtils.escapeHtml4(item.getTitle()));
-		w.print("\">");
-		w.println("</a></span>");
-	}
-
-	private static void maybeSetAutofocus(final PrintWriter w, final boolean[] autofocus) {
-		if (autofocus[0]) {
-			w.print(" autofocus");
-			autofocus[0] = false;
-		}
-	}
-
-	public void printRowOfTags(final PrintWriter w, final String pathPrefix, final List<TagFrequency> tags) {
-		for (final TagFrequency t : tags) {
-			printRowTag(w, pathPrefix, t.getTag(), t.getCount());
-		}
-	}
-
-	public void printRowOfTags(final PrintWriter w, final String pathPrefix, final Collection<Tag> tags) {
-		for (final Tag t : tags) {
-			printRowTag(w, pathPrefix, t.getTag(), 0);
-		}
 	}
 
 	public void printRowOfTagsSimple(final PrintWriter w, final String pathPrefix, final Collection<String> tags) {
@@ -526,10 +360,6 @@ public class ServletCommon {
 		final String q = req.getQueryString();
 		if (q == null) return "";
 		return "?" + q;
-	}
-
-	public static String queryWithParam(final HttpServletRequest req, final String name, final String value) {
-		return queryWithParam(req, name + "=" + UrlEscapers.urlFormParameterEscaper().escape(value));
 	}
 
 	public static String queryWithParam(final HttpServletRequest req, final String nameAndValue) {
