@@ -82,7 +82,6 @@ public class DirServletTest {
 		}
 
 		this.req.setPathInfo("/" + mockDir.getId());
-		this.req.setRequestURI("/d/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
@@ -126,7 +125,7 @@ public class DirServletTest {
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
 		this.undertest.doGet(this.req, this.resp);
 
-		assertThat(this.resp.getContentAsString(), containsString("\"d/dir-open\""));
+		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-open\""));
 		assertThat(this.resp.getContentAsString(), not(containsString("dir-protec")));
 
 		this.req.setPathInfo("/" + protecDir.getId());
@@ -140,8 +139,8 @@ public class DirServletTest {
 		this.resp = new MockHttpServletResponse();
 		this.undertest.doGet(this.req, this.resp);
 
-		assertThat(this.resp.getContentAsString(), containsString("\"d/dir-open\""));
-		assertThat(this.resp.getContentAsString(), containsString("\"d/dir-protec\""));
+		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-open\""));
+		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-protec\""));
 
 		this.req.setPathInfo("/" + protecDir.getId());
 		this.resp = new MockHttpServletResponse();

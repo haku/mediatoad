@@ -68,6 +68,7 @@ public class IndexServlet extends HttpServlet {
 			return;
 		}
 
+		req.setAttribute(DirServlet.PROXIED_FROM_INDEX_ATTR, Boolean.TRUE);
 		this.dirServlet.doGet(req, resp);
 	}
 

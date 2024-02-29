@@ -42,6 +42,8 @@ import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class DirServlet extends HttpServlet {
 
+	static final String PROXIED_FROM_INDEX_ATTR = "proxied_from_index";
+
 	private static final long serialVersionUID = 6207424145390666199L;
 
 	private final ServletCommon servletCommon;
@@ -83,7 +85,7 @@ public class DirServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
 		// If proxied from IndexServlet then paths are relative to root.
-		final String pathPrefix = req.getRequestURI().startsWith("/" + C.DIR_PATH_PREFIX) ? "../" : "";
+		final String pathPrefix = req.getAttribute(PROXIED_FROM_INDEX_ATTR) != null ? "" : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
