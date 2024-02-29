@@ -133,6 +133,16 @@ public class ContentNode extends AbstractContent {
 		}
 	}
 
+	public long getTotalFileLength() {
+		long total = 0L;
+		synchronized (this.items) {
+			for (final ContentItem i : this.items) {
+				total += i.getFileLength();
+			}
+		}
+		return total;
+	}
+
 	public List<ContentNode> getCopyOfNodes() {
 		return new ArrayList<>(this.nodes);
 	}

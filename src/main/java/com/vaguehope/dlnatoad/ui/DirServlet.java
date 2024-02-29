@@ -81,10 +81,29 @@ public class DirServlet extends HttpServlet {
 	}
 
 	// https://github.com/spullara/mustache.java
+	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), "../");
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
+		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
+		final long nodeTotalFileLength = node.getTotalFileLength();
 
+		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
+				listTitle,
+				node.getId(),
+				ContentGroup.ROOT.getId().equals(node.getId()) ? null : node.getParentId(),
+				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
+				FileHelper.readableFileSize(nodeTotalFileLength));
+
+		appendNodes(nodeIndexScope, nodesUserHasAuth);
+		if (!appendItems(nodeIndexScope, node, req, resp)) return;  // false means error was written to resp.
+		maybeAppendTopTags(nodeIndexScope, node, username);
+
+		ServletCommon.setHtmlContentType(resp);
+		this.nodeIndexTemplate.execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
+	}
+
+	private static String makeIndexTitle(final ContentNode node, final List<ContentNode> nodesUserHasAuth) {
 		final int nodeCount = nodesUserHasAuth.size();
 		final int itemCount = node.getItemCount();
 		String listTitle = node.getTitle() + " (";
@@ -96,29 +115,29 @@ public class DirServlet extends HttpServlet {
 			listTitle += itemCount + " items";
 		}
 		listTitle += ")";
+		return listTitle;
+	}
 
+	private static void appendNodes(final NodeIndexScope nodeIndexScope, final List<ContentNode> nodesUserHasAuth) {
+		for (final ContentNode n : nodesUserHasAuth) {
+			nodeIndexScope.addItem(C.DIR_PATH_PREFIX + n.getId(), n.getTitle());
+		}
+	}
+
+	private boolean appendItems(
+			final NodeIndexScope nodeIndexScope,
+			final ContentNode node,
+			final HttpServletRequest req,
+			final HttpServletResponse resp) throws IOException {
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, "sort", "");
-		if (sortRaw == null) return;
+		if (sortRaw == null) return false;
+
 		final Order sort;
 		if ("modified".equalsIgnoreCase(sortRaw)) {
 			sort = ContentItem.Order.MODIFIED_DESC;
 		}
 		else {
 			sort = null;
-		}
-
-		final long[] nodeTotalSize = { 0 };
-		node.withEachItem(i -> {nodeTotalSize[0] += i.getFileLength();});
-
-		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
-				listTitle,
-				node.getId(),
-				ContentGroup.ROOT.getId().equals(node.getId()) ? null : node.getParentId(),
-				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
-				FileHelper.readableFileSize(nodeTotalSize[0]));
-
-		for (final ContentNode n : nodesUserHasAuth) {
-			nodeIndexScope.addItem(C.DIR_PATH_PREFIX + n.getId(), n.getTitle());
 		}
 
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId();
@@ -151,10 +170,15 @@ public class DirServlet extends HttpServlet {
 			node.withEachItem(i -> addItem.accept(i));
 		}
 
+		return true;
+	}
+
+	private void maybeAppendTopTags(final NodeIndexScope nodeIndexScope, final ContentNode node, final String username) throws IOException {
 		if (this.dbCache != null) {
 			final File dir = node.getFile();
 			final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
 			if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(node.getId())) return;
+
 			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 			try {
 				final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
@@ -171,9 +195,6 @@ public class DirServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 		}
-
-		ServletCommon.setHtmlContentType(resp);
-		this.nodeIndexTemplate.execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
 	}
 
 	private static void returnNodeAsZipFile(final ContentNode node, final HttpServletResponse resp) throws IOException {
