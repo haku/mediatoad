@@ -16,7 +16,7 @@ function removeMatchOpertor(term) {
 function pathPrefix() {
   // TODO something less ugly for knowing when to need a relative path.
   const p = window.location.pathname;
-  if (p.includes('/i/') || p.includes('/w/')) {
+  if (p.includes('/d/') || p.includes('/i/') || p.includes('/w/')) {
     return '../';
   }
   return '';
