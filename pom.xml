@@ -16,11 +16,11 @@
 		<args4j.version>2.33</args4j.version>
 		<cling.version>2.1.2</cling.version>
 		<teleal.version>1.0.14</teleal.version>
-		<jetty.version>9.4.45.v20220203</jetty.version>
-		<antlr.version>4.9.3</antlr.version>
-		<commonsio.version>2.11.0</commonsio.version>
-		<twelvemonkeys-imageio.version>3.8.3</twelvemonkeys-imageio.version>
-		<slf4j.version>1.7.32</slf4j.version>
+		<jetty.version>9.4.54.v20240208</jetty.version>
+		<antlr.version>4.13.1</antlr.version>
+		<commonsio.version>2.15.1</commonsio.version>
+		<twelvemonkeys-imageio.version>3.10.1</twelvemonkeys-imageio.version>
+		<slf4j.version>2.0.12</slf4j.version>
 		<junit.version>4.13.2</junit.version>
 	</properties>
 
@@ -225,7 +225,7 @@
 		<dependency>
 			<groupId>com.github.spullara.mustache.java</groupId>
 			<artifactId>compiler</artifactId>
-			<version>0.9.10</version>
+			<version>0.9.11</version>
 		</dependency>
 
 		<!-- Parsing -->
@@ -239,7 +239,7 @@
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-			<version>2.9.1</version>
+			<version>2.10.1</version>
 		</dependency>
 
 		<!-- DB -->
@@ -247,7 +247,7 @@
 		<dependency>
 			<groupId>org.xerial</groupId>
 			<artifactId>sqlite-jdbc</artifactId>
-			<version>3.36.0.3</version>
+			<version>3.45.1.0</version>
 		</dependency>
 
 		<!-- File Decoding -->
@@ -280,13 +280,13 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
-			<version>1.9</version>
+			<version>1.11.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>31.0.1-android</version>
+			<version>33.0.0-jre</version>
 		</dependency>
 
 		<!-- Logging -->
@@ -294,7 +294,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.2.3</version>
+			<version>1.5.1</version>
 		</dependency>
 
 		<dependency>
