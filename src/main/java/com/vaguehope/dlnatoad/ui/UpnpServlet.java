@@ -34,11 +34,9 @@ public class UpnpServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 8519141492915099699L;
 
-	private final ServletCommon servletCommon;
 	private final UpnpService upnpService;
 
-	public UpnpServlet(final ServletCommon servletCommon, final UpnpService upnpService) {
-		this.servletCommon = servletCommon;
+	public UpnpServlet(final UpnpService upnpService) {
 		this.upnpService = upnpService;
 	}
 
@@ -78,8 +76,7 @@ public class UpnpServlet extends HttpServlet {
 		ServletCommon.setHtmlContentType(resp);
 		@SuppressWarnings("resource")
 		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, "UPNP");
-		this.servletCommon.printLinkRow(req, w);
+		headerAndStartBody(w, "UPNP");
 
 		w.println("<form style=\"padding: 0.5em;\" action=\"\" method=\"POST\">");
 		w.println("<input type=\"hidden\" name=\"action\" value=\"scan\">");
@@ -95,7 +92,28 @@ public class UpnpServlet extends HttpServlet {
 		w.println("<h3>Remote Devices</h3>");
 		printDevices(w, this.upnpService.getRegistry().getRemoteDevices());
 
-		this.servletCommon.endBody(w);
+		endBody(w);
+	}
+
+	public void headerAndStartBody(final PrintWriter w, final String title) {
+		w.println("<!DOCTYPE html>");
+		w.println("<html>");
+		w.println("<head>");
+		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
+		w.println("<title>" + title + "</title>");
+		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
+		w.println("<link rel=\"stylesheet\" href=\"w/layout.css\">");
+		w.println("<link rel=\"stylesheet\" href=\"w/colours.css\">");
+		w.println("<style>");
+		w.println("body, div, input, label, p, span {font-family: sans-serif;}");
+		w.println("a:link, a:visited {text-decoration: none;}");
+		w.println("</style>");
+		w.println("</head>");
+		w.println("<body>");
+	}
+
+	public void endBody(final PrintWriter w) {
+		w.println("</body></html>");
 	}
 
 	private static void printDevices(final PrintWriter w, final Collection<? extends Device<?, ?, ?>> devices) {

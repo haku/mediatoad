@@ -1,7 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,7 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.text.StringEscapeUtils;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -88,108 +86,6 @@ public class ServletCommon {
 
 	public static void setHtmlContentType(final HttpServletResponse resp) {
 		resp.setContentType("text/html; charset=utf-8");
-	}
-
-	public void headerAndStartBody(final PrintWriter w, final String title) {
-		headerAndStartBody(w, "", title);
-	}
-
-	public void headerAndStartBody(final PrintWriter w, final String pathPrefix, final String title, final String... extraHeaderLines) {
-		w.println("<!DOCTYPE html>");
-		w.println("<html>");
-		w.println("<head>");
-		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
-
-		w.print("<title>");
-		w.print(pageTitle(title));
-		w.println("</title>");
-
-		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
-
-		if (this.mediaDbEnabled) {
-			w.print("<link rel=\"stylesheet\" href=\"");
-			w.print(pathPrefix);
-			w.println("w/autocomplete.css\">");
-			w.println("<script src=\"https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js\"></script>");
-		}
-		for (final String line : extraHeaderLines) {
-			w.println(line);
-		}
-
-		w.print("<link rel=\"stylesheet\" href=\"");
-		w.print(pathPrefix);
-		w.println("w/layout.css\">");
-		// After the autocomplete css file for priority reasons.
-		w.print("<link rel=\"stylesheet\" href=\"");
-		w.print(pathPrefix);
-		w.println("w/colours.css\">");
-
-		w.println("<style>");
-		w.println("body, div, input, label, p, span {font-family: sans-serif;}");
-		w.println("a:link, a:visited {text-decoration: none;}");
-		w.println("</style>");
-
-		w.println("</head>");
-		w.println("<body>");
-	}
-
-	public void endBody(final PrintWriter w) {
-		w.println("</body></html>");
-	}
-
-	public void printLinkRow(final HttpServletRequest req, final PrintWriter w) {
-		printLinkRow(req, w, "");
-	}
-
-	public void printLinkRow(final HttpServletRequest req, final PrintWriter w, final String pathPrefix) {
-		w.println("<div>");
-
-		w.print("<a href=\"");
-		w.print(pathPrefix);
-		w.println("./\">Home</a>");
-
-		final String username = ReqAttr.USERNAME.get(req);
-		if (username != null) {
-			w.print("<span>[ ");
-			w.print(username);
-			w.println(" ]</span>");
-		}
-		else {
-			w.println("<form style=\"display:inline;\" action=\"\" method=\"GET\">");
-			w.println("<input type=\"hidden\" name=\"action\" value=\"login\">");
-			w.println("<input type=\"submit\" value=\"Login\">");
-			w.println("</form>");
-		}
-
-		final String query = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY));
-		w.print("<form style=\"display:inline-block;\" action=\"");
-		w.print(pathPrefix);
-		w.println("search\" method=\"GET\">");
-		w.println("<div class=\"autocomplete_wrapper search_wrapper\">");
-		w.print("<input type=\"text\" id=\"search\" name=\"query\" value=\"");
-		w.print(StringEscapeUtils.escapeHtml4(query));
-		w.println("\" style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
-		w.println("</div>");
-
-		if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req)) {
-			final String remote = StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_REMOTE));
-			final String remoteChecked = StringUtils.isNotBlank(remote) ? "checked" : "";
-			w.println("<span style=\"display:inline-block;\">");
-			w.print("<input type=\"checkbox\" id=\"remote\" name=\"remote\" value=\"true\" ");
-			w.print(remoteChecked);
-			w.println(">");
-			w.println("<label for=\"remote\">remote</label>");
-			w.println("</span>");
-		}
-		w.println("<input type=\"submit\" value=\"Search\">");
-		w.println("</form>");
-		if (this.mediaDbEnabled) {
-			w.print("<script src=\"");
-			w.print(pathPrefix);
-			w.println("w/autocomplete-search.js\"></script>");
-		}
-
-		w.println("</div>");
 	}
 
 	public String debugFooter() {
