@@ -1,6 +1,6 @@
 {{<page}}
 	{{$body}}
-	<h3>{{list_title}}{{#node_parent_id}} <a id="up" href="{{node_parent_id}}">up</a>{{/node_parent_id}}</h3>
+	<h3>{{results.group_title}}{{#up_link_path}} <a id="up" href="{{up_link_path}}">up</a>{{/up_link_path}}</h3>
 	{{#show_list_link_row}}
 	<div class="list_link_row">
 		<span><a href="?sort=modified">Sort by Modified</a></span>
@@ -8,26 +8,20 @@
 	</div>
 	{{/show_list_link_row}}
 	<ul>
-		{{#list_items}}
-		<li><a href="{{path_prefix}}{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path_prefix}}{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
-		{{/list_items}}
+		{{#results.list_items}}
+		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
+		{{/results.list_items}}
 	</ul>
 
-	{{#thumbs}}
-	<span class="thumbnail"><a href="{{path_prefix}}{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{path_prefix}}{{thumb_path}}" title="{{title}}"></a></span>
-	{{/thumbs}}
+	{{#results.thumbs}}
+	<span class="thumbnail"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
+	{{/results.thumbs}}
 
 	<h3>Tags</h3>
 	{{^tags}}(no tags){{/tags}}
 	{{#tags}}
 	<a style="padding-right: 0.5em;" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/tags}}
-
-{{#debugfooter}}
-<div style="padding: 0.5em; font-family: monospace; white-space: pre-wrap;">
-{{{debugfooter}}}
-</div>
-{{/debugfooter}}
 
 	{{/body}}
 {{/page}}

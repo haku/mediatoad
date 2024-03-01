@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.ServletException;
@@ -20,7 +19,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.model.ModelUtil;
 import org.fourthline.cling.model.action.ActionInvocation;
 import org.fourthline.cling.model.message.UpnpResponse;
 import org.fourthline.cling.model.meta.RemoteDevice;
@@ -38,7 +36,6 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
-import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
@@ -166,31 +163,8 @@ public class SearchServlet extends HttpServlet {
 		int x = 0;
 		for (final ContentItem i : items) {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
-			appendItem(resultGroup, i, q);
+			resultGroup.addContentItem(i, q, this.imageResizer);
 			x += 1;
-		}
-	}
-
-	// TODO merge with DirServlet.appendItem()
-	private void appendItem(
-			final ResultGroupScope resultGroup,
-			final ContentItem i,
-			final String linkQuery) throws IOException {
-
-		if (this.imageResizer != null && i.getFormat().getContentGroup() == ContentGroup.IMAGE) {
-			resultGroup.addLocalThumb(
-					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
-					C.THUMBS_PATH_PREFIX + i.getId(),
-					i.getTitle());
-		}
-		else {
-			final long fileLength = i.getFileLength();
-			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
-			resultGroup.addLocalItem(
-					C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
-					i.getFile().getName(),
-					fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
-					durationSeconds > 0 ? ModelUtil.toTimeString(durationSeconds) : null);
 		}
 	}
 
