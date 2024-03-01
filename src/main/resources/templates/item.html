@@ -1,6 +1,6 @@
 {{<page}}
 	{{$body}}
-	<div style="margin: 1em; display: flex; justify-content: space-between;">
+	<div class="prevnext_bar">
 		{{#previous_path}}<a id="previous" href="{{{previous_path}}}">&lt;= Previous</a>{{/previous_path}}{{^previous_path}}<span></span>{{/previous_path}}
 		<a id="up" href="{{{up_path}}}">{{up_title}}</a>
 		{{#next_path}}<a id="next" href="{{{next_path}}}">Next =&gt;</a>{{/next_path}}{{^next_path}}<span></span>{{/next_path}}
@@ -8,24 +8,27 @@
 
 	<div class="mainimage">
 		<img src="{{img_path}}">
+		<div class="nav">
+			{{#previous_path}}<a class="previous" href="{{previous_path}}"></a>{{/previous_path}}
+			{{#next_path}}<a class="next" href="{{next_path}}"></a>{{/next_path}}
+		</div>
 	</div>
 
 	{{#db_enabled}}
 	<div>
 		{{^edit_tags}}
 		{{#tags}}
-		<a style="padding-right: 0.5em;" href="{{{search_path}}}">{{tag}}</a>
+		<a class="tag_simple_row_item" href="{{{search_path}}}">{{tag}}</a>
 		{{/tags}}
-		<br>
 		{{/edit_tags}}
 
 		{{#edit_tags}}
 		<form action="" method="POST">
 			<input type="hidden" name="action" value="rmtags">
 			{{#tags}}
-			<input type="checkbox" name="b64tag"  style="margin: 0.5em;" value="{{b64}}" id="{{b64}}"><label style="margin: 0.5em;" for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label><br>
+			<input type="checkbox" name="b64tag" style="margin: 0.5em;" value="{{b64}}" id="{{b64}}"><label style="margin: 0.5em;" for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label><br>
 			{{/tags}}
-			<input type="submit" value="Delete"  style="margin: 0.5em;">
+			<input type="submit" value="Delete" style="margin: 0.5em;">
 		</form>
 		{{/edit_tags}}
 
@@ -46,8 +49,12 @@
 	</div>
 	{{/db_enabled}}
 
-	<a href="{{img_path}}" download="{{img_file_name}}">Download</a>
-	<a style="padding-left: 1em;" href="{{dir_path}}">{{dir_name}}</a>
-	<div style="padding: 0.5em; font-family: monospace; white-space: pre-wrap;">{{details}}</div>
+	<div class="link_row">
+		<a href="{{img_path}}" download="{{img_file_name}}">Download</a>
+		<a href="{{dir_path}}">{{dir_name}}</a>
+	</div>
+	<div class="text_details">{{details}}</div>
 	{{/body}}
 {{/page}}
+{{! vim: noexpandtab softtabstop=0
+}}

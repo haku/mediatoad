@@ -2,7 +2,7 @@
 	{{$body}}
 	<h3>{{results.group_title}}{{#up_link_path}} <a id="up" href="{{up_link_path}}">up</a>{{/up_link_path}}</h3>
 	{{#show_list_link_row}}
-	<div class="list_link_row">
+	<div class="link_row">
 		<span><a href="?sort=modified">Sort by Modified</a></span>
 		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
 	</div>
@@ -20,7 +20,7 @@
 	<h3>Tags</h3>
 	{{^tags}}(no tags){{/tags}}
 	{{#tags}}
-	<a style="padding-right: 0.5em;" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
+	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/tags}}
 
 	{{/body}}

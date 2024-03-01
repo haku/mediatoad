@@ -1,4 +1,4 @@
-.list_link_row {
+.link_row {
   display: flex;
   justify-content: flex-end;
   gap: 1em;
@@ -14,11 +14,47 @@
   max-height: 5em;
 }
 
+.tag_simple_row_item {
+  padding-right: 0.5em;
+}
+
+.prevnext_bar {
+  margin: 1em;
+  display: flex;
+  justify-content: space-between;
+}
+
 .mainimage {
-  padding-top: 1em;
   text-align: center;
+  position: relative;
 }
 .mainimage img {
   max-width: 100%;
   max-height: 50em;
+}
+.mainimage .nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+.mainimage .nav .previous {
+  position: absolute;
+  left: 0;
+  width: 40%;
+  height: 100%;
+}
+.mainimage .nav .next {
+  position: absolute;
+  right: 0;
+  width: 40%;
+  height: 100%;
+}
+
+.text_details {
+  padding: 0.5em;
+  font-family: monospace;
+  white-space: pre-wrap;
+  overflow: scroll;
 }
