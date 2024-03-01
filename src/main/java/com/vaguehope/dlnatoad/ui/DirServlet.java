@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -18,10 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -49,16 +47,14 @@ public class DirServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final ImageResizer imageResizer;
 	private final DbCache dbCache;
-	private final Mustache nodeIndexTemplate;
+	private final Supplier<Mustache> nodeIndexTemplate;
 
 	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ImageResizer imageResizer, final DbCache dbCache) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.imageResizer = imageResizer;
 		this.dbCache = dbCache;
-
-		final MustacheFactory mf = new DefaultMustacheFactory(new ClasspathResolver("templates"));
-		this.nodeIndexTemplate = mf.compile("nodeindex.html");
+		this.nodeIndexTemplate = servletCommon.mustacheTemplate("nodeindex.html");
 	}
 
 	@Override
@@ -110,7 +106,7 @@ public class DirServlet extends HttpServlet {
 		}
 
 		ServletCommon.setHtmlContentType(resp);
-		this.nodeIndexTemplate.execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
+		this.nodeIndexTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
 	}
 
 	private static String makeIndexTitle(final ContentNode node, final List<ContentNode> nodesUserHasAuth) {

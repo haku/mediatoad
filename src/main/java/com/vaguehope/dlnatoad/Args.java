@@ -31,6 +31,7 @@ public class Args {
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
 	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
+	@Option(name = "--templateroot", usage = "Override mustache template location, useful for UI dev.") private String templateRoot;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public static class ArgsException extends Exception {
@@ -141,6 +142,10 @@ public class Args {
 
 	public File getWebRoot() throws ArgsException {
 		return checkIsDirOrNull(this.webRoot);
+	}
+
+	public File getTemplateRoot() throws ArgsException {
+		return checkIsDirOrNull(this.templateRoot);
 	}
 
 	private static File checkIsDirOrNull(final String path) throws ArgsException {

@@ -60,7 +60,7 @@ public class DirServletTest {
 
 		final ImageResizer imageResizer = new ImageResizer(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		final ServletCommon servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true);
+		final ServletCommon servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
 		this.undertest = new DirServlet(servletCommon, this.contentTree, imageResizer, null);
 
 		this.req = new MockHttpServletRequest();

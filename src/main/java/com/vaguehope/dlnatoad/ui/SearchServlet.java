@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -31,10 +32,7 @@ import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.SortCriterion;
 import org.fourthline.cling.support.model.item.Item;
 
-import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -69,7 +67,7 @@ public class SearchServlet extends HttpServlet {
 	private final UpnpService upnpService;
 	private final ImageResizer imageResizer;
 	private final SearchEngine searchEngine;
-	private final Mustache resultsTemplate;
+	private final Supplier<Mustache> resultsTemplate;
 
 	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final ImageResizer imageResizer) {
 		this(servletCommon, contentTree, mediaDb, upnpService, imageResizer, new SearchEngine());
@@ -82,9 +80,7 @@ public class SearchServlet extends HttpServlet {
 		this.upnpService = upnpService;
 		this.imageResizer = imageResizer;
 		this.searchEngine = searchEngine;
-
-		final MustacheFactory mf = new DefaultMustacheFactory(new ClasspathResolver("templates"));
-		this.resultsTemplate = mf.compile("searchresults.html");
+		this.resultsTemplate = servletCommon.mustacheTemplate("searchresults.html");
 	}
 
 	@SuppressWarnings("resource")
@@ -145,7 +141,7 @@ public class SearchServlet extends HttpServlet {
 				}
 
 				ServletCommon.setHtmlContentType(resp);
-				this.resultsTemplate.execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
+				this.resultsTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
 			}
 			catch (final Exception e) {
 				ServletCommon.returnStatus(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to run query.");

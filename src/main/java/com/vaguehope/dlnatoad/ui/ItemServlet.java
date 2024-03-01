@@ -10,6 +10,7 @@ import java.util.Base64.Encoder;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -21,10 +22,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
-import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.Permission;
@@ -58,15 +56,13 @@ public class ItemServlet extends HttpServlet {
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
-	private final Mustache pageTemplate;
+	private final Supplier<Mustache> pageTemplate;
 
 	public ItemServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
-
-		final MustacheFactory mf = new DefaultMustacheFactory(new ClasspathResolver("templates"));
-		this.pageTemplate = mf.compile("item.html");
+		this.pageTemplate = servletCommon.mustacheTemplate("item.html");
 	}
 
 	@SuppressWarnings("resource")
@@ -141,7 +137,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		ServletCommon.setHtmlContentType(resp);
-		this.pageTemplate.execute(resp.getWriter(), new Object[] { pageScope, itemScope }).flush();
+		this.pageTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, itemScope }).flush();
 	}
 
 	/**

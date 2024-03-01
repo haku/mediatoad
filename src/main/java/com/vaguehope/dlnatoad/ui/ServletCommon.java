@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -14,6 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
+import com.github.mustachejava.resolver.ClasspathResolver;
+import com.github.mustachejava.resolver.FileSystemResolver;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
@@ -28,16 +35,21 @@ public class ServletCommon {
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
 	private final boolean mediaDbEnabled;
+	private final File templateRoot;
+
+	private final MustacheFactory defaultMustacheFactory = new DefaultMustacheFactory(new ClasspathResolver("templates"));
 
 	public ServletCommon(
 			final ContentTree contentTree,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
-			final boolean mediaDbEnabled) {
+			final boolean mediaDbEnabled,
+			final File templateRoot) {
 		this.contentTree = contentTree;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
 		this.mediaDbEnabled = mediaDbEnabled;
+		this.templateRoot = templateRoot;
 	}
 
 	public static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {
@@ -63,6 +75,19 @@ public class ServletCommon {
 
 	public static void returnForbidden(final HttpServletResponse resp) throws IOException {
 		ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+	}
+
+	public Supplier<Mustache> mustacheTemplate(final String name) {
+		if (this.templateRoot == null) {
+			final Mustache compiled = this.defaultMustacheFactory.compile(name);
+			return () -> compiled;
+		}
+
+		// Bypass caching when dev testing.
+		return () -> {
+			final MustacheFactory mf = new DefaultMustacheFactory(new FileSystemResolver(this.templateRoot));
+			return mf.compile(name);
+		};
 	}
 
 	public PageScope pageScope(final HttpServletRequest req, final String title, final String pathPrefix) {
