@@ -30,6 +30,7 @@ import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.FileData;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
+import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
@@ -57,11 +58,13 @@ public class ItemServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
 	private final Supplier<Mustache> pageTemplate;
+	private final TagAutocompleter tagAutocompleter;
 
-	public ItemServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb) {
+	public ItemServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final TagAutocompleter tagAutocompleter) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
+		this.tagAutocompleter = tagAutocompleter;
 		this.pageTemplate = servletCommon.mustacheTemplate("item.html");
 	}
 
@@ -333,6 +336,9 @@ public class ItemServlet extends HttpServlet {
 			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
 			resp.addHeader("Location", item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"));
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
+
+			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
+			this.tagAutocompleter.addOrIncrementTag(tag);
 		}
 		else if ("rmtags".equalsIgnoreCase(req.getParameter("action"))) {
 			final String[] b64tagsandclss = ServletCommon.readRequiredParams(req, resp, "b64tag", 1);
@@ -362,6 +368,11 @@ public class ItemServlet extends HttpServlet {
 			LOG.info("{} rm tags from {}: {}", username, item.getId(), Arrays.toString(b64tagsandclss));
 			resp.addHeader("Location", item.getId() + ServletCommon.query(req));
 			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tags removed.");
+
+			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
+			for (final String tag : tags) {
+				this.tagAutocompleter.decrementTag(tag);
+			}
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");

@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,7 @@ import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -39,6 +41,7 @@ public class ItemServletTest {
 	private MockContent mockContent;
 	private ItemServlet undertest;
 	private MediaDb mediaDb;
+	private TagAutocompleter tagAutocompleter;
 
 	private MockHttpServletRequest req;
 	private MockHttpServletResponse resp;
@@ -48,7 +51,8 @@ public class ItemServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.mediaDb = spy(new InMemoryMediaDb());
-		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, true, null), this.contentTree, this.mediaDb);
+		this.tagAutocompleter = mock(TagAutocompleter.class);
+		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, true, null), this.contentTree, this.mediaDb, this.tagAutocompleter);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -116,6 +120,7 @@ public class ItemServletTest {
 		assertEquals("Forbidden\n", this.resp.getContentAsString());
 		assertEquals(403, this.resp.getStatus());
 		verifyNoInteractions(this.mediaDb);
+		verifyNoInteractions(this.tagAutocompleter);
 	}
 
 	@Test
@@ -142,6 +147,7 @@ public class ItemServletTest {
 		assertEquals("Forbidden\n", this.resp.getContentAsString());
 		assertEquals(403, this.resp.getStatus());
 		verifyNoInteractions(this.mediaDb);
+		verifyNoInteractions(this.tagAutocompleter);
 	}
 
 	@Test
@@ -155,6 +161,8 @@ public class ItemServletTest {
 		assertEquals("Tag added.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
+
+		verify(this.tagAutocompleter).addOrIncrementTag(tagToAdded);
 	}
 
 	@Test
@@ -169,6 +177,8 @@ public class ItemServletTest {
 		assertEquals("Tag added.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
+
+		verify(this.tagAutocompleter).addOrIncrementTag(tagToAdded);
 	}
 
 	@Test
@@ -186,6 +196,8 @@ public class ItemServletTest {
 		assertEquals("Tags removed.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertFalse(this.mediaDb.getTags(item.getId(), false).iterator().hasNext());
+
+		verify(this.tagAutocompleter).decrementTag(tagToRm);
 	}
 
 	private static AuthList makeAuthList() {

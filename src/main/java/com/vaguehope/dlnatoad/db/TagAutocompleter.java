@@ -6,8 +6,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -28,17 +30,20 @@ public class TagAutocompleter {
 	private static final Logger LOG = LoggerFactory.getLogger(TagAutocompleter.class);
 
 	private final MediaDb db;
+	private final ScheduledExecutorService schExSvc;
+
 	private FragmentAndTag[] tagsArr;
 	private FragmentAndTag[] fragmentsArr;
 
-	public TagAutocompleter(final MediaDb db) {
+	public TagAutocompleter(final MediaDb db, final ScheduledExecutorService schExSvc) {
 		this.db = db;
+		this.schExSvc = schExSvc;
 	}
 
-	public void start(final ScheduledExecutorService schExSvc) {
-		schExSvc.submit(() -> {
+	public void start() {
+		this.schExSvc.submit(() -> {
 			// TODO change to scheduleWithFixedDelay() and have a way to check if the DB has changed before running.
-			schExSvc.schedule(new Worker(), START_DELAY_SECONDS, TimeUnit.SECONDS);
+			this.schExSvc.schedule(new Worker(), START_DELAY_SECONDS, TimeUnit.SECONDS);
 		});
 	}
 
@@ -52,6 +57,18 @@ public class TagAutocompleter {
 				LOG.error("Exception while generating autocomplete index.", e);
 			}
 		}
+	}
+
+	public void addOrIncrementTag(final String tag) {
+		this.schExSvc.execute(() -> {
+			internalAddOrIncrementTag(tag, 1);
+		});
+	}
+
+	public void decrementTag(final String tag) {
+		this.schExSvc.execute(() -> {
+			internalAddOrIncrementTag(tag, -1);
+		});
 	}
 
 	public List<TagFrequency> suggestTags(final String input) {
@@ -82,12 +99,13 @@ public class TagAutocompleter {
 		final FragmentAndTag[] matches = Arrays.copyOfRange(idx, rangeStarts + 1, rangeEnds);
 		Arrays.sort(matches, FragmentAndTag.Order.COUNT_DESC);
 
-		final List<TagFrequency> ret = new ArrayList<>();
+		// set to remove duplicates, eg: searching "2" will match "123923" as both "23923" and "23" fragments.
+		final Set<TagFrequency> ret = new LinkedHashSet<>();
 		for (int i = 0; i < matches.length && i < MAX_SUGGESTIONS; i++) {
 			final FragmentAndTag f = matches[i];
 			ret.add(new TagFrequency(f.tag, f.fileCount));
 		}
-		return ret;
+		return new ArrayList<>(ret);
 	}
 
 	private static class FragmentPrefixComp implements Comparator<FragmentAndTag> {
@@ -121,6 +139,8 @@ public class TagAutocompleter {
 		for (final TagFrequency tf : tags) {
 			idx.add(new FragmentAndTag(tf.getTag(), tf.getTag(), tf.getCount()));
 		}
+		// Ensure sort is consistent with lookup, sqlite can sort slightly differently sometimes.
+		idx.sort(FragmentAndTag.Order.FRAGMENT_ASC);
 		LOG.info("Tags index: {}", idx.size());
 		this.tagsArr = idx.toArray(new FragmentAndTag[idx.size()]);
 	}
@@ -164,6 +184,73 @@ public class TagAutocompleter {
 		return ret;
 	}
 
+	private void internalAddOrIncrementTag(final String tag, final int delta) {
+		addOrIncrementExactTag(tag, delta);
+		addOrIncrementFragments(tag, delta);
+	}
+
+	// Only synchronized to stop it interleaving with itself.
+	private synchronized void addOrIncrementExactTag(final String tag, final int delta) {
+		final FragmentPrefixComp comp = new FragmentPrefixComp(tag);
+		final int randomIndex = Arrays.binarySearch(this.tagsArr, new FragmentAndTag(tag, "unused", -1), comp);
+
+		boolean found = false;
+		if (randomIndex >= 0) {
+			final FragmentAndTag match = this.tagsArr[randomIndex];
+			if (tag.equals(match.tag)) {
+				this.tagsArr[randomIndex] = match.changeCount(delta);
+				found = true;
+			}
+		}
+
+		if (!found && delta > 0) {
+			final int newIndex = randomIndex >= 0 ? randomIndex : 0 - randomIndex - 1;
+			final FragmentAndTag[] newTagsArr = new FragmentAndTag[this.tagsArr.length + 1];
+			System.arraycopy(this.tagsArr, 0, newTagsArr, 0, newIndex);
+			System.arraycopy(this.tagsArr, newIndex, newTagsArr, newIndex + 1, this.tagsArr.length - newIndex);
+			newTagsArr[newIndex] = new FragmentAndTag(tag, tag, delta);
+			this.tagsArr = newTagsArr;
+		}
+	}
+
+	// Only synchronized to stop it interleaving with itself.
+	private synchronized void addOrIncrementFragments(final String tag, final int delta) {
+		final List<String> fragments = new ArrayList<>();
+		for (int i = 1; i < tag.length(); i++) {
+			final String frag = tag.substring(i);
+			if (Character.isWhitespace(frag.charAt(0))) continue;
+			fragments.add(frag);
+		}
+
+		for (final String frag : fragments) {
+			final FragmentPrefixComp comp = new FragmentPrefixComp(frag);
+			final int randomIndex = Arrays.binarySearch(this.fragmentsArr, new FragmentAndTag(frag, "unused", -1), comp);
+
+			// TODO atm this only increments fragments already in the index.
+			// it does not insert new fragments, as that would require re-ranking them etc.
+			if (randomIndex < 0) continue;
+
+			int rangeStarts = randomIndex;
+			int rangeEnds = randomIndex;
+			while (rangeStarts > -1
+					&& this.fragmentsArr[rangeStarts].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
+				rangeStarts--;
+			}
+			while (rangeEnds < this.fragmentsArr.length
+					&& this.fragmentsArr[rangeEnds].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
+				rangeEnds++;
+			}
+			rangeStarts += 1;
+
+			for (int i = rangeStarts; i < rangeEnds; i++) {
+				final FragmentAndTag match = this.fragmentsArr[i];
+				if (tag.equals(match.tag) && frag.equals(match.fragment)) {
+					this.fragmentsArr[i] = match.changeCount(delta);
+				}
+			}
+		}
+	}
+
 	static class FragmentAndTag {
 		final String fragment;
 		final String tag;
@@ -175,6 +262,10 @@ public class TagAutocompleter {
 			this.fragment = fragment;
 			this.tag = tag;
 			this.fileCount = fileCount;
+		}
+
+		public FragmentAndTag changeCount(final int delta) {
+			return new FragmentAndTag(this.fragment, this.tag, Math.max(this.fileCount + delta, 0));
 		}
 
 		@Override

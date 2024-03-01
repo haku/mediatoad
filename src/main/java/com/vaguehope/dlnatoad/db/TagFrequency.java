@@ -38,7 +38,7 @@ public class TagFrequency {
 		if (!(obj instanceof TagFrequency)) return false;
 		final TagFrequency that = (TagFrequency) obj;
 		return Objects.equals(this.tag, that.tag)
-				&& Objects.equals(this.count, that.count);
+				&& this.count == that.count;
 	}
 
 	public enum Order implements Comparator<TagFrequency> {

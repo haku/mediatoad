@@ -156,7 +156,7 @@ public final class Main {
 			LOG.info("DB: {}", dbFile.getAbsolutePath());
 			mediaDb = new MediaDb(dbFile);
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
-			tagAutocompleter = new TagAutocompleter(mediaDb);
+			tagAutocompleter = new TagAutocompleter(mediaDb, fsExSvc);
 		}
 		else {
 			mediaDb = null;
@@ -174,7 +174,7 @@ public final class Main {
 				if (dropDir != null) {
 					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
 				}
-				tagAutocompleter.start(fsExSvc);
+				tagAutocompleter.start();
 			}
 		};
 
@@ -320,7 +320,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
-		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb)), "/" + C.ITEM_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb, tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
