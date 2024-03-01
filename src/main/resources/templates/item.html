@@ -1,0 +1,53 @@
+{{<page}}
+	{{$body}}
+	<div style="margin: 1em; display: flex; justify-content: space-between;">
+		{{#previous_path}}<a id="previous" href="{{{previous_path}}}">&lt;= Previous</a>{{/previous_path}}{{^previous_path}}<span></span>{{/previous_path}}
+		<a id="up" href="{{{up_path}}}">{{up_title}}</a>
+		{{#next_path}}<a id="next" href="{{{next_path}}}">Next =&gt;</a>{{/next_path}}{{^next_path}}<span></span>{{/next_path}}
+	</div>
+
+	<div class="mainimage">
+		<img src="{{img_path}}">
+	</div>
+
+	{{#db_enabled}}
+	<div>
+		{{^edit_tags}}
+		{{#tags}}
+		<a style="padding-right: 0.5em;" href="{{{search_path}}}">{{tag}}</a>
+		{{/tags}}
+		<br>
+		{{/edit_tags}}
+
+		{{#edit_tags}}
+		<form action="" method="POST">
+			<input type="hidden" name="action" value="rmtags">
+			{{#tags}}
+			<input type="checkbox" name="b64tag"  style="margin: 0.5em;" value="{{b64}}" id="{{b64}}"><label style="margin: 0.5em;" for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label><br>
+			{{/tags}}
+			<input type="submit" value="Delete"  style="margin: 0.5em;">
+		</form>
+		{{/edit_tags}}
+
+		{{#tags_edit_path}}
+		<div style="padding: 0.5em; display: flex; justify-content: center;">
+			<a style="padding-right: 0.5em;" href="{{{tags_edit_path}}}">Edit</a>
+			<form style="display:inline;" action="{{{tags_post_path}}}" method="POST">
+				<input type="hidden" name="action" value="addtag">
+				<div class="autocomplete_wrapper addTag_wrapper">
+					<input type="text" id="addTag" name="addTag" value="" {{#autofocus_add_tag}}autofocus{{/autofocus_add_tag}}
+						style="width: 20em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+				</div>
+				<input type="submit" value="Add">
+			</form>
+			<script src="../w/autocomplete-addtag.js"></script>
+		</div>
+		{{/tags_edit_path}}
+	</div>
+	{{/db_enabled}}
+
+	<a href="{{img_path}}" download="{{img_file_name}}">Download</a>
+	<a style="padding-left: 1em;" href="{{dir_path}}">{{dir_name}}</a>
+	<div style="padding: 0.5em; font-family: monospace; white-space: pre-wrap;">{{details}}</div>
+	{{/body}}
+{{/page}}

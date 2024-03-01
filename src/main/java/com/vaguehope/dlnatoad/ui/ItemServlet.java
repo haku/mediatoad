@@ -1,7 +1,6 @@
 package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -22,6 +21,10 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
+import com.github.mustachejava.resolver.ClasspathResolver;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.Permission;
@@ -31,10 +34,13 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.templates.ItemScope;
+import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class ItemServlet extends HttpServlet {
@@ -52,11 +58,15 @@ public class ItemServlet extends HttpServlet {
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
+	private final Mustache pageTemplate;
 
 	public ItemServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
+
+		final MustacheFactory mf = new DefaultMustacheFactory(new ClasspathResolver("templates"));
+		this.pageTemplate = mf.compile("item.html");
 	}
 
 	@SuppressWarnings("resource")
@@ -87,90 +97,42 @@ public class ItemServlet extends HttpServlet {
 			return;
 		}
 
-		ServletCommon.setHtmlContentType(resp);
-		final PrintWriter w = resp.getWriter();
-		this.servletCommon.headerAndStartBody(w, "../", item.getTitle());
-		this.servletCommon.printLinkRow(req, w, "../");
+		final PageScope pageScope = this.servletCommon.pageScope(req, item.getTitle(), "../");
+		final ItemScope itemScope = new ItemScope();
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, itemScope);
 
-		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, w);
+		itemScope.img_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
+		itemScope.img_file_name = item.getFile().getName();
+		itemScope.dir_path = "../" + node.getId();
+		itemScope.dir_name = node.getTitle();
 
-		w.println("<div class=\"mainimage\">");
-		w.print("<img src=\"../");
-		w.print(C.CONTENT_PATH_PREFIX);
-		w.print(item.getId());
-		w.print(".");
-		w.print(item.getFormat().getExt());
-		w.println("\">");
-		w.println("</div>");
-
-		w.println("<div>");
 		if (this.mediaDb != null) {
 			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req) && (!node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
 			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
+			itemScope.edit_tags = editMode;
+
 			try {
-				if (editMode) {
-					printEditTags(item, w);
-				}
-				else {
-					printSimpleTags(item, w);
-				}
+				addTagsToScope(item, itemScope);
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
 			}
 
 			if (allowEditTags) {
-				w.println("<div style=\"padding: 0.5em; display: flex; justify-content: center;\">");
-				w.print("<a style=\"padding-right: 0.5em;\" href=\"");
-				w.print("?edit=true" + editReqQueryParms);
-				w.println("\">Edit</a>");
-				w.print("<form style=\"display:inline;\" action=\"?");
-				w.print(editReqQueryParms);
-				w.println("\" method=\"POST\">");
-				w.println("<input type=\"hidden\" name=\"action\" value=\"addtag\">");
-				w.println("<div class=\"autocomplete_wrapper addTag_wrapper\">");
-				w.print("<input type=\"text\" id=\"addTag\" name=\"addTag\" value=\"\"");
-				if ("addtag".equals(req.getParameter("autofocus"))) w.print(" autofocus");
-				w.println(" style=\"width: 20em;\" autocomplete=\"off\" spellcheck=false autocorrect=\"off\" autocapitalize=\"off\">");
-				w.println("</div>");
-				w.println("<input type=\"submit\" value=\"Add\">");
-				w.println("</form>");
-				w.println("<script src=\"../w/autocomplete-addtag.js\"></script>");
-				w.println("</div>");
+				itemScope.tags_edit_path = "?edit=true" + editReqQueryParms;
+				itemScope.tags_post_path = "?" + editReqQueryParms;
+				itemScope.autofocus_add_tag = "addtag".equals(req.getParameter("autofocus"));
 			}
 		}
-		w.println("</div>");
-
-		w.print("<a href=\"../");
-		w.print(C.CONTENT_PATH_PREFIX);
-		w.print(item.getId());
-		w.print(".");
-		w.print(item.getFormat().getExt());
-		w.print("\" download=\"");
-		w.print(StringEscapeUtils.escapeHtml4(item.getFile().getName()));
-		w.println("\">Download</a>");
-
-		w.print("<a style=\"padding-left: 1em;\" href=\"../");
-		w.print(node.getId());
-		w.print("\">");
-		w.print(StringEscapeUtils.escapeHtml4(node.getTitle()));
-		w.println("</a>");
 
 		if (this.mediaDb != null) {
 			try {
 				final FileData fileData = this.mediaDb.getFileData(item.getFile());
 				if (fileData != null) {
-					w.print("<div style=\"padding: 0.5em; font-family: monospace; white-space: pre-wrap;\">");
-					w.println(item.getTitle());
-
-					w.print(item.getWidth());
-					w.print(" × ");
-					w.println(item.getHeight());
-
-					w.println(FileHelper.readableFileSize(fileData.getSize()));
-					w.print("MD5: ");
-					w.println(fileData.getMd5());
-					w.println("</div>");
+					itemScope.details = item.getTitle();
+					itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
+					itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
+					itemScope.details += "\n" + "MD5: " + fileData.getMd5();
 				}
 			}
 			catch (final SQLException e) {
@@ -178,7 +140,8 @@ public class ItemServlet extends HttpServlet {
 			}
 		}
 
-		this.servletCommon.endBody(w);
+		ServletCommon.setHtmlContentType(resp);
+		this.pageTemplate.execute(resp.getWriter(), new Object[] { pageScope, itemScope }).flush();
 	}
 
 	/**
@@ -191,7 +154,7 @@ public class ItemServlet extends HttpServlet {
 			final ContentItem item,
 			final ContentNode node,
 			final String username,
-			final PrintWriter w) throws IOException {
+			final ItemScope itemScope) throws IOException {
 		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String prevIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_PREV_ID, null);
 		final String nextIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NEXT_ID, null);
@@ -203,7 +166,7 @@ public class ItemServlet extends HttpServlet {
 			final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
 			final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
 			if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
-				return printPrevNextLinksHtml(w, query, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
+				return printPrevNextLinksHtml(itemScope, query, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
 			}
 
 			final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
@@ -216,14 +179,13 @@ public class ItemServlet extends HttpServlet {
 				ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
 			}
 			catch (final SQLException e) {
-				w.println("<p>Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()) + "</p>");
-				return "";
+				throw new IOException("Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()));
 			}
 			results = this.contentTree.getItemsForIds(ids, username);
 		}
 		else {
 			if (prevIdParam != null || nextIdParam != null) {
-				return printPrevNextLinksHtml(w, null, node, prevIdParam, nextIdParam, null, null);
+				return printPrevNextLinksHtml(itemScope, null, node, prevIdParam, nextIdParam, null, null);
 			}
 
 			searchOffset = null;
@@ -266,14 +228,14 @@ public class ItemServlet extends HttpServlet {
 		final Integer prevOffset = searchOffset != null ? searchOffset + prevI : null;
 		final Integer nextOffset = searchOffset != null ? searchOffset + nextI : null;
 
-		return printPrevNextLinksHtml(w, query, node, prevId, nextId, prevOffset, nextOffset);
+		return printPrevNextLinksHtml(itemScope, query, node, prevId, nextId, prevOffset, nextOffset);
 	}
 
 	/**
 	 * return always starts with '?'.
 	 */
 	private static String printPrevNextLinksHtml(
-			final PrintWriter w,
+			final ItemScope itemScope,
 			final String query,
 			final ContentNode node,
 			final String prevId,
@@ -299,78 +261,43 @@ public class ItemServlet extends HttpServlet {
 			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId();
 		}
 
-		w.println("<div style=\"margin: 1em; display: flex; justify-content: space-between;\">");
-
 		if (prevId != null) {
-			w.print("<a id=\"previous\" href=\"");
-			w.print(prevId);
-			if (linkQuery != null) w.print(linkQuery);
-			if (prevOffset != null) w.print(prevOffset);
-			w.println("\">&lt;= Previous</a>");
+			itemScope.previous_path = prevId;
+			if (linkQuery != null) itemScope.previous_path += linkQuery;
+			if (prevOffset != null) itemScope.previous_path += prevOffset;
 
 			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId);
 			if (prevOffset != null) editReqQueryParms.append("&").append(PARAM_PREV_OFFSET).append("=").append(prevOffset);
 		}
-		else {
-			w.println("<span></span>");
-		}
 
-		w.print("<a id=\"up\" href=\"");
-		w.print(allPath);
-		w.println("\">" + allTitle + "</a>");
+		itemScope.up_path = allPath;
+		itemScope.up_title = allTitle;
 
 		if (nextId != null) {
-			w.print("<a id=\"next\" href=\"");
-			w.print(nextId);
-			if (linkQuery != null) w.print(linkQuery);
-			if (nextOffset != null) w.print(nextOffset);
-			w.println("\">Next =&gt;</a>");
+			itemScope.next_path = nextId;
+			if (linkQuery != null) itemScope.next_path += linkQuery;
+			if (nextOffset != null) itemScope.next_path += nextOffset;
 
 			editReqQueryParms.append("&").append(PARAM_NEXT_ID).append("=").append(nextId);
 			if (nextOffset != null) editReqQueryParms.append("&").append(PARAM_NEXT_OFFSET).append("=").append(nextOffset);
 		}
-		else {
-			w.println("<span></span>");
-		}
-
-		w.println("</div>");
 
 		return editReqQueryParms.toString();
 	}
 
-	private void printSimpleTags(final ContentItem item, final PrintWriter w) throws SQLException {
-		final Collection<String> tags = this.mediaDb.getTagsSimple(item.getId());
-		if (tags.size() < 1) return;
-		this.servletCommon.printRowOfTagsSimple(w, "../", tags);
-		w.println("</br>");
-	}
-
-	private void printEditTags(final ContentItem item, final PrintWriter w) throws SQLException {
+	private void addTagsToScope(final ContentItem item, final ItemScope itemScope) throws SQLException {
 		final Collection<Tag> tags = this.mediaDb.getTags(item.getId(), false);
-		w.println("<form action=\"\" method=\"POST\">");
-		w.println("<input type=\"hidden\" name=\"action\" value=\"rmtags\">");
 		for (final Tag tag : tags) {
+			final String path = "../search?query=" + StringEscapeUtils.escapeHtml4(
+					UrlEscapers.urlFormParameterEscaper().escape(
+							DbSearchSyntax.makeSingleTagSearch(tag.getTag())));
+
 			final Encoder encoder = Base64.getUrlEncoder().withoutPadding();
 			final String b64tag = encoder.encodeToString(tag.getTag().getBytes(StandardCharsets.UTF_8))
 					+ ":" + encoder.encodeToString(tag.getCls().getBytes(StandardCharsets.UTF_8));
-			w.print("<input type=\"checkbox\" name=\"b64tag\"  style=\"margin: 0.5em;\" value=\"");
-			w.print(b64tag);
-			w.print("\" id=\"");
-			w.print(b64tag);
-			w.print("\">");
-			w.print("<label style=\"margin: 0.5em;\" for=\"");
-			w.print(b64tag);
-			w.print("\">");
-			w.print(StringEscapeUtils.escapeHtml4(tag.getTag()));
-			if (tag.getCls().length() > 0) {
-				w.print(" (");
-				w.print(StringEscapeUtils.escapeHtml4(tag.getCls()));
-				w.print(")");
-			}
-			w.println("</label><br>");
+
+			itemScope.addTag(tag.getTag(), tag.getCls(), path, b64tag);
 		}
-		w.println("<input type=\"submit\" value=\"Delete\"  style=\"margin: 0.5em;\">");
-		w.println("</form>");
 	}
 
 	@Override

@@ -3,7 +3,6 @@ package com.vaguehope.dlnatoad.ui;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,10 +16,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
-import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
@@ -193,29 +190,6 @@ public class ServletCommon {
 		}
 
 		w.println("</div>");
-	}
-
-	public void printRowOfTagsSimple(final PrintWriter w, final String pathPrefix, final Collection<String> tags) {
-		for (final String t : tags) {
-			printRowTag(w, pathPrefix, t, 0);
-		}
-	}
-
-	private static void printRowTag(final PrintWriter w, final String pathPrefix, final String tag, final int count) {
-		w.print("<a style=\"padding-right: 0.5em;\" href=\"");
-		w.print(pathPrefix);
-		w.print("search?query=");
-		w.print(StringEscapeUtils.escapeHtml4(
-				UrlEscapers.urlFormParameterEscaper().escape(
-						DbSearchSyntax.makeSingleTagSearch(tag))));
-		w.print("\">");
-		w.print(StringEscapeUtils.escapeHtml4(tag));
-		if (count > 0) {
-			w.print(" (");
-			w.print(count);
-			w.print(")");
-		}
-		w.println("</a>");
 	}
 
 	public String debugFooter() {
