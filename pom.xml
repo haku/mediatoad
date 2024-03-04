@@ -11,7 +11,7 @@
 	<name>dlnatoad</name>
 
 	<properties>
-		<java.version>1.8</java.version>
+		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<args4j.version>2.33</args4j.version>
 		<cling.version>2.1.2</cling.version>
@@ -328,7 +328,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>3.12.4</version>
+			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
 
