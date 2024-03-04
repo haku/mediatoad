@@ -35,6 +35,7 @@ public class AuthFilter implements Filter {
 
 	private final static Set<String> READ_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 			"GET",
+			"OPTIONS",
 			"PROPFIND"
 			)));
 	private final static Set<String> WRITE_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(

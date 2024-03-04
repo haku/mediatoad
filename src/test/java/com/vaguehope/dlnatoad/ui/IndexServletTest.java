@@ -93,6 +93,18 @@ public class IndexServletTest {
 	}
 
 	@Test
+	public void itHandlesOptionsRequest() throws Exception {
+		this.req.setMethod("OPTIONS");
+		this.req.setPathInfo("/");
+
+		this.undertest.service(this.req, this.resp);
+
+		assertThat(this.resp.getStatus(), equalTo(200));
+		assertThat(this.resp.getHeader("Allow"), equalTo("GET,HEAD,PROPFIND"));
+		assertThat(this.resp.getHeader("DAV"), equalTo("1"));
+	}
+
+	@Test
 	public void itHandlesWebdavPropfindDepth0() throws Exception {
 		this.req.setMethod("PROPFIND");
 		this.req.setPathInfo("/");
