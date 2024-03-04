@@ -14,7 +14,7 @@
 		<java.version>11</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<args4j.version>2.33</args4j.version>
-		<cling.version>2.1.2</cling.version>
+		<jupnp.version>3.0.0</jupnp.version>
 		<teleal.version>1.0.14</teleal.version>
 		<jetty.version>9.4.54.v20240208</jetty.version>
 		<antlr.version>4.13.1</antlr.version>
@@ -186,18 +186,24 @@
 			<version>1.10</version>
 		</dependency>
 
-		<!-- Cling -->
+		<!-- DLNA -->
 
 		<dependency>
-			<groupId>org.fourthline.cling</groupId>
-			<artifactId>cling-core</artifactId>
-			<version>${cling.version}</version>
+			<groupId>org.jupnp</groupId>
+			<artifactId>org.jupnp</artifactId>
+			<version>${jupnp.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>org.fourthline.cling</groupId>
-			<artifactId>cling-support</artifactId>
-			<version>${cling.version}</version>
+			<groupId>org.jupnp</groupId>
+			<artifactId>org.jupnp.support</artifactId>
+			<version>${jupnp.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-client</artifactId>
+			<version>${jetty.version}</version>
 		</dependency>
 
 		<dependency>

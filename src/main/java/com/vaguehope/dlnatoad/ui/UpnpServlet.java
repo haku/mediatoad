@@ -17,14 +17,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
-import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.model.meta.Action;
-import org.fourthline.cling.model.meta.Device;
-import org.fourthline.cling.model.meta.DeviceIdentity;
-import org.fourthline.cling.model.meta.RemoteDevice;
-import org.fourthline.cling.model.meta.RemoteDeviceIdentity;
-import org.fourthline.cling.model.meta.RemoteService;
-import org.fourthline.cling.model.meta.Service;
+import org.jupnp.UpnpService;
+import org.jupnp.model.meta.Action;
+import org.jupnp.model.meta.Device;
+import org.jupnp.model.meta.DeviceIdentity;
+import org.jupnp.model.meta.RemoteDevice;
+import org.jupnp.model.meta.RemoteDeviceIdentity;
+import org.jupnp.model.meta.RemoteService;
+import org.jupnp.model.meta.Service;
 
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 

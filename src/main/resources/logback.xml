@@ -13,12 +13,9 @@
 	</appender>
 
 	<logger name="com.vaguehope.dlnatoad" level="INFO" />
-	<logger name="org.fourthline.cling.binding.xml.DeviceDescriptorBinder" level="ERROR" />
-	<logger name="org.fourthline.cling.binding.xml.ServiceDescriptorBinder" level="ERROR" />
-	<logger name="org.fourthline.cling.model.meta.Service" level="ERROR" />
-	<logger name="org.fourthline.cling.protocol.RetrieveRemoteDescriptors" level="ERROR" />
-	<logger name="org.fourthline.cling.transport.spi.StreamClient" level="WARN" />
-	<logger name="org.fourthline.cling.transport.spi.UpnpStream" level="ERROR" />
+
+	<logger name="org.jupnp.transport.impl.async.AsyncServlet" level="WARN" />
+	<logger name="org.jupnp.util.SpecificationViolationReporter" level="ERROR" />
 
 	<root level="info">
 		<appender-ref ref="default" />

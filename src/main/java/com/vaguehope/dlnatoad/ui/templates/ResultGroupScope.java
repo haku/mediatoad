@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.fourthline.cling.model.ModelUtil;
+import org.jupnp.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentGroup;

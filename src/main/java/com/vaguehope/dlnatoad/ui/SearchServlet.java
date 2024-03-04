@@ -19,18 +19,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
-import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.model.action.ActionInvocation;
-import org.fourthline.cling.model.message.UpnpResponse;
-import org.fourthline.cling.model.meta.RemoteDevice;
-import org.fourthline.cling.model.meta.RemoteService;
-import org.fourthline.cling.model.meta.Service;
-import org.fourthline.cling.model.types.ServiceType;
-import org.fourthline.cling.support.contentdirectory.callback.Search;
-import org.fourthline.cling.support.model.DIDLContent;
-import org.fourthline.cling.support.model.Res;
-import org.fourthline.cling.support.model.SortCriterion;
-import org.fourthline.cling.support.model.item.Item;
+import org.jupnp.UpnpService;
+import org.jupnp.model.action.ActionInvocation;
+import org.jupnp.model.message.UpnpResponse;
+import org.jupnp.model.meta.RemoteDevice;
+import org.jupnp.model.meta.RemoteService;
+import org.jupnp.model.meta.Service;
+import org.jupnp.model.types.ServiceType;
+import org.jupnp.support.contentdirectory.callback.Search;
+import org.jupnp.support.model.DIDLContent;
+import org.jupnp.support.model.Res;
+import org.jupnp.support.model.SortCriterion;
+import org.jupnp.support.model.item.Item;
 
 import com.github.mustachejava.Mustache;
 import com.google.common.net.UrlEscapers;
@@ -248,7 +248,7 @@ public class SearchServlet extends HttpServlet {
 		}
 
 		@Override
-		public void received(final ActionInvocation invocation, final DIDLContent didl) {
+		public void received(final ActionInvocation<?> invocation, final DIDLContent didl) {
 			this.payload.set(didl);
 		}
 

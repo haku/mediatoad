@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.http.MimeTypes;
-import org.seamless.util.MimeType;
+import org.jupnp.util.MimeType;
 
 public enum MediaFormat {
 

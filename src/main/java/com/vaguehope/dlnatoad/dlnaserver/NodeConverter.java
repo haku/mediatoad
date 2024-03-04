@@ -11,29 +11,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.fourthline.cling.model.ModelUtil;
-import org.fourthline.cling.support.model.DIDLObject;
-import org.fourthline.cling.support.model.PersonWithRole;
-import org.fourthline.cling.support.model.Protocol;
-import org.fourthline.cling.support.model.ProtocolInfo;
-import org.fourthline.cling.support.model.Res;
-import org.fourthline.cling.support.model.WriteStatus;
-import org.fourthline.cling.support.model.container.Container;
-import org.fourthline.cling.support.model.dlna.DLNAAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAConversionIndicator;
-import org.fourthline.cling.support.model.dlna.DLNAConversionIndicatorAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAFlags;
-import org.fourthline.cling.support.model.dlna.DLNAFlagsAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAOperations;
-import org.fourthline.cling.support.model.dlna.DLNAOperationsAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAProfileAttribute;
-import org.fourthline.cling.support.model.dlna.DLNAProfiles;
-import org.fourthline.cling.support.model.dlna.DLNAProtocolInfo;
-import org.fourthline.cling.support.model.item.AudioItem;
-import org.fourthline.cling.support.model.item.ImageItem;
-import org.fourthline.cling.support.model.item.Item;
-import org.fourthline.cling.support.model.item.VideoItem;
-import org.seamless.util.MimeType;
+import org.jupnp.model.ModelUtil;
+import org.jupnp.support.model.DIDLObject;
+import org.jupnp.support.model.PersonWithRole;
+import org.jupnp.support.model.Protocol;
+import org.jupnp.support.model.ProtocolInfo;
+import org.jupnp.support.model.Res;
+import org.jupnp.support.model.WriteStatus;
+import org.jupnp.support.model.container.Container;
+import org.jupnp.support.model.dlna.DLNAAttribute;
+import org.jupnp.support.model.dlna.DLNAConversionIndicator;
+import org.jupnp.support.model.dlna.DLNAConversionIndicatorAttribute;
+import org.jupnp.support.model.dlna.DLNAFlags;
+import org.jupnp.support.model.dlna.DLNAFlagsAttribute;
+import org.jupnp.support.model.dlna.DLNAOperations;
+import org.jupnp.support.model.dlna.DLNAOperationsAttribute;
+import org.jupnp.support.model.dlna.DLNAProfileAttribute;
+import org.jupnp.support.model.dlna.DLNAProfiles;
+import org.jupnp.support.model.dlna.DLNAProtocolInfo;
+import org.jupnp.support.model.item.AudioItem;
+import org.jupnp.support.model.item.ImageItem;
+import org.jupnp.support.model.item.Item;
+import org.jupnp.support.model.item.VideoItem;
+import org.jupnp.util.MimeType;
 
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -144,8 +144,7 @@ public class NodeConverter {
 	}
 
 	private static DLNAProtocolInfo makeProtocolInfo(final MimeType artMimeType) {
-		@SuppressWarnings("rawtypes")
-		final EnumMap<DLNAAttribute.Type, DLNAAttribute> attributes = new EnumMap<>(DLNAAttribute.Type.class);
+		final EnumMap<DLNAAttribute.Type, DLNAAttribute<?>> attributes = new EnumMap<>(DLNAAttribute.Type.class);
 
 		final DLNAProfiles dlnaThumbnailProfile = findDlnaThumbnailProfile(artMimeType);
 		if (dlnaThumbnailProfile != null) {

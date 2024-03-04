@@ -7,24 +7,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import org.fourthline.cling.DefaultUpnpServiceConfiguration;
-import org.fourthline.cling.UpnpService;
-import org.fourthline.cling.UpnpServiceConfiguration;
-import org.fourthline.cling.UpnpServiceImpl;
-import org.fourthline.cling.model.meta.Icon;
-import org.fourthline.cling.model.resource.IconResource;
-import org.fourthline.cling.model.resource.Resource;
-import org.fourthline.cling.protocol.ProtocolFactory;
-import org.fourthline.cling.registry.Registry;
-import org.fourthline.cling.transport.impl.NetworkAddressFactoryImpl;
-import org.fourthline.cling.transport.spi.InitializationException;
-import org.fourthline.cling.transport.spi.NetworkAddressFactory;
+import javax.servlet.Servlet;
 
-import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.jupnp.DefaultUpnpServiceConfiguration;
+import org.jupnp.UpnpService;
+import org.jupnp.UpnpServiceConfiguration;
+import org.jupnp.UpnpServiceImpl;
+import org.jupnp.model.meta.Icon;
+import org.jupnp.model.resource.IconResource;
+import org.jupnp.model.resource.Resource;
+import org.jupnp.protocol.ProtocolFactory;
+import org.jupnp.registry.Registry;
+import org.jupnp.transport.impl.NetworkAddressFactoryImpl;
+import org.jupnp.transport.impl.ServletStreamServerConfigurationImpl;
+import org.jupnp.transport.impl.ServletStreamServerImpl;
+import org.jupnp.transport.spi.InitializationException;
+import org.jupnp.transport.spi.NetworkAddressFactory;
+import org.jupnp.transport.spi.ServletContainerAdapter;
+import org.jupnp.transport.spi.StreamServer;
 
 public class DlnaService {
 
@@ -40,6 +45,7 @@ public class DlnaService {
 
 	public UpnpService start() {
 		final MyUpnpService upnpService = new MyUpnpService(new MyUpnpServiceConfiguration());
+		upnpService.startup();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
@@ -66,22 +72,25 @@ public class DlnaService {
 	private class MyUpnpServiceConfiguration extends DefaultUpnpServiceConfiguration {
 
 		@Override
-		protected NetworkAddressFactory createNetworkAddressFactory(final int streamListenPort) {
-			return new MyNetworkAddressFactory(streamListenPort);
+		protected NetworkAddressFactory createNetworkAddressFactory(final int streamListenPort, final int multicastResponsePort) {
+			return new MyNetworkAddressFactory(streamListenPort, multicastResponsePort);
 		}
 
+		private final ServletContainerAdapter jettyAdaptor = new MyJettyServletContainer();
+
+		// Workaround for https://github.com/jupnp/jupnp/issues/225
+		// TODO remove this override once it is fixed.
 		@Override
-		protected ExecutorService createDefaultExecutorService() {
-			return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 30L, TimeUnit.SECONDS,
-					new SynchronousQueue<Runnable>(), new DaemonThreadFactory("upnp"));
+		public StreamServer createStreamServer(final NetworkAddressFactory networkAddressFactory) {
+			return new ServletStreamServerImpl(new ServletStreamServerConfigurationImpl(this.jettyAdaptor, networkAddressFactory.getStreamListenPort()));
 		}
 
 	}
 
 	private class MyNetworkAddressFactory extends NetworkAddressFactoryImpl {
 
-		private MyNetworkAddressFactory(final int streamListenPort) throws InitializationException {
-			super(streamListenPort);
+		private MyNetworkAddressFactory(final int streamListenPort, final int multicastResponsePort) throws InitializationException {
+			super(streamListenPort, multicastResponsePort);
 		}
 
 		@Override
@@ -90,6 +99,77 @@ public class DlnaService {
 				return super.isUsableAddress(iface, address);
 			}
 			return DlnaService.this.addressesToBind.contains(address);
+		}
+
+	}
+
+	private class MyJettyServletContainer implements ServletContainerAdapter {
+
+		protected Server server;
+
+		public MyJettyServletContainer() {
+			resetServer();
+		}
+
+		@Override
+		public void setExecutorService(final ExecutorService executorService) {
+			// not needed.
+		}
+
+		@SuppressWarnings("resource")
+		@Override
+		public int addConnector(final String host, final int port) throws IOException {
+			final ServerConnector connector = new ServerConnector(this.server);
+			connector.setHost(host);
+			connector.setPort(port);
+			connector.open();
+			this.server.addConnector(connector);
+			return connector.getLocalPort();
+		}
+
+		@Override
+		public void registerServlet(final String contextPath, final Servlet servlet) {
+			if (this.server.getHandler() != null) {
+				return;
+			}
+			final ServletContextHandler servletHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+			if (contextPath != null && !contextPath.isEmpty()) {
+				servletHandler.setContextPath(contextPath);
+			}
+			final ServletHolder s = new ServletHolder(servlet);
+			servletHandler.addServlet(s, "/*");
+			this.server.setHandler(servletHandler);
+		}
+
+		@Override
+		public synchronized void startIfNotRunning() {
+			if (!this.server.isStarted() && !this.server.isStarting()) {
+				try {
+					this.server.start();
+				}
+				catch (final Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+
+		@Override
+		public synchronized void stopIfRunning() {
+			if (!this.server.isStopped() && !this.server.isStopping()) {
+				try {
+					this.server.stop();
+				}
+				catch (final Exception e) {
+					throw new RuntimeException(e);
+				}
+				finally {
+					resetServer();
+				}
+			}
+		}
+
+		protected void resetServer() {
+			this.server = new Server();
 		}
 
 	}

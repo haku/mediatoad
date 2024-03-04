@@ -4,19 +4,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
-import org.fourthline.cling.binding.annotations.AnnotationLocalServiceBinder;
-import org.fourthline.cling.model.DefaultServiceManager;
-import org.fourthline.cling.model.ValidationException;
-import org.fourthline.cling.model.meta.DeviceDetails;
-import org.fourthline.cling.model.meta.DeviceIdentity;
-import org.fourthline.cling.model.meta.Icon;
-import org.fourthline.cling.model.meta.LocalDevice;
-import org.fourthline.cling.model.meta.LocalService;
-import org.fourthline.cling.model.meta.ManufacturerDetails;
-import org.fourthline.cling.model.meta.ModelDetails;
-import org.fourthline.cling.model.types.DeviceType;
-import org.fourthline.cling.model.types.UDADeviceType;
-import org.fourthline.cling.support.connectionmanager.ConnectionManagerService;
+import org.jupnp.binding.annotations.AnnotationLocalServiceBinder;
+import org.jupnp.model.DefaultServiceManager;
+import org.jupnp.model.ValidationException;
+import org.jupnp.model.meta.DeviceDetails;
+import org.jupnp.model.meta.DeviceIdentity;
+import org.jupnp.model.meta.Icon;
+import org.jupnp.model.meta.LocalDevice;
+import org.jupnp.model.meta.LocalService;
+import org.jupnp.model.meta.ManufacturerDetails;
+import org.jupnp.model.meta.ModelDetails;
+import org.jupnp.model.types.DeviceType;
+import org.jupnp.model.types.UDADeviceType;
+import org.jupnp.support.connectionmanager.ConnectionManagerService;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -42,7 +42,7 @@ public class MediaServer {
 		final Icon icon = createDeviceIcon();
 
 		final LocalService<ContentDirectoryService> contDirSrv = new AnnotationLocalServiceBinder().read(ContentDirectoryService.class);
-		contDirSrv.setManager(new DefaultServiceManager<ContentDirectoryService>(contDirSrv, ContentDirectoryService.class) {
+		contDirSrv.setManager(new DefaultServiceManager<>(contDirSrv, ContentDirectoryService.class) {
 			@Override
 			protected ContentDirectoryService createServiceInstance () {
 				return new ContentDirectoryService(contentTree, nodeConverter, new SearchEngine(), printAccessLog);

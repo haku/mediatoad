@@ -3,7 +3,7 @@ package com.vaguehope.dlnatoad.dlnaserver;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -12,15 +12,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.fourthline.cling.support.model.DIDLObject;
-import org.fourthline.cling.support.model.DIDLObject.Property;
-import org.fourthline.cling.support.model.PersonWithRole;
-import org.fourthline.cling.support.model.Res;
-import org.fourthline.cling.support.model.container.Container;
-import org.fourthline.cling.support.model.item.AudioItem;
-import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
+import org.jupnp.support.model.DIDLObject;
+import org.jupnp.support.model.DIDLObject.Property;
+import org.jupnp.support.model.PersonWithRole;
+import org.jupnp.support.model.Res;
+import org.jupnp.support.model.container.Container;
+import org.jupnp.support.model.item.AudioItem;
+import org.jupnp.support.model.item.Item;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.media.ContentItem;
