@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.fourthline.cling.model.types.ErrorCode;
 import org.fourthline.cling.support.contentdirectory.AbstractContentDirectoryService;
@@ -37,8 +38,13 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 	private final NodeConverter nodeConverter;
 	private final SearchEngine searchEngine;
 	private final boolean printAccessLog;
+	private final Supplier<DIDLParser> parserSupplier;
 
-	public ContentDirectoryService(final ContentTree contentTree, NodeConverter nodeConverter, final SearchEngine searchEngine, final boolean printAccessLog) {
+	public ContentDirectoryService(final ContentTree contentTree, final NodeConverter nodeConverter, final SearchEngine searchEngine, final boolean printAccessLog) {
+		this(contentTree, nodeConverter, searchEngine, printAccessLog, () -> new DIDLParser());
+	}
+
+	ContentDirectoryService(final ContentTree contentTree, final NodeConverter nodeConverter, final SearchEngine searchEngine, final boolean printAccessLog, final Supplier<DIDLParser> parserSupplier) {
 		super(
 				Arrays.asList("dc:title", "upnp:class"), // also "dc:creator", "dc:date", "res@size"
 				Arrays.asList("dc:title")); // also "dc:creator", "dc:date", "res@size"
@@ -46,6 +52,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 		this.nodeConverter = nodeConverter;
 		this.searchEngine = searchEngine;
 		this.printAccessLog = printAccessLog;
+		this.parserSupplier = parserSupplier;
 	}
 
 	/**
@@ -60,7 +67,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 				if (browseFlag == BrowseFlag.METADATA) {
 					final DIDLContent didl = new DIDLContent();
 					didl.addContainer(this.nodeConverter.makeContainerWithoutSubContainers(node));
-					return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+					return new BrowseResult(this.parserSupplier.get().generate(didl), 1, 1);
 				}
 
 				final List<Container> containers = this.nodeConverter.makeSubContainersWithoutTheirSubContainers(node);
@@ -72,10 +79,10 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			if (item != null) {
 				final DIDLContent didl = new DIDLContent();
 				didl.addItem(this.nodeConverter.makeItem(item));
-				return new BrowseResult(new DIDLParser().generate(didl), 1, 1);
+				return new BrowseResult(this.parserSupplier.get().generate(didl), 1, 1);
 			}
 
-			return new BrowseResult(new DIDLParser().generate(new DIDLContent()), 0, 0);
+			return new BrowseResult(this.parserSupplier.get().generate(new DIDLContent()), 0, 0);
 		}
 		catch (final Exception e) {
 			LOG.warn(String.format("Failed to generate directory listing" +
@@ -128,7 +135,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 		}
 	}
 
-	private static BrowseResult toRangedResult (final List<Container> containers, final List<Item> items, final long firstResult, final long maxResultsParam) throws Exception {
+	private BrowseResult toRangedResult (final List<Container> containers, final List<Item> items, final long firstResult, final long maxResultsParam) throws Exception {
 		final long maxResults = maxResultsParam == 0 ? containers.size() + items.size() : maxResultsParam;
 
 		final DIDLContent didl = new DIDLContent();
@@ -142,7 +149,7 @@ public class ContentDirectoryService extends AbstractContentDirectoryService {
 			final int to = Math.min(items.size(), from + (int) (maxResults - didl.getContainers().size()));
 			didl.setItems(items.subList(from, to));
 		}
-		return new BrowseResult(new DIDLParser().generate(didl),
+		return new BrowseResult(this.parserSupplier.get().generate(didl),
 				didl.getContainers().size() + didl.getItems().size(),
 				containers.size() + items.size());
 	}

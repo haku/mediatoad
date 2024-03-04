@@ -21,13 +21,8 @@ import org.fourthline.cling.support.model.container.Container;
 import org.fourthline.cling.support.model.item.Item;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -35,10 +30,6 @@ import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.ExternalUrls;
 import com.vaguehope.dlnatoad.media.MockContent;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({ DIDLParser.class, ContentDirectoryService.class })
-// https://github.com/mockito/mockito/issues/1562
-@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*"})
 public class ContentDirectoryServiceTest {
 
 	private static final String DIDL_XML = "didl xml";
@@ -56,7 +47,7 @@ public class ContentDirectoryServiceTest {
 		this.mockContent.setShuffle(false);  // FIXME make tests less brittle.
 		this.didlParser = mockDidlParser();
 		this.searchEngine = mock(SearchEngine.class);
-		this.undertest = new ContentDirectoryService(this.contentTree, new NodeConverter(new ExternalUrls("")), this.searchEngine, true);
+		this.undertest = new ContentDirectoryService(this.contentTree, new NodeConverter(new ExternalUrls("")), this.searchEngine, true, () -> this.didlParser);
 	}
 
 	/**
@@ -201,7 +192,6 @@ public class ContentDirectoryServiceTest {
 
 	private static DIDLParser mockDidlParser () throws Exception {
 		final DIDLParser didlParser = mock(DIDLParser.class);
-		PowerMockito.whenNew(DIDLParser.class).withNoArguments().thenReturn(didlParser);
 		when(didlParser.generate(isA(DIDLContent.class))).thenReturn(DIDL_XML);
 		return didlParser;
 	}
