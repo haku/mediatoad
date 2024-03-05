@@ -13,10 +13,13 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -348,7 +351,12 @@ public final class Main {
 	}
 
 	private static Connector createHttpConnector(final Server server, final InetAddress bindAddress, final int port) {
-		final ServerConnector connector = new ServerConnector(server);
+		final HttpConfiguration config = new HttpConfiguration();
+
+		final HttpConnectionFactory http1 = new HttpConnectionFactory(config);
+		final HTTP2CServerConnectionFactory http2 = new HTTP2CServerConnectionFactory(config);
+
+		final ServerConnector connector = new ServerConnector(server, http1, http2);
 		if (bindAddress != null) connector.setHost(bindAddress.getHostName());
 		connector.setPort(port);
 		return connector;
