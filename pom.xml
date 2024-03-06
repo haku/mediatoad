@@ -16,7 +16,7 @@
 		<args4j.version>2.33</args4j.version>
 		<jupnp.version>3.0.0</jupnp.version>
 		<teleal.version>1.0.14</teleal.version>
-		<jetty.version>9.4.54.v20240208</jetty.version>
+		<jetty.version>10.0.20</jetty.version>
 		<antlr.version>4.13.1</antlr.version>
 		<commonsio.version>2.15.1</commonsio.version>
 		<twelvemonkeys-imageio.version>3.10.1</twelvemonkeys-imageio.version>

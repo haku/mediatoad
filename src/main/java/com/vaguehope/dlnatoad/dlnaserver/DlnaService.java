@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.Servlet;
 
@@ -26,9 +27,12 @@ import org.jupnp.registry.Registry;
 import org.jupnp.transport.impl.NetworkAddressFactoryImpl;
 import org.jupnp.transport.impl.ServletStreamServerConfigurationImpl;
 import org.jupnp.transport.impl.ServletStreamServerImpl;
+import org.jupnp.transport.impl.jetty.Jetty10StreamClientImpl;
+import org.jupnp.transport.impl.jetty.StreamClientConfigurationImpl;
 import org.jupnp.transport.spi.InitializationException;
 import org.jupnp.transport.spi.NetworkAddressFactory;
 import org.jupnp.transport.spi.ServletContainerAdapter;
+import org.jupnp.transport.spi.StreamClient;
 import org.jupnp.transport.spi.StreamServer;
 
 public class DlnaService {
@@ -83,6 +87,21 @@ public class DlnaService {
 		@Override
 		public StreamServer createStreamServer(final NetworkAddressFactory networkAddressFactory) {
 			return new ServletStreamServerImpl(new ServletStreamServerConfigurationImpl(this.jettyAdaptor, networkAddressFactory.getStreamListenPort()));
+		}
+
+		// Workaround for jupnp not being compatible with Jetty 10.
+		// TODO remove this and the edited classes when jupnp uses Jetty 10.
+		@Override
+		public StreamClient createStreamClient() {
+			// values from org.jupnp.transport.spi.AbstractStreamClientConfiguration.
+			StreamClientConfigurationImpl clientConfiguration = new StreamClientConfigurationImpl(
+					getSyncProtocolExecutorService(),
+					/* timeoutSeconds */ 10,
+					/* logWarningSeconds */ 5,
+					/* retryAfterSeconds */ (int) TimeUnit.MINUTES.toSeconds(10),
+					/* retryIterations */ 5);
+
+			return new Jetty10StreamClientImpl(clientConfiguration);
 		}
 
 	}
