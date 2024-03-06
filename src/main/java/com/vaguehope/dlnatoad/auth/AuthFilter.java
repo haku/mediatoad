@@ -1,7 +1,9 @@
 package com.vaguehope.dlnatoad.auth;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,7 +19,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.B64Code;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +89,7 @@ public class AuthFilter implements Filter {
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
 					&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
 				authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
-				final String authHeader = B64Code.decode(authHeader64, (String) null);
+				final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
 				final int x = authHeader.indexOf(":");
 				if (x <= 0) {
 					send401AndMaybePromptLogin(req, resp);
