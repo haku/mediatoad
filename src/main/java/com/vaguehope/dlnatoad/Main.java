@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -57,6 +56,8 @@ import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
+import com.vaguehope.dlnatoad.rpc.server.RpcDivertingHandler;
+import com.vaguehope.dlnatoad.rpc.server.RpcServlet;
 import com.vaguehope.dlnatoad.ui.AutocompleteServlet;
 import com.vaguehope.dlnatoad.ui.DirServlet;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
@@ -243,7 +244,9 @@ public final class Main {
 		}
 
 		while (true) {
-			final HandlerList handler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, hostName);
+			final ServletContextHandler rpcHandler = makeRpcHandler(args);
+			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, hostName);
+			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
 			server.setHandler(wrapWithRewrites(handler));
@@ -274,7 +277,7 @@ public final class Main {
 		}
 	}
 
-	private static HandlerList makeContentHandler(
+	private static ServletContextHandler makeContentHandler(
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
@@ -327,8 +330,18 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
-		final HandlerList handler = new HandlerList();
-		handler.setHandlers(new Handler[] { servletHandler });
+		return servletHandler;
+	}
+
+	private static ServletContextHandler makeRpcHandler(final Args args) {
+		final ServletContextHandler handler = new ServletContextHandler();
+		handler.setContextPath("/");
+
+		if (args.isPrintAccessLog()) {
+			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		}
+
+		handler.addServlet(new ServletHolder(new RpcServlet()), "/*");
 		return handler;
 	}
 

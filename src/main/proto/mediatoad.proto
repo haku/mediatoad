@@ -1,0 +1,29 @@
+// https://protobuf.dev/programming-guides/proto3/
+
+syntax = "proto3";
+
+option java_package = "com.vaguehope.dlnatoad.rpc";
+option java_outer_classname = "MediaToadProto";
+
+package mediatoad;
+
+message MediaItem {
+  string id = 1;
+  string title = 2;
+  string url = 3;
+  string mime_type = 4;
+  int64 file_length = 5;
+  int64 duration_millis = 6;
+}
+
+service Media {
+  rpc Search (SearchRequest) returns (SearchReply) {}
+}
+
+message SearchRequest {
+  string query = 1;
+}
+
+message SearchReply {
+  repeated MediaItem result = 1;
+}
