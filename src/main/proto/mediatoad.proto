@@ -30,6 +30,7 @@ message SearchReply {
 
 message ReadMediaRequest {
   string id = 1;
+  // TODO range requests.
 }
 
 message ReadMediaReply {

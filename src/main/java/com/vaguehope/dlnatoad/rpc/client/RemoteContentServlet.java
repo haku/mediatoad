@@ -40,9 +40,10 @@ public class RemoteContentServlet extends HttpServlet {
 			return;
 		}
 
+		// TODO support Range header.
 		final Iterator<ReadMediaReply> replies = stub.readMedia(ReadMediaRequest.newBuilder().setId(id).build());
 
-		final ReadMediaReply first = replies.next();
+		final ReadMediaReply first = replies.next(); // TODO catch this throwing StatusRuntimeException for not found, etc.
 		resp.setContentType(first.getMimeType());
 		resp.setContentLengthLong(first.getTotalFileLength());
 		first.getContent().writeTo(resp.getOutputStream());
