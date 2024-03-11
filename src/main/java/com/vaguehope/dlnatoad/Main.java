@@ -56,6 +56,9 @@ import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
+import com.vaguehope.dlnatoad.rpc.client.RemoteContentServlet;
+import com.vaguehope.dlnatoad.rpc.client.RpcClient;
+import com.vaguehope.dlnatoad.rpc.server.MediaImpl;
 import com.vaguehope.dlnatoad.rpc.server.RpcDivertingHandler;
 import com.vaguehope.dlnatoad.rpc.server.RpcServlet;
 import com.vaguehope.dlnatoad.ui.AutocompleteServlet;
@@ -186,8 +189,17 @@ public final class Main {
 			mediaId.putCallbackInQueue(afterInitialScanIdsAllFiles);
 		};
 
+		final RpcClient rpcClient = new RpcClient(args);
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				rpcClient.shutdown();
+			}
+		});
+		rpcClient.start();
+
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
-		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, bindAddresses, hostName);
+		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -230,6 +242,7 @@ public final class Main {
 			final MediaDb mediaDb,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
+			final RpcClient rpcClient,
 			final Args args,
 			final List<InetAddress> bindAddresses,
 			final String hostName) throws Exception {
@@ -244,8 +257,8 @@ public final class Main {
 		}
 
 		while (true) {
-			final ServletContextHandler rpcHandler = makeRpcHandler(args);
-			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, args, hostName);
+			final ServletContextHandler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
+			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -283,6 +296,7 @@ public final class Main {
 			final MediaDb mediaDb,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
+			final RpcClient rpcClient,
 			final Args args,
 			final String hostName) throws ArgsException, IOException {
 		final File thumbsDir = args.getThumbsDir();
@@ -316,13 +330,15 @@ public final class Main {
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory);
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
+		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
+
 		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
 		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null, args.getTemplateRoot());
 
 		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, imageResizer, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService, imageResizer)), "/search");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService, rpcClient, imageResizer)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
@@ -333,7 +349,7 @@ public final class Main {
 		return servletHandler;
 	}
 
-	private static ServletContextHandler makeRpcHandler(final Args args) {
+	private static ServletContextHandler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
@@ -341,7 +357,8 @@ public final class Main {
 			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
 		}
 
-		handler.addServlet(new ServletHolder(new RpcServlet()), "/*");
+		final MediaImpl mediaImpl = new MediaImpl(contentTree, mediaDb);
+		handler.addServlet(new ServletHolder(new RpcServlet(mediaImpl)), "/*");
 		return handler;
 	}
 

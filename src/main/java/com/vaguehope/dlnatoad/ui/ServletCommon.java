@@ -142,6 +142,14 @@ public class ServletCommon {
 		return s.toString();
 	}
 
+	public static String firstDirFromPath(final String pathInfo) {
+		if (pathInfo == null) return null;
+		if (pathInfo.length() < 3) return null;
+		if (!pathInfo.startsWith("/")) return null;
+		int x = pathInfo.indexOf('/', 2);
+		return pathInfo.substring(1, x);
+	}
+
 	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 			"/",
 			"/" + C.REVERSE_PROXY_PATH,

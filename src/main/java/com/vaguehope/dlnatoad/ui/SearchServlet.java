@@ -5,10 +5,14 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -20,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jupnp.UpnpService;
+import org.jupnp.model.ModelUtil;
 import org.jupnp.model.action.ActionInvocation;
 import org.jupnp.model.message.UpnpResponse;
 import org.jupnp.model.meta.RemoteDevice;
@@ -34,6 +39,8 @@ import org.jupnp.support.model.item.Item;
 
 import com.github.mustachejava.Mustache;
 import com.google.common.net.UrlEscapers;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
@@ -42,6 +49,12 @@ import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaFutureStub;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
+import com.vaguehope.dlnatoad.rpc.client.RemoteInstance;
+import com.vaguehope.dlnatoad.rpc.client.RpcClient;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.ui.templates.SearchResultsScope;
@@ -65,18 +78,20 @@ public class SearchServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
 	private final UpnpService upnpService;
+	private final RpcClient rpcClient;
 	private final ImageResizer imageResizer;
 	private final SearchEngine searchEngine;
 	private final Supplier<Mustache> resultsTemplate;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final ImageResizer imageResizer) {
-		this(servletCommon, contentTree, mediaDb, upnpService, imageResizer, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer) {
+		this(servletCommon, contentTree, mediaDb, upnpService, rpcClient, imageResizer, new SearchEngine());
 	}
 
-	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final ImageResizer imageResizer, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
+		this.rpcClient = rpcClient;
 		this.upnpService = upnpService;
 		this.imageResizer = imageResizer;
 		this.searchEngine = searchEngine;
@@ -137,7 +152,9 @@ public class SearchServlet extends HttpServlet {
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
 				if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req) && StringUtils.isNotBlank(remote)) {
+					// TODO Do these all in parallel.
 					remoteSearch(upnpQuery, resultsScope);
+					rpcSearch(query, resultsScope);
 				}
 
 				ServletCommon.setHtmlContentType(resp);
@@ -161,6 +178,31 @@ public class SearchServlet extends HttpServlet {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
 			resultGroup.addContentItem(i, q, this.imageResizer);
 			x += 1;
+		}
+	}
+
+	private void rpcSearch(final String query, final SearchResultsScope resultsScope) throws InterruptedException, ExecutionException {
+		final Map<RemoteInstance, Future<SearchReply>> futures = new LinkedHashMap<>();
+		for (final RemoteInstance ri : this.rpcClient.getRemoteInstances()) {
+			final MediaFutureStub stub = this.rpcClient.getMediaFutureStub(ri.getId());
+			final SearchRequest req = SearchRequest.newBuilder().setQuery(query).build();
+			final ListenableFuture<SearchReply> f = stub.search(req);
+			futures.put(ri, f);
+		}
+
+		for (final Entry<RemoteInstance, Future<SearchReply>> a : futures.entrySet()) {
+			final SearchReply rep = a.getValue().get();
+			final ResultGroupScope resultGroup = resultsScope.addResultGroup(a.getKey().getTarget() + " items: " + rep.getResultCount());
+			for (final MediaItem i : rep.getResultList()) {
+				final String path = C.REMOTE_CONTENT_PATH_PREFIX + a.getKey().getId() + "/" + i.getId();
+				final long fileLength = i.getFileLength();
+				final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
+				resultGroup.addRemoteItem(
+						path,
+						i.getTitle(),
+						fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
+						durationSeconds > 0 ? ModelUtil.toTimeString(durationSeconds) : null);
+			}
 		}
 	}
 
@@ -211,9 +253,9 @@ public class SearchServlet extends HttpServlet {
 		}
 	}
 
-	private static Res biggestRes(List<Res> resources) {
+	private static Res biggestRes(final List<Res> resources) {
 		Res ret = null;
-		for (Res r : resources) {
+		for (final Res r : resources) {
 			if (ret == null || r.getSize() > ret.getSize()) ret = r;
 		}
 		return ret;

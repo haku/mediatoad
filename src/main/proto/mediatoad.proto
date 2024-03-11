@@ -10,14 +10,14 @@ package mediatoad;
 message MediaItem {
   string id = 1;
   string title = 2;
-  string url = 3;
-  string mime_type = 4;
-  int64 file_length = 5;
-  int64 duration_millis = 6;
+  string mime_type = 3;
+  int64 file_length = 4;
+  int64 duration_millis = 5;
 }
 
 service Media {
   rpc Search (SearchRequest) returns (SearchReply) {}
+  rpc ReadMedia (ReadMediaRequest) returns (stream ReadMediaReply) {}
 }
 
 message SearchRequest {
@@ -26,4 +26,14 @@ message SearchRequest {
 
 message SearchReply {
   repeated MediaItem result = 1;
+}
+
+message ReadMediaRequest {
+  string id = 1;
+}
+
+message ReadMediaReply {
+  bytes content = 1;
+  int64 total_file_length = 2;
+  string mime_type = 3;
 }

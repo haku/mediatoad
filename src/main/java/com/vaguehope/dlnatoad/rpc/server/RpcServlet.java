@@ -16,9 +16,10 @@ public class RpcServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -4839739389452693420L;
 
-	private final ServletAdapter servletAdapter = new ServletServerBuilder().addService(new MediaImpl()).buildServletAdapter();
+	private final ServletAdapter servletAdapter;
 
-	public RpcServlet() {
+	public RpcServlet(final MediaImpl mediaImpl) {
+		this.servletAdapter = new ServletServerBuilder().addService(mediaImpl).buildServletAdapter();
 	}
 
 	@Override
