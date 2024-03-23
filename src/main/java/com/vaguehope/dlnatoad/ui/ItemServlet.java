@@ -38,6 +38,7 @@ import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.ui.templates.ItemScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
@@ -159,13 +160,14 @@ public class ItemServlet extends HttpServlet {
 		final String nextIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NEXT_ID, null);
 		final List<ContentItem> results;
 		final Integer searchOffset;
+		final String sortParam;
 		if (query != null) {
 			if (this.mediaDb == null) return "";
 
 			final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
 			final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
 			if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
-				return printPrevNextLinksHtml(itemScope, query, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
+				return printPrevNextLinksHtml(itemScope, query, null, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
 			}
 
 			final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
@@ -181,14 +183,25 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException("Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()));
 			}
 			results = this.contentTree.getItemsForIds(ids, username);
+
+			sortParam = null;
 		}
 		else {
+			final String sortRaw = ServletCommon.readParamWithDefault(req, resp, DirServlet.PARAM_SORT, "");
+			if (sortRaw == null) return "";
+			final Order sort = DirServlet.parseSort(sortRaw);
+			sortParam = sort != null ? sortRaw : null;
+
 			if (prevIdParam != null || nextIdParam != null) {
-				return printPrevNextLinksHtml(itemScope, null, node, prevIdParam, nextIdParam, null, null);
+				return printPrevNextLinksHtml(itemScope, null, sortParam, node, prevIdParam, nextIdParam, null, null);
+			}
+
+			results = node.getCopyOfItems();
+			if (sort != null) {
+				results.sort(sort);
 			}
 
 			searchOffset = null;
-			results = node.getCopyOfItems();
 		}
 
 		int prevI = -1;
@@ -227,7 +240,7 @@ public class ItemServlet extends HttpServlet {
 		final Integer prevOffset = searchOffset != null ? searchOffset + prevI : null;
 		final Integer nextOffset = searchOffset != null ? searchOffset + nextI : null;
 
-		return printPrevNextLinksHtml(itemScope, query, node, prevId, nextId, prevOffset, nextOffset);
+		return printPrevNextLinksHtml(itemScope, query, sortParam, node, prevId, nextId, prevOffset, nextOffset);
 	}
 
 	/**
@@ -236,6 +249,7 @@ public class ItemServlet extends HttpServlet {
 	private static String printPrevNextLinksHtml(
 			final ItemScope itemScope,
 			final String query,
+			final String sort,
 			final ContentNode node,
 			final String prevId,
 			final String nextId,
@@ -257,7 +271,8 @@ public class ItemServlet extends HttpServlet {
 			editReqQueryParms.append("&").append(PARAM_NODE_ID).append("=").append(node.getId());
 			allPath = "../" + node.getId();
 			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
-			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId();
+			final String sortParam = sort != null ? "&" + DirServlet.PARAM_SORT + "=" + sort : "";
+			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + sortParam;
 		}
 
 		if (prevId != null) {

@@ -11,10 +11,13 @@ import java.io.ByteArrayInputStream;
 import java.io.CharArrayWriter;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -75,7 +78,7 @@ public class DirServletTest {
 		final List<ContentItem> items = this.mockContent.givenMockItems(5, mockDir);
 		final List<ContentItem> thumbItems = this.mockContent.givenMockItems(MediaFormat.JPEG, 3, mockDir);
 
-		for (ContentItem i : items) {
+		for (final ContentItem i : items) {
 			when(i.getFile().length()).thenReturn(10000L);
 			i.reload();
 			i.setDurationMillis(123456);
@@ -83,18 +86,16 @@ public class DirServletTest {
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);
-
 		assertEquals(200, this.resp.getStatus());
 
 		final String page = this.resp.getContentAsString();
-		System.out.println(page);
 		assertThat(page, containsString("<title>dir 0 - DLNAtoad (hostName)</title>"));
 
 		assertThat(page, containsString(
 				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
 						+ subDir.getTitle() + "</a></li>"));
 
-		for (ContentItem i : items) {
+		for (final ContentItem i : items) {
 			assertThat(page, containsString(
 					"<li><a href=\"../c/" + i.getId() + "." + i.getFormat().getExt() + "\">"
 							+ i.getFile().getName() + "</a>"
@@ -103,13 +104,63 @@ public class DirServletTest {
 							+ " (00:02:03)</li>"));
 		}
 
-		for (ContentItem thumb : thumbItems) {
+		for (final ContentItem thumb : thumbItems) {
 			assertThat(page, containsString(
 					"<span class=\"thumbnail\">"
 							+ "<a href=\"../i/" + thumb.getId() + "?node=" + mockDir.getId() + "\">"
 							+ "<img src=\"../t/" + thumb.getId() + "\" title=\"" + thumb.getTitle() + "\">"
 							+ "</a></span>"));
 		}
+	}
+
+	@Test
+	public void itSortsItems() throws Exception {
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.JPEG, 5, mockDir);
+
+		when(items.get(3).getFile().lastModified()).thenReturn(1234567004L);
+		when(items.get(0).getFile().lastModified()).thenReturn(1234567003L);
+		when(items.get(4).getFile().lastModified()).thenReturn(1234567002L);
+		when(items.get(1).getFile().lastModified()).thenReturn(1234567001L);
+		when(items.get(2).getFile().lastModified()).thenReturn(1234567000L);
+		for (final ContentItem i : items) {
+			i.reload();
+		}
+
+		this.req.setPathInfo("/" + mockDir.getId());
+		this.req.setParameter("sort", "modified");
+		this.undertest.doGet(this.req, this.resp);
+
+		final String page = this.resp.getContentAsString();
+		assertEquals(200, this.resp.getStatus());
+
+		final Matcher m = Pattern.compile("i/[^?]+").matcher(page);
+		final List<String> actualIds = m.results().map(a -> a.group()).collect(Collectors.toList());
+		assertEquals(Arrays.asList("i/id4", "i/id1", "i/id5", "i/id2", "i/id3"), actualIds);
+
+		assertThat(page, containsString("<a href=\"../i/id1?node=dir0&sort=modified\">"));
+	}
+
+	@Test
+	public void itPaginates() throws Exception {
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+		this.mockContent.givenMockItems(MediaFormat.JPEG, 15, mockDir);
+
+		this.req.setPathInfo("/" + mockDir.getId());
+		this.req.setParameter("offset", "3");
+		this.req.setParameter("limit", "5");
+		this.undertest.doGet(this.req, this.resp);
+
+		final String page = this.resp.getContentAsString();
+		assertEquals(200, this.resp.getStatus());
+
+		final Matcher m = Pattern.compile("i/[^?]+").matcher(page);
+		final List<String> actualIds = m.results().map(a -> a.group()).collect(Collectors.toList());
+		assertEquals(Arrays.asList("i/id04", "i/id05", "i/id06", "i/id07", "i/id08"), actualIds);
+
+		assertThat(page, containsString("<a href=\"?limit=5&offset=8\">Next Page</a>"));
 	}
 
 	@Test

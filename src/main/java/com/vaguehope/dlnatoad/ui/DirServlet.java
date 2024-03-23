@@ -39,7 +39,11 @@ import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class DirServlet extends HttpServlet {
 
+
 	static final String PROXIED_FROM_INDEX_ATTR = "proxied_from_index";
+
+	static final String PARAM_SORT = "sort";
+	private static final int ITEMS_PER_PAGE = SearchServlet.MAX_RESULTS;
 
 	private static final long serialVersionUID = 6207424145390666199L;
 
@@ -78,6 +82,13 @@ public class DirServlet extends HttpServlet {
 
 	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
+		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, PARAM_SORT, "");
+		if (sortRaw == null) return;
+		final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_LIMIT, ITEMS_PER_PAGE, i -> i > 0);
+		if (limit == null) return;
+		final Integer offset = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
+		if (offset == null) return;
+
 		// If proxied from IndexServlet then paths are relative to root.
 		final String pathPrefix = req.getAttribute(PROXIED_FROM_INDEX_ATTR) != null ? "" : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
@@ -85,7 +96,27 @@ public class DirServlet extends HttpServlet {
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
 		final long nodeTotalFileLength = node.getTotalFileLength();
 
-		final ResultGroupScope resultScope = new ResultGroupScope(listTitle, null, null, pageScope);
+		final List<ContentItem> allItems = node.getCopyOfItems();
+		final Order sort = parseSort(sortRaw);
+		if (sort != null) {
+			allItems.sort(sort);
+		}
+		final List<ContentItem> pageItems = allItems.subList(offset, Math.min(allItems.size(), offset + limit));
+
+		final String nextPagePath;
+		if (offset + limit < allItems.size()) {
+			final StringBuilder s = new StringBuilder("?");
+			if (sort != null) s.append(PARAM_SORT + "=" + sortRaw);
+			if (s.length() > 1) s.append("&");
+			s.append(SearchServlet.PARAM_PAGE_LIMIT).append("=").append(limit);
+			s.append("&").append(SearchServlet.PARAM_PAGE_OFFSET).append("=").append(offset + limit);
+			nextPagePath = s.toString();
+		}
+		else {
+			nextPagePath = null;
+		}
+
+		final ResultGroupScope resultScope = new ResultGroupScope(listTitle, null, nextPagePath, pageScope);
 
 		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
 		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
@@ -97,7 +128,13 @@ public class DirServlet extends HttpServlet {
 				FileHelper.readableFileSize(nodeTotalFileLength));
 
 		appendNodes(resultScope, nodesUserHasAuth);
-		if (!appendItems(resultScope, node, req, resp)) return;  // false means error was written to resp.
+
+		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
+				+ (sort != null ? "&" + PARAM_SORT + "=" + sortRaw : "");
+		for (final ContentItem i : pageItems) {
+			resultScope.addContentItem(i, linkQuery, this.imageResizer);
+		}
+
 		maybeAppendTopTags(nodeIndexScope, node, username);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
@@ -130,36 +167,11 @@ public class DirServlet extends HttpServlet {
 		}
 	}
 
-	private boolean appendItems(
-			final ResultGroupScope resultScope,
-			final ContentNode node,
-			final HttpServletRequest req,
-			final HttpServletResponse resp) throws IOException {
-		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, "sort", "");
-		if (sortRaw == null) return false;
-
-		final Order sort;
+	static Order parseSort(final String sortRaw) {
 		if ("modified".equalsIgnoreCase(sortRaw)) {
-			sort = ContentItem.Order.MODIFIED_DESC;
+			return ContentItem.Order.MODIFIED_DESC;
 		}
-		else {
-			sort = null;
-		}
-
-		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId();
-
-		if (sort != null) {
-			final List<ContentItem> items = node.getCopyOfItems();
-			items.sort(sort);
-			for (final ContentItem i : items) {
-				resultScope.addContentItem(i, linkQuery, this.imageResizer);
-			}
-		}
-		else {
-			node.withEachItem(i -> resultScope.addContentItem(i, linkQuery, this.imageResizer));
-		}
-
-		return true;
+		return null;
 	}
 
 	private void maybeAppendTopTags(final NodeIndexScope nodeIndexScope, final ContentNode node, final String username) throws IOException {

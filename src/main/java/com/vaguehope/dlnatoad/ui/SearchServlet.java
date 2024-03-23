@@ -68,7 +68,7 @@ public class SearchServlet extends HttpServlet {
 	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
 
-	private static final int MAX_RESULTS = 500;
+	static final int MAX_RESULTS = 500;
 	private static final String ROOT_CONTENT_ID = "0"; // Root id of '0' is in the spec.
 	private static final ServiceType CONTENT_DIRECTORY_TYPE = ServiceType.valueOf("urn:schemas-upnp-org:service:ContentDirectory:1");
 
