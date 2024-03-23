@@ -72,10 +72,12 @@ document.addEventListener('keydown', (e) => {
       event.preventDefault();
       addTagAc.input.focus();
       break;
+    case 'f':
     case 'n':
       event.preventDefault();
       clickLinkById('next');
       break;
+    case 'b':
     case 'p':
       event.preventDefault();
       clickLinkById('previous');
