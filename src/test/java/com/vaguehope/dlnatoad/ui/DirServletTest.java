@@ -160,7 +160,7 @@ public class DirServletTest {
 		final List<String> actualIds = m.results().map(a -> a.group()).collect(Collectors.toList());
 		assertEquals(Arrays.asList("i/id04", "i/id05", "i/id06", "i/id07", "i/id08"), actualIds);
 
-		assertThat(page, containsString("<a href=\"?limit=5&offset=8\">Next Page</a>"));
+		assertThat(page, containsString("<a class=\"nextpage\" href=\"?limit=5&offset=8\">Next Page</a>"));
 	}
 
 	@Test
