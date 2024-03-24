@@ -5,9 +5,13 @@
 }
 
 .thumbnail {
-  display: inline-block;
+  display: inline-flex;
   margin: 0.5em 0.5em 0 0.5em;
+  justify-content: center;
+  align-items: center;
   vertical-align: middle;
+  width: 6em;
+  height: 5em;
 }
 .thumbnail img {
   max-width: 6em;
