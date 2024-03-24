@@ -269,10 +269,19 @@ public class ItemServlet extends HttpServlet {
 		}
 		else {
 			editReqQueryParms.append("&").append(PARAM_NODE_ID).append("=").append(node.getId());
-			allPath = "../" + node.getId();
+
+			final String sortParam;
+			if (sort != null) {
+				sortParam = DirServlet.PARAM_SORT + "=" + sort;
+				editReqQueryParms.append("&").append(sortParam);
+			}
+			else {
+				sortParam = null;
+			}
+
+			allPath = "../" + node.getId() + (sortParam != null ? "?" + sortParam : "");
 			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
-			final String sortParam = sort != null ? "&" + DirServlet.PARAM_SORT + "=" + sort : "";
-			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + sortParam;
+			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + (sortParam != null ? "&" + sortParam : "");
 		}
 
 		if (prevId != null) {
