@@ -61,6 +61,7 @@ import com.vaguehope.dlnatoad.rpc.client.RpcClient;
 import com.vaguehope.dlnatoad.rpc.server.MediaImpl;
 import com.vaguehope.dlnatoad.rpc.server.RpcDivertingHandler;
 import com.vaguehope.dlnatoad.rpc.server.RpcServlet;
+import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerController;
 import com.vaguehope.dlnatoad.ui.AutocompleteServlet;
 import com.vaguehope.dlnatoad.ui.DirServlet;
 import com.vaguehope.dlnatoad.ui.IndexServlet;
@@ -175,6 +176,7 @@ public final class Main {
 		final ContentTree contentTree = new ContentTree();
 
 		final File dropDir = args.getDropDir();
+		final TagDeterminerController tagDeterminerController = new TagDeterminerController(args, contentTree, mediaDb, fsExSvc);
 		final Runnable afterInitialScanIdsAllFiles = () -> {
 			if (mediaDb != null) {
 				new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
@@ -182,6 +184,7 @@ public final class Main {
 					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
 				}
 				tagAutocompleter.start();
+				tagDeterminerController.start();
 			}
 		};
 

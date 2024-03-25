@@ -112,8 +112,21 @@ public class MediaDb {
 		}
 	}
 
+	public String getFilePathForId(final String id) throws SQLException {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT file FROM files WHERE id=?;")) {
+			st.setString(1, id);
+			st.setMaxRows(2);
+			try (final ResultSet rs = st.executeQuery()) {
+				if (!rs.next()) return null;
+				final String file = rs.getString(1);
+				if (rs.next()) throw new SQLException("Query for file '" + id + "' retured more than one result.");
+				return file;
+			}
+		}
+	}
+
 	public FileData getFileData(final File file) throws SQLException {
-		return MediaDb.readFileDataFromConn(this.dbConn, file);
+		return readFileDataFromConn(this.dbConn, file);
 	}
 
 	protected static FileData readFileDataFromConn(final Connection conn, final File file) throws SQLException {

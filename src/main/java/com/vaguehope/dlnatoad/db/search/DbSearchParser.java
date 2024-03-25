@@ -19,7 +19,7 @@ public class DbSearchParser {
 	// join against hashes so that only canonical IDs are returned,
 	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
-			"SELECT id FROM files INNER JOIN hashes USING (id) WHERE missing=0 AND";
+			"SELECT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
 
 	private static final String _SQL_AND = " AND";
 	private static final String _SQL_OR = " OR";
@@ -56,19 +56,28 @@ public class DbSearchParser {
 	}
 
 	public static DbSearch parseSearch (final String allTerms, final Set<BigInteger> authIds) {
-		return parseSearch(allTerms, authIds, null, null);
+		return parseSearch(allTerms, authIds, false, null, null);
+	}
+
+	public static DbSearch parseSearchWithAuthBypass (final String allTerms) {
+		return parseSearch(allTerms, null, true, null, null);
 	}
 
 	public static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final boolean bypassAuthChecks,
 			final String[] sortColumns,
 			final SortDirection[] sortDirection) {
 		if (sortColumns == null ^ sortDirection == null) throw new IllegalArgumentException("Must specify both or neith of sort and direction.");
 		if (sortColumns != null && sortDirection != null && sortColumns.length != sortDirection.length) throw new IllegalArgumentException("Sorts and directions must be same length.");
 
 		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
-		SqlFragments.appendWhereAuth(sql, authIds);
+		if (!bypassAuthChecks) {
+			sql.append(_SQL_AND);
+			SqlFragments.appendWhereAuth(sql, authIds);
+		}
+
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
 		appendWhereTerms(sql, terms);
 		if (sortColumns != null && sortDirection != null && sortColumns.length > 0 && sortDirection.length > 0) {

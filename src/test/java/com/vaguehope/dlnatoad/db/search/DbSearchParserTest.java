@@ -65,7 +65,7 @@ public class DbSearchParserTest {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
 
-		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, new String[] { "file" }, new SortDirection[] { SortDirection.ASC });
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, false, new String[] { "file" }, new SortDirection[] { SortDirection.ASC });
 
 		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
 		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));

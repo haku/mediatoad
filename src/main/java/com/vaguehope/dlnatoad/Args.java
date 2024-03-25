@@ -31,6 +31,7 @@ public class Args {
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
 	@Option(name = "--remote", usage = "HTTP(S) address of remote instance.", metaVar = "https://example.com/") private List<String> remotes;
+	@Option(name = "--tagdeterminer", usage = "HTTP(S) address of remote a TagDeterminer and query for which items it should be offered.", metaVar = "https://example.com/|f~mydir/path") private List<String> tagDeterminers;
 	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
 	@Option(name = "--templateroot", usage = "Override mustache template location, useful for UI dev.") private String templateRoot;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
@@ -144,6 +145,11 @@ public class Args {
 	public List<String> getRemotes() {
 		if (this.remotes == null) return Collections.emptyList();
 		return this.remotes;
+	}
+
+	public List<String> getTagDeterminers() {
+		if (this.tagDeterminers == null) return Collections.emptyList();
+		return this.tagDeterminers;
 	}
 
 	public File getWebRoot() throws ArgsException {
