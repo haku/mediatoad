@@ -1,7 +1,5 @@
 package com.vaguehope.dlnatoad.rpc.client;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -9,20 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.vaguehope.dlnatoad.Args;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaBlockingStub;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaFutureStub;
+import com.vaguehope.dlnatoad.rpc.RpcTarget;
 
-import io.grpc.ChannelCredentials;
-import io.grpc.Grpc;
-import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.TlsChannelCredentials;
 
 public class RpcClient {
 
@@ -73,18 +65,7 @@ public class RpcClient {
 	}
 
 	private void startChannel(final RemoteInstance ri) {
-		final ChannelCredentials channelCredentials;
-		if (ri.isPlainText()) {
-			channelCredentials = InsecureChannelCredentials.create();
-		}
-		else {
-			channelCredentials = TlsChannelCredentials.create();
-		}
-
-		final ManagedChannelBuilder<?> channelBuilder = Grpc.newChannelBuilder(ri.getTarget(), channelCredentials);
-//		if (ri.isPlainText()) channelBuilder.usePlaintext(); // TODO don't think we need this?
-
-		final ManagedChannel channel = channelBuilder.build();
+		final ManagedChannel channel = ri.getTarget().makeChannelBuilder().build();
 		this.managedChannels.put(ri, channel);
 		this.mediaFutureStubs.put(ri.getId(), MediaGrpc.newFutureStub(channel));
 		this.mediaBlockingStubs.put(ri.getId(), MediaGrpc.newBlockingStub(channel));
@@ -99,35 +80,8 @@ public class RpcClient {
 	}
 
 	private static RemoteInstance parseRemoteArg(final String arg, int id) throws ArgsException {
-		final URI uri;
-		try {
-			uri = new URI(arg);
-		}
-		catch (final URISyntaxException e) {
-			throw new Args.ArgsException("Invalid URI: " + arg);
-		}
-
-		if (StringUtils.isAllBlank(uri.getHost())) {
-			throw new Args.ArgsException("Invalid host: " + arg);
-		}
-
-		int port;
-		boolean plainText;
-		if ("https".equals(uri.getScheme().toLowerCase())) {
-			port = 443;
-			plainText = false;
-		}
-		else if ("http".equals(uri.getScheme().toLowerCase())) {
-			port = 80;
-			plainText = true;
-		}
-		else {
-			throw new Args.ArgsException("Invalid scheme: " + uri.getScheme());
-		}
-		if (uri.getPort() > 0) port = uri.getPort();
-
-		final String target = String.format("dns:///%s:%s/", uri.getHost(), port);
-		return new RemoteInstance(String.valueOf(id), target, plainText);
+		final RpcTarget target = RpcTarget.fromHttpUrl(arg);
+		return new RemoteInstance(String.valueOf(id), target);
 	}
 
 }

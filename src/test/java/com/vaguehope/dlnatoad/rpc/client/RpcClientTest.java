@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.vaguehope.dlnatoad.Args;
+import com.vaguehope.dlnatoad.rpc.RpcTarget;
 
 public class RpcClientTest {
 
@@ -20,9 +21,9 @@ public class RpcClientTest {
 				"https://example.com",
 				"https://example.com:12345");
 		final List<RemoteInstance> expected = Arrays.asList(
-				new RemoteInstance("0", "dns:///example.com:80/", true),
-				new RemoteInstance("1", "dns:///example.com:443/", false),
-				new RemoteInstance("2", "dns:///example.com:12345/", false));
+				new RemoteInstance("0", new RpcTarget("dns:///example.com:80/", true)),
+				new RemoteInstance("1", new RpcTarget("dns:///example.com:443/", false)),
+				new RemoteInstance("2", new RpcTarget("dns:///example.com:12345/", false)));
 
 		final Args args = mock(Args.class);
 		when(args.getRemotes()).thenReturn(input);
