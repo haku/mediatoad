@@ -35,6 +35,7 @@ import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutReply;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutRequest;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsReply;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsRequest;
+import com.vaguehope.dlnatoad.util.ExecutorHelper;
 
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
@@ -56,7 +57,11 @@ public class TagDeterminerController {
 	private final Map<TagDeterminer, TagDeterminerFutureStub> futureStubs = new ConcurrentHashMap<>();
 	private final Deque<Runnable> workQueue = new ConcurrentLinkedDeque<>();
 
-	public TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db, final ScheduledExecutorService schExSvc) throws ArgsException {
+	public TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db) throws ArgsException {
+		this(args, contentTree, db, ExecutorHelper.newScheduledExecutor(1, "td"));
+	}
+
+	TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db, final ScheduledExecutorService schExSvc) throws ArgsException {
 		this.contentTree = contentTree;
 		this.db = db;
 		this.schExSvc = schExSvc;

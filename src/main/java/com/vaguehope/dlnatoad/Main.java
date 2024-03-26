@@ -7,10 +7,7 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -71,7 +68,7 @@ import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
-import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
+import com.vaguehope.dlnatoad.util.ExecutorHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
@@ -139,22 +136,8 @@ public final class Main {
 		final List<InetAddress> bindAddresses = args.getInterfaces();
 		final InetAddress selfAddress = NetHelper.guessSelfAddress(bindAddresses);
 
-		final ScheduledExecutorService fsExSvc = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs", Thread.MIN_PRIORITY));
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				fsExSvc.shutdown();
-			}
-		});
-
-		final ExecutorService miExSvc = new ThreadPoolExecutor(0, 1, 60L, TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(), new DaemonThreadFactory("mi", Thread.MIN_PRIORITY));
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				miExSvc.shutdown();
-			}
-		});
+		final ScheduledExecutorService fsExSvc = ExecutorHelper.newScheduledExecutor(1, "fs");
+		final ExecutorService miExSvc = ExecutorHelper.newExecutor(1, "mi");
 
 		final File dbFile = args.getDb();
 		final MediaDb mediaDb;
@@ -176,7 +159,7 @@ public final class Main {
 		final ContentTree contentTree = new ContentTree();
 
 		final File dropDir = args.getDropDir();
-		final TagDeterminerController tagDeterminerController = new TagDeterminerController(args, contentTree, mediaDb, fsExSvc);
+		final TagDeterminerController tagDeterminerController = new TagDeterminerController(args, contentTree, mediaDb);
 		final Runnable afterInitialScanIdsAllFiles = () -> {
 			if (mediaDb != null) {
 				new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
@@ -223,14 +206,7 @@ public final class Main {
 		upnpService.getRegistry().addDevice(new MediaServer(systemId, contentTree, nodeConverter, hostName, args.isPrintAccessLog(), externalUrls.getSelfUri()).getDevice());
 
 		// Periodic rescan to catch missed devices.
-		final ScheduledExecutorService upnpExSvc = new ScheduledThreadPoolExecutor(1,
-				new DaemonThreadFactory("up", Thread.MIN_PRIORITY));
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run () {
-				upnpExSvc.shutdown();
-			}
-		});
+		final ScheduledExecutorService upnpExSvc = ExecutorHelper.newScheduledExecutor(1, "up");
 		upnpExSvc.scheduleWithFixedDelay(() -> {
 			upnpService.getControlPoint().search();
 			if (args.isVerboseLog()) LOG.info("Scanning for devices.");
