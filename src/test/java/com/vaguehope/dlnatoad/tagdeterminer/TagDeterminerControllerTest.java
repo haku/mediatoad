@@ -117,7 +117,7 @@ public class TagDeterminerControllerTest {
 			return null;
 		}).when(reqObs).onCompleted();
 
-		this.undertest.findWorkOrThrow();
+		this.undertest.findWork();
 
 		final InOrder uploadOrder = inOrder(reqObs);
 		uploadOrder.verify(reqObs).onNext(DetermineTagsRequest.newBuilder()

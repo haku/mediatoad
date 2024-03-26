@@ -137,23 +137,14 @@ public class TagDeterminerController {
 			r.run();
 		}
 		catch (final Throwable e) {
-			LOG.error("Worker failed.", e);
+			LOG.error("Error while running task.", e);
 		}
 		finally {
 			scheduleWorker();
 		}
 	}
 
-	private void findWork() {
-		try {
-			findWorkOrThrow();
-		}
-		catch (final Exception e) {
-			LOG.warn("Failed to find work: {}", e);
-		}
-	}
-
-	void findWorkOrThrow() throws SQLException {
+	void findWork() {
 		if (this.workQueue.size() > 0) return;
 
 		for (final Entry<TagDeterminer, TagDeterminerFutureStub> m : this.futureStubs.entrySet()) {
@@ -161,7 +152,7 @@ public class TagDeterminerController {
 		}
 	}
 
-	private void startFindingWorkForDeterminer(final TagDeterminer determiner, final TagDeterminerFutureStub stub) throws SQLException {
+	private void startFindingWorkForDeterminer(final TagDeterminer determiner, final TagDeterminerFutureStub stub) {
 		final ListenableFuture<AboutReply> f = stub.about(AboutRequest.newBuilder().build());
 		FluentFuture.from(f).addCallback(new FutureCallback<>() {
 			@Override
@@ -176,24 +167,29 @@ public class TagDeterminerController {
 	}
 
 	private void findItems(final TagDeterminer determiner, final AboutReply about) {
-		try {
-			findItemsOrThrow(determiner, about);
-		}
-		catch (final Exception e) {
-			LOG.warn("Failed to find items: {}", e);
-		}
-	}
-
-	private void findItemsOrThrow(final TagDeterminer determiner, final AboutReply about) throws SQLException {
 		final String tagCls = about.getTagCls();
-		if (tagCls.length() < 5) throw new IllegalArgumentException("Detminer " + determiner + " has invalid tag cls: '" + tagCls + "'");
+		if (tagCls.length() < 5) {
+			LOG.warn("Detminer {} has invalid tag cls: '{}'", determiner, tagCls);
+			return;
+		}
 
 		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
-		final List<String> ids = DbSearchParser.parseSearchWithAuthBypass(query).execute(this.db, QUERY_LIMIT, 0);
+
+		final List<String> ids;
+		try {
+			ids = DbSearchParser.parseSearchWithAuthBypass(query).execute(this.db, QUERY_LIMIT, 0);
+		}
+		catch (final SQLException e) {
+			LOG.warn("Failed to query DB for items.", e);
+			return;
+		}
 
 		for (final String id : ids) {
 			final ContentItem item = this.contentTree.getItem(id);
-			if (item == null) throw new IllegalStateException("ID not found in contentTree: " + id);
+			if (item == null) {
+				LOG.error("ID from DB not found in contentTree: {}", id);
+				return;
+			}
 			this.workQueue.add(() -> {
 				sendItemToDetminer(determiner, about, item);
 			});
@@ -246,8 +242,7 @@ public class TagDeterminerController {
 		try {
 			latch.await();
 		}
-		catch (final InterruptedException e) {
-		}
+		catch (final InterruptedException e) {}
 	}
 
 	private void responseFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
@@ -260,17 +255,17 @@ public class TagDeterminerController {
 		try {
 			final List<TDResponse> todo = new ArrayList<>();
 			this.storeDuraionQueue.drainTo(todo);
-			if (todo.size() > 0) {
-				try (final WritableMediaDb w = this.db.getWritable()) {
-					for (final TDResponse r : todo) {
-						w.addTag(r.item.getId(), r.about.getTagCls(), "." + r.about.getTagCls(), this.clock.millis());
-						for (final String tag : r.reply.getTagList()) {
-							w.addTagIfNotDeleted(r.item.getId(), tag, r.about.getTagCls(), this.clock.millis());
-						}
+			if (todo.size() < 1) return;
+
+			try (final WritableMediaDb w = this.db.getWritable()) {
+				for (final TDResponse r : todo) {
+					w.addTag(r.item.getId(), r.about.getTagCls(), "." + r.about.getTagCls(), this.clock.millis());
+					for (final String tag : r.reply.getTagList()) {
+						w.addTagIfNotDeleted(r.item.getId(), tag, r.about.getTagCls(), this.clock.millis());
 					}
 				}
-				LOG.info("Batch tag write for {} items.", todo.size());
 			}
+			LOG.info("Batch tag write for {} items.", todo.size());
 		}
 		catch (final Exception e) {
 			LOG.error("Scheduled batch tag writer error.", e);
@@ -282,7 +277,7 @@ public class TagDeterminerController {
 		final ContentItem item;
 		final DetermineTagsReply reply;
 
-		public TDResponse(AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
+		public TDResponse(final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
 			this.about = about;
 			this.item = item;
 			this.reply = reply;
