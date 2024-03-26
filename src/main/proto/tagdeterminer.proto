@@ -14,7 +14,7 @@ service TagDeterminer {
 message AboutRequest {}
 message AboutReply {
   string name = 1;
-  Tag already_processed_tag = 2;
+  string tag_cls = 2;
 }
 
 message DetermineTagsRequest {
@@ -22,10 +22,5 @@ message DetermineTagsRequest {
   bytes content = 2;
 }
 message DetermineTagsReply {
-  repeated Tag tag = 1;
-}
-
-message Tag {
-  string tag = 1;
-  string cls = 2;
+  repeated string tag = 1;
 }

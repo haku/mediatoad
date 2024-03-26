@@ -22,7 +22,6 @@ import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
-import com.vaguehope.dlnatoad.db.MockMediaMetadataStore.Batch;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
 public class DbSearchParserTest {
@@ -37,7 +36,7 @@ public class DbSearchParserTest {
 	public void before() throws Exception {
 		this.mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
 		this.mediaDb = this.mockMediaMetadataStore.getMediaDb();
-		addNoiseToDb();
+		this.mockMediaMetadataStore.addNoiseToDb();
 	}
 
 	@Test
@@ -535,16 +534,6 @@ public class DbSearchParserTest {
 
 	private String mockMediaFileWithNameFragmentAndTags (final String nameFragment, final String... tags) throws Exception {
 		return this.mockMediaMetadataStore.addFileWithNameAndTags(nameFragment, tags);
-	}
-
-// Helpers.
-
-	private void addNoiseToDb () throws Exception {
-		try (final Batch b = this.mockMediaMetadataStore.batch()) {
-			for (int i = 0; i < 10; i++) {
-				b.addFileWithRandomTags();
-			}
-		}
 	}
 
 }

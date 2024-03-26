@@ -145,6 +145,14 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		return fileId;
 	}
 
+	public void addNoiseToDb () throws Exception {
+		try (final Batch b = batch()) {
+			for (int i = 0; i < 10; i++) {
+				b.addFileWithRandomTags();
+			}
+		}
+	}
+
 	public Batch batch() {
 		return new Batch();
 	}

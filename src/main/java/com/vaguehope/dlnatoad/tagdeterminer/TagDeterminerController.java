@@ -3,13 +3,18 @@ package com.vaguehope.dlnatoad.tagdeterminer;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.sql.SQLException;
+import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +29,7 @@ import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.Args;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -43,6 +49,9 @@ import io.grpc.stub.StreamObserver;
 public class TagDeterminerController {
 
 	private static final long WORK_FINDER_INTERVAL_SECONDS = TimeUnit.MINUTES.toSeconds(5);
+	private static final int BATCH_WRITE_INTERVAL_SECONDS = 30;
+
+	private static final int RPC_DEADLINE_SECONDS = 30;
 	private static final int QUERY_LIMIT = 10;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
 	private static final Logger LOG = LoggerFactory.getLogger(TagDeterminerController.class);
@@ -50,21 +59,24 @@ public class TagDeterminerController {
 	private final MediaDb db;
 	private final ContentTree contentTree;
 	private final ScheduledExecutorService schExSvc;
+	private final Clock clock;
 
 	private final List<TagDeterminer> determiners = new CopyOnWriteArrayList<>();
 	private final Map<TagDeterminer, ManagedChannel> managedChannels = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerStub> stubs = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerFutureStub> futureStubs = new ConcurrentHashMap<>();
 	private final Deque<Runnable> workQueue = new ConcurrentLinkedDeque<>();
+	private final BlockingQueue<TDResponse> storeDuraionQueue = new LinkedBlockingQueue<>();
 
 	public TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db) throws ArgsException {
-		this(args, contentTree, db, ExecutorHelper.newScheduledExecutor(1, "td"));
+		this(args, contentTree, db, ExecutorHelper.newScheduledExecutor(1, "td"), Clock.systemUTC());
 	}
 
-	TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db, final ScheduledExecutorService schExSvc) throws ArgsException {
+	TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db, final ScheduledExecutorService schExSvc, final Clock clock) throws ArgsException {
 		this.contentTree = contentTree;
 		this.db = db;
 		this.schExSvc = schExSvc;
+		this.clock = clock;
 		for (final String arg : args.getTagDeterminers()) {
 			this.determiners.add(parseArg(arg));
 		}
@@ -90,13 +102,14 @@ public class TagDeterminerController {
 		for (final TagDeterminer d : this.determiners) {
 			final ManagedChannel channel = d.getTarget().makeChannelBuilder().build();
 			this.managedChannels.put(d, channel);
-			this.stubs.put(d, TagDeterminerGrpc.newStub(channel));
-			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel));
+			this.stubs.put(d, TagDeterminerGrpc.newStub(channel)
+					.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS));
+			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel)
+					.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS));
 		}
 
-		this.schExSvc.submit(() -> {
-			this.schExSvc.scheduleWithFixedDelay(this::findWork, WORK_FINDER_INTERVAL_SECONDS, WORK_FINDER_INTERVAL_SECONDS, TimeUnit.SECONDS);
-		});
+		this.schExSvc.scheduleWithFixedDelay(this::findWork, WORK_FINDER_INTERVAL_SECONDS, WORK_FINDER_INTERVAL_SECONDS, TimeUnit.SECONDS);
+		this.schExSvc.scheduleWithFixedDelay(this::batchWrite, BATCH_WRITE_INTERVAL_SECONDS, BATCH_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
 	public void shutdown() {
@@ -120,7 +133,15 @@ public class TagDeterminerController {
 	private void worker() {
 		final Runnable r = this.workQueue.poll();
 		if (r == null) return;
-		r.run();
+		try {
+			r.run();
+		}
+		catch (final Throwable e) {
+			LOG.error("Worker failed.", e);
+		}
+		finally {
+			scheduleWorker();
+		}
 	}
 
 	private void findWork() {
@@ -144,8 +165,8 @@ public class TagDeterminerController {
 		final ListenableFuture<AboutReply> f = stub.about(AboutRequest.newBuilder().build());
 		FluentFuture.from(f).addCallback(new FutureCallback<>() {
 			@Override
-			public void onSuccess(final AboutReply result) {
-				findItems(determiner, result);
+			public void onSuccess(final AboutReply about) {
+				findItems(determiner, about);
 			}
 			@Override
 			public void onFailure(final Throwable t) {
@@ -164,38 +185,44 @@ public class TagDeterminerController {
 	}
 
 	private void findItemsOrThrow(final TagDeterminer determiner, final AboutReply about) throws SQLException {
-		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(about.getAlreadyProcessedTag().getTag()));
+		final String tagCls = about.getTagCls();
+		if (tagCls.length() < 5) throw new IllegalArgumentException("Detminer " + determiner + " has invalid tag cls: '" + tagCls + "'");
+
+		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
 		final List<String> ids = DbSearchParser.parseSearchWithAuthBypass(query).execute(this.db, QUERY_LIMIT, 0);
 
 		for (final String id : ids) {
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item == null) throw new IllegalStateException("ID not found in contentTree: " + id);
 			this.workQueue.add(() -> {
-				sendItemToDetminer(determiner, item);
+				sendItemToDetminer(determiner, about, item);
 			});
 		}
 
 		scheduleWorker();
 	}
 
-	private void sendItemToDetminer(final TagDeterminer determiner, final ContentItem item) {
+	private void sendItemToDetminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item) {
 		final TagDeterminerStub stub = this.stubs.get(determiner);
+
+		final CountDownLatch latch = new CountDownLatch(1);
 		final StreamObserver<DetermineTagsRequest> reqObs = stub.determineTags(new StreamObserver<>() {
 			@Override
 			public void onNext(final DetermineTagsReply reply) {
 				// Processing responses takes priority over sending more work.
 				TagDeterminerController.this.workQueue.push(() -> {
-					responseFromDeterminer(determiner, item, reply);
+					responseFromDeterminer(determiner, about, item, reply);
 				});
+				scheduleWorker();
 			}
 			@Override
 			public void onError(final Throwable t) {
+				latch.countDown();
 				LOG.warn("Receieved error from TagDeterminer DetermineTags(): {}", t);
-				scheduleWorker();
 			}
 			@Override
 			public void onCompleted() {
-				scheduleWorker();
+				latch.countDown();
 			}
 		});
 
@@ -215,13 +242,51 @@ public class TagDeterminerController {
 			reqObs.onError(e);
 			LOG.warn("Failed to call TagDeterminer DetermineTags(): {}", e);
 		}
+
+		try {
+			latch.await();
+		}
+		catch (final InterruptedException e) {
+		}
 	}
 
-	protected void responseFromDeterminer(final TagDeterminer determiner, final ContentItem item, final DetermineTagsReply reply) {
-		scheduleWorker();
-
+	private void responseFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
 		LOG.info("Response from {} for {}: {}", determiner.getTarget(), item.getFile(), reply.getTagList());
-		// TODO add tags to DB, maybe some batching, etc.
+		if (reply.getTagList().size() < 1) return;
+		this.storeDuraionQueue.add(new TDResponse(about, item, reply));
+	}
+
+	void batchWrite() {
+		try {
+			final List<TDResponse> todo = new ArrayList<>();
+			this.storeDuraionQueue.drainTo(todo);
+			if (todo.size() > 0) {
+				try (final WritableMediaDb w = this.db.getWritable()) {
+					for (final TDResponse r : todo) {
+						w.addTag(r.item.getId(), r.about.getTagCls(), "." + r.about.getTagCls(), this.clock.millis());
+						for (final String tag : r.reply.getTagList()) {
+							w.addTagIfNotDeleted(r.item.getId(), tag, r.about.getTagCls(), this.clock.millis());
+						}
+					}
+				}
+				LOG.info("Batch tag write for {} items.", todo.size());
+			}
+		}
+		catch (final Exception e) {
+			LOG.error("Scheduled batch tag writer error.", e);
+		}
+	}
+
+	private static class TDResponse {
+		final AboutReply about;
+		final ContentItem item;
+		final DetermineTagsReply reply;
+
+		public TDResponse(AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
+			this.about = about;
+			this.item = item;
+			this.reply = reply;
+		}
 	}
 
 	// for testing:
