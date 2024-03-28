@@ -32,6 +32,7 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
+import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.RpcTarget;
@@ -174,6 +175,7 @@ public class TagDeterminerController {
 			return;
 		}
 
+		// TODO add mime type to query then remove filter below.
 		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
 
 		final List<String> ids;
@@ -190,6 +192,11 @@ public class TagDeterminerController {
 			if (item == null) {
 				LOG.error("ID from DB not found in contentTree: {}", id);
 				return;
+			}
+			// TODO make supported formats something the TD returns in About().
+			// TODO move type check into DB query.
+			if (item.getFormat().getContentGroup() != ContentGroup.IMAGE) {
+				continue;
 			}
 			this.workQueue.add(() -> {
 				sendItemToDetminer(determiner, about, item);
@@ -249,9 +256,25 @@ public class TagDeterminerController {
 	}
 
 	private void responseFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
-		LOG.info("Response from {} for {}: {}", determiner.getTarget(), item.getFile(), reply.getTagList());
-		if (reply.getTagList().size() < 1) return;
-		this.storeDuraionQueue.add(new TDResponse(about, item, reply));
+		if (validTags(reply.getTagList())) {
+			LOG.info("{} {}: {}", about.getTagCls(), item.getFile(), reply.getTagList());
+			this.storeDuraionQueue.add(new TDResponse(about, item, reply));
+		}
+		else {
+			LOG.info("Invalid tags from {} for {}: {}", determiner.getTarget(), item.getFile(), reply.getTagList());
+		}
+	}
+
+	private static boolean validTags(final List<String> tags) {
+		boolean valid = true;
+		for (final String t : tags) {
+			if (t.length() < 2
+					|| t.strip().length() != t.length()) {
+				valid = false;
+				break;
+			}
+		}
+		return valid;
 	}
 
 	void batchWrite() {
