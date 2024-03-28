@@ -48,11 +48,11 @@ import io.grpc.stub.StreamObserver;
 
 public class TagDeterminerController {
 
-	private static final long WORK_FINDER_INTERVAL_SECONDS = TimeUnit.MINUTES.toSeconds(5);
+	private static final long WORK_FINDER_INTERVAL_SECONDS = TimeUnit.MINUTES.toSeconds(1);
+	private static final int QUERY_LIMIT = 10;
 	private static final int BATCH_WRITE_INTERVAL_SECONDS = 30;
 
 	private static final int RPC_DEADLINE_SECONDS = 30;
-	private static final int QUERY_LIMIT = 10;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
 	private static final Logger LOG = LoggerFactory.getLogger(TagDeterminerController.class);
 
@@ -106,7 +106,7 @@ public class TagDeterminerController {
 			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel));
 		}
 
-		this.schExSvc.scheduleWithFixedDelay(this::findWork, WORK_FINDER_INTERVAL_SECONDS, WORK_FINDER_INTERVAL_SECONDS, TimeUnit.SECONDS);
+		this.schExSvc.scheduleWithFixedDelay(this::findWork, 0, WORK_FINDER_INTERVAL_SECONDS, TimeUnit.SECONDS);
 		this.schExSvc.scheduleWithFixedDelay(this::batchWrite, BATCH_WRITE_INTERVAL_SECONDS, BATCH_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 		LOG.info("Tag determiner started: {}", this.determiners);
 	}
