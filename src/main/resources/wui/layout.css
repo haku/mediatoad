@@ -27,6 +27,7 @@
 
 .tag_simple_row_item {
   padding-right: 0.5em;
+  display: inline-block;
 }
 
 .prevnext_bar {
