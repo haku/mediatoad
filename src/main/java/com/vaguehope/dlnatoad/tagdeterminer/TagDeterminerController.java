@@ -67,6 +67,7 @@ public class TagDeterminerController {
 	private final Map<TagDeterminer, ManagedChannel> managedChannels = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerStub> stubs = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerFutureStub> futureStubs = new ConcurrentHashMap<>();
+	private final Map<TagDeterminer, Long> lastDbVersion = new ConcurrentHashMap<>();
 	private final Deque<Runnable> workQueue = new ConcurrentLinkedDeque<>();
 	private final BlockingQueue<TDResponse> storeDuraionQueue = new LinkedBlockingQueue<>();
 
@@ -154,6 +155,9 @@ public class TagDeterminerController {
 	}
 
 	private void startFindingWorkForDeterminer(final TagDeterminer determiner, final TagDeterminerFutureStub stub) {
+		final Long lastDbVer = this.lastDbVersion.get(determiner);
+		if (lastDbVer != null && lastDbVer == this.db.getWriteCount()) return;
+
 		final ListenableFuture<AboutReply> f = stub
 				.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS)
 				.about(AboutRequest.newBuilder().build());
@@ -172,13 +176,14 @@ public class TagDeterminerController {
 	private void findItems(final TagDeterminer determiner, final AboutReply about) {
 		final String tagCls = about.getTagCls();
 		if (tagCls.length() < 5 || tagCls.strip().length() != tagCls.length()) {
-			LOG.warn("Detminer {} has invalid tag_cls: '{}'", determiner, tagCls);
+			LOG.warn("Determiner {} has invalid tag_cls: '{}'", determiner, tagCls);
 			return;
 		}
 
 		// TODO add mime type to query then remove filter below.
 		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
 
+		final long dbWriteCount = this.db.getWriteCount();
 		final List<String> ids;
 		try {
 			ids = DbSearchParser.parseSearchWithAuthBypass(query).execute(this.db, QUERY_LIMIT, 0);
@@ -186,6 +191,11 @@ public class TagDeterminerController {
 		catch (final SQLException e) {
 			LOG.warn("Failed to query DB for items.", e);
 			return;
+		}
+
+		if (ids.size() < 1) {
+			this.lastDbVersion.put(determiner, dbWriteCount);
+			LOG.info("Determiner {} query returned 0 results, sleeping until DB changes.", determiner);
 		}
 
 		for (final String id : ids) {

@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,10 @@ public class WritableMediaDb implements Closeable {
 	private static final Logger LOG = LoggerFactory.getLogger(WritableMediaDb.class);
 
 	private final Connection conn;
+	private final AtomicLong writeCounter;
 
-	protected WritableMediaDb(final Connection conn) throws SQLException {
+	protected WritableMediaDb(final Connection conn, final AtomicLong writeCounter) throws SQLException {
+		this.writeCounter = writeCounter;
 		if (conn.getAutoCommit()) {
 			throw new IllegalArgumentException("AutoCommit must not be enabled.");
 		}
@@ -51,6 +54,7 @@ public class WritableMediaDb implements Closeable {
 	private void commitOrRollback() throws IOException {
 		try {
 			this.conn.commit();
+			this.writeCounter.incrementAndGet();
 		}
 		catch (final SQLException e) {
 			try {

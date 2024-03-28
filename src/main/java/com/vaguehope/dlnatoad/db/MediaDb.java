@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
@@ -25,6 +26,7 @@ public class MediaDb {
 
 	private final String dbPath;
 	private final Connection dbConn;
+	protected final AtomicLong writeCounter = new AtomicLong(0L);
 
 	public MediaDb (final File dbFile) throws SQLException {
 		this("jdbc:sqlite:" + dbFile.getAbsolutePath());
@@ -80,7 +82,7 @@ public class MediaDb {
 	public WritableMediaDb getWritable() throws SQLException {
 		final Connection c = makeDbConnection(this.dbPath);
 		c.setAutoCommit(false);
-		return new WritableMediaDb(c);
+		return new WritableMediaDb(c, this.writeCounter);
 	}
 
 	public PreparedStatement prepare(final String sql) throws SQLException {
@@ -90,6 +92,10 @@ public class MediaDb {
 		catch (final SQLException e) {
 			throw new SQLException("Failed to compile query (sql='" + sql + "').", e);
 		}
+	}
+
+	public long getWriteCount() {
+		return this.writeCounter.get();
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

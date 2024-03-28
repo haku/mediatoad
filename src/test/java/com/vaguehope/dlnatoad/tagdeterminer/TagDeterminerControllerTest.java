@@ -8,6 +8,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -151,7 +153,19 @@ public class TagDeterminerControllerTest {
 		assertEquals(1, tagsB.size());
 		assertEquals("FakeSystem", tagsB.iterator().next().getTag());
 
-		assertEquals(0, this.undertest.queueSize());
+		// Verify it goes to sleep.
+		verify(this.futureStub, times(1)).about(any(AboutRequest.class));
+		for (int i = 0; i < 10; i++) {
+			this.undertest.findWork();
+		}
+		verify(this.futureStub, times(2)).about(any(AboutRequest.class));
+
+		// Adding an item wakes it up.
+		final String idC = this.mockMediaMetadataStore.addFileWithName("myphotos C");
+		final File fileC = new File(this.db.getFilePathForId(idC));
+		this.contentTree.addItem(new ContentItem(idC, "0", "my item C", fileC, MediaFormat.JPEG));
+		this.undertest.findWork();
+		verify(this.futureStub, times(3)).about(any(AboutRequest.class));
 	}
 
 }
