@@ -42,6 +42,7 @@ import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutReply;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutRequest;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsReply;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsRequest;
+import com.vaguehope.dlnatoad.util.ExceptionHelper;
 import com.vaguehope.dlnatoad.util.ExecutorHelper;
 
 import io.grpc.ManagedChannel;
@@ -163,15 +164,15 @@ public class TagDeterminerController {
 			}
 			@Override
 			public void onFailure(final Throwable t) {
-				LOG.warn("Failed to call TagDeterminer About(): {}", determiner, t);
+				LOG.warn("Failed to call {} About(): {}", determiner.getTarget(), ExceptionHelper.causeTrace(t));
 			}
 		}, this.schExSvc);
 	}
 
 	private void findItems(final TagDeterminer determiner, final AboutReply about) {
 		final String tagCls = about.getTagCls();
-		if (tagCls.length() < 5) {
-			LOG.warn("Detminer {} has invalid tag cls: '{}'", determiner, tagCls);
+		if (tagCls.length() < 5 || tagCls.strip().length() != tagCls.length()) {
+			LOG.warn("Detminer {} has invalid tag_cls: '{}'", determiner, tagCls);
 			return;
 		}
 
@@ -224,7 +225,7 @@ public class TagDeterminerController {
 			@Override
 			public void onError(final Throwable t) {
 				latch.countDown();
-				LOG.warn("Receieved error from TagDeterminer DetermineTags(): {}", t);
+				LOG.warn("Receieved error from TagDeterminer DetermineTags():", t);
 			}
 			@Override
 			public void onCompleted() {
@@ -246,7 +247,7 @@ public class TagDeterminerController {
 		}
 		catch (final Exception e) {
 			reqObs.onError(e);
-			LOG.warn("Failed to call TagDeterminer DetermineTags(): {}", e);
+			LOG.warn("Failed to call TagDeterminer DetermineTags():", e);
 		}
 
 		try {
