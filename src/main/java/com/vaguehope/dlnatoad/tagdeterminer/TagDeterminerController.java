@@ -102,14 +102,13 @@ public class TagDeterminerController {
 		for (final TagDeterminer d : this.determiners) {
 			final ManagedChannel channel = d.getTarget().makeChannelBuilder().build();
 			this.managedChannels.put(d, channel);
-			this.stubs.put(d, TagDeterminerGrpc.newStub(channel)
-					.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS));
-			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel)
-					.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS));
+			this.stubs.put(d, TagDeterminerGrpc.newStub(channel));
+			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel));
 		}
 
 		this.schExSvc.scheduleWithFixedDelay(this::findWork, WORK_FINDER_INTERVAL_SECONDS, WORK_FINDER_INTERVAL_SECONDS, TimeUnit.SECONDS);
 		this.schExSvc.scheduleWithFixedDelay(this::batchWrite, BATCH_WRITE_INTERVAL_SECONDS, BATCH_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+		LOG.info("Tag determiner started: {}", this.determiners);
 	}
 
 	public void shutdown() {
@@ -153,7 +152,9 @@ public class TagDeterminerController {
 	}
 
 	private void startFindingWorkForDeterminer(final TagDeterminer determiner, final TagDeterminerFutureStub stub) {
-		final ListenableFuture<AboutReply> f = stub.about(AboutRequest.newBuilder().build());
+		final ListenableFuture<AboutReply> f = stub
+				.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS)
+				.about(AboutRequest.newBuilder().build());
 		FluentFuture.from(f).addCallback(new FutureCallback<>() {
 			@Override
 			public void onSuccess(final AboutReply about) {
@@ -161,7 +162,7 @@ public class TagDeterminerController {
 			}
 			@Override
 			public void onFailure(final Throwable t) {
-				LOG.warn("Failed to call TagDeterminer About(): {}", t);
+				LOG.warn("Failed to call TagDeterminer About(): {}", determiner, t);
 			}
 		}, this.schExSvc);
 	}
@@ -202,7 +203,9 @@ public class TagDeterminerController {
 		final TagDeterminerStub stub = this.stubs.get(determiner);
 
 		final CountDownLatch latch = new CountDownLatch(1);
-		final StreamObserver<DetermineTagsRequest> reqObs = stub.determineTags(new StreamObserver<>() {
+		final StreamObserver<DetermineTagsRequest> reqObs = stub
+				.withDeadlineAfter(RPC_DEADLINE_SECONDS, TimeUnit.SECONDS)
+				.determineTags(new StreamObserver<>() {
 			@Override
 			public void onNext(final DetermineTagsReply reply) {
 				// Processing responses takes priority over sending more work.

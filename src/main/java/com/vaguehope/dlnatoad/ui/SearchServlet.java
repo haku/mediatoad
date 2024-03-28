@@ -186,7 +186,9 @@ public class SearchServlet extends HttpServlet {
 		for (final RemoteInstance ri : this.rpcClient.getRemoteInstances()) {
 			final MediaFutureStub stub = this.rpcClient.getMediaFutureStub(ri.getId());
 			final SearchRequest req = SearchRequest.newBuilder().setQuery(query).build();
-			final ListenableFuture<SearchReply> f = stub.search(req);
+			final ListenableFuture<SearchReply> f = stub
+					.withDeadlineAfter(30, TimeUnit.SECONDS)
+					.search(req);
 			futures.put(ri, f);
 		}
 

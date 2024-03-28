@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.rpc.client;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -41,7 +42,10 @@ public class RemoteContentServlet extends HttpServlet {
 		}
 
 		// TODO support Range header.
-		final Iterator<ReadMediaReply> replies = stub.readMedia(ReadMediaRequest.newBuilder().setId(id).build());
+		// TODO better timeout / deadline handling.
+		final Iterator<ReadMediaReply> replies = stub
+				.withDeadlineAfter(15, TimeUnit.MINUTES)
+				.readMedia(ReadMediaRequest.newBuilder().setId(id).build());
 
 		final ReadMediaReply first = replies.next(); // TODO catch this throwing StatusRuntimeException for not found, etc.
 		resp.setContentType(first.getMimeType());

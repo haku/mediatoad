@@ -18,8 +18,6 @@ import io.grpc.ManagedChannel;
 
 public class RpcClient {
 
-	private static final int DEADLINE_SECONDS = 30;
-
 	private final List<RemoteInstance> remoteInstances = new CopyOnWriteArrayList<>();
 	private final Map<RemoteInstance, ManagedChannel> managedChannels = new ConcurrentHashMap<>();
 	private final Map<String, MediaFutureStub> mediaFutureStubs = new ConcurrentHashMap<>();
@@ -69,10 +67,8 @@ public class RpcClient {
 	private void startChannel(final RemoteInstance ri) {
 		final ManagedChannel channel = ri.getTarget().makeChannelBuilder().build();
 		this.managedChannels.put(ri, channel);
-		this.mediaFutureStubs.put(ri.getId(), MediaGrpc.newFutureStub(channel)
-				.withDeadlineAfter(DEADLINE_SECONDS, TimeUnit.SECONDS));
-		this.mediaBlockingStubs.put(ri.getId(), MediaGrpc.newBlockingStub(channel)
-				.withDeadlineAfter(DEADLINE_SECONDS, TimeUnit.SECONDS));
+		this.mediaFutureStubs.put(ri.getId(), MediaGrpc.newFutureStub(channel));
+		this.mediaBlockingStubs.put(ri.getId(), MediaGrpc.newBlockingStub(channel));
 	}
 
 	private void parseArgs(final Args args) throws ArgsException {

@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.rpc.client;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class RemoteContentServletTest {
 				ReadMediaReply.newBuilder().setContent(ByteString.copyFrom("456", StandardCharsets.UTF_8)).build(),
 				ReadMediaReply.newBuilder().setContent(ByteString.copyFrom("789", StandardCharsets.UTF_8)).build()).iterator();
 		when(stub.readMedia(isA(ReadMediaRequest.class))).thenReturn(replies);
+		when(stub.withDeadlineAfter(anyLong(), isA(TimeUnit.class))).thenReturn(stub);
 
 		this.req.setPathInfo("/1/someid.jpeg");
 		this.undertest.doGet(this.req, this.resp);

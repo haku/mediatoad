@@ -83,8 +83,12 @@ public class TagDeterminerControllerTest {
 		this.undertest = new TagDeterminerController(args, this.contentTree, this.db, this.schEx, this.clock);
 
 		this.determiner = new TagDeterminer(new RpcTarget("http://example.com/", true), "f~myphotos");
+
 		this.stub = mock(TagDeterminerStub.class);
 		this.futureStub = mock(TagDeterminerFutureStub.class);
+		when(this.stub.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(this.stub);
+		when(this.futureStub.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(this.futureStub);
+
 		this.undertest.addStubs(this.determiner, this.stub, this.futureStub);
 	}
 
