@@ -147,7 +147,7 @@ public class TagDeterminerController {
 	}
 
 	void findWork() {
-		if (this.workQueue.size() > 0) return;
+		if (this.workQueue.size() > 0 || this.storeDuraionQueue.size() > 0) return;
 
 		for (final Entry<TagDeterminer, TagDeterminerFutureStub> m : this.futureStubs.entrySet()) {
 			startFindingWorkForDeterminer(m.getKey(), m.getValue());
