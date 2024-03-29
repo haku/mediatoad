@@ -240,7 +240,7 @@ public class TagDeterminerController {
 			@Override
 			public void onError(final Throwable t) {
 				latch.countDown();
-				LOG.warn("Receieved error from TagDeterminer DetermineTags():", t);
+				LOG.warn("Determiner {} DetermineTags() failed: {}", determiner, ExceptionHelper.causeTrace(t));
 			}
 			@Override
 			public void onCompleted() {
