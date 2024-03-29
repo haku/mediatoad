@@ -316,12 +316,26 @@ public class MediaMetadataStoreTest {
 		callIdForFile(f);
 		// Simulate old DB with no MD5 values.
 		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
-			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", null, "some-id", BigInteger.ZERO, false));
+			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", null, "mime/type", "some-id", BigInteger.ZERO, false));
 		}
 		assertEquals(null, getFileData(f).getMd5());  // Verify simulation.
 
 		callIdForFile(f);
 		assertEquals("7ac66c0f148de9519b8bd264312c4d64", getFileData(f).getMd5());
+	}
+
+	@Test
+	public void itUpdateMimeTypeIfNotSet() throws Exception {
+		final File f = mockMediaFile("media-1.jpeg");
+		callIdForFile(f);
+		// Simulate old DB with no mimeType values.
+		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
+			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", "md5", null, "some-id", BigInteger.ZERO, false));
+		}
+		assertEquals(null, getFileData(f).getMimeType());  // Verify simulation.
+
+		callIdForFile(f);
+		assertEquals("image/jpeg", getFileData(f).getMimeType());
 	}
 
 	@Test

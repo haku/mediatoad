@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
@@ -180,6 +181,14 @@ public class MediaMetadataStore {
 				if (oldFileData.getMd5() == null) {
 					final String md5 = HashHelper.md5(file).toString(16);
 					w.updateFileData(file, oldFileData.withMd5(md5));
+				}
+
+				// Back fill mime type?
+				if (oldFileData.getMimeType() == null) {
+					final MediaFormat mf = MediaFormat.identify(file);
+					if (mf != null) {
+						w.updateFileData(file, oldFileData.withMimeType(mf.getMime()));
+					}
 				}
 			}
 

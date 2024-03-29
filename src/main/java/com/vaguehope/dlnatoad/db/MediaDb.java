@@ -51,6 +51,7 @@ public class MediaDb {
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "missing", "INT(1) NOT NULL DEFAULT 0");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "md5", "STRING");
+		Sqlite.addColumnIfMissing(this.dbConn, "files", "mimetype", "STRING");
 		// TODO index on MD5?
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
@@ -136,14 +137,20 @@ public class MediaDb {
 	}
 
 	protected static FileData readFileDataFromConn(final Connection conn, final File file) throws SQLException {
-		try (final PreparedStatement st = conn.prepareStatement("SELECT size, modified, hash, md5, id, auth, missing FROM files WHERE file=?;")) {
+		try (final PreparedStatement st = conn.prepareStatement("SELECT size, modified, hash, md5, mimetype, id, auth, missing FROM files WHERE file=?;")) {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);
 			try (final ResultSet rs = st.executeQuery()) {
 				if (!rs.next()) return null;
 				final FileData fileData = new FileData(
-						rs.getLong(1), rs.getLong(2), rs.getString(3), rs.getString(4), rs.getString(5),
-						new BigInteger(rs.getString(6), 16), rs.getInt(7) != 0);
+						rs.getLong(1),
+						rs.getLong(2),
+						rs.getString(3),
+						rs.getString(4),
+						rs.getString(5),
+						rs.getString(6),
+						new BigInteger(rs.getString(7), 16),
+						rs.getInt(8) != 0);
 				if (rs.next()) throw new SQLException("Query for file '" + file.getAbsolutePath() + "' retured more than one result.");
 				return fileData;
 			}

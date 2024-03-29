@@ -43,9 +43,9 @@ public class DbCleanerTest {
 		final File f3 = this.tmp.newFile("media.wav");
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			w.storeFileData(i1.getFile(), new FileData(12, 123456, "myhash", "md5", i1.getId(), BigInteger.ZERO, false));
-			w.storeFileData(i2.getFile(), new FileData(13, 123457, "myhash2", "md5-2", i2.getId(), BigInteger.ZERO, false));
-			w.storeFileData(f3, new FileData(12, 123458, "myhash", "md5", i1.getId() + "-dupe", BigInteger.ZERO, false));
+			w.storeFileData(i1.getFile(), new FileData(12, 123456, "myhash", "md5", "mime/type", i1.getId(), BigInteger.ZERO, false));
+			w.storeFileData(i2.getFile(), new FileData(13, 123457, "myhash2", "md5-2", "mime/type", i2.getId(), BigInteger.ZERO, false));
+			w.storeFileData(f3, new FileData(12, 123458, "myhash", "md5", "mime/type", i1.getId() + "-dupe", BigInteger.ZERO, false));
 		}
 		assertFalse(getFileData(i1.getFile()).isMissing());
 		assertFalse(getFileData(i2.getFile()).isMissing());
