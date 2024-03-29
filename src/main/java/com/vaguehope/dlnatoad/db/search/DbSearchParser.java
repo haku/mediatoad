@@ -62,11 +62,14 @@ public class DbSearchParser {
 		return parseSearch(allTerms, authIds, false, null, null);
 	}
 
-	public static DbSearch parseSearchWithAuthBypass (final String allTerms) {
-		return parseSearch(allTerms, null, true, null, null);
+	public static DbSearch parseSearchWithAuthBypass (
+			final String allTerms,
+			final String[] sortColumns,
+			final SortDirection[] sortDirection) {
+		return parseSearch(allTerms, null, true, sortColumns, sortDirection);
 	}
 
-	public static DbSearch parseSearch (
+	static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
 			final boolean bypassAuthChecks,

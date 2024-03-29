@@ -32,6 +32,7 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
+import com.vaguehope.dlnatoad.db.search.SortDirection;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.RpcTarget;
@@ -194,7 +195,11 @@ public class TagDeterminerController {
 		final long dbWriteCount = this.db.getWriteCount();
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearchWithAuthBypass(query).execute(this.db, QUERY_LIMIT, 0);
+			ids = DbSearchParser.parseSearchWithAuthBypass(
+					query,
+					new String[] { "modified", "file" },
+					new SortDirection[] { SortDirection.DESC, SortDirection.ASC })
+					.execute(this.db, QUERY_LIMIT, 0);
 		}
 		catch (final SQLException e) {
 			LOG.warn("Failed to query DB for items.", e);
