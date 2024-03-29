@@ -139,6 +139,12 @@ public final class Main {
 		final ScheduledExecutorService fsExSvc = ExecutorHelper.newScheduledExecutor(1, "fs");
 		final ExecutorService miExSvc = ExecutorHelper.newExecutor(1, "mi");
 
+		final File thumbsDir = args.getThumbsDir();
+		final ImageResizer imageResizer =
+				thumbsDir != null
+				? new ImageResizer(thumbsDir)
+				: null;
+
 		final File dbFile = args.getDb();
 		final MediaDb mediaDb;
 		final MediaMetadataStore mediaMetadataStore;
@@ -154,8 +160,9 @@ public final class Main {
 			mediaMetadataStore = null;
 			tagAutocompleter = null;
 		}
+
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
-		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, miExSvc);
+		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, imageResizer, miExSvc);
 		final ContentTree contentTree = new ContentTree();
 
 		final File dropDir = args.getDropDir();
@@ -185,7 +192,7 @@ public final class Main {
 		rpcClient.start();
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
-		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, args, bindAddresses, hostName);
+		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, imageResizer, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -222,6 +229,7 @@ public final class Main {
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
+			final ImageResizer imageResizer,
 			final Args args,
 			final List<InetAddress> bindAddresses,
 			final String hostName) throws Exception {
@@ -237,7 +245,7 @@ public final class Main {
 
 		while (true) {
 			final ServletContextHandler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
-			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, args, hostName);
+			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, imageResizer, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -276,13 +284,9 @@ public final class Main {
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
+			final ImageResizer imageResizer,
 			final Args args,
 			final String hostName) throws ArgsException, IOException {
-		final File thumbsDir = args.getThumbsDir();
-		final ImageResizer imageResizer =
-				thumbsDir != null
-				? new ImageResizer(thumbsDir)
-				: null;
 
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		MediaFormat.addTo(servletHandler.getMimeTypes());

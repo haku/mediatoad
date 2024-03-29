@@ -16,8 +16,8 @@ import com.vaguehope.dlnatoad.util.MyFileServlet;
 
 public class ThumbsServlet extends MyFileServlet {
 
-	private static final int THUMB_SIZE_PIXELS = 200;
-	private static final float THUMB_QUALITY = 0.8f;
+	public static final int THUMB_SIZE_PIXELS = 200;
+	public static final float THUMB_QUALITY = 0.8f;
 
 	private static final Logger LOG = LoggerFactory.getLogger(ThumbsServlet.class);
 	private static final long serialVersionUID = 3640173607729364665L;

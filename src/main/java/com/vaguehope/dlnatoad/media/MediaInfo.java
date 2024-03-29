@@ -12,26 +12,36 @@ import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.ffmpeg.Ffprobe;
 import com.vaguehope.dlnatoad.ffmpeg.FfprobeInfo;
+import com.vaguehope.dlnatoad.ui.ThumbsServlet;
+import com.vaguehope.dlnatoad.util.ExceptionHelper;
+import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class MediaInfo {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MediaInfo.class);
 
 	private final MediaMetadataStore mediaMetadataStore;
+	private final ImageResizer imageResizer;
 	private final ExecutorService exSvc;
 
+
 	public MediaInfo () {
-		this(null, null);
+		this(null, null, null);
 	}
 
-	public MediaInfo (final MediaMetadataStore mediaMetadataStore, final ExecutorService exSvc) {
+	public MediaInfo (final MediaMetadataStore mediaMetadataStore, final ImageResizer imageResizer, final ExecutorService exSvc) {
 		this.mediaMetadataStore = mediaMetadataStore;
+		this.imageResizer = imageResizer;
 		this.exSvc = exSvc;
 	}
 
 	public void readInfoAsync (final File file, final ContentItem item) {
 		if (this.mediaMetadataStore == null) return;
 		this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
+
+		if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+			this.exSvc.submit(() -> generateThumbnail(item));
+		}
 	}
 
 	private static class ReadInfoJob implements Runnable {
@@ -79,6 +89,15 @@ public class MediaInfo {
 			return null;
 		}
 
+	}
+
+	private void generateThumbnail(final ContentItem item) {
+		try {
+			this.imageResizer.resizeFile(item.getFile(), ThumbsServlet.THUMB_SIZE_PIXELS, ThumbsServlet.THUMB_QUALITY);
+		}
+		catch (final IOException e) {
+			LOG.warn("Failed to generate thumbnail for {}: {}", item.getFile(), ExceptionHelper.causeTrace(e));
+		}
 	}
 
 }
