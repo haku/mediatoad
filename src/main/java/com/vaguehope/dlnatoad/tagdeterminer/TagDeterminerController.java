@@ -32,7 +32,6 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
-import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.RpcTarget;
@@ -64,10 +63,13 @@ public class TagDeterminerController {
 	private final Clock clock;
 
 	private final List<TagDeterminer> determiners = new CopyOnWriteArrayList<>();
+	private final Map<TagDeterminer, Boolean> determinerStatus = new ConcurrentHashMap<>();
+	private final Map<TagDeterminer, Long> lastDbVersion = new ConcurrentHashMap<>();
+
 	private final Map<TagDeterminer, ManagedChannel> managedChannels = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerStub> stubs = new ConcurrentHashMap<>();
 	private final Map<TagDeterminer, TagDeterminerFutureStub> futureStubs = new ConcurrentHashMap<>();
-	private final Map<TagDeterminer, Long> lastDbVersion = new ConcurrentHashMap<>();
+
 	private final Deque<Runnable> workQueue = new ConcurrentLinkedDeque<>();
 	private final BlockingQueue<TDResponse> storeDuraionQueue = new LinkedBlockingQueue<>();
 
@@ -164,11 +166,17 @@ public class TagDeterminerController {
 		FluentFuture.from(f).addCallback(new FutureCallback<>() {
 			@Override
 			public void onSuccess(final AboutReply about) {
+				if (!Boolean.TRUE.equals(TagDeterminerController.this.determinerStatus.put(determiner, Boolean.TRUE))) {
+					LOG.warn("Determiner {} is up: {{}}", determiner.getTarget(), about.toString().replace('\n', ' '));
+				}
+
 				findItems(determiner, about);
 			}
 			@Override
 			public void onFailure(final Throwable t) {
-				LOG.warn("Failed to call {} About(): {}", determiner.getTarget(), ExceptionHelper.causeTrace(t));
+				if (!Boolean.FALSE.equals(TagDeterminerController.this.determinerStatus.put(determiner, Boolean.FALSE))) {
+					LOG.warn("Determiner {} is down: {}", determiner.getTarget(), ExceptionHelper.causeTrace(t));
+				}
 			}
 		}, this.schExSvc);
 	}
