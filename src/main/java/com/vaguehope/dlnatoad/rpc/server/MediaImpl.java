@@ -13,6 +13,7 @@ import java.util.Set;
 import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -50,7 +51,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearch(request.getQuery(), null).execute(this.mediaDb, limit, offset);
+			ids = DbSearchParser.parseSearch(request.getQuery(), null, SortOrder.FILE.asc()).execute(this.mediaDb, limit, offset);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());

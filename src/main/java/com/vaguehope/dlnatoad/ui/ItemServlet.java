@@ -36,9 +36,9 @@ import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.ui.templates.ItemScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
@@ -177,7 +177,8 @@ public class ItemServlet extends HttpServlet {
 			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 			final List<String> ids;
 			try {
-				ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
+				ids = DbSearchParser.parseSearch(query, authIds, SearchServlet.RESULT_SORT_ORDER)
+						.execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
 			}
 			catch (final SQLException e) {
 				throw new IOException("Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()));

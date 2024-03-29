@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -44,6 +45,7 @@ import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -67,6 +69,7 @@ public class SearchServlet extends HttpServlet {
 	static final String PARAM_PAGE_LIMIT = "limit";
 	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
+	static final SortOrder RESULT_SORT_ORDER = SortOrder.MODIFIED.desc();
 
 	static final int MAX_RESULTS = 500;
 	private static final String ROOT_CONTENT_ID = "0"; // Root id of '0' is in the spec.
@@ -102,7 +105,7 @@ public class SearchServlet extends HttpServlet {
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
-		final PageScope pageScope = this.servletCommon.pageScope(req, StringUtils.defaultString(query, "Search"), null);
+		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), null);
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
@@ -121,7 +124,8 @@ public class SearchServlet extends HttpServlet {
 					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
-					final List<String> ids = DbSearchParser.parseSearch(query, authIds).execute(this.mediaDb, limit, offset);
+					final List<String> ids = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER)
+							.execute(this.mediaDb, limit, offset);
 					results = this.contentTree.getItemsForIds(ids, username);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;

@@ -64,7 +64,7 @@ public class DbSearchParserTest {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
 
-		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, false, new String[] { "file" }, new SortDirection[] { SortDirection.ASC });
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortOrder.FILE.asc());
 
 		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
 		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));
@@ -522,7 +522,7 @@ public class DbSearchParserTest {
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, null);
+		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortOrder.FILE.asc());
 		if (expectedSql != null) assertEquals(expectedSql, parsed.getSql());
 		assertThat(parsed.getTerms(), contains(expectedTerms));
 	}
@@ -532,7 +532,7 @@ public class DbSearchParserTest {
 	}
 
 	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds);
+		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortOrder.FILE.asc());
 		final List<String> results = parsed.execute(this.mediaDb);
 		assertThat(results, containsInAnyOrder(expectedResults));
 	}

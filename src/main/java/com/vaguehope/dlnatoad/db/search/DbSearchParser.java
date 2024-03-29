@@ -51,32 +51,29 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
-	private static final String _SQL_MEDIAFILES_SEARCHORDERBY =
-			" ORDER BY file COLLATE NOCASE ASC";
-
 	private DbSearchParser () {
 		throw new AssertionError();
 	}
 
-	public static DbSearch parseSearch (final String allTerms, final Set<BigInteger> authIds) {
-		return parseSearch(allTerms, authIds, false, null, null);
+	public static DbSearch parseSearch (
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final SortOrder sort) {
+		return parseSearch(allTerms, authIds, false, new SortOrder[] { sort });
 	}
 
 	public static DbSearch parseSearchWithAuthBypass (
 			final String allTerms,
-			final String[] sortColumns,
-			final SortDirection[] sortDirection) {
-		return parseSearch(allTerms, null, true, sortColumns, sortDirection);
+			final SortOrder sort) {
+		return parseSearch(allTerms, null, true, new SortOrder[] { sort });
 	}
 
-	static DbSearch parseSearch (
+	private static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
 			final boolean bypassAuthChecks,
-			final String[] sortColumns,
-			final SortDirection[] sortDirection) {
-		if (sortColumns == null ^ sortDirection == null) throw new IllegalArgumentException("Must specify both or neith of sort and direction.");
-		if (sortColumns != null && sortDirection != null && sortColumns.length != sortDirection.length) throw new IllegalArgumentException("Sorts and directions must be same length.");
+			final SortOrder[] sort) {
+		if (sort == null || sort.length < 1) throw new IllegalArgumentException("Sort must be specified");
 
 		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
 		if (!bypassAuthChecks) {
@@ -86,16 +83,13 @@ public class DbSearchParser {
 
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
 		appendWhereTerms(sql, terms);
-		if (sortColumns != null && sortDirection != null && sortColumns.length > 0 && sortDirection.length > 0) {
-			sql.append(" ORDER BY ");
-			for (int i = 0; i < sortColumns.length; i++) {
-				if (i > 0) sql.append(",");
-				sql.append(sortColumns[i]).append(sortDirection[i].getSql());
-			}
+
+		sql.append(" ORDER BY ");
+		for (int i = 0; i < sort.length; i++) {
+			if (i > 0) sql.append(",");
+			sql.append(sort[i].toSql());
 		}
-		else {
-			sql.append(_SQL_MEDIAFILES_SEARCHORDERBY);
-		}
+
 		return new DbSearch(sql.toString(), terms);
 	}
 
