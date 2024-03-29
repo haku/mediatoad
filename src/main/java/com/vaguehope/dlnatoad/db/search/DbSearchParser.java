@@ -30,6 +30,9 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERES_NOT_FILE =
 			" NOT " + _SQL_MEDIAFILES_WHERES_FILE;
 
+	private static final String _SQL_MEDIAFILES_WHERES_TYPE =
+			" (mimetype LIKE ? ESCAPE ?)";
+
 	private static final String _SQL_MEDIAFILES_WHERES_TAG =
 			" (id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
@@ -150,6 +153,9 @@ public class DbSearchParser {
 				else if (DbSearchSyntax.isFileNotMatchPartial(term)) {
 					sql.append(_SQL_MEDIAFILES_WHERES_NOT_FILE);
 				}
+				else if (DbSearchSyntax.isTypeMatchExactOrPartial(term)) {
+					sql.append(_SQL_MEDIAFILES_WHERES_TYPE);
+				}
 				else if (DbSearchSyntax.isTagMatchPartial(term) || DbSearchSyntax.isTagMatchExact(term)) {
 					sql.append(_SQL_MEDIAFILES_WHERES_TAG);
 				}
@@ -231,14 +237,18 @@ public class DbSearchParser {
 						ps.setString(parmIn++, anchoredOrWildcardEnds(Sqlite.escapeSearch(QuoteRemover.unquote(DbSearchSyntax.removeMatchOperator(term)))));
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
 					}
+					else if (DbSearchSyntax.isTypeMatchExactOrPartial(term)) {
+						String escapedTerm = Sqlite.escapeSearch(QuoteRemover.unquote(DbSearchSyntax.removeMatchOperator(term)));
+						if (DbSearchSyntax.isTypeMatchPartial(term)) escapedTerm += "%";
+						ps.setString(parmIn++, escapedTerm);
+						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
+					}
 					else if (DbSearchSyntax.isTagMatchExact(term) || DbSearchSyntax.isTagNotMatchExact(term)) {
 						ps.setString(parmIn++, Sqlite.escapeSearch(QuoteRemover.unquote(DbSearchSyntax.removeMatchOperator(term))));
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
 					}
-					else if (DbSearchSyntax.isTagCountLessThan(term) || DbSearchSyntax.isTagCountGreaterThan(term)) {
-						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
-					}
-					else if (DbSearchSyntax.widthOrHeight(term) != null) {
+					else if (DbSearchSyntax.isTagCountLessThan(term) || DbSearchSyntax.isTagCountGreaterThan(term)
+							|| DbSearchSyntax.widthOrHeight(term) != null) {
 						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
 					}
 					else {

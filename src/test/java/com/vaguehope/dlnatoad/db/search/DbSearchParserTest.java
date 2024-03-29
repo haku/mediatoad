@@ -82,6 +82,25 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itSearchesByType() throws Exception {
+		final String jpg = mockMediaTrackWithNameContaining("my photo", ".jpg");
+		final String jpeg = mockMediaTrackWithNameContaining("another photo", ".jpeg");
+		final String gif = mockMediaTrackWithNameContaining("thing", ".gif");
+		final String mp4 = mockMediaTrackWithNameContaining("thing", ".mp4");
+		final String avi = mockMediaTrackWithNameContaining("thing", ".avi");
+		final String mp3 = mockMediaTrackWithNameContaining("thing", ".mp3");
+		final String wav = mockMediaTrackWithNameContaining("thing", ".wav");
+
+		runQuery("type=image", jpg, jpeg, gif);
+		runQuery("type=video", mp4, avi);
+		runQuery("type=audio", mp3, wav);
+
+		runQuery("type=image/jpeg", jpg, jpeg);
+		runQuery("type=video/mp4", mp4);
+		runQuery("type=audio/mpeg", mp3);
+	}
+
+	@Test
 	public void itSearchesForSingleItemByNameAndTag() throws Exception {
 		final String term1 = "foobar";
 		final String term2 = "desu";

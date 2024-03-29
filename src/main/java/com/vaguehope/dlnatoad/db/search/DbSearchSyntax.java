@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.db.search;
 
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +39,18 @@ public class DbSearchSyntax {
 
 	public static boolean isFileNotMatchPartial (final String term) {
 		return term.startsWith("-f~") || term.startsWith("-F~");
+	}
+
+	public static boolean isTypeMatchExactOrPartial (final String term) {
+		return term.toLowerCase(Locale.ENGLISH).startsWith("type=");
+	}
+
+	/**
+	 * type=image/jpeg is an exact match.
+	 * type=image is an implicit prefix search.
+	 */
+	public static boolean isTypeMatchPartial (final String term) {
+		return isTypeMatchExactOrPartial(term) && term.indexOf('/') < 0;
 	}
 
 	public static boolean isTagMatchPartial (final String term) {
