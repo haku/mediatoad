@@ -51,7 +51,7 @@ import io.grpc.stub.StreamObserver;
 public class TagDeterminerController {
 
 	private static final long WORK_FINDER_INTERVAL_SECONDS = TimeUnit.MINUTES.toSeconds(1);
-	private static final int QUERY_LIMIT = 10;
+	private static final int QUERY_LIMIT = 100;
 	private static final int BATCH_WRITE_INTERVAL_SECONDS = 30;
 
 	private static final int RPC_DEADLINE_SECONDS = 30;
