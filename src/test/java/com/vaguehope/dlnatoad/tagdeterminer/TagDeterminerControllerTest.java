@@ -103,12 +103,12 @@ public class TagDeterminerControllerTest {
 		when(this.futureStub.about(any(AboutRequest.class))).thenReturn(aboutFuture);
 
 		// TODO mocking content and mocking DB should interact with each other better.
-		final String idA = this.mockMediaMetadataStore.addFileWithName("myphotos A");
+		final String idA = this.mockMediaMetadataStore.addFileWithName("myphotos A", ".jpeg");
 		final File fileA = new File(this.db.getFilePathForId(idA));
 		this.contentTree.addItem(new ContentItem(idA, "0", "my item A", fileA, MediaFormat.JPEG));
 
 		// Item that has already been sent.
-		final String idB = this.mockMediaMetadataStore.addFileWithNameAndTags("myphotos B", "FakeSystem");
+		final String idB = this.mockMediaMetadataStore.addFileWithNameAndSuffexAndTags("myphotos B", ".jpeg", "FakeSystem");
 		final File fileB = new File(this.db.getFilePathForId(idB));
 		this.contentTree.addItem(new ContentItem(idB, "0", "my item B", fileB, MediaFormat.JPEG));
 
@@ -161,7 +161,7 @@ public class TagDeterminerControllerTest {
 		verify(this.futureStub, times(2)).about(any(AboutRequest.class));
 
 		// Adding an item wakes it up.
-		final String idC = this.mockMediaMetadataStore.addFileWithName("myphotos C");
+		final String idC = this.mockMediaMetadataStore.addFileWithName("myphotos C", ".jpeg");
 		final File fileC = new File(this.db.getFilePathForId(idC));
 		this.contentTree.addItem(new ContentItem(idC, "0", "my item C", fileC, MediaFormat.JPEG));
 		this.undertest.findWork();

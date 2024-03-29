@@ -180,8 +180,8 @@ public class TagDeterminerController {
 			return;
 		}
 
-		// TODO add mime type to query then remove filter below.
-		final String query = String.format("( %s ) -%s", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
+		// TODO make supported formats something the TD returns in About().
+		final String query = String.format("( %s ) -%s type=image", determiner.getQuery(), DbSearchSyntax.makeSingleTagSearch(tagCls));
 
 		final long dbWriteCount = this.db.getWriteCount();
 		final List<String> ids;
@@ -203,11 +203,6 @@ public class TagDeterminerController {
 			if (item == null) {
 				LOG.error("ID from DB not found in contentTree: {}", id);
 				return;
-			}
-			// TODO make supported formats something the TD returns in About().
-			// TODO move type check into DB query.
-			if (item.getFormat().getContentGroup() != ContentGroup.IMAGE) {
-				continue;
 			}
 			this.workQueue.add(() -> {
 				sendItemToDetminer(determiner, about, item);
