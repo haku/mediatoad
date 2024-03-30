@@ -162,6 +162,7 @@ public class DirServlet extends HttpServlet {
 	}
 
 	private static void appendNodes(final ResultGroupScope resultScope, final List<ContentNode> nodesUserHasAuth) {
+		// TODO sort if sort mode set
 		for (final ContentNode n : nodesUserHasAuth) {
 			resultScope.addLocalItem(C.DIR_PATH_PREFIX + n.getId(), n.getTitle());
 		}

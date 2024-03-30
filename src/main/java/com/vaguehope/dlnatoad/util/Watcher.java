@@ -234,6 +234,7 @@ public class Watcher {
 			// containsValue() is a linear search.
 			final boolean isDir = Files.isDirectory(path) || this.watchKeys.containsValue(path);
 
+			// TODO ignore . files
 			if (!isDir && !this.filter.accept(path.toFile())) {
 				LOG.debug("Ignoring: {}", path);
 				this.watchEvents.incrementAndGet();
