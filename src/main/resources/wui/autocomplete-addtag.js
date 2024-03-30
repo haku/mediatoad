@@ -60,6 +60,7 @@ const addTagAc = new autoComplete({
   },
 });
 document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.shiftKey) return;
   if (!e.altKey) {
     switch (e.target.tagName.toLowerCase()) {
       case 'input':
