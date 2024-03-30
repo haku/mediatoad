@@ -8,7 +8,9 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -42,6 +44,7 @@ import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.templates.ItemScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
+import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 
 public class ItemServlet extends HttpServlet {
 
@@ -52,6 +55,7 @@ public class ItemServlet extends HttpServlet {
 	private static final String PARAM_NEXT_ID = "nextid";
 	private static final String PARAM_NEXT_OFFSET = "nextoffset";
 
+	private static final ThreadSafeDateFormatter DATE_FORMAT = new ThreadSafeDateFormatter("yyyy-MM-dd HH:mm:ss z", Locale.ENGLISH);
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
 	private static final long serialVersionUID = 3431697675845091273L;
 
@@ -133,6 +137,8 @@ public class ItemServlet extends HttpServlet {
 					itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
 					itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
 					itemScope.details += "\n" + "MD5: " + fileData.getMd5();
+					itemScope.details += "\n" + item.getFile().getAbsolutePath();
+					itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getLastModified()));
 				}
 			}
 			catch (final SQLException e) {
