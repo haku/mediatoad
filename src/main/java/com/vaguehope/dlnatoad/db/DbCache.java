@@ -17,7 +17,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 public class DbCache {
 
-	private static final int TOP_TAG_COUNT = 100; // TODO make cache param? sublist cache entries?
+	private static final int TOP_TAG_COUNT = 200; // TODO make cache param? sublist cache entries?
 
 	private final MediaDb db;
 	private final LoadingCache<TopTagsKey, ValueAndVersion<List<TagFrequency>>> topTags;
