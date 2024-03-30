@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.db.search;
 
+import java.io.File;
 import java.util.Locale;
 import java.util.Set;
 
@@ -10,11 +11,20 @@ import com.google.common.collect.ImmutableSet;
 public class DbSearchSyntax {
 
 	public static String makeSingleTagSearch(String tag) {
+		return "t=" + quoteSearchTerm(tag);
+	}
+
+	public static String makePathSearch(final File file) {
+		return "f~^" + quoteSearchTerm(file.getAbsolutePath());
+	}
+
+	private static String quoteSearchTerm(final String term) {
+		String t = term;
 		final String quote;
-		if (StringUtils.containsAny(tag, ' ', '(', ')', '\t', '　')) {
-			if (tag.indexOf('"') >= 0) {
-				if (tag.indexOf('\'') >= 0) {
-					tag = tag.replace("'", "\\'");
+		if (StringUtils.containsAny(t, ' ', '(', ')', '\t', '　')) {
+			if (t.indexOf('"') >= 0) {
+				if (t.indexOf('\'') >= 0) {
+					t = t.replace("'", "\\'");
 				}
 				quote = "'";
 			}
@@ -25,12 +35,7 @@ public class DbSearchSyntax {
 		else {
 			quote = "";
 		}
-		final StringBuilder ret = new StringBuilder();
-		ret.append("t=");
-		ret.append(quote);
-		ret.append(tag);
-		ret.append(quote);
-		return ret.toString();
+		return quote + t + quote;
 	}
 
 	public static boolean isFileMatchPartial (final String term) {
@@ -131,7 +136,7 @@ public class DbSearchSyntax {
 		try {
 			return Integer.parseInt(s);
 		}
-		catch (NumberFormatException e) {
+		catch (final NumberFormatException e) {
 			return 1;
 		}
 	}

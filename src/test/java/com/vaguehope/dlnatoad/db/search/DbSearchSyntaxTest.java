@@ -2,6 +2,8 @@ package com.vaguehope.dlnatoad.db.search;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+
 import org.junit.Test;
 
 import com.google.common.net.UrlEscapers;
@@ -18,6 +20,16 @@ public class DbSearchSyntaxTest {
 		assertEquals("t='a \"b c\" \\'d e\\''", DbSearchSyntax.makeSingleTagSearch("a \"b c\" 'd e'"));
 		assertEquals("t=\"foo(b\"", DbSearchSyntax.makeSingleTagSearch("foo(b"));
 		assertEquals("t=\"bar)b\"", DbSearchSyntax.makeSingleTagSearch("bar)b"));
+	}
+
+	@Test
+	public void itEscapesFilePaths() throws Exception {
+		assertEquals("f~^/foo/bar/bat", DbSearchSyntax.makePathSearch(new File("/foo/bar/bat")));
+		assertEquals("f~^\"/foo/b a r/bat\"", DbSearchSyntax.makePathSearch(new File("/foo/b a r/bat")));
+		assertEquals("f~^'/foo/b \"a\" r/bat'", DbSearchSyntax.makePathSearch(new File("/foo/b \"a\" r/bat")));
+		assertEquals("f~^\"/foo/b 'a' r/bat\"", DbSearchSyntax.makePathSearch(new File("/foo/b 'a' r/bat")));
+		assertEquals("f~^\"/foo/b (a r/bat\"", DbSearchSyntax.makePathSearch(new File("/foo/b (a r/bat")));
+		assertEquals("f~^\"/foo/b (a) r/bat\"", DbSearchSyntax.makePathSearch(new File("/foo/b (a) r/bat")));
 	}
 
 	@Test

@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +37,8 @@ import com.github.mustachejava.reflect.ReflectionObjectHandler;
 import com.google.common.collect.ImmutableMap;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.DbCache;
+import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -49,8 +52,10 @@ public class DirServletTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
 
+	private ServletCommon servletCommon;
 	private ContentTree contentTree;
 	private MockContent mockContent;
+	private ImageResizer imageResizer;
 	private DirServlet undertest;
 
 	private MockHttpServletRequest req;
@@ -61,10 +66,10 @@ public class DirServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 
-		final ImageResizer imageResizer = new ImageResizer(this.tmp.getRoot());
+		this.imageResizer = new ImageResizer(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		final ServletCommon servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
-		this.undertest = new DirServlet(servletCommon, this.contentTree, imageResizer, null);
+		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, null);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -209,6 +214,26 @@ public class DirServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getContentAsString(), containsString("<h3>Recent"));
+	}
+
+	@Test
+	public void itShowsTopTags() throws Exception {
+		final DbCache dbCache = mock(DbCache.class);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, dbCache);
+
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+
+		when(dbCache.getTopTags(any(), any(String.class))).thenReturn(Arrays.asList(new TagFrequency("foo", 2)));
+
+		this.req.setPathInfo("/" + mockDir.getId());
+		this.undertest.doGet(this.req, this.resp);
+		final String page = this.resp.getContentAsString();
+
+		final String expectedPath = mockDir.getFile().getAbsolutePath()
+				.replace(" ", "+")
+				.replace("/", "%2F");
+		assertThat(page, containsString("<a class=\"tag_simple_row_item\" href=\"../search?query=t%3Dfoo+f%7E%5E%22" + expectedPath + "%22\">foo (2)</a>"));
 	}
 
 	@Test

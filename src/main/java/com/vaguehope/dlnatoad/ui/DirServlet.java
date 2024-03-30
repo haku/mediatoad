@@ -175,26 +175,26 @@ public class DirServlet extends HttpServlet {
 	}
 
 	private void maybeAppendTopTags(final NodeIndexScope nodeIndexScope, final ContentNode node, final String username) throws IOException {
-		if (this.dbCache != null) {
-			final File dir = node.getFile();
-			final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
-			if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(node.getId())) return;
+		if (this.dbCache == null) return;
 
-			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-			try {
-				final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
-				if (topTags.size() > 0) {
-					for (final TagFrequency tag : topTags) {
-						final String path = "search?query=" + StringEscapeUtils.escapeHtml4(
-								UrlEscapers.urlFormParameterEscaper().escape(
-										DbSearchSyntax.makeSingleTagSearch(tag.getTag())));
-						nodeIndexScope.addTopTag(path, tag.getTag(), tag.getCount());
-					}
+		final File dir = node.getFile();
+		final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
+		if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(node.getId())) return;
+
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		try {
+			final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
+			if (topTags.size() > 0) {
+				for (final TagFrequency tag : topTags) {
+					String query = DbSearchSyntax.makeSingleTagSearch(tag.getTag());
+					if (node.getFile() != null) query += " " + DbSearchSyntax.makePathSearch(node.getFile());
+					final String path = "search?query=" + StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+					nodeIndexScope.addTopTag(path, tag.getTag(), tag.getCount());
 				}
 			}
-			catch (final SQLException e) {
-				throw new IOException(e);
-			}
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
 		}
 	}
 
