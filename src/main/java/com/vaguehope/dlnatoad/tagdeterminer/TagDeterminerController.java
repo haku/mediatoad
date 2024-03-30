@@ -61,6 +61,7 @@ public class TagDeterminerController {
 	private final MediaDb db;
 	private final ContentTree contentTree;
 	private final ScheduledExecutorService schExSvc;
+	private final boolean verbose;
 	private final Clock clock;
 
 	private final List<TagDeterminer> determiners = new CopyOnWriteArrayList<>();
@@ -82,6 +83,7 @@ public class TagDeterminerController {
 		this.contentTree = contentTree;
 		this.db = db;
 		this.schExSvc = schExSvc;
+		this.verbose = args.isVerboseLog();
 		this.clock = clock;
 		for (final String arg : args.getTagDeterminers()) {
 			this.determiners.add(parseArg(arg));
@@ -273,7 +275,7 @@ public class TagDeterminerController {
 
 	private void responseFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
 		if (validTags(reply.getTagList())) {
-			LOG.info("{} {}: {}", about.getTagCls(), item.getFile(), reply.getTagList());
+			if (this.verbose) LOG.info("{} {}: {}", about.getTagCls(), item.getFile(), reply.getTagList());
 			this.storeDuraionQueue.add(new TDResponse(about, item, reply));
 		}
 		else {
