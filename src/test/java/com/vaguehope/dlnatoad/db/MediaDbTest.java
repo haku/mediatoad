@@ -61,18 +61,37 @@ public class MediaDbTest {
 	}
 
 	@Test
-	public void itGetsSimpleTags() throws Exception {
+	public void itGetsUndeletedVisibleTags() throws Exception {
 		final String fileId = "myid";
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", "", 1234567890L));
 			assertTrue(w.addTag(fileId, "my-tag", "source", 1234567891L));
 			assertTrue(w.addTag(fileId, "my-tag", "other", 1234567892L));
+			assertTrue(w.addTag(fileId, "hidden", ".hidden", 1234567892L));
 			assertTrue(w.mergeTag(fileId, "deleted", "", 1234567899L, true));
 		}
 
-		final Collection<String> actual = this.undertest.getTagsSimple(fileId);
-		assertThat(actual, contains("my-tag"));
+		final Collection<Tag> actual = this.undertest.getTags(fileId, false, false);
+		assertThat(actual, contains(
+				new Tag("my-tag", "", 1234567890L, false),
+				new Tag("my-tag", "other", 1234567892L, false),
+				new Tag("my-tag", "source", 1234567891L, false)));
+	}
+
+	@Test
+	public void itGetsGettingHiddenTags() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
+			assertTrue(w.addTag(fileId, "my-tag", "", 1234567890L));
+			assertTrue(w.addTag(fileId, "hidden", ".hidden", 1234567892L));
+		}
+
+		final Collection<Tag> actual = this.undertest.getTags(fileId, true, false);
+		assertThat(actual, contains(
+				new Tag("hidden", ".hidden", 1234567892L, false),
+				new Tag("my-tag", "", 1234567890L, false)));
 	}
 
 	@Test
@@ -83,7 +102,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
-		final Collection<Tag> expectedTags = this.undertest.getTags(fileId, false);
+		final Collection<Tag> expectedTags = this.undertest.getTags(fileId, true, false);
 		final Tag existing = expectedTags.iterator().next();
 		assertEquals("my-tag", existing.getTag());
 		assertEquals(1234567890L, existing.getModified());
@@ -94,14 +113,14 @@ public class MediaDbTest {
 			w.setTagModifiedAndDeleted(fileId, existing.getTag(), existing.getCls(), true, 2345678901L);
 		}
 
-		final Collection<Tag> deletedTags = this.undertest.getTags(fileId, true);
+		final Collection<Tag> deletedTags = this.undertest.getTags(fileId, true, true);
 		final Tag deleted = deletedTags.iterator().next();
 		assertEquals("my-tag", deleted.getTag());
 		assertEquals(2345678901L, deleted.getModified());
 		assertEquals(true, deleted.isDeleted());
 		assertThat(deletedTags, hasSize(1));
 
-		assertThat(this.undertest.getTags(fileId, false), hasSize(0));
+		assertThat(this.undertest.getTags(fileId, true, false), hasSize(0));
 	}
 
 	@Test
@@ -111,7 +130,7 @@ public class MediaDbTest {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
 
 	@Test
@@ -122,7 +141,7 @@ public class MediaDbTest {
 			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", "", 9234567890L));
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, true)));
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
 
 	@Test
@@ -135,7 +154,7 @@ public class MediaDbTest {
 			assertFalse(w.addTag(fileId, "my-tag", 1234567891L));
 			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, false)));
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
 
 	@Test
@@ -149,7 +168,7 @@ public class MediaDbTest {
 			assertFalse(w.addTag(fileId, "my-tag", "", 1234567891L));
 			assertFalse(w.addTag(fileId, "my-tag", "c", 1234567892L));
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(
+		assertThat(this.undertest.getTags(fileId, true, true), contains(
 				new Tag("my-tag", "", 1234567889L, false),
 				new Tag("my-tag", "c", 1234567890L, false)
 				));
@@ -157,7 +176,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setTagModifiedAndDeleted(fileId, "my-tag", "c", true, 1234567891L);
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(
+		assertThat(this.undertest.getTags(fileId, true, true), contains(
 				new Tag("my-tag", "", 1234567889L, false),
 				new Tag("my-tag", "c", 1234567891L, true)
 				));
@@ -173,7 +192,7 @@ public class MediaDbTest {
 			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567870L, true));
 			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 		}
-		assertThat(this.undertest.getTags(fileId, true), contains(new Tag("my-tag", 1234567890L, false)));
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
 
 	@Test
@@ -185,13 +204,13 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 		}
 
-		final Collection<Tag> tags = this.undertest.getTags(fileId, false);
+		final Collection<Tag> tags = this.undertest.getTags(fileId, true, false);
 		final Tag tag = tags.iterator().next();
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setTagModifiedAndDeleted(fileId, tag.getTag(), tag.getCls(), true, 1234567891L);
 		}
 
-		final Collection<Tag> deleted = this.undertest.getTags(fileId, true);
+		final Collection<Tag> deleted = this.undertest.getTags(fileId, true, true);
 		assertThat(deleted, hasSize(1));
 		final Tag deletedTag = deleted.iterator().next();
 		assertEquals(true, deletedTag.isDeleted());
@@ -201,7 +220,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567892L));
 		}
 
-		final Collection<Tag> undeleted = this.undertest.getTags(fileId, true);
+		final Collection<Tag> undeleted = this.undertest.getTags(fileId, true, true);
 		assertThat(undeleted, hasSize(1));
 		final Tag undeletedTag = undeleted.iterator().next();
 		assertEquals(false, undeletedTag.isDeleted());
@@ -252,7 +271,8 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			for (int i = 0; i < 10; i++) {
 				addMockFiles(w, "id-" + i, BigInteger.ZERO, "tag1");
-				w.addTag("id-" + i, "tag1", "place", 1234567891L);
+				w.addTag("id-" + i, "tag1", "class.foo", 1234567891L);
+				w.addTag("id-" + i, "hidden", ".class", 1234567891L);  // . classes should be excluded
 			}
 			for (int i = 10; i < 20; i++) {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
@@ -290,6 +310,7 @@ public class MediaDbTest {
 			for (int i = 0; i < 10; i++) {
 				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar", "barbat");
 				w.addTag("id-" + i, "foobar", "place", 1234567891L);
+				w.addTag("id-" + i, "foo hidden", ".class", 1234567891L);  // . classes should be excluded
 				if (i > 5) w.addTag("id-" + i, "batfoo", 1234567891L);
 				if (i > 6) w.addTag("id-" + i, "foored", 1234567891L);
 				if (i > 7) w.addTag("id-" + i, "foogreen", 1234567891L);
@@ -307,6 +328,19 @@ public class MediaDbTest {
 				new TagFrequency("foobar", 20),
 				new TagFrequency("foored", 3),
 				new TagFrequency("foogreen", 2)));
+	}
+
+	@Test
+	public void itGetsAllTags() throws Exception {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			for (int i = 0; i < 10; i++) {
+				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar");
+				w.addTag("id-" + i, "foo hidden", ".class", 1234567891L);  // . classes should be excluded
+				w.mergeTag("id-" + i, "foodeleted", "", 1234567890L, true);
+			}
+		}
+		assertThat(this.undertest.getAllTagsNotMissingNotDeleted(), contains(
+				new TagFrequency("foobar", 10)));
 	}
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {

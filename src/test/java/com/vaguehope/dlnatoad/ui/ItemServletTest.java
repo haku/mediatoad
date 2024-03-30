@@ -160,7 +160,7 @@ public class ItemServletTest {
 
 		assertEquals("Tag added.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
-		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
+		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), true, false).iterator().next().getTag());
 
 		verify(this.tagAutocompleter).addOrIncrementTag(tagToAdded);
 	}
@@ -176,7 +176,7 @@ public class ItemServletTest {
 
 		assertEquals("Tag added.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
-		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), false).iterator().next().getTag());
+		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), true, false).iterator().next().getTag());
 
 		verify(this.tagAutocompleter).addOrIncrementTag(tagToAdded);
 	}
@@ -195,7 +195,7 @@ public class ItemServletTest {
 
 		assertEquals("Tags removed.\n", this.resp.getContentAsString());
 		assertEquals(303, this.resp.getStatus());
-		assertFalse(this.mediaDb.getTags(item.getId(), false).iterator().hasNext());
+		assertFalse(this.mediaDb.getTags(item.getId(), true, false).iterator().hasNext());
 
 		verify(this.tagAutocompleter).decrementTag(tagToRm);
 	}

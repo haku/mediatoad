@@ -116,7 +116,7 @@ public class ItemServlet extends HttpServlet {
 			itemScope.edit_tags = editMode;
 
 			try {
-				addTagsToScope(item, itemScope);
+				addTagsToScope(item, editMode, itemScope);
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
@@ -315,8 +315,8 @@ public class ItemServlet extends HttpServlet {
 		return editReqQueryParms.toString();
 	}
 
-	private void addTagsToScope(final ContentItem item, final ItemScope itemScope) throws SQLException {
-		final Collection<Tag> tags = this.mediaDb.getTags(item.getId(), false);
+	private void addTagsToScope(final ContentItem item, final boolean editMode, final ItemScope itemScope) throws SQLException {
+		final Collection<Tag> tags = this.mediaDb.getTags(item.getId(), editMode, false);
 		for (final Tag tag : tags) {
 			final String path = "../search?query=" + StringEscapeUtils.escapeHtml4(
 					UrlEscapers.urlFormParameterEscaper().escape(

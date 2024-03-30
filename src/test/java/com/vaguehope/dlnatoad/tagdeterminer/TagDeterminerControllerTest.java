@@ -142,14 +142,14 @@ public class TagDeterminerControllerTest {
 
 		this.undertest.batchWrite();
 
-		final Collection<Tag> tagsA = this.db.getTags(idA, true);
+		final Collection<Tag> tagsA = this.db.getTags(idA, true, true);
 		assertThat(tagsA, containsInAnyOrder(
 				new Tag("FakeSystem", ".FakeSystem", this.clock.millis(), false),
 				new Tag("a_thing", "FakeSystem", this.clock.millis(), false),
 				new Tag("another_thing", "FakeSystem", this.clock.millis(), false)
 				));
 
-		final Collection<Tag> tagsB = this.db.getTags(idB, true);
+		final Collection<Tag> tagsB = this.db.getTags(idB, true, true);
 		assertEquals(1, tagsB.size());
 		assertEquals("FakeSystem", tagsB.iterator().next().getTag());
 

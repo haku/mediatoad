@@ -130,7 +130,7 @@ public class MetadataImporterTest {
 		assertFalse(dropFile.exists());
 		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
 
-		assertThat(this.mediaDb.getTags(fileIdA, true), containsInAnyOrder(
+		assertThat(this.mediaDb.getTags(fileIdA, true, true), containsInAnyOrder(
 				new Tag("foo", 123, false),
 				new Tag("should-not-change", now, false),
 				new Tag("will-be-deleted", now + 1, true),
@@ -138,7 +138,7 @@ public class MetadataImporterTest {
 				new Tag("bat", 123, true)
 				));
 
-		assertThat(this.mediaDb.getTags(fileIdB, true), containsInAnyOrder(
+		assertThat(this.mediaDb.getTags(fileIdB, true, true), containsInAnyOrder(
 				new Tag("new-tag-via-md5", "place", now, false)
 				));
 
@@ -171,7 +171,7 @@ public class MetadataImporterTest {
 
 		this.undertest.processDropDir();
 
-		final Set<String> actual = tagsAsSet(this.mediaDb.getTags(fileId, false));
+		final Set<String> actual = tagsAsSet(this.mediaDb.getTags(fileId, true, false));
 		assertThat(actual, containsInAnyOrder("foo", "bar", "bat"));
 	}
 

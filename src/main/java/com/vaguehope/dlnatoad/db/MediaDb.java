@@ -236,24 +236,8 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// Tags.
 
-	/**
-	 * Does not return deleted tags.
-	 */
-	public Collection<String> getTagsSimple(final String fileId) throws SQLException {
-		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT DISTINCT tag FROM tags WHERE file_id=? AND deleted=0;")) {
-			st.setString(1, fileId);
-			try (final ResultSet rs = st.executeQuery()) {
-				final Collection<String> ret = new ArrayList<>();
-				while (rs.next()) {
-					ret.add(rs.getString(1));
-				}
-				return ret;
-			}
-		}
-	}
-
-	public Collection<Tag> getTags(final String fileId, final boolean includeDeleted) throws SQLException {
-		return getTagsFromConn(this.dbConn, fileId, includeDeleted);
+	public Collection<Tag> getTags(final String fileId, final boolean inclideHidden, final boolean includeDeleted) throws SQLException {
+		return getTagsFromConn(this.dbConn, fileId, inclideHidden, includeDeleted);
 	}
 
 	protected static Collection<Tag> getTagFromConn(final Connection conn, final String fileId, final String tag, final String cls) throws SQLException {
@@ -265,9 +249,11 @@ public class MediaDb {
 		}
 	}
 
-	protected static Collection<Tag> getTagsFromConn(final Connection conn, final String fileId, final boolean includeDeleted) throws SQLException {
+	protected static Collection<Tag> getTagsFromConn(final Connection conn, final String fileId, final boolean inclideHidden, final boolean includeDeleted) throws SQLException {
 		String query = SELECT_FROM_TAGS + "file_id=?";
+		if (!inclideHidden) query += " AND cls NOT LIKE '.%'";
 		if (!includeDeleted) query += " AND deleted=0";
+		query += " ORDER BY tag ASC, cls ASC";
 		try (final PreparedStatement st = conn.prepareStatement(query)) {
 			st.setString(1, fileId);
 			return readTagsResultSet(st);
@@ -288,7 +274,7 @@ public class MediaDb {
 
 	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final String pathPrefix, final int countLimit) throws SQLException {
 		final StringBuilder sql = new StringBuilder();
-		sql.append("SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq FROM files, tags WHERE id=file_id AND deleted=0 AND");
+		sql.append("SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq FROM files, tags WHERE id=file_id AND deleted=0 AND cls NOT LIKE '.%' AND");
 		if (pathPrefix != null) {
 			sql.append(" file LIKE ? ESCAPE ? AND");
 		}
@@ -314,7 +300,7 @@ public class MediaDb {
 	public List<TagFrequency> getAutocompleteSuggestions(final String fragment, final int countLimit, final boolean startsWithOnly) throws SQLException {
 		final String sql = "SELECT tag, COUNT(DISTINCT file_id) AS count"
 				+ " FROM tags"
-				+ " WHERE tag LIKE ? ESCAPE ? AND deleted=0"
+				+ " WHERE tag LIKE ? ESCAPE ? AND deleted=0 AND cls NOT LIKE '.%'"
 				+ " GROUP BY tag"
 				+ " ORDER BY count DESC, tag ASC"
 				+ " LIMIT ?;";
@@ -336,6 +322,7 @@ public class MediaDb {
 				+ " WHERE id=file_id"
 				+ " AND missing=0"
 				+ " AND deleted=0"
+				+ " AND cls NOT LIKE '.%'"
 				+ " GROUP BY tag"
 				+ " ORDER BY tag ASC, freq DESC;";  // Sort order depended on by TagAutocompleter.
 		try (final PreparedStatement st = this.dbConn.prepareStatement(sql.toString())) {
