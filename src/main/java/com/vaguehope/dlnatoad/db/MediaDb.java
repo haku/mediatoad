@@ -36,6 +36,7 @@ public class MediaDb {
 		this.dbPath = dbPath;
 		this.dbConn = makeDbConnection(dbPath);
 		makeSchema();
+		executeSql("PRAGMA optimize;");  // https://sqlite.org/lang_analyze.html
 	}
 
 	private void makeSchema () throws SQLException {
@@ -53,6 +54,9 @@ public class MediaDb {
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "md5", "STRING");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "mimetype", "STRING");
 		// TODO index on MD5?
+		executeSql("CREATE INDEX IF NOT EXISTS files_id_auth_missing_idx ON files (id,auth,missing);");
+		executeSql("CREATE INDEX IF NOT EXISTS files_id_auth_mimetype_missing_idx ON files (id,auth,mimetype,missing);");
+
 		if (!tableExists("tags")) {
 			executeSql("CREATE TABLE tags ("
 					+ "file_id STRING NOT NULL, "
@@ -63,6 +67,8 @@ public class MediaDb {
 					+ "UNIQUE(file_id, " + COL_TAG + ", cls)"  // TODO auto backfill adding cls here?
 					+ ");");
 		}
+		executeSql("CREATE INDEX IF NOT EXISTS tags_id_tag_deleted_cls_idx ON tags (file_id,tag COLLATE NOCASE,deleted,cls);");
+
 		Sqlite.addColumnIfMissing(this.dbConn, "tags", "cls", "STRING NOT NULL COLLATE NOCASE DEFAULT ''");
 		if (!tableExists("hashes")) {
 			executeSql("CREATE TABLE hashes ("
@@ -77,6 +83,8 @@ public class MediaDb {
 					+ "width INT, "
 					+ "height INT);");
 		}
+		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
+		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
 	}
 
 	@SuppressWarnings("resource")
