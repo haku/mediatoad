@@ -40,6 +40,7 @@ import org.jupnp.support.model.SortCriterion;
 import org.jupnp.support.model.item.Item;
 
 import com.github.mustachejava.Mustache;
+import com.google.common.base.Stopwatch;
 import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.vaguehope.dlnatoad.C;
@@ -108,6 +109,8 @@ public class SearchServlet extends HttpServlet {
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
 		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), null);
+		final StringBuilder debugFooter = new StringBuilder();
+		final Stopwatch stopwatch = Stopwatch.createUnstarted();
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
@@ -127,13 +130,18 @@ public class SearchServlet extends HttpServlet {
 					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
+					stopwatch.start();
 					final List<String> ids = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER)
 							.execute(this.mediaDb, limit, offset);
+					debugFooter.append(String.format("file query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+
 					results = this.contentTree.getItemsForIds(ids, username);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
+					stopwatch.reset().start();
 					tagResults = DbSearchParser.parseSearchForTags(query, authIds).execute(this.mediaDb, 200, 0);
+					debugFooter.append(String.format("tags query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 				}
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
@@ -168,6 +176,7 @@ public class SearchServlet extends HttpServlet {
 					rpcSearch(query, resultsScope);
 				}
 
+				pageScope.setDebugfooter(debugFooter.toString());
 				ServletCommon.setHtmlContentType(resp);
 				this.resultsTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
 			}
