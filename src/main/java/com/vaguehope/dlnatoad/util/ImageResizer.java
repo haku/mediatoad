@@ -123,13 +123,13 @@ public class ImageResizer {
 				catch (final Exception e) {
 					input.reset();
 					lastException = e;
-					LOG.warn("Failed to decode \"{}\" with {}: {}", file.getAbsolutePath(), reader.getClass(), e.toString());
 				}
 				finally {
 					reader.dispose();
 				}
 			}
 			if (lastException != null) {
+				LOG.warn("Failed to decode \"{}\": {}", file.getAbsolutePath(), ExceptionHelper.causeTrace(lastException));
 				if (lastException instanceof IOException) throw (IOException) lastException;
 				throw new IOException(lastException);
 			}
