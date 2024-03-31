@@ -135,7 +135,7 @@ public class DirServlet extends HttpServlet {
 			resultScope.addContentItem(i, linkQuery, this.imageResizer);
 		}
 
-		maybeAppendTopTags(nodeIndexScope, node, username);
+		maybeAppendTopTags(resultScope, node, username);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
 		if (ContentGroup.ROOT.getId().equals(node.getId())) {
@@ -175,7 +175,7 @@ public class DirServlet extends HttpServlet {
 		return null;
 	}
 
-	private void maybeAppendTopTags(final NodeIndexScope nodeIndexScope, final ContentNode node, final String username) throws IOException {
+	private void maybeAppendTopTags(final ResultGroupScope resultScope, final ContentNode node, final String username) throws IOException {
 		if (this.dbCache == null) return;
 
 		final File dir = node.getFile();
@@ -185,17 +185,19 @@ public class DirServlet extends HttpServlet {
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
 			final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
-			if (topTags.size() > 0) {
-				for (final TagFrequency tag : topTags) {
-					String query = DbSearchSyntax.makeSingleTagSearch(tag.getTag());
-					if (node.getFile() != null) query += " " + DbSearchSyntax.makePathSearch(node.getFile());
-					final String path = "search?query=" + StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-					nodeIndexScope.addTopTag(path, tag.getTag(), tag.getCount());
-				}
-			}
+			addTagFrequenciesToScope(resultScope, node, topTags);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);
+		}
+	}
+
+	static void addTagFrequenciesToScope(final ResultGroupScope resultScope, final ContentNode node, final List<TagFrequency> topTags) {
+		for (final TagFrequency tag : topTags) {
+			String query = DbSearchSyntax.makeSingleTagSearch(tag.getTag());
+			if (node != null && node.getFile() != null) query += " " + DbSearchSyntax.makePathSearch(node.getFile());
+			final String path = "search?query=" + StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+			resultScope.addTopTag(path, tag.getTag(), tag.getCount());
 		}
 	}
 

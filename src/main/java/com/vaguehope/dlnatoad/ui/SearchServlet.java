@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
@@ -113,6 +115,7 @@ public class SearchServlet extends HttpServlet {
 
 			try {
 				final List<ContentItem> results;
+				final List<TagFrequency> tagResults;
 				final Integer offset;
 				final int nextLimit;
 				final int nextOffset;
@@ -129,6 +132,8 @@ public class SearchServlet extends HttpServlet {
 					results = this.contentTree.getItemsForIds(ids, username);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
+
+					tagResults = DbSearchParser.parseSearchForTags(query, authIds).execute(this.mediaDb, 200, 0);
 				}
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
@@ -136,6 +141,7 @@ public class SearchServlet extends HttpServlet {
 					offset = null;
 					nextLimit = MAX_RESULTS;  // Not implemented.
 					nextOffset = 0;
+					tagResults = Collections.emptyList();
 				}
 
 				final String linkQuery = "?" + PARAM_QUERY + "="
@@ -152,6 +158,7 @@ public class SearchServlet extends HttpServlet {
 				final SearchResultsScope resultsScope = new SearchResultsScope(pageScope);
 				final ResultGroupScope resultGroup = resultsScope.addResultGroup("Local items: " + results.size(), nextPagePath);
 				appendItems(resultGroup, results, linkQuery, offset);
+				DirServlet.addTagFrequenciesToScope(resultGroup, null, tagResults);
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));

@@ -20,6 +20,7 @@ public class ResultGroupScope {
 	public final String next_page_path;
 	public final List<IndexItem> list_items = new ArrayList<>();
 	public final List<Thumb> thumbs = new ArrayList<>();
+	public final List<TopTag> tags = new ArrayList<>();
 
 	private final String pathPrefix;
 
@@ -77,6 +78,10 @@ public class ResultGroupScope {
 		return this.list_items.size() == 0 && this.thumbs.size() == 0;
 	}
 
+	public void addTopTag(final String path, final String tag, final int count) {
+		this.tags.add(new TopTag(path, tag, count));
+	}
+
 	public static class IndexItem {
 		public final String path;
 		public final String title;
@@ -104,6 +109,18 @@ public class ResultGroupScope {
 			this.thumb_path = thumb_path;
 			this.title = title;
 			this.autofocus = autofocus;
+		}
+	}
+
+	public static class TopTag {
+		public final String path;
+		public final String tag;
+		public final int count;
+
+		public TopTag(final String path, final String tag, final int count) {
+			this.path = path;
+			this.tag = tag;
+			this.count = count;
 		}
 	}
 

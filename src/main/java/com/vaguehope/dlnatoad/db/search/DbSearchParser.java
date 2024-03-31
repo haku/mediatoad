@@ -11,6 +11,7 @@ import java.util.Set;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
+import com.vaguehope.dlnatoad.db.TagFrequency;
 
 public class DbSearchParser {
 
@@ -20,6 +21,13 @@ public class DbSearchParser {
 	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
 			"SELECT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
+
+	private static final String _SQL_TAG_FREQUENCY_SELECT =
+			"SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
+			+ " FROM files, tags"
+			+ " WHERE id=file_id AND missing=0 AND deleted=0 AND cls NOT LIKE '.%' AND id IN (FILEQUERY)"
+			+ " GROUP BY tag"
+			+ " ORDER BY freq DESC, tag ASC;";
 
 	private static final String _SQL_AND = " AND";
 	private static final String _SQL_OR = " OR";
@@ -91,6 +99,21 @@ public class DbSearchParser {
 		}
 
 		return new DbSearch(sql.toString(), terms);
+	}
+
+	public static TagFrequencySearch parseSearchForTags (
+			final String allTerms,
+			final Set<BigInteger> authIds) {
+
+		final StringBuilder fileQuery = new StringBuilder(_SQL_MEDIAFILES_SELECT);
+		fileQuery.append(_SQL_AND);
+		SqlFragments.appendWhereAuth(fileQuery, authIds);
+
+		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
+		appendWhereTerms(fileQuery, terms);
+
+		final String tagQuery = _SQL_TAG_FREQUENCY_SELECT.replace("FILEQUERY", fileQuery.toString());
+		return new TagFrequencySearch(tagQuery, terms);
 	}
 
 	private static void appendWhereTerms (final StringBuilder sql, final List<String> terms) {
@@ -199,12 +222,34 @@ public class DbSearchParser {
 		return ret;
 	}
 
-	public static class DbSearch {
+	public static class DbSearch extends Search<String> {
+		public DbSearch (final String sql, final List<String> terms) {
+			super(sql, terms);
+		}
+
+		@Override
+		protected String parseRecord(final ResultSet rs) throws SQLException {
+			return rs.getString(1);
+		}
+	}
+
+	public static class TagFrequencySearch extends Search<TagFrequency> {
+		public TagFrequencySearch (final String sql, final List<String> terms) {
+			super(sql, terms);
+		}
+
+		@Override
+		protected TagFrequency parseRecord(final ResultSet rs) throws SQLException {
+			return new TagFrequency(rs.getString(1), rs.getInt(2));
+		}
+	}
+
+	private abstract static class Search<T> {
 
 		private final String sql;
 		private final List<String> terms;
 
-		public DbSearch (final String sql, final List<String> terms) {
+		public Search (final String sql, final List<String> terms) {
 			this.sql = sql;
 			this.terms = terms;
 		}
@@ -217,11 +262,11 @@ public class DbSearchParser {
 			return this.terms;
 		}
 
-		public List<String> execute (final MediaDb db) throws SQLException {
+		public List<T> execute (final MediaDb db) throws SQLException {
 			return execute(db, -1, 0);
 		}
 
-		public List<String> execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
+		public List<T> execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
 			try (final PreparedStatement ps = db.prepare(maybeAddLimit(this.sql, maxResults, offset))) {
 				int parmIn = 1;
 				for (final String term : this.terms) {
@@ -268,20 +313,19 @@ public class DbSearchParser {
 			return String.format("%s LIMIT %d OFFSET %d", sql, maxResults, offset);
 		}
 
-		private static List<String> parseRecordSet(final ResultSet rs) throws SQLException {
-			final List<String> ret = new ArrayList<>();
-			if (rs.next()) {
-				do {
-					ret.add(rs.getString(1));
-				}
-				while (rs.next());
+		private List<T> parseRecordSet(final ResultSet rs) throws SQLException {
+			final List<T> ret = new ArrayList<>();
+			while (rs.next()) {
+				ret.add(parseRecord(rs));
 			}
 			return ret;
 		}
 
+		protected abstract T parseRecord(final ResultSet rs) throws SQLException;
+
 		@Override
 		public String toString () {
-			return new StringBuilder("Search{")
+			return new StringBuilder(getClass().getSimpleName() + "{")
 					.append("sql=" + this.sql)
 					.append(", terms=" + this.terms)
 					.append("}")

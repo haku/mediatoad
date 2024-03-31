@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 
@@ -517,6 +518,16 @@ public class DbSearchParserTest {
 		runQuery("t=tag h>1080", t2, t3);
 
 		runQuery("t=tag w>=2000 w<3000", t2);
+	}
+
+	@Test
+	public void itDoesATopTagsSearch() throws Exception {
+		mockMediaFileWithTags("desu", "foobar", "thing", "other");
+		mockMediaFileWithTags("foobar", "desu");
+		mockMediaFileWithTags("foobar", "thing");
+
+		final List<TagFrequency> tagRes = DbSearchParser.parseSearchForTags("t=foobar", null).execute(this.mediaDb, 3, 0);
+		assertThat(tagRes, contains(new TagFrequency("foobar", 3), new TagFrequency("desu", 2), new TagFrequency("thing", 2)));
 	}
 
 // Template tests.
