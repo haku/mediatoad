@@ -116,7 +116,7 @@ public class ServletCommon {
 	public String debugFooter() {
 		final StringBuilder s = new StringBuilder();
 
-		s.append("active playbacks: ");
+		s.append("active: ");
 		s.append(this.contentServingHistory.getActiveCount());
 		s.append(", ");
 		s.append(this.contentServingHistory.getRecentlyActiveCount(TimeUnit.MINUTES.toSeconds(15)));
