@@ -224,7 +224,7 @@ public class DirServletTest {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
 
-		when(dbCache.getTopTags(any(), any(String.class))).thenReturn(Arrays.asList(new TagFrequency("foo", 2)));
+		when(dbCache.dirTopTags(any(), any(String.class))).thenReturn(Arrays.asList(new TagFrequency("foo", 2)));
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);

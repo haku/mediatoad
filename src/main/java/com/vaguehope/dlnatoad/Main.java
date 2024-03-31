@@ -321,7 +321,7 @@ public final class Main {
 		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, imageResizer, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, upnpService, rpcClient, imageResizer)), "/search");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, imageResizer)), "/search");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);

@@ -184,7 +184,7 @@ public class DirServlet extends HttpServlet {
 
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 		try {
-			final List<TagFrequency> topTags = this.dbCache.getTopTags(authIds, pathPrefix);
+			final List<TagFrequency> topTags = this.dbCache.dirTopTags(authIds, pathPrefix);
 			addTagFrequenciesToScope(resultScope, node, topTags);
 		}
 		catch (final SQLException e) {

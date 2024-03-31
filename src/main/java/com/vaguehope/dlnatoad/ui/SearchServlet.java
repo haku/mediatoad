@@ -45,11 +45,11 @@ import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
-import com.vaguehope.dlnatoad.db.search.DbSearchParser.TagFrequencySearch;
 import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
@@ -85,20 +85,22 @@ public class SearchServlet extends HttpServlet {
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
+	private final DbCache dbCache;
 	private final UpnpService upnpService;
 	private final RpcClient rpcClient;
 	private final ImageResizer imageResizer;
 	private final SearchEngine searchEngine;
 	private final Supplier<Mustache> resultsTemplate;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer) {
-		this(servletCommon, contentTree, mediaDb, upnpService, rpcClient, imageResizer, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer) {
+		this(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, imageResizer, new SearchEngine());
 	}
 
-	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
+		this.dbCache = dbCache;
 		this.rpcClient = rpcClient;
 		this.upnpService = upnpService;
 		this.imageResizer = imageResizer;
@@ -142,11 +144,9 @@ public class SearchServlet extends HttpServlet {
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
-					final TagFrequencySearch tagsQuery = DbSearchParser.parseSearchForTags(query, authIds);
+					tagResults = this.dbCache.searchTopTags(authIds, query);
 					stopwatch.reset().start();
-					tagResults = tagsQuery.execute(this.mediaDb, 200, 0);
-					debugFooter.append(String.format("tags query: %s ms\n%s\n",
-							stopwatch.elapsed(TimeUnit.MILLISECONDS), tagsQuery));
+					debugFooter.append(String.format("tags query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 				}
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());

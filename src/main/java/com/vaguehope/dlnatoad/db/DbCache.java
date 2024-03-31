@@ -14,14 +14,15 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 
 public class DbCache {
 
 	private static final int TOP_TAG_COUNT = 200; // TODO make cache param? sublist cache entries?
 
 	private final MediaDb db;
-	private final LoadingCache<TopTagsKey, ValueAndVersion<List<TagFrequency>>> topTags;
-	private final CacheLoader<TopTagsKey, ValueAndVersion<List<TagFrequency>>> topTagLoader = new TopTagLoader();
+	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> dirTopTags;
+	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> searchTopTags;
 
 	public DbCache(final MediaDb db) {
 		this(db, Ticker.systemTicker());
@@ -29,16 +30,31 @@ public class DbCache {
 
 	DbCache(final MediaDb db, final Ticker ticker) {
 		this.db = db;
-		this.topTags = CacheBuilder.newBuilder()
+		this.dirTopTags = CacheBuilder.newBuilder()
+				.maximumSize(1000L)
 				.refreshAfterWrite(5, TimeUnit.MINUTES)
 				.expireAfterWrite(1, TimeUnit.DAYS)
 				.ticker(ticker)
-				.build(this.topTagLoader);
+				.build(new DirTopTagLoader());
+		this.searchTopTags = CacheBuilder.newBuilder()
+				.maximumSize(1000L)
+				.refreshAfterWrite(5, TimeUnit.MINUTES)
+				.expireAfterWrite(1, TimeUnit.DAYS)
+				.ticker(ticker)
+				.build(new SearchTopTagLoader());
 	}
 
-	public List<TagFrequency> getTopTags(final Set<BigInteger> authIds, final String pathPrefix) throws SQLException {
+	public List<TagFrequency> dirTopTags(final Set<BigInteger> authIds, final String pathPrefix) throws SQLException {
+		return readCache(this.dirTopTags, new CacheKey(authIds, pathPrefix));
+	}
+
+	public List<TagFrequency> searchTopTags(final Set<BigInteger> authIds, final String query) throws SQLException {
+		return readCache(this.searchTopTags, new CacheKey(authIds, query));
+	}
+
+	private static <T> T readCache(LoadingCache<CacheKey, ValueAndVersion<T>> cache, CacheKey key) throws SQLException {
 		try {
-			final ValueAndVersion<List<TagFrequency>> val = this.topTags.get(new TopTagsKey(authIds, pathPrefix));
+			final ValueAndVersion<T> val = cache.get(key);
 			return val == null ? null : val.value;
 		}
 		catch (final ExecutionException e) {
@@ -49,43 +65,54 @@ public class DbCache {
 		}
 	}
 
-	private class TopTagLoader extends CacheLoader<TopTagsKey, ValueAndVersion<List<TagFrequency>>> {
+	private class DirTopTagLoader extends DbLoader<List<TagFrequency>> {
 		@Override
-		public ValueAndVersion<List<TagFrequency>> load(final TopTagsKey key) throws Exception {
+		public ValueAndVersion<List<TagFrequency>> load(final CacheKey key) throws Exception {
 			final long ver = DbCache.this.db.getWriteCount();
-			final List<TagFrequency> tags = DbCache.this.db.getTopTags(key.authIds, key.pathPrefix, TOP_TAG_COUNT);
+			final List<TagFrequency> tags = DbCache.this.db.getTopTags(key.authIds, key.query, TOP_TAG_COUNT);
 			return new ValueAndVersion<>(tags, ver);
 		}
+	}
 
+	private class SearchTopTagLoader extends DbLoader<List<TagFrequency>> {
 		@Override
-		public ListenableFuture<ValueAndVersion<List<TagFrequency>>> reload(final TopTagsKey key, final ValueAndVersion<List<TagFrequency>> oldValue) throws Exception {
+		public ValueAndVersion<List<TagFrequency>> load(final CacheKey key) throws Exception {
+			final long ver = DbCache.this.db.getWriteCount();
+			final List<TagFrequency> tags = DbSearchParser.parseSearchForTags(key.query, key.authIds).execute(DbCache.this.db, TOP_TAG_COUNT, 0);
+			return new ValueAndVersion<>(tags, ver);
+		}
+	}
+
+	private abstract class DbLoader<T> extends CacheLoader<CacheKey, ValueAndVersion<T>> {
+		@Override
+		public ListenableFuture<ValueAndVersion<T>> reload(final CacheKey key, final ValueAndVersion<T> oldValue) throws Exception {
 			if (oldValue.version == DbCache.this.db.getWriteCount()) return Futures.immediateFuture(oldValue);
 			return super.reload(key, oldValue);
 		}
 	}
 
-	private static class TopTagsKey {
+	private static class CacheKey {
 		final Set<BigInteger> authIds;
-		final String pathPrefix;
+		final String query;
 
-		public TopTagsKey(final Set<BigInteger> authIds, final String pathPrefix) {
+		public CacheKey(final Set<BigInteger> authIds, final String query) {
 			this.authIds = authIds;
-			this.pathPrefix = pathPrefix;
+			this.query = query;
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(this.authIds, this.pathPrefix);
+			return Objects.hash(this.authIds, this.query);
 		}
 
 		@Override
 		public boolean equals(final Object obj) {
 			if (obj == null) return false;
 			if (this == obj) return true;
-			if (!(obj instanceof TopTagsKey)) return false;
-			final TopTagsKey that = (TopTagsKey) obj;
+			if (!(obj instanceof CacheKey)) return false;
+			final CacheKey that = (CacheKey) obj;
 			return Objects.equals(this.authIds, that.authIds)
-					&& Objects.equals(this.pathPrefix, that.pathPrefix);
+					&& Objects.equals(this.query, that.query);
 		}
 	}
 

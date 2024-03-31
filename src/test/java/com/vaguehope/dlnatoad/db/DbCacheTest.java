@@ -39,11 +39,11 @@ public class DbCacheTest {
 		when(this.db.getTopTags(eq(null), eq(pathPrefix), anyInt())).thenReturn(ret1);
 		when(this.db.getWriteCount()).thenReturn(1L);
 
-		assertEquals(ret1, this.undertest.getTopTags(null, pathPrefix));
+		assertEquals(ret1, this.undertest.dirTopTags(null, pathPrefix));
 		verify(this.db, times(1)).getTopTags(any(), any(), anyInt());
 
 		this.ticker.addTime(1, TimeUnit.HOURS);
-		assertEquals(ret1, this.undertest.getTopTags(null, pathPrefix));
+		assertEquals(ret1, this.undertest.dirTopTags(null, pathPrefix));
 		verify(this.db, times(1)).getTopTags(any(), any(), anyInt());
 
 		final List<TagFrequency> ret2 = Arrays.asList(new TagFrequency("bar", 1));
@@ -51,7 +51,7 @@ public class DbCacheTest {
 		when(this.db.getWriteCount()).thenReturn(2L);
 
 		this.ticker.addTime(10, TimeUnit.MINUTES);
-		assertEquals(ret2, this.undertest.getTopTags(null, pathPrefix));
+		assertEquals(ret2, this.undertest.dirTopTags(null, pathPrefix));
 		verify(this.db, times(2)).getTopTags(any(), any(), anyInt());
 	}
 
