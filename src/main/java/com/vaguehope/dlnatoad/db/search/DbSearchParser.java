@@ -326,8 +326,8 @@ public class DbSearchParser {
 		@Override
 		public String toString () {
 			return new StringBuilder(getClass().getSimpleName() + "{")
-					.append("sql=" + this.sql)
-					.append(", terms=" + this.terms)
+					.append("sql=(" + this.sql)
+					.append("), terms=" + this.terms)
 					.append("}")
 					.toString();
 		}

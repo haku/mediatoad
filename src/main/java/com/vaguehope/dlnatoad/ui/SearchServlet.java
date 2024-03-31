@@ -48,6 +48,8 @@ import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser.TagFrequencySearch;
 import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
@@ -130,18 +132,21 @@ public class SearchServlet extends HttpServlet {
 					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
+					final DbSearch idsQuery = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER);
 					stopwatch.start();
-					final List<String> ids = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER)
-							.execute(this.mediaDb, limit, offset);
-					debugFooter.append(String.format("file query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+					final List<String> ids = idsQuery.execute(this.mediaDb, limit, offset);
+					debugFooter.append(String.format("file query: %s ms\n%s\n",
+							stopwatch.elapsed(TimeUnit.MILLISECONDS), idsQuery));
 
 					results = this.contentTree.getItemsForIds(ids, username);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
+					final TagFrequencySearch tagsQuery = DbSearchParser.parseSearchForTags(query, authIds);
 					stopwatch.reset().start();
-					tagResults = DbSearchParser.parseSearchForTags(query, authIds).execute(this.mediaDb, 200, 0);
-					debugFooter.append(String.format("tags query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
+					tagResults = tagsQuery.execute(this.mediaDb, 200, 0);
+					debugFooter.append(String.format("tags query: %s ms\n%s\n",
+							stopwatch.elapsed(TimeUnit.MILLISECONDS), tagsQuery));
 				}
 				else {
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
