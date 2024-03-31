@@ -144,8 +144,8 @@ public class SearchServlet extends HttpServlet {
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
-					tagResults = this.dbCache.searchTopTags(authIds, query);
 					stopwatch.reset().start();
+					tagResults = this.dbCache.searchTopTags(authIds, query);
 					debugFooter.append(String.format("tags query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 				}
 				else {
