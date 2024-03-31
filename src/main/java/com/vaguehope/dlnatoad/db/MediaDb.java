@@ -54,7 +54,6 @@ public class MediaDb {
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "md5", "STRING");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "mimetype", "STRING");
 		// TODO index on MD5?
-		executeSql("CREATE INDEX IF NOT EXISTS files_id_auth_missing_idx ON files (id,auth,missing);");
 		executeSql("CREATE INDEX IF NOT EXISTS files_id_auth_mimetype_missing_idx ON files (id,auth,mimetype,missing);");
 
 		if (!tableExists("tags")) {
