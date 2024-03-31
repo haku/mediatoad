@@ -147,16 +147,19 @@ public final class Main {
 
 		final File dbFile = args.getDb();
 		final MediaDb mediaDb;
+		final DbCache dbCache;
 		final MediaMetadataStore mediaMetadataStore;
 		final TagAutocompleter tagAutocompleter;
 		if (dbFile != null) {
 			LOG.info("DB: {}", dbFile.getAbsolutePath());
 			mediaDb = new MediaDb(dbFile);
+			dbCache = new DbCache(mediaDb, fsExSvc, args.isVerboseLog());
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
 			tagAutocompleter = new TagAutocompleter(mediaDb, fsExSvc);
 		}
 		else {
 			mediaDb = null;
+			dbCache = null;
 			mediaMetadataStore = null;
 			tagAutocompleter = null;
 		}
@@ -192,7 +195,8 @@ public final class Main {
 		rpcClient.start();
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
-		final Server server = startContentServer(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, imageResizer, args, bindAddresses, hostName);
+		final Server server = startContentServer(
+				contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, imageResizer, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -226,6 +230,7 @@ public final class Main {
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
+			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
@@ -245,7 +250,8 @@ public final class Main {
 
 		while (true) {
 			final ServletContextHandler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
-			final ServletContextHandler mainHandler = makeContentHandler(contentTree, mediaId, mediaDb, tagAutocompleter, upnpService, rpcClient, imageResizer, args, hostName);
+			final ServletContextHandler mainHandler = makeContentHandler(
+					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, imageResizer, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -281,6 +287,7 @@ public final class Main {
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
+			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
@@ -315,7 +322,6 @@ public final class Main {
 
 		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
 
-		final DbCache dbCache = mediaDb != null ? new DbCache(mediaDb) : null;
 		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null, args.getTemplateRoot());
 
 		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, imageResizer, dbCache);

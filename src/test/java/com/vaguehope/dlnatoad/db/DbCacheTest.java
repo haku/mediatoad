@@ -28,7 +28,7 @@ public class DbCacheTest {
 	public void before() throws Exception {
 		this.db = mock(MediaDb.class);
 		this.ticker = new FakeTicker();
-		this.undertest = new DbCache(this.db, this.ticker);
+		this.undertest = new DbCache(this.db, (e) -> e.run(), true, this.ticker);
 	}
 
 	@Test
