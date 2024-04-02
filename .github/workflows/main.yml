@@ -23,7 +23,7 @@ jobs:
           architecture: x64
           cache: maven
       - name: Run the Maven verify phase
-        run: mvn --batch-mode --update-snapshots verify
+        run: mvn --batch-mode --update-snapshots verify --settings .mvn/custom-settings.xml
       - run: mkdir staging && cp target/*.jar staging
       - uses: actions/upload-artifact@v4
         with:
