@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
-          java-version: 11
+          java-version: 22
           architecture: x64
           cache: maven
       - name: Run the Maven verify phase
@@ -33,7 +33,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: jar-file
-          path: target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
+          path: target/dlnatoad-1-SNAPSHOT.jar
 
   build-image:
 
@@ -50,7 +50,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: jar-file
-          path: dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
