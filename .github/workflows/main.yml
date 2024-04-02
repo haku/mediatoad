@@ -33,7 +33,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: jar-file
-          path: target/dlnatoad-1-SNAPSHOT.jar
+          path: target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
 
   build-image:
 
