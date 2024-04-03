@@ -6,9 +6,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
@@ -19,6 +16,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -28,8 +28,32 @@ jobs:
           java-version: 22
           architecture: x64
           cache: maven
-      - name: Run the Maven verify phase
-        run: mvn --batch-mode --update-snapshots verify --settings .mvn/custom-settings.xml
+
+      - name: Maven Validate
+        run: mvn -B --settings .mvn/custom-settings.xml validate
+      - name: Maven Compile
+        run: mvn -B --settings .mvn/custom-settings.xml compile
+
+      - name: Maven Test
+        run: mvn -B --settings .mvn/custom-settings.xml test -Pcoverage --fail-at-end
+      - name: Publish Test Report
+        if: success() || failure()
+        uses: scacap/action-surefire-report@v1
+      - name: Add coverage to PR
+        id: jacoco
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: |
+            target/site/jacoco/jacoco.xml,
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+
+      - name: Maven Package
+        run: mvn -B --settings .mvn/custom-settings.xml package
+      - name: Maven Verify
+        run: mvn -B --settings .mvn/custom-settings.xml verify
+
       - uses: actions/upload-artifact@v4
         with:
           name: jar-file
