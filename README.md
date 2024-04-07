@@ -122,4 +122,5 @@ Running as a Service
 
 See the `systemd` directory for an example unit file.
 
-# vim: textwidth=80 noautoindent nocindent
+<!-- vim: textwidth=80 noautoindent nocindent
+-->
