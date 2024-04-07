@@ -36,8 +36,9 @@ public class MediaInfo {
 	}
 
 	public void readInfoAsync (final File file, final ContentItem item) {
-		if (this.mediaMetadataStore == null) return;
-		this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
+		if (this.mediaMetadataStore != null) {
+			this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
+		}
 
 		if (this.imageResizer != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
 			this.exSvc.submit(() -> generateThumbnail(item));
