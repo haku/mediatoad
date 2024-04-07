@@ -94,7 +94,7 @@ public class DirServletTest {
 		assertEquals(200, this.resp.getStatus());
 
 		final String page = this.resp.getContentAsString();
-		assertThat(page, containsString("<title>dir 0 - DLNAtoad (hostName)</title>"));
+		assertThat(page, containsString("<title>dir 0 - MediaToad (hostName)</title>"));
 
 		assertThat(page, containsString(
 				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"

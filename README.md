@@ -1,5 +1,5 @@
-Media Toad
-==========
+MediaToad
+=========
 
 (formally DLNAtoad but it now also does other stuff, and renaming the repo might
 break things)
