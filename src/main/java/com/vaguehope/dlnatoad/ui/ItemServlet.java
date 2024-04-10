@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mustachejava.Mustache;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.Permission;
@@ -54,6 +55,8 @@ public class ItemServlet extends HttpServlet {
 	private static final String PARAM_PREV_OFFSET = "prevoffset";
 	private static final String PARAM_NEXT_ID = "nextid";
 	private static final String PARAM_NEXT_OFFSET = "nextoffset";
+
+	private static final Set<ContentGroup> VIEWABLE_FORMATS = ImmutableSet.of(ContentGroup.IMAGE, ContentGroup.VIDEO, ContentGroup.AUDIO);
 
 	private static final ThreadSafeDateFormatter DATE_FORMAT = new ThreadSafeDateFormatter("yyyy-MM-dd HH:mm:ss z", Locale.ENGLISH);
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
@@ -105,8 +108,9 @@ public class ItemServlet extends HttpServlet {
 		final ItemScope itemScope = new ItemScope();
 		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, itemScope);
 
-		itemScope.img_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
-		itemScope.img_file_name = item.getFile().getName();
+		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
+		itemScope.item_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
+		itemScope.item_file_name = item.getFile().getName();
 		itemScope.dir_path = "../" + node.getId();
 		itemScope.dir_name = node.getTitle();
 
@@ -226,7 +230,7 @@ public class ItemServlet extends HttpServlet {
 		if (prevI >= 0) {
 			for (int i = prevI; i >= 0; i--) {
 				final ContentItem ci = results.get(i);
-				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				if (!VIEWABLE_FORMATS.contains(ci.getFormat().getContentGroup())) continue;
 				prevI = i;
 				prevItem = ci;
 				break;
@@ -235,7 +239,7 @@ public class ItemServlet extends HttpServlet {
 		if (nextI >= 0 && nextI < results.size()) {
 			for (int i = nextI; i < results.size(); i++) {
 				final ContentItem ci = results.get(i);
-				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				if (!VIEWABLE_FORMATS.contains(ci.getFormat().getContentGroup())) continue;
 				nextI = i;
 				nextItem = ci;
 				break;

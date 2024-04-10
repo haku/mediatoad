@@ -31,6 +31,7 @@ import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
 
 public class ItemServletTest {
@@ -59,14 +60,44 @@ public class ItemServletTest {
 	}
 
 	@Test
-	public void itRendersItem() throws Exception {
+	public void itRendersImage() throws Exception {
+		givenReqForUnprotectedItem(MediaFormat.JPEG);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getContentAsString(), containsString("<img src=\"../c/id00.jpeg\">"));
+	}
+
+	// TODO update this once there is proper viewer support.
+	@Test
+	public void itRendersVideo() throws Exception {
+		givenReqForUnprotectedItem(MediaFormat.MP4);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getContentAsString(),  containsString("<p>[ no preview ]</p>"));
+	}
+
+	// TODO update this once there is proper viewer support.
+	@Test
+	public void itRendersAudio() throws Exception {
+		givenReqForUnprotectedItem(MediaFormat.OGG);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getContentAsString(),  containsString("<p>[ no preview ]</p>"));
+	}
+
+	@Test
+	public void itDoesNotShowTagAddWhenNotLoggedIn() throws Exception {
 		givenReqForUnprotectedItem();
 
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(),
-				containsString("<img src=\"../c/id00.mp4\">"));
 		assertThat(this.resp.getContentAsString(), not(containsString("Add")));  // TODO make better along with following test.
 	}
 
@@ -216,9 +247,17 @@ public class ItemServletTest {
 		return givenReqForItem(null);
 	}
 
+	private ContentItem givenReqForUnprotectedItem(final MediaFormat format) throws IOException {
+		return givenReqForItem(null, format);
+	}
+
 	private ContentItem givenReqForItem(final AuthList authlist) throws IOException {
+		return givenReqForItem(authlist, MediaFormat.JPEG);
+	}
+
+	private ContentItem givenReqForItem(final AuthList authlist, final MediaFormat format) throws IOException {
 		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), authlist);
-		final List<ContentItem> items = this.mockContent.givenMockItems(10, dir);
+		final List<ContentItem> items = this.mockContent.givenMockItems(format, 10, dir);
 
 		final ContentItem item = items.get(0);
 		this.req.setPathInfo("/" + item.getId());

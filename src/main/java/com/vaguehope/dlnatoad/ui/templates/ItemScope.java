@@ -10,8 +10,9 @@ public class ItemScope {
 	public String previous_path;
 	public String next_path;
 
-	public String img_path;
-	public String img_file_name;
+	public boolean is_img;
+	public String item_path;
+	public String item_file_name;
 	public String dir_path;
 	public String dir_name;
 
