@@ -71,6 +71,10 @@ If a DB is provided to store it, media info like duration etc will be read using
 
 ### Users and Auth
 
+WARNING: this auth system is BEST EFFORT, do not trust it to protect anything
+important.  Auth changes are only loaded on startup and are not dynamically
+updated.  The process must be restarted after any auth changes.
+
 Directories can be restricted to specific users and users must have explicit
 permission to edit item tags.  Any directory protected with an AUTH file will
 not be exported via DLNA, since that has no concept of permissions.
