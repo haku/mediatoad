@@ -11,24 +11,21 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.util.MyFileServlet;
 
 public class ThumbsServlet extends MyFileServlet {
-
-	public static final int THUMB_SIZE_PIXELS = 200;
-	public static final float THUMB_QUALITY = 0.8f;
 
 	private static final Logger LOG = LoggerFactory.getLogger(ThumbsServlet.class);
 	private static final long serialVersionUID = 3640173607729364665L;
 
 	private final ContentTree contentTree;
-	private final ImageResizer imageResizer;
+	private final ThumbnailGenerator thumbnailGenerator;
 
-	public ThumbsServlet(final ContentTree contentTree, final ImageResizer imageResizer) {
+	public ThumbsServlet(final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator) {
 		super();
 		this.contentTree = contentTree;
-		this.imageResizer = imageResizer;
+		this.thumbnailGenerator = thumbnailGenerator;
 	}
 
 	@Override
@@ -40,7 +37,7 @@ public class ThumbsServlet extends MyFileServlet {
 			id = ServletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
-				final File thumbFile = this.imageResizer.resizeFile(item.getFile(), THUMB_SIZE_PIXELS, THUMB_QUALITY);
+				final File thumbFile = this.thumbnailGenerator.generate(item);
 				return Resource.newResource(thumbFile);
 			}
 		}

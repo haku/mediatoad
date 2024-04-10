@@ -8,10 +8,9 @@ import java.util.concurrent.TimeUnit;
 import org.jupnp.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
-import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.util.FileHelper;
-import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class ResultGroupScope {
 
@@ -50,9 +49,9 @@ public class ResultGroupScope {
 	public void addContentItem(
 			final ContentItem i,
 			final String linkQuery,
-			final ImageResizer imageResizer) throws IOException {
+			final ThumbnailGenerator thumbnailGenerator) throws IOException {
 
-		if (imageResizer != null && i.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+		if (thumbnailGenerator != null && thumbnailGenerator.supported(i.getFormat().getContentGroup())) {
 			addLocalThumb(
 					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
 					C.THUMBS_PATH_PREFIX + i.getId(),

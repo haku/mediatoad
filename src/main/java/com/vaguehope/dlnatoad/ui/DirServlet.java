@@ -31,14 +31,13 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.ui.templates.NodeIndexScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
-import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class DirServlet extends HttpServlet {
-
 
 	static final String PROXIED_FROM_INDEX_ATTR = "proxied_from_index";
 
@@ -49,14 +48,14 @@ public class DirServlet extends HttpServlet {
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
-	private final ImageResizer imageResizer;
+	private final ThumbnailGenerator thumbnailGenerator;
 	private final DbCache dbCache;
 	private final Supplier<Mustache> nodeIndexTemplate;
 
-	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ImageResizer imageResizer, final DbCache dbCache) {
+	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final DbCache dbCache) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
-		this.imageResizer = imageResizer;
+		this.thumbnailGenerator = thumbnailGenerator;
 		this.dbCache = dbCache;
 		this.nodeIndexTemplate = servletCommon.mustacheTemplate("nodeindex.html");
 	}
@@ -132,7 +131,7 @@ public class DirServlet extends HttpServlet {
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
 				+ (sort != null ? "&" + PARAM_SORT + "=" + sortRaw : "");
 		for (final ContentItem i : pageItems) {
-			resultScope.addContentItem(i, linkQuery, this.imageResizer);
+			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator);
 		}
 
 		maybeAppendTopTags(resultScope, node, username);

@@ -46,7 +46,7 @@ import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
-import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 
 public class DirServletTest {
 
@@ -55,7 +55,7 @@ public class DirServletTest {
 	private ServletCommon servletCommon;
 	private ContentTree contentTree;
 	private MockContent mockContent;
-	private ImageResizer imageResizer;
+	private ThumbnailGenerator thumbnailGenerator;
 	private DirServlet undertest;
 
 	private MockHttpServletRequest req;
@@ -66,10 +66,10 @@ public class DirServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 
-		this.imageResizer = new ImageResizer(this.tmp.getRoot());
+		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot(), false);
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, null);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -80,7 +80,7 @@ public class DirServletTest {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
 		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
-		final List<ContentItem> items = this.mockContent.givenMockItems(5, mockDir);
+		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.MP3, 5, mockDir);
 		final List<ContentItem> thumbItems = this.mockContent.givenMockItems(MediaFormat.JPEG, 3, mockDir);
 
 		for (final ContentItem i : items) {
@@ -176,7 +176,7 @@ public class DirServletTest {
 		final AuthList authlist = mock(AuthList.class);
 		when(authlist.hasUser("shork")).thenReturn(true);
 		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", this.contentTree.getRootNode(), authlist);
-		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
+		final List<ContentItem> protecItems = this.mockContent.givenMockItems(MediaFormat.MP3, 10, protecDir);
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
 		this.undertest.doGet(this.req, this.resp);
@@ -219,7 +219,7 @@ public class DirServletTest {
 	@Test
 	public void itShowsTopTags() throws Exception {
 		final DbCache dbCache = mock(DbCache.class);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, dbCache);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, dbCache);
 
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);

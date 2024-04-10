@@ -56,6 +56,7 @@ import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaFutureStub;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
@@ -66,7 +67,6 @@ import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.ui.templates.SearchResultsScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
-import com.vaguehope.dlnatoad.util.ImageResizer;
 
 public class SearchServlet extends HttpServlet {
 
@@ -88,22 +88,22 @@ public class SearchServlet extends HttpServlet {
 	private final DbCache dbCache;
 	private final UpnpService upnpService;
 	private final RpcClient rpcClient;
-	private final ImageResizer imageResizer;
+	private final ThumbnailGenerator thumbnailGenerator;
 	private final SearchEngine searchEngine;
 	private final Supplier<Mustache> resultsTemplate;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer) {
-		this(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, imageResizer, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator) {
+		this(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator, new SearchEngine());
 	}
 
-	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ImageResizer imageResizer, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
 		this.dbCache = dbCache;
 		this.rpcClient = rpcClient;
 		this.upnpService = upnpService;
-		this.imageResizer = imageResizer;
+		this.thumbnailGenerator = thumbnailGenerator;
 		this.searchEngine = searchEngine;
 		this.resultsTemplate = servletCommon.mustacheTemplate("searchresults.html");
 	}
@@ -201,7 +201,7 @@ public class SearchServlet extends HttpServlet {
 		int x = 0;
 		for (final ContentItem i : items) {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
-			resultGroup.addContentItem(i, q, this.imageResizer);
+			resultGroup.addContentItem(i, q, this.thumbnailGenerator);
 			x += 1;
 		}
 	}

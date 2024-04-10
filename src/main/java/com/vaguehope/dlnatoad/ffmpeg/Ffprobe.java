@@ -27,7 +27,7 @@ public class Ffprobe {
 	}
 
 	private static void checkAvailable() throws IOException {
-		if (!isAvailable()) throw new IOException("ffprobe not avilable.");
+		if (!isAvailable()) throw new IOException(FFPROBE + " not avilable.");
 	}
 
 	/**
