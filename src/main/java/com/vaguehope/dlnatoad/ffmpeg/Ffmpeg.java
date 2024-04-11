@@ -35,18 +35,23 @@ public class Ffmpeg {
 		// https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect
 		// https://ffmpeg.org/ffmpeg-filters.html#scale-1
 		// https://ffmpeg.org/ffmpeg-utils.html
-		// TODO what if video is <300 frames?
-		ProcessHelper.runAndWait(new String[] {
+		ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "gt(scene\\,0.5)+gt(n\\,300)"));
+		if (!thumbnailFile.exists()) {
+			ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "1"));
+		}
+	}
+
+	private static String[] thumbCmd(final File inF, final File outF, final int size, final String select) {
+		return new String[] {
 				FFMPEG,
 				"-hide_banner",
 				"-loglevel", "error",
 				"-y",
-				"-i", videoFile.getAbsolutePath(),
-				"-vf", "select=gt(scene\\,0.5)+gt(n\\,300),"
-						+ "scale='if(gt(in_w,in_h)," + size + ",-1)':'if(gt(in_h,in_w)," + size + ",-1)'",
+				"-i", inF.getAbsolutePath(),
+				"-vf", "select=" + select + ",scale='if(gt(in_w,in_h)," + size + ",-1)':'if(gt(in_h,in_w)," + size + ",-1)'",
 				"-frames:v", "1",
-				thumbnailFile.getAbsolutePath()
-		});
+				outF.getAbsolutePath()
+		};
 	}
 
 }
