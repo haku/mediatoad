@@ -43,13 +43,13 @@ public class DbCache {
 		this.dirTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
 				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(1, TimeUnit.DAYS)
+				.expireAfterWrite(5, TimeUnit.DAYS)
 				.ticker(ticker)
 				.build(new DirTopTagLoader());
 		this.searchTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
 				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(1, TimeUnit.DAYS)
+				.expireAfterWrite(5, TimeUnit.DAYS)
 				.ticker(ticker)
 				.build(new SearchTopTagLoader());
 	}
