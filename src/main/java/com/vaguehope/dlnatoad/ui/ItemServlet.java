@@ -111,7 +111,7 @@ public class ItemServlet extends HttpServlet {
 		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
 		itemScope.item_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
 		itemScope.item_file_name = item.getFile().getName();
-		itemScope.dir_path = "../" + node.getId();
+		itemScope.dir_path = "../d/" + node.getId();
 		itemScope.dir_name = node.getTitle();
 
 		if (this.mediaDb != null) {
@@ -290,7 +290,7 @@ public class ItemServlet extends HttpServlet {
 				sortParam = null;
 			}
 
-			allPath = "../" + node.getId() + (sortParam != null ? "?" + sortParam : "");
+			allPath = "../d/" + node.getId() + (sortParam != null ? "?" + sortParam : "");
 			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
 			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + (sortParam != null ? "&" + sortParam : "");
 		}
