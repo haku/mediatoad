@@ -111,7 +111,7 @@ public class DirServletTest {
 
 		for (final ContentItem thumb : thumbItems) {
 			assertThat(page, containsString(
-					"<span class=\"thumbnail\">"
+					"<span class=\"thumbnail \">"
 							+ "<a href=\"../i/" + thumb.getId() + "?node=" + mockDir.getId() + "\">"
 							+ "<img src=\"../t/" + thumb.getId() + "\" title=\"" + thumb.getTitle() + "\">"
 							+ "</a></span>"));

@@ -13,6 +13,11 @@ input {
   color: #fff;
 }
 
+.thumbnail.video:before {
+  color: #000;
+  background: #f3b1cb;
+}
+
 .prefs form {
   border: #69c6b0 0.1em solid;
   border-radius: 0.2em;

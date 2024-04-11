@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.jupnp.model.ModelUtil;
 
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.util.FileHelper;
@@ -23,7 +24,7 @@ public class ResultGroupScope {
 
 	private final String pathPrefix;
 
-	public ResultGroupScope(final String group_title, final String msg, final String next_page_path, PageScope pageScope) {
+	public ResultGroupScope(final String group_title, final String msg, final String next_page_path, final PageScope pageScope) {
 		this.group_title = group_title;
 		this.msg = msg;
 		this.next_page_path = next_page_path;
@@ -38,8 +39,8 @@ public class ResultGroupScope {
 		addRemoteItem(prefixPath(path), title, size, duration);
 	}
 
-	public void addLocalThumb(final String item_path, final String thumb_path, final String title) {
-		this.thumbs.add(new Thumb(prefixPath(item_path), prefixPath(thumb_path), title, shouldSetAutofucus()));
+	public void addLocalThumb(final String item_path, final String thumb_path, final String title, final String classes) {
+		this.thumbs.add(new Thumb(prefixPath(item_path), prefixPath(thumb_path), title, shouldSetAutofucus(), classes));
 	}
 
 	public void addRemoteItem(final String path, final String title, final String size, final String duration) {
@@ -56,7 +57,8 @@ public class ResultGroupScope {
 			addLocalThumb(
 					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
 					C.THUMBS_PATH_PREFIX + i.getId(),
-					i.getTitle());
+					i.getTitle(),
+					i.getFormat().getContentGroup() == ContentGroup.VIDEO ? "video" : "");
 		}
 		else {
 			final long fileLength = i.getFileLength();
@@ -103,12 +105,14 @@ public class ResultGroupScope {
 		public final String thumb_path;
 		public final String title;
 		public final boolean autofocus;
+		public final String classes;
 
-		Thumb(final String item_path, final String thumb_path, final String title, final boolean autofocus) {
+		Thumb(final String item_path, final String thumb_path, final String title, final boolean autofocus, final String classes) {
 			this.item_path = item_path;
 			this.thumb_path = thumb_path;
 			this.title = title;
 			this.autofocus = autofocus;
+			this.classes = classes;
 		}
 	}
 

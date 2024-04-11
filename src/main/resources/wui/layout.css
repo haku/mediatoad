@@ -7,12 +7,21 @@
 
 .thumbnail {
   display: inline-flex;
+  position: relative;
   margin: 0.5em 0.5em 0 0.5em;
   justify-content: center;
   align-items: center;
   vertical-align: middle;
   width: 6em;
   height: 5em;
+}
+.thumbnail.video:before {
+  content: '▶';
+  position: absolute;
+  left: -0.5em;
+  top: 1em;
+  border-radius: 0.5em;
+  padding: 0.1em 0.3em;
 }
 .thumbnail img {
   max-width: 6em;
