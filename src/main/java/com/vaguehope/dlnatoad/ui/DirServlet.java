@@ -127,6 +127,7 @@ public class DirServlet extends HttpServlet {
 
 		final List<ContentItem> allItems = node.getCopyOfItems();
 		final Order sort = sortModified ? ContentItem.Order.MODIFIED_DESC : parseSort(sortRaw);
+		final String sortParam = paramForSort(sort);
 		if (sort != null) {
 			allItems.sort(sort);
 		}
@@ -135,7 +136,7 @@ public class DirServlet extends HttpServlet {
 		final String nextPagePath;
 		if (offset + limit < allItems.size()) {
 			final StringBuilder s = new StringBuilder("?");
-			if (sort != null) s.append(PARAM_SORT + "=" + sortRaw);
+			s.append(sortParam);
 			if (s.length() > 1) s.append("&");
 			s.append(SearchServlet.PARAM_PAGE_LIMIT).append("=").append(limit);
 			s.append("&").append(SearchServlet.PARAM_PAGE_OFFSET).append("=").append(offset + limit);
@@ -162,7 +163,7 @@ public class DirServlet extends HttpServlet {
 		appendNodes(resultScope, nodesUserHasAuth);
 
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
-				+ (sort != null ? "&" + PARAM_SORT + "=" + sortRaw : "");
+				+ (sort != null ? "&" + sortParam : "");
 		for (final ContentItem i : pageItems) {
 			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator, videoThumbs);
 		}
@@ -205,6 +206,16 @@ public class DirServlet extends HttpServlet {
 			return ContentItem.Order.MODIFIED_DESC;
 		}
 		return null;
+	}
+
+	static String paramForSort(final Order order) {
+		if (order == null) return "";
+		switch (order) {
+		case MODIFIED_DESC:
+			return PARAM_SORT + "=" + "modified";
+		default:
+			return "";
+		}
 	}
 
 	private void maybeAppendTopTags(final ResultGroupScope resultScope, final ContentNode node, final String username) throws IOException {
