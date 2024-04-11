@@ -34,7 +34,6 @@ public class Args {
 	@Option(name = "--tagdeterminer", usage = "HTTP(S) address of remote a TagDeterminer and query for which items it should be offered.", metaVar = "https://example.com/|f~mydir/path") private List<String> tagDeterminers;
 	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
 	@Option(name = "--templateroot", usage = "Override mustache template location, useful for UI dev.") private String templateRoot;
-	@Option(name = "--betavideothumbs", usage = "Experimental video thumbnails.") private boolean betaVideoThumbs;
 	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public static class ArgsException extends Exception {
@@ -159,10 +158,6 @@ public class Args {
 
 	public File getTemplateRoot() throws ArgsException {
 		return checkIsDirOrNull(this.templateRoot);
-	}
-
-	public boolean isBetaVideoThumbs() {
-		return this.betaVideoThumbs;
 	}
 
 	private static File checkIsDirOrNull(final String path) throws ArgsException {

@@ -66,10 +66,10 @@ public class DirServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 
-		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot(), false);
+		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, null);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -219,7 +219,7 @@ public class DirServletTest {
 	@Test
 	public void itShowsTopTags() throws Exception {
 		final DbCache dbCache = mock(DbCache.class);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, dbCache);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, dbCache);
 
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);

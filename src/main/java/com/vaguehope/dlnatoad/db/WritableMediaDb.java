@@ -380,4 +380,32 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// prefs:
+
+	public void setDirPref(final File dir, final String key, final String value) throws SQLException {
+		final String path = dir.getAbsolutePath();
+
+		try (final PreparedStatement st = this.conn.prepareStatement("DELETE FROM dirprefs WHERE path=? AND key=?")) {
+			st.setString(1, path);
+			st.setString(2, key);
+			st.executeUpdate();
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to remove prev prefs for %s: key=%s", path, key), e);
+		}
+
+		try (final PreparedStatement st = this.conn.prepareStatement("INSERT INTO dirprefs (path,key,value) VALUES(?,?,?)")) {
+			st.setString(1, path);
+			st.setString(2, key);
+			st.setString(3, value);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured inserting dirpref for %s: key=%s: value='%s'", path, key, value));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set dirpref for %s: key=%s value='%s'", path, key, value), e);
+		}
+	}
+
+
 }

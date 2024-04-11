@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MockContent;
@@ -39,6 +40,7 @@ public class ThumbsServletTest {
 	public void itDoesSomething() throws Exception {
 		final ContentItem item = this.mockContent.givenMockItems(1).get(0);
 		final File thumbFile = this.tmp.newFile();
+		when(this.thumbnailGenerator.supported(ContentGroup.VIDEO, true)).thenReturn(true);
 		when(this.thumbnailGenerator.generate(item)).thenReturn(thumbFile);
 
 		@SuppressWarnings("resource")

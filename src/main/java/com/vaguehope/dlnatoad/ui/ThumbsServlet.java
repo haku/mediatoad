@@ -37,8 +37,13 @@ public class ThumbsServlet extends MyFileServlet {
 			id = ServletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
-				final File thumbFile = this.thumbnailGenerator.generate(item);
-				return Resource.newResource(thumbFile);
+				// TODO read dir prefs for video_thumbs prefs.
+				if (this.thumbnailGenerator.supported(item.getFormat().getContentGroup(), true)) {
+					final File thumbFile = this.thumbnailGenerator.generate(item);
+					return Resource.newResource(thumbFile);
+				}
+
+				return null;
 			}
 		}
 		catch (final MalformedURLException e) {

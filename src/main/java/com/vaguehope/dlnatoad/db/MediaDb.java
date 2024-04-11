@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -84,6 +86,15 @@ public class MediaDb {
 		}
 		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
+
+		if (!tableExists("dirprefs")) {
+			executeSql("CREATE TABLE dirprefs ("
+					+ "path STRING NOT NULL, "
+					+ "key STRING NOT NULL, "
+					+ "value STRING NOT NULL, "
+					+ "UNIQUE(path, key)"
+					+ ");");
+		}
 	}
 
 	@SuppressWarnings("resource")
@@ -346,6 +357,24 @@ public class MediaDb {
 			return ret;
 		}
 	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// prefs:
+
+	public Map<String, String> getDirPrefs(final File dir) throws SQLException {
+		final Map<String, String> ret = new HashMap<>();
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT key, value FROM dirprefs WHERE path=?;")) {
+			st.setString(1, dir.getAbsolutePath());
+			st.setMaxRows(2);
+			try (final ResultSet rs = st.executeQuery()) {
+				while (rs.next()) {
+					ret.put(rs.getString(1), rs.getString(2));
+				}
+				return ret;
+			}
+		}
+	}
+
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

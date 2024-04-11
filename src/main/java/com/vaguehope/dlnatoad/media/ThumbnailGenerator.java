@@ -17,29 +17,24 @@ public class ThumbnailGenerator {
 	private static final Object[] LOCK = new Object[0];
 
 	private final File cacheDir;
-	private final boolean enableVideoThumbs;
 	private final ImageResizer imageResizer;
 
-	public ThumbnailGenerator(final File cacheDir, final boolean enableVideoThumbs) {
+	public ThumbnailGenerator(final File cacheDir) {
 		this.cacheDir = cacheDir;
-		this.enableVideoThumbs = enableVideoThumbs;
 		this.imageResizer = new ImageResizer();
 	}
 
-	public boolean supported(final ContentGroup group) {
+	public boolean supported(final ContentGroup group, final boolean videoThumbs) {
 		switch (group) {
 		case IMAGE:
 			return true;
 		case VIDEO:
-			return this.enableVideoThumbs && Ffmpeg.isAvailable();
+			return videoThumbs && Ffmpeg.isAvailable();
 		default:
 			return false;
 		}
 	}
 
-	/**
-	 * @param quality Max 1.0.
-	 */
 	public File generate(final ContentItem item) throws IOException {
 		final File inF = item.getFile();
 		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());

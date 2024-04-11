@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public class MediaDbTest {
@@ -341,6 +342,23 @@ public class MediaDbTest {
 		}
 		assertThat(this.undertest.getAllTagsNotMissingNotDeleted(), contains(
 				new TagFrequency("foobar", 10)));
+	}
+
+	@Test
+	public void itSetsAndReadsPrefs() throws Exception {
+		final File dir = new File("/some/media path/to/somewhere");
+		assertThat(this.undertest.getDirPrefs(dir).entrySet(), hasSize(0));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setDirPref(dir, "my_pref_1", "true");
+			w.setDirPref(dir, "my_pref_2", "false");
+		}
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "false"), this.undertest.getDirPrefs(dir));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setDirPref(dir, "my_pref_2", "true");
+		}
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "true"), this.undertest.getDirPrefs(dir));
 	}
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {

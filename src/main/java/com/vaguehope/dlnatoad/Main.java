@@ -142,7 +142,7 @@ public final class Main {
 		final File thumbsDir = args.getThumbsDir();
 		final ThumbnailGenerator thumbnailGenerator =
 				thumbsDir != null
-				? new ThumbnailGenerator(thumbsDir, args.isBetaVideoThumbs())
+				? new ThumbnailGenerator(thumbsDir)
 				: null;
 
 		final File dbFile = args.getDb();
@@ -324,7 +324,7 @@ public final class Main {
 
 		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null, args.getTemplateRoot());
 
-		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, thumbnailGenerator, dbCache);
+		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, thumbnailGenerator, mediaDb, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/search");

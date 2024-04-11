@@ -150,6 +150,9 @@ public class AuthFilter implements Filter {
 			if (user.hasPermission(Permission.EDITTAGS)) {
 				ReqAttr.ALLOW_EDIT_TAGS.set(req, Boolean.TRUE);
 			}
+			if (user.hasPermission(Permission.EDITDIRPREFS)) {
+				ReqAttr.ALLOW_EDIT_DIR_PREFS.set(req, Boolean.TRUE);
+			}
 		}
 
 //		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);

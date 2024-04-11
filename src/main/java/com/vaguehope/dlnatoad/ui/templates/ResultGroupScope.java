@@ -49,9 +49,10 @@ public class ResultGroupScope {
 	public void addContentItem(
 			final ContentItem i,
 			final String linkQuery,
-			final ThumbnailGenerator thumbnailGenerator) throws IOException {
+			final ThumbnailGenerator thumbnailGenerator,
+			final boolean videoThumbs) throws IOException {
 
-		if (thumbnailGenerator != null && thumbnailGenerator.supported(i.getFormat().getContentGroup())) {
+		if (thumbnailGenerator != null && thumbnailGenerator.supported(i.getFormat().getContentGroup(), videoThumbs)) {
 			addLocalThumb(
 					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
 					C.THUMBS_PATH_PREFIX + i.getId(),

@@ -1,12 +1,12 @@
 {{<page}}
 	{{$body}}
 	<h3>{{results.group_title}}{{#up_link_path}} <a id="up" href="{{up_link_path}}">up</a>{{/up_link_path}}</h3>
-	{{#show_list_link_row}}
+	{{^is_sort_modified}}
 	<div class="link_row">
 		<span><a href="?sort=modified">Sort by Modified</a></span>
-		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
 	</div>
-	{{/show_list_link_row}}
+	{{/is_sort_modified}}
+
 	<ul>
 		{{#results.list_items}}
 		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
@@ -25,5 +25,30 @@
 	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/results.tags}}
 
+	{{#show_list_link_row}}
+	<div class="link_row">
+		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
+	</div>
+
+	{{#show_prefs}}
+	<div class="prefs">
+		<form action="" method="POST">
+			<input type="hidden" name="action" value="setprefs">
+			<span class="pref">
+				<label for="sort_by_modified">sort by modified</label>
+				<input type="checkbox" name="sort_by_modified" value="true" id="sort_by_modified" {{#is_sort_modified}}checked=checked{{/is_sort_modified}}>
+			</span>
+			<span class="pref">
+				<label for="video_thumbs">video thumbnails</label>
+				<input type="checkbox" name="video_thumbs" value="true" id="video_thumbs" {{#is_video_thumbs}}checked=checked{{/is_video_thumbs}}>
+			</span>
+			<input type="submit" value="Save" style="margin: 0.5em;">
+		</form>
+	</div>
+	{{/show_prefs}}
+	{{/show_list_link_row}}
+
 	{{/body}}
 {{/page}}
+{{! vim: noexpandtab softtabstop=0
+}}

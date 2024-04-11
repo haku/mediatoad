@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.zip.Deflater;
@@ -24,7 +26,9 @@ import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
+import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -44,18 +48,24 @@ public class DirServlet extends HttpServlet {
 	static final String PARAM_SORT = "sort";
 	private static final int ITEMS_PER_PAGE = SearchServlet.MAX_RESULTS;
 
+	private static final String PREF_KEY_SORT_MODIFIED = "sort_by_modified";
+	private static final String PREF_KEY_VIDEO_THUMBS = "video_thumbs";
+
 	private static final long serialVersionUID = 6207424145390666199L;
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
 	private final ThumbnailGenerator thumbnailGenerator;
+	private final MediaDb db;
 	private final DbCache dbCache;
 	private final Supplier<Mustache> nodeIndexTemplate;
 
-	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final DbCache dbCache) {
+
+	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final MediaDb db, final DbCache dbCache) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
 		this.thumbnailGenerator = thumbnailGenerator;
+		this.db = db;
 		this.dbCache = dbCache;
 		this.nodeIndexTemplate = servletCommon.mustacheTemplate("nodeindex.html");
 	}
@@ -79,6 +89,22 @@ public class DirServlet extends HttpServlet {
 		returnNodeAsHtml(req, resp, node, username);
 	}
 
+	@Override
+	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final ContentNode node = getNodeFromPath(req, resp);
+		if (node == null) return;
+
+		final String username = ReqAttr.USERNAME.get(req);
+		if (!node.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
+			return;
+		}
+
+		if ("setprefs".equals(req.getParameter("action"))) {
+			setPrefs(node, req, resp);
+		}
+	}
+
 	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, PARAM_SORT, "");
@@ -88,6 +114,10 @@ public class DirServlet extends HttpServlet {
 		final Integer offset = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 		if (offset == null) return;
 
+		final Map<String, String> dirPrefs = readPrefs(node);
+		final boolean sortModified = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_SORT_MODIFIED));
+		final boolean videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
+
 		// If proxied from IndexServlet then paths are relative to root.
 		final String pathPrefix = req.getAttribute(PROXIED_FROM_INDEX_ATTR) != null ? "" : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
@@ -96,7 +126,7 @@ public class DirServlet extends HttpServlet {
 		final long nodeTotalFileLength = node.getTotalFileLength();
 
 		final List<ContentItem> allItems = node.getCopyOfItems();
-		final Order sort = parseSort(sortRaw);
+		final Order sort = sortModified ? ContentItem.Order.MODIFIED_DESC : parseSort(sortRaw);
 		if (sort != null) {
 			allItems.sort(sort);
 		}
@@ -122,6 +152,9 @@ public class DirServlet extends HttpServlet {
 				resultScope,
 				isRoot ? null : node.getParentId(),
 				!isRoot,
+				this.db != null && ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req),
+				sortModified,
+				videoThumbs,
 				node.getId(),
 				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
 				FileHelper.readableFileSize(nodeTotalFileLength));
@@ -131,7 +164,7 @@ public class DirServlet extends HttpServlet {
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
 				+ (sort != null ? "&" + PARAM_SORT + "=" + sortRaw : "");
 		for (final ContentItem i : pageItems) {
-			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator);
+			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator, videoThumbs);
 		}
 
 		maybeAppendTopTags(resultScope, node, username);
@@ -217,6 +250,37 @@ public class DirServlet extends HttpServlet {
 		zo.flush();
 		zo.close();
 		resp.flushBuffer();
+	}
+
+	private Map<String, String> readPrefs(final ContentNode node) throws IOException {
+		if (node.getFile() == null || this.db == null) return Collections.emptyMap();
+		try {
+			return this.db.getDirPrefs(node.getFile());
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
+		}
+	}
+
+	private void setPrefs(final ContentNode node, final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		if (!ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req)) {
+			ServletCommon.returnForbidden(resp);
+			return;
+		}
+
+		final Boolean sortModified = Boolean.valueOf(req.getParameter(PREF_KEY_SORT_MODIFIED));
+		final Boolean videoThumbs = Boolean.valueOf(req.getParameter(PREF_KEY_VIDEO_THUMBS));
+
+		try (final WritableMediaDb w = this.db.getWritable()) {
+			w.setDirPref(node.getFile(), PREF_KEY_SORT_MODIFIED, sortModified.toString());
+			w.setDirPref(node.getFile(), PREF_KEY_VIDEO_THUMBS, videoThumbs.toString());
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
+		}
+
+		resp.addHeader("Location", node.getId());
+		ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Prefs saved.");
 	}
 
 	private ContentNode getNodeFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {

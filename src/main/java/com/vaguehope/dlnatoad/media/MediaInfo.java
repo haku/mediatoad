@@ -38,7 +38,8 @@ public class MediaInfo {
 			this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
 		}
 
-		if (this.thumbnailGenerator != null && item.getFormat().getContentGroup() == ContentGroup.IMAGE) {
+		// TODO read dir prefs for video_thumbs prefs.
+		if (this.thumbnailGenerator != null && this.thumbnailGenerator.supported(item.getFormat().getContentGroup(), false)) {
 			this.exSvc.submit(() -> generateThumbnail(item));
 		}
 	}

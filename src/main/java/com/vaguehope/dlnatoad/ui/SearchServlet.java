@@ -201,7 +201,7 @@ public class SearchServlet extends HttpServlet {
 		int x = 0;
 		for (final ContentItem i : items) {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
-			resultGroup.addContentItem(i, q, this.thumbnailGenerator);
+			resultGroup.addContentItem(i, q, this.thumbnailGenerator, false);
 			x += 1;
 		}
 	}

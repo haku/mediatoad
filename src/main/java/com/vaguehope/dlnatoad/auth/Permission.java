@@ -6,7 +6,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 
 public enum Permission {
-	EDITTAGS("+edittags");
+	EDITTAGS("+edittags"),
+	EDITDIRPREFS("+editdirprefs");
 
 	private static final Map<String, Permission> KEY_TO_PERMISSION;
 	static {
