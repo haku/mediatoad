@@ -29,7 +29,7 @@ const searchAc = new autoComplete({
   data: {
     src: async (query) => {
       try {
-        const source = await fetch(`${pathPrefix()}ac?mode=search&fragment=${escape(query)}`);
+        const source = await fetch(`${pathPrefix()}ac?mode=search&fragment=${encodeURIComponent(query)}`);
         const data = await source.json();
         return data;
       } catch (error) {
