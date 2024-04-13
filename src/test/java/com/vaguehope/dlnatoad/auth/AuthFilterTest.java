@@ -20,6 +20,8 @@ import java.util.Collection;
 import javax.servlet.FilterChain;
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.junit.Before;
 import org.junit.Test;
 import org.teleal.common.mock.http.MockHttpServletRequest;
@@ -207,6 +209,9 @@ public class AuthFilterTest {
 		assertThat(cookie.getMaxAge(), greaterThan(1));
 		assertEquals("the-secret-token", cookie.getValue());
 		assertEquals("/", cookie.getPath());
+		assertEquals(true, cookie.isHttpOnly());
+		assertEquals("__SAME_SITE_STRICT__", cookie.getComment());
+		assertEquals(SameSite.STRICT, HttpCookie.getSameSiteFromComment(cookie.getComment()));
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -325,8 +330,6 @@ public class AuthFilterTest {
 
 	private void setSessionTokenCookie(String token) {
 		Cookie cookie = new Cookie("DLNATOADTOKEN", token);
-		cookie.setPath("/");
-		cookie.setMaxAge(123);
 		this.req.setCookies(new Cookie[] { cookie });
 	}
 

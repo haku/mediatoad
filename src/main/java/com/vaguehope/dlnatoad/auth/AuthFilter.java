@@ -19,6 +19,8 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,17 +204,23 @@ public class AuthFilter implements Filter {
 
 	private void setTokenCookie (final String username, final HttpServletResponse resp) throws IOException {
 		final String token = this.authTokens.newToken(username);
-		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
+		final Cookie cookie = makeAuthCookie(token);
 		cookie.setMaxAge((int) TimeUnit.MILLISECONDS.toSeconds(Auth.MAX_TOKEN_AGE_MILLIS));
-		cookie.setPath("/");
 		resp.addCookie(cookie);
 	}
 
 	private static void clearTokenCookie(final HttpServletResponse resp) throws IOException {
-		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, "");
+		final Cookie cookie = makeAuthCookie("");
 		cookie.setMaxAge(0);
-		cookie.setPath("/");
 		resp.addCookie(cookie);
+	}
+
+	private static Cookie makeAuthCookie(final String token) {
+		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
+		cookie.setPath("/");
+		cookie.setHttpOnly(true);
+		cookie.setComment(HttpCookie.getCommentWithAttributes("", false, SameSite.STRICT));
+		return cookie;
 	}
 
 }
