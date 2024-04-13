@@ -79,6 +79,7 @@ public class MediaInfo {
 			if (storedInfo != null) return storedInfo;
 
 			if (!Ffprobe.isAvailable()) return null;
+			if (!this.file.exists()) return null;  // did file disappear between being put on the queue and now?
 
 			final FfprobeInfo probeInfo = Ffprobe.inspect(this.file);
 			if (probeInfo.hasDuration() || probeInfo.hasWidthAndHeight()) {
