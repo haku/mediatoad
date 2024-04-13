@@ -236,6 +236,11 @@ public class DirServlet extends HttpServlet {
 	}
 
 	static void addTagFrequenciesToScope(final ResultGroupScope resultScope, final ContentNode node, final List<TagFrequency> topTags) {
+		if (topTags == null) {
+			resultScope.setNoTagsMsg("(loading...)");
+			return;
+		}
+
 		for (final TagFrequency tag : topTags) {
 			String query = DbSearchSyntax.makeSingleTagSearch(tag.getTag());
 			if (node != null && node.getFile() != null) query += " " + DbSearchSyntax.makePathSearch(node.getFile());

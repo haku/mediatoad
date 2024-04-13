@@ -20,7 +20,7 @@
 	{{#results.next_page_path}}<a class="nextpage" href="{{{results.next_page_path}}}">Next Page</a>{{/results.next_page_path}}
 
 	<h3>Tags</h3>
-	{{^results.tags}}(no tags){{/results.tags}}
+	{{^results.tags}}{{results.no_tags_msg}}{{/results.tags}}
 	{{#results.tags}}
 	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/results.tags}}

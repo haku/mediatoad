@@ -21,6 +21,7 @@ public class ResultGroupScope {
 	public final List<IndexItem> list_items = new ArrayList<>();
 	public final List<Thumb> thumbs = new ArrayList<>();
 	public final List<TopTag> tags = new ArrayList<>();
+	public String no_tags_msg = "(no tags)";
 
 	private final String pathPrefix;
 
@@ -78,6 +79,10 @@ public class ResultGroupScope {
 
 	private boolean shouldSetAutofucus() {
 		return this.list_items.size() == 0 && this.thumbs.size() == 0;
+	}
+
+	public void setNoTagsMsg(final String msg) {
+		this.no_tags_msg = msg;
 	}
 
 	public void addTopTag(final String path, final String tag, final int count) {

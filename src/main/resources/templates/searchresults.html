@@ -17,7 +17,7 @@
 	{{#next_page_path}}<a class="nextpage" href="{{{next_page_path}}}">Next Page</a>{{/next_page_path}}
 	
 	<h3>Tags</h3>
-	{{^tags}}(no tags){{/tags}}
+	{{^tags}}{{no_tags_msg}}{{/tags}}
 	{{#tags}}
 	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
 	{{/tags}}
