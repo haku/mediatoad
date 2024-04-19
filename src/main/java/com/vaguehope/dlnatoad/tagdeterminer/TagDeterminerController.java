@@ -287,6 +287,7 @@ public class TagDeterminerController {
 		}
 		else {
 			LOG.info("Invalid tags from {} for {}: {}", determiner.getTarget(), item.getFile(), reply.getTagList());
+			errorFromDeterminer(determiner, about, item, null);
 		}
 	}
 
