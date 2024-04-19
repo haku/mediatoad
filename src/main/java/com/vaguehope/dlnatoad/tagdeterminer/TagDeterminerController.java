@@ -14,14 +14,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -73,7 +77,7 @@ public class TagDeterminerController {
 	private final Map<TagDeterminer, TagDeterminerFutureStub> futureStubs = new ConcurrentHashMap<>();
 
 	private final Deque<Runnable> workQueue = new ConcurrentLinkedDeque<>();
-	private final BlockingQueue<TDResponse> storeDuraionQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<TDResponse> storeQueue = new LinkedBlockingQueue<>();
 
 	public TagDeterminerController(final Args args, final ContentTree contentTree, final MediaDb db) throws ArgsException {
 		this(args, contentTree, db, ExecutorHelper.newScheduledExecutor(1, "td"), Clock.systemUTC());
@@ -152,7 +156,7 @@ public class TagDeterminerController {
 	}
 
 	void findWork() {
-		if (this.workQueue.size() > 0 || this.storeDuraionQueue.size() > 0) return;
+		if (this.workQueue.size() > 0 || this.storeQueue.size() > 0) return;
 
 		for (final Entry<TagDeterminer, TagDeterminerFutureStub> m : this.futureStubs.entrySet()) {
 			startFindingWorkForDeterminer(m.getKey(), m.getValue());
@@ -243,6 +247,7 @@ public class TagDeterminerController {
 			public void onError(final Throwable t) {
 				latch.countDown();
 				LOG.warn("Determiner {} DetermineTags() failed: {}", determiner, ExceptionHelper.causeTrace(t));
+				errorFromDeterminer(determiner, about, item, t);
 			}
 			@Override
 			public void onCompleted() {
@@ -276,11 +281,33 @@ public class TagDeterminerController {
 	private void responseFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final DetermineTagsReply reply) {
 		if (validTags(reply.getTagList())) {
 			if (this.verbose) LOG.info("{} {}: {}", about.getTagCls(), item.getFile(), reply.getTagList());
-			this.storeDuraionQueue.add(new TDResponse(about, item, reply));
+			this.storeQueue.add(new TDResponse(about, item, reply));
 		}
 		else {
 			LOG.info("Invalid tags from {} for {}: {}", determiner.getTarget(), item.getFile(), reply.getTagList());
 		}
+	}
+
+	private final Cache<String, AtomicInteger> errorCounter = CacheBuilder.newBuilder()
+			.maximumSize(QUERY_LIMIT * 3)
+			.expireAfterAccess(1, TimeUnit.DAYS)
+			.build();
+
+	private void errorFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final Throwable t) {
+		final String key = about.getTagCls() + "." + item.getId();
+		final int attempts;
+		try {
+			attempts = this.errorCounter.get(key, () -> new AtomicInteger(0)).incrementAndGet();
+		}
+		catch (final ExecutionException e) {
+			throw new IllegalStateException(e);
+		}
+
+		if (attempts < 5) return;
+
+		final String tag = about.getTagCls() + ":UNPROCESSABLE";
+		LOG.warn("Determiner {} failed 5+ times, adding tag '{}': {}", determiner, tag, item.getFile().getAbsolutePath());
+		this.storeQueue.add(new TDResponse(about, item, DetermineTagsReply.newBuilder().addTag(tag).build()));
 	}
 
 	private static boolean validTags(final List<String> tags) {
@@ -298,7 +325,7 @@ public class TagDeterminerController {
 	void batchWrite() {
 		try {
 			final List<TDResponse> todo = new ArrayList<>();
-			this.storeDuraionQueue.drainTo(todo);
+			this.storeQueue.drainTo(todo);
 			if (todo.size() < 1) return;
 
 			try (final WritableMediaDb w = this.db.getWritable()) {

@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.tagdeterminer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -46,6 +47,8 @@ import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutRequest;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsReply;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.DetermineTagsRequest;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 public class TagDeterminerControllerTest {
@@ -91,27 +94,19 @@ public class TagDeterminerControllerTest {
 		when(this.stub.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(this.stub);
 		when(this.futureStub.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(this.futureStub);
 
-		this.undertest.addStubs(this.determiner, this.stub, this.futureStub);
-	}
-
-	@Test
-	public void itDoesSomething() throws Exception {
 		final ListenableFuture<AboutReply> aboutFuture = Futures.immediateFuture(AboutReply.newBuilder()
 				.setName("Fake System Thingy")
 				.setTagCls("FakeSystem")
 				.build());
 		when(this.futureStub.about(any(AboutRequest.class))).thenReturn(aboutFuture);
 
-		// TODO mocking content and mocking DB should interact with each other better.
-		final String idA = this.mockMediaMetadataStore.addFileWithName("myphotos A", ".jpeg");
-		final File fileA = new File(this.db.getFilePathForId(idA));
-		this.contentTree.addItem(new ContentItem(idA, "0", "my item A", fileA, MediaFormat.JPEG));
+		this.undertest.addStubs(this.determiner, this.stub, this.futureStub);
+	}
 
-		// Item that has already been sent.
-		final String idB = this.mockMediaMetadataStore.addFileWithNameAndSuffexAndTags("myphotos B", ".jpeg", "FakeSystem");
-		final File fileB = new File(this.db.getFilePathForId(idB));
-		this.contentTree.addItem(new ContentItem(idB, "0", "my item B", fileB, MediaFormat.JPEG));
-
+	@Test
+	public void itDoesItsThing() throws Exception {
+		final ContentItem itemA = mockItem("myphotos A");
+		final ContentItem itemB = mockItem("myphotos B", "FakeSystem");  // Item that has already been sent.
 		this.mockMediaMetadataStore.addNoiseToDb();
 
 		@SuppressWarnings("unchecked")
@@ -128,7 +123,7 @@ public class TagDeterminerControllerTest {
 		final InOrder uploadOrder = inOrder(reqObs);
 		uploadOrder.verify(reqObs).onNext(DetermineTagsRequest.newBuilder()
 				.setFileExt("jpeg")
-				.setContent(ByteString.copyFrom(FileUtils.readFileToByteArray(fileA)))
+				.setContent(ByteString.copyFrom(FileUtils.readFileToByteArray(itemA.getFile())))
 				.build());
 		uploadOrder.verify(reqObs).onCompleted();
 		uploadOrder.verifyNoMoreInteractions();
@@ -142,14 +137,14 @@ public class TagDeterminerControllerTest {
 
 		this.undertest.batchWrite();
 
-		final Collection<Tag> tagsA = this.db.getTags(idA, true, true);
+		final Collection<Tag> tagsA = this.db.getTags(itemA.getId(), true, true);
 		assertThat(tagsA, containsInAnyOrder(
 				new Tag("FakeSystem", ".FakeSystem", this.clock.millis(), false),
 				new Tag("a_thing", "FakeSystem", this.clock.millis(), false),
 				new Tag("another_thing", "FakeSystem", this.clock.millis(), false)
 				));
 
-		final Collection<Tag> tagsB = this.db.getTags(idB, true, true);
+		final Collection<Tag> tagsB = this.db.getTags(itemB.getId(), true, true);
 		assertEquals(1, tagsB.size());
 		assertEquals("FakeSystem", tagsB.iterator().next().getTag());
 
@@ -161,11 +156,47 @@ public class TagDeterminerControllerTest {
 		verify(this.futureStub, times(2)).about(any(AboutRequest.class));
 
 		// Adding an item wakes it up.
-		final String idC = this.mockMediaMetadataStore.addFileWithName("myphotos C", ".jpeg");
-		final File fileC = new File(this.db.getFilePathForId(idC));
-		this.contentTree.addItem(new ContentItem(idC, "0", "my item C", fileC, MediaFormat.JPEG));
+		mockItem("myphotos C");
 		this.undertest.findWork();
 		verify(this.futureStub, times(3)).about(any(AboutRequest.class));
+	}
+
+	@Test
+	public void itMarksUnprocessableFiles() throws Exception {
+		@SuppressWarnings("unchecked")
+		final ArgumentCaptor<StreamObserver<DetermineTagsReply>> cap = ArgumentCaptor.forClass(StreamObserver.class);
+		final StreamObserver<DetermineTagsRequest> reqObs = mock(StreamObserver.class);
+		when(this.stub.determineTags(cap.capture())).thenReturn(reqObs);
+		doAnswer(a -> {
+			cap.getValue().onCompleted();
+			return null;
+		}).when(reqObs).onCompleted();
+
+		final ContentItem itemA = mockItem("myphotos A");
+		this.undertest.findWork();
+
+		// Lazy testing: call the error handler 5 times instead of doing the whole cycle 5 times.
+		final StreamObserver<DetermineTagsReply> respObs = cap.getValue();
+		for (int i = 0; i < 4; i++) {
+			respObs.onError(new StatusRuntimeException(Status.UNKNOWN));
+		}
+		this.undertest.batchWrite();
+		assertThat(this.db.getTags(itemA.getId(), true, true), empty());
+
+		respObs.onError(new StatusRuntimeException(Status.UNKNOWN));
+		this.undertest.batchWrite();
+		assertThat(this.db.getTags(itemA.getId(), true, true), containsInAnyOrder(
+				new Tag("FakeSystem", ".FakeSystem", this.clock.millis(), false),
+				new Tag("FakeSystem:UNPROCESSABLE", "FakeSystem", this.clock.millis(), false)
+				));
+	}
+
+	private ContentItem mockItem(final String name, final String... tags) throws Exception {
+		final String id = this.mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".jpeg", tags);
+		final File file = new File(this.db.getFilePathForId(id));
+		final ContentItem item = new ContentItem(id, "0", name, file, MediaFormat.JPEG);
+		this.contentTree.addItem(item);
+		return item;
 	}
 
 }
