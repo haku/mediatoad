@@ -19,6 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ public class TagDeterminerController {
 	private static final int QUERY_LIMIT = 100;
 	private static final int BATCH_WRITE_INTERVAL_SECONDS = 30;
 
+	private static final Pattern TAG_CLS_PATTERN = Pattern.compile("^([A-Za-z0-9])+$");
 	private static final int RPC_DEADLINE_SECONDS = 30;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
 	private static final Logger LOG = LoggerFactory.getLogger(TagDeterminerController.class);
@@ -190,7 +192,7 @@ public class TagDeterminerController {
 
 	private void findItems(final TagDeterminer determiner, final AboutReply about) {
 		final String tagCls = about.getTagCls();
-		if (tagCls.length() < 5 || tagCls.strip().length() != tagCls.length()) {
+		if (tagCls.length() < 5 || tagCls.strip().length() != tagCls.length() || !TAG_CLS_PATTERN.matcher(tagCls).matches()) {
 			LOG.warn("Determiner {} has invalid tag_cls: '{}'", determiner, tagCls);
 			return;
 		}
