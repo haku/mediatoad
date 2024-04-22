@@ -220,7 +220,7 @@ public class TagDeterminerController {
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item == null) {
 				LOG.error("ID from DB not found in contentTree: {}", id);
-				return;
+				continue;  // TODO this will retry forever.
 			}
 			this.workQueue.add(() -> {
 				sendItemToDetminer(determiner, about, item);
