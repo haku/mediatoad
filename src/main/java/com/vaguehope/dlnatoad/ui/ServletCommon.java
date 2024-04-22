@@ -91,12 +91,16 @@ public class ServletCommon {
 	}
 
 	public PageScope pageScope(final HttpServletRequest req, final String title, final String pathPrefix) {
+		return pageScope(req, title, pathPrefix, null);
+	}
+
+	public PageScope pageScope(final HttpServletRequest req, final String title, final String pathPrefix, final String query) {
 		return new PageScope(
 				pageTitle(title),
 				pathPrefix,
 				ReqAttr.USERNAME.get(req),
 				this.mediaDbEnabled,
-				StringUtils.trimToEmpty(req.getParameter(SearchServlet.PARAM_QUERY)),
+				StringUtils.trimToEmpty(query),
 				ReqAttr.ALLOW_REMOTE_SEARCH.get(req));
 	}
 
@@ -142,12 +146,30 @@ public class ServletCommon {
 		return s.toString();
 	}
 
+	private static String removeReverseProxyPrefix(final String pathInfo) {
+		if (pathInfo == null || pathInfo.length() < 1 || !pathInfo.startsWith("/")) {
+			return null;
+		}
+		return StringHelper.removePrefix(pathInfo, "/" + C.REVERSE_PROXY_PATH);
+	}
+
+	public static String fileFromPath(final String pathInfo) {
+		String p = removeReverseProxyPrefix(pathInfo);
+		if (p == null) return null;
+		if (p == "/") return null;
+
+		p = StringHelper.removePrefix(p, "/");
+		return p;
+	}
+
 	public static String firstDirFromPath(final String pathInfo) {
-		if (pathInfo == null) return null;
-		if (pathInfo.length() < 3) return null;
-		if (!pathInfo.startsWith("/")) return null;
-		int x = pathInfo.indexOf('/', 2);
-		return pathInfo.substring(1, x);
+		final String p = removeReverseProxyPrefix(pathInfo);
+		if (p == null) return null;
+
+		if (p.length() < 3) return null;
+		if (!p.startsWith("/")) return null;
+		final int x = p.indexOf('/', 2);
+		return p.substring(1, x);
 	}
 
 	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(

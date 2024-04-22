@@ -41,6 +41,7 @@ import org.jupnp.support.model.item.Item;
 
 import com.github.mustachejava.Mustache;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.vaguehope.dlnatoad.C;
@@ -111,8 +112,9 @@ public class SearchServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String query = StringUtils.trimToEmpty(req.getParameter(PARAM_QUERY));
-		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), null);
+		final String query = queryFromReq(req);
+		final String pathPrefix = Strings.isNullOrEmpty(req.getPathInfo()) ? null : "../";
+		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), pathPrefix, query);
 		final StringBuilder debugFooter = new StringBuilder();
 		final Stopwatch stopwatch = Stopwatch.createUnstarted();
 
@@ -190,6 +192,12 @@ public class SearchServlet extends HttpServlet {
 				e.printStackTrace(resp.getWriter());  // TODO maybe do something better here...
 			}
 		}
+	}
+
+	private static String queryFromReq(final HttpServletRequest req) {
+		final String p = StringUtils.trimToNull(req.getParameter(PARAM_QUERY));
+		if (p != null) return p;
+		return ServletCommon.fileFromPath(req.getPathInfo());
 	}
 
 	private void appendItems(

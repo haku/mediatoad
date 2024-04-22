@@ -38,6 +38,24 @@ public class ServletCommonTest {
 		assertEquals("0", ServletCommon.firstDirFromPath("/0/"));
 		assertEquals("0", ServletCommon.firstDirFromPath("/0/foo.ext"));
 		assertEquals("abc", ServletCommon.firstDirFromPath("/abc/foo.ext"));
+
+		assertEquals(null, ServletCommon.firstDirFromPath("/dlnatoad/0"));
+		assertEquals("0", ServletCommon.firstDirFromPath("/dlnatoad/0/"));
+		assertEquals("0", ServletCommon.firstDirFromPath("/dlnatoad/0/foo.ext"));
+		assertEquals("abc", ServletCommon.firstDirFromPath("/dlnatoad/abc/foo.ext"));
+	}
+
+	@Test
+	public void itExtractsFileFromPath() throws Exception {
+		assertEquals(null, ServletCommon.fileFromPath(null));
+		assertEquals(null, ServletCommon.fileFromPath(""));
+		assertEquals(null, ServletCommon.fileFromPath("0"));
+		assertEquals(null, ServletCommon.fileFromPath("/"));
+
+		assertEquals("0", ServletCommon.fileFromPath("/0"));
+		assertEquals("0", ServletCommon.fileFromPath("/dlnatoad/0"));
+		assertEquals("t=tag", ServletCommon.fileFromPath("/t=tag"));
+		assertEquals("t=tag", ServletCommon.fileFromPath("/dlnatoad/t=tag"));
 	}
 
 }
