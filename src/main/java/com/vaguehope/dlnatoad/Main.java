@@ -315,8 +315,8 @@ public final class Main {
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
-		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog()));
-		servletHandler.addFilter(authFilterHolder, "/*", null);
+		final AuthFilter authFilter = new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog());
+		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory);
@@ -337,12 +337,12 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
-		final Handler webavHandler = makeWebdavHandler(contentTree, mediaDb, args);
+		final ServletContextHandler webavHandler = makeWebdavHandler(authFilter, contentTree, mediaDb, args);
 
 		return new WebdavDivertingHandler(webavHandler, servletHandler);
 	}
 
-	private static Handler makeWebdavHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+	private static ServletContextHandler makeWebdavHandler(final AuthFilter authFilter, final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
@@ -350,6 +350,7 @@ public final class Main {
 			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
 		}
 
+		handler.addFilter(new FilterHolder(authFilter), "/*", null);
 		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree, mediaDb)), "/*");
 		return handler;
 	}
