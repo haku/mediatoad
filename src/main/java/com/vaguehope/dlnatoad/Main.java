@@ -69,6 +69,8 @@ import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
+import com.vaguehope.dlnatoad.ui.WebdavDivertingHandler;
+import com.vaguehope.dlnatoad.ui.WebdavServlet;
 import com.vaguehope.dlnatoad.util.ExecutorHelper;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
@@ -249,8 +251,8 @@ public final class Main {
 		}
 
 		while (true) {
-			final ServletContextHandler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
-			final ServletContextHandler mainHandler = makeContentHandler(
+			final Handler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
+			final Handler mainHandler = makeContentHandler(
 					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
@@ -283,7 +285,7 @@ public final class Main {
 		}
 	}
 
-	private static ServletContextHandler makeContentHandler(
+	private static Handler makeContentHandler(
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
@@ -335,10 +337,24 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
-		return servletHandler;
+		final Handler webavHandler = makeWebdavHandler(contentTree, args);
+
+		return new WebdavDivertingHandler(webavHandler, servletHandler);
 	}
 
-	private static ServletContextHandler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+	private static Handler makeWebdavHandler(final ContentTree contentTree, final Args args) {
+		final ServletContextHandler handler = new ServletContextHandler();
+		handler.setContextPath("/");
+
+		if (args.isPrintAccessLog()) {
+			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		}
+
+		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree)), "/*");
+		return handler;
+	}
+
+	private static Handler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
