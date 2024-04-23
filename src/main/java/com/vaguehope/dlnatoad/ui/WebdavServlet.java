@@ -2,26 +2,39 @@ package com.vaguehope.dlnatoad.ui;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigInteger;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
+import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.SortOrder;
+import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class WebdavServlet extends HttpServlet {
 
+	private static final int MAX_SEARCH_ITEMS = 1000;
 	private static final long serialVersionUID = 440497706656450276L;
 
 	private final ContentTree contentTree;
+	private final MediaDb db;
 
-	public WebdavServlet(final ContentTree contentTree) {
+	public WebdavServlet(final ContentTree contentTree, final MediaDb db) {
 		this.contentTree = contentTree;
+		this.db = db;
 	}
 
 	@Override
@@ -41,20 +54,7 @@ public class WebdavServlet extends HttpServlet {
 
 	// http://www.webdav.org/specs/rfc4918.html
 	protected void doPropfind(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
-		final ContentNode node = this.contentTree.getNode(id);
-		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
 		final String username = ReqAttr.USERNAME.get(req);
-
-		if (node == null && item == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
-			return;
-		}
-
-		if (node != null && !node.isUserAuth(username)) {
-			ServletCommon.returnDenied(resp, username);
-			return;
-		}
 
 		final String depth = req.getHeader("Depth");
 		if (depth == null) {
@@ -66,14 +66,87 @@ public class WebdavServlet extends HttpServlet {
 			return;
 		}
 
-		resp.setStatus(207);
-		resp.setCharacterEncoding("UTF-8");
-		resp.setContentType("application/xml");
+		if (req.getPathInfo().startsWith("/" + C.SEARCH_PATH_PREFIX)) {
+			searchReq(req, resp, username, depth);
+		}
+		else {
+			dirOrFileReq(req, resp, username, depth);
+		}
+	}
+
+	@SuppressWarnings("resource")
+	private void searchReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
+		final String searchPathPrefix = "/" + C.SEARCH_PATH_PREFIX;
+
+		final PrintWriter w = startXmlResp(resp);
+		final String dirPath = StringHelper.removeSuffix(req.getRequestURI(), "/");
+
+		final String subPath = StringHelper.removePrefix(req.getPathInfo(), searchPathPrefix);
+		if (subPath.length() > 0) {
+			final String query = firstDirFromPath(subPath);
+
+			final String filePath = removePrefixOrEmpty(subPath, query + "/");
+			if (filePath.length() > 0) {
+				// TODO be less lazy.
+				resp.reset();
+				dirOrFileReq(req, resp, username, depth);
+				return;
+			}
+			else {
+				Webdav.appendPropfindDir(w, dirPath, query, System.currentTimeMillis());
+				if ("1".equals(depth)) {
+					final List<ContentItem> results = runQuery(username, query);
+					for (final ContentItem i : results) {
+						Webdav.appendPropfindItem(w, i, i.getId() + "." + i.getFormat().getExt());
+					}
+				}
+			}
+		}
+		else {
+			Webdav.appendPropfindDir(w, dirPath, "search", System.currentTimeMillis());
+		}
+
+		endXmlResp(w);
+	}
+
+	private static String firstDirFromPath(final String path) {
+		final int x = path.indexOf('/');
+		if (x < 0) return path;
+		return path.substring(0, x);
+	}
+
+	private static String removePrefixOrEmpty(String s, String prefix) {
+		if (!s.startsWith(prefix)) return "";
+		return s.substring(prefix.length());
+	}
+
+	private List<ContentItem> runQuery(final String username, final String query) throws IOException {
+		try {
+			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortOrder.FILE.asc());
+			final List<String> ids = search.execute(this.db, MAX_SEARCH_ITEMS, 0);
+			return this.contentTree.getItemsForIds(ids, username);
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
+		}
+	}
+
+	private void dirOrFileReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
+		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
+		final ContentNode node = this.contentTree.getNode(id);
+		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
+		if (node == null && item == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
+			return;
+		}
+		if (node != null && !node.isUserAuth(username)) {
+			ServletCommon.returnDenied(resp, username);
+			return;
+		}
 
 		@SuppressWarnings("resource")
-		final PrintWriter w = resp.getWriter();
-		w.println("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
-		w.println("<D:multistatus xmlns:D=\"DAV:\">");
+		final PrintWriter w = startXmlResp(resp);
 
 		if (node != null) {
 			Webdav.appendPropfindNode(req, username, w, node, false);
@@ -85,6 +158,22 @@ public class WebdavServlet extends HttpServlet {
 		else {
 			Webdav.appendPropfindItem(req, w, item, false);
 		}
+
+		endXmlResp(w);
+	}
+
+	private static PrintWriter startXmlResp(final HttpServletResponse resp) throws IOException {
+		resp.setStatus(207);
+		resp.setCharacterEncoding("UTF-8");
+		resp.setContentType("application/xml");
+
+		final PrintWriter w = resp.getWriter();
+		w.println("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
+		w.println("<D:multistatus xmlns:D=\"DAV:\">");
+		return w;
+	}
+
+	private static void endXmlResp(final PrintWriter w) {
 		w.println("</D:multistatus>");
 	}
 

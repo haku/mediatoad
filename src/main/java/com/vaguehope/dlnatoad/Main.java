@@ -329,7 +329,7 @@ public final class Main {
 		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, thumbnailGenerator, mediaDb, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/search/*");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
@@ -337,12 +337,12 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
-		final Handler webavHandler = makeWebdavHandler(contentTree, args);
+		final Handler webavHandler = makeWebdavHandler(contentTree, mediaDb, args);
 
 		return new WebdavDivertingHandler(webavHandler, servletHandler);
 	}
 
-	private static Handler makeWebdavHandler(final ContentTree contentTree, final Args args) {
+	private static Handler makeWebdavHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
@@ -350,7 +350,7 @@ public final class Main {
 			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
 		}
 
-		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree)), "/*");
+		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree, mediaDb)), "/*");
 		return handler;
 	}
 

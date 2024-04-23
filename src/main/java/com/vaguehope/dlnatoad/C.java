@@ -31,6 +31,7 @@ public interface C {
 	String ITEM_PATH_PREFIX = "i/";
 	String STATIC_FILES_PATH_PREFIX = "w/";
 	String THUMBS_PATH_PREFIX = "t/";
+	String SEARCH_PATH_PREFIX = "search/";
 
 	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
 

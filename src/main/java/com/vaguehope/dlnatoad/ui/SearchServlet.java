@@ -112,6 +112,8 @@ public class SearchServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		// TODO serve relative item for webdav.
+
 		final String query = queryFromReq(req);
 		final String pathPrefix = Strings.isNullOrEmpty(req.getPathInfo()) ? null : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), pathPrefix, query);
