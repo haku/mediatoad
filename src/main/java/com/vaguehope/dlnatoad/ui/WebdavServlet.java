@@ -22,6 +22,7 @@ import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.ui.RequestPaths.SearchPath;
 import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class WebdavServlet extends HttpServlet {
@@ -76,26 +77,21 @@ public class WebdavServlet extends HttpServlet {
 
 	@SuppressWarnings("resource")
 	private void searchReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
-		final String searchPathPrefix = "/" + C.SEARCH_PATH_PREFIX;
-
 		final PrintWriter w = startXmlResp(resp);
 		final String dirPath = StringHelper.removeSuffix(req.getRequestURI(), "/");
 
-		final String subPath = StringHelper.removePrefix(req.getPathInfo(), searchPathPrefix);
-		if (subPath.length() > 0) {
-			final String query = firstDirFromPath(subPath);
-
-			final String filePath = removePrefixOrEmpty(subPath, query + "/");
-			if (filePath.length() > 0) {
+		final SearchPath searchPath = RequestPaths.parseSearchPath(req.getPathInfo());
+		if (searchPath.query.length() > 0) {
+			if (searchPath.file.length() > 0) {
 				// TODO be less lazy.
 				resp.reset();
 				dirOrFileReq(req, resp, username, depth);
 				return;
 			}
 			else {
-				Webdav.appendPropfindDir(w, dirPath, query, System.currentTimeMillis());
+				Webdav.appendPropfindDir(w, dirPath, searchPath.query, System.currentTimeMillis());
 				if ("1".equals(depth)) {
-					final List<ContentItem> results = runQuery(username, query);
+					final List<ContentItem> results = runQuery(username, searchPath.query);
 					for (final ContentItem i : results) {
 						Webdav.appendPropfindItem(w, i, i.getId() + "." + i.getFormat().getExt());
 					}
@@ -107,17 +103,6 @@ public class WebdavServlet extends HttpServlet {
 		}
 
 		endXmlResp(w);
-	}
-
-	private static String firstDirFromPath(final String path) {
-		final int x = path.indexOf('/');
-		if (x < 0) return path;
-		return path.substring(0, x);
-	}
-
-	private static String removePrefixOrEmpty(String s, String prefix) {
-		if (!s.startsWith(prefix)) return "";
-		return s.substring(prefix.length());
 	}
 
 	private List<ContentItem> runQuery(final String username, final String query) throws IOException {

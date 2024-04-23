@@ -56,6 +56,7 @@ import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
+import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaFutureStub;
@@ -64,6 +65,7 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 import com.vaguehope.dlnatoad.rpc.client.RemoteInstance;
 import com.vaguehope.dlnatoad.rpc.client.RpcClient;
+import com.vaguehope.dlnatoad.ui.RequestPaths.SearchPath;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.ui.templates.SearchResultsScope;
@@ -85,6 +87,7 @@ public class SearchServlet extends HttpServlet {
 
 	private final ServletCommon servletCommon;
 	private final ContentTree contentTree;
+	private final ContentServlet contentServlet;
 	private final MediaDb mediaDb;
 	private final DbCache dbCache;
 	private final UpnpService upnpService;
@@ -93,13 +96,14 @@ public class SearchServlet extends HttpServlet {
 	private final SearchEngine searchEngine;
 	private final Supplier<Mustache> resultsTemplate;
 
-	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator) {
-		this(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator, new SearchEngine());
+	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, ContentServlet contentServlet, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator) {
+		this(servletCommon, contentTree, contentServlet, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator, new SearchEngine());
 	}
 
-	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator, final SearchEngine searchEngine) {
+	protected SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, ContentServlet contentServlet, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator, final SearchEngine searchEngine) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;
+		this.contentServlet = contentServlet;
 		this.mediaDb = mediaDb;
 		this.dbCache = dbCache;
 		this.rpcClient = rpcClient;
@@ -112,9 +116,13 @@ public class SearchServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		// TODO serve relative item for webdav.
+		final SearchPath searchPath = RequestPaths.parseSearchPath(req.getPathInfo());
+		if (searchPath.file.length() > 0) {
+			this.contentServlet.service(req, resp);
+			return;
+		}
 
-		final String query = queryFromReq(req);
+		final String query = queryFromReq(req, searchPath);
 		final String pathPrefix = Strings.isNullOrEmpty(req.getPathInfo()) ? null : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), pathPrefix, query);
 		final StringBuilder debugFooter = new StringBuilder();
@@ -196,10 +204,10 @@ public class SearchServlet extends HttpServlet {
 		}
 	}
 
-	private static String queryFromReq(final HttpServletRequest req) {
+	private static String queryFromReq(final HttpServletRequest req, final SearchPath searchPath) {
 		final String p = StringUtils.trimToNull(req.getParameter(PARAM_QUERY));
 		if (p != null) return p;
-		return ServletCommon.fileFromPath(req.getPathInfo());
+		return searchPath.query;
 	}
 
 	private void appendItems(

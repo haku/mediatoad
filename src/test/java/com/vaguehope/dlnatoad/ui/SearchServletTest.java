@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -25,6 +26,7 @@ import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
+import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
@@ -36,6 +38,7 @@ public class SearchServletTest {
 
 	private ServletCommon servletCommon;
 	private ContentTree contentTree;
+	private ContentServlet contentServlet;
 	private MockMediaMetadataStore mockMediaMetadataStore;
 	private MediaDb db;
 	private DbCache dbCache;
@@ -54,13 +57,14 @@ public class SearchServletTest {
 		this.servletCommon = new ServletCommon(this.contentTree, "hostName", new ContentServingHistory(), true, null);
 
 		this.contentTree = new ContentTree();
+		this.contentServlet = mock(ContentServlet.class);
 		this.mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
 		this.db = this.mockMediaMetadataStore.getMediaDb();
 
 		this.dbCache = mock(DbCache.class);
 		when(this.dbCache.searchTopTags(anySet(), anyString())).thenReturn(Collections.emptyList());
 
-		this.undertest = new SearchServlet(this.servletCommon, this.contentTree, this.db, this.dbCache, this.upnpService, this.rpcClient, this.thumbnailGenerator, this.searchEngine);
+		this.undertest = new SearchServlet(this.servletCommon, this.contentTree, this.contentServlet, this.db, this.dbCache, this.upnpService, this.rpcClient, this.thumbnailGenerator, this.searchEngine);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -92,6 +96,19 @@ public class SearchServletTest {
 		assertThat(this.resp.getContentAsString(), containsString("<h3>Local items: 1</h3>"));
 		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
 		assertPageContainsItem(i0, "../");
+	}
+
+	@Test
+	public void itServesSearchResultItems() throws Exception {
+		final ContentItem i = mockItem("thing 0", "foo");
+
+		final String pathInfo = "/search/t=foo/" + i.getId() + "." + i.getFormat().getExt();
+		this.req.setRequestURI(pathInfo);
+		this.req.setPathInfo(pathInfo);
+
+		this.undertest.doGet(this.req, this.resp);
+
+		verify(this.contentServlet).service(this.req, this.resp);
 	}
 
 	private void assertPageContainsItem(final ContentItem i, final String pathPrefix) {

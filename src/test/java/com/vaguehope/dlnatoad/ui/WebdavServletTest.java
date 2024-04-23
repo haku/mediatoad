@@ -167,6 +167,20 @@ public class WebdavServletTest {
 	}
 
 	@Test
+	public void itHandlesSearchWithNoQuery() throws Exception {
+		this.req.setMethod("PROPFIND");
+		this.req.setRequestURI("/search/");
+		this.req.setPathInfo("/search/");
+		this.req.addHeader("Depth", "0");
+
+		this.undertest.service(this.req, this.resp);
+
+		assertThat(this.resp.getStatus(), equalTo(207));
+		assertThat(this.resp.getContentType(), equalTo("application/xml"));
+		assertThat(this.resp.getContentAsString(), containsString("<D:href>/search</D:href>"));
+	}
+
+	@Test
 	public void itHandlesSearchDepth0() throws Exception {
 		this.req.setMethod("PROPFIND");
 		this.req.setRequestURI("/search/t=foo");
