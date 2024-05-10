@@ -87,12 +87,12 @@ public class MediaDb {
 		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
 
-		if (!tableExists("dirprefs")) {
-			executeSql("CREATE TABLE dirprefs ("
-					+ "path STRING NOT NULL, "
+		if (!tableExists("nodeprefs")) {
+			executeSql("CREATE TABLE nodeprefs ("
+					+ "id STRING NOT NULL, "
 					+ "key STRING NOT NULL, "
 					+ "value STRING NOT NULL, "
-					+ "UNIQUE(path, key)"
+					+ "UNIQUE(id, key)"
 					+ ");");
 		}
 	}
@@ -361,11 +361,23 @@ public class MediaDb {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// prefs:
 
-	public Map<String, String> getDirPrefs(final File dir) throws SQLException {
+	public Map<String, String> getNodePrefs(final String nodeId) throws SQLException {
 		final Map<String, String> ret = new HashMap<>();
-		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT key, value FROM dirprefs WHERE path=?;")) {
-			st.setString(1, dir.getAbsolutePath());
-			st.setMaxRows(2);
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT key, value FROM nodeprefs WHERE id=?;")) {
+			st.setString(1, nodeId);
+			try (final ResultSet rs = st.executeQuery()) {
+				while (rs.next()) {
+					ret.put(rs.getString(1), rs.getString(2));
+				}
+				return ret;
+			}
+		}
+	}
+
+	public Map<String, String> getAllNodePref(final String key) throws SQLException {
+		final Map<String, String> ret = new HashMap<>();
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT id, value FROM nodeprefs WHERE key=?;")) {
+			st.setString(1, key);
 			try (final ResultSet rs = st.executeQuery()) {
 				while (rs.next()) {
 					ret.put(rs.getString(1), rs.getString(2));

@@ -38,7 +38,10 @@ import com.google.common.collect.ImmutableMap;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
+import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
+import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -145,6 +148,30 @@ public class DirServletTest {
 		assertEquals(Arrays.asList("i/id4", "i/id1", "i/id5", "i/id2", "i/id3"), actualIds);
 
 		assertThat(page, containsString("<a href=\"../i/id1?node=dir0&sort=modified\">"));
+	}
+
+	@Test
+	public void itShowsFavourites() throws Exception {
+		final MediaDb db = new InMemoryMediaDb();
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, db, null);
+
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
+
+		try (final WritableMediaDb w = db.getWritable()) {
+			w.setNodePref(subDir.getId(), DirServlet.PREF_KEY_FAVOURITE, Boolean.TRUE.toString());
+		}
+
+		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals(200, this.resp.getStatus());
+
+		final String page = this.resp.getContentAsString();
+
+		assertThat(page, containsString(
+				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
+						+ subDir.getTitle() + "</a></li>"));
 	}
 
 	@Test

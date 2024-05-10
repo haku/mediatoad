@@ -346,19 +346,29 @@ public class MediaDbTest {
 
 	@Test
 	public void itSetsAndReadsPrefs() throws Exception {
-		final File dir = new File("/some/media path/to/somewhere");
-		assertThat(this.undertest.getDirPrefs(dir).entrySet(), hasSize(0));
+		final String id1 = "486023200074112812592441620153605687291657744882-somewhere";
+		final String id2 = "457356430841943070727738514685648663226656335856-somewhere_else";
+
+		assertThat(this.undertest.getNodePrefs(id1).entrySet(), hasSize(0));
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setDirPref(dir, "my_pref_1", "true");
-			w.setDirPref(dir, "my_pref_2", "false");
+			w.setNodePref(id1, "my_pref_1", "true");
+			w.setNodePref(id2, "my_pref_1", "true");
+			w.setNodePref(id1, "my_pref_2", "false");
 		}
-		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "false"), this.undertest.getDirPrefs(dir));
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "false"), this.undertest.getNodePrefs(id1));
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			w.setDirPref(dir, "my_pref_2", "true");
+			w.setNodePref(id1, "my_pref_2", "true");
 		}
-		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "true"), this.undertest.getDirPrefs(dir));
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "true"), this.undertest.getNodePrefs(id1));
+
+		assertEquals(ImmutableMap.of(id1, "true", id2, "true"), this.undertest.getAllNodePref("my_pref_1"));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setNodePref(id1, "my_pref_1", null);
+		}
+		assertEquals(ImmutableMap.of(id2, "true"), this.undertest.getAllNodePref("my_pref_1"));
 	}
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {

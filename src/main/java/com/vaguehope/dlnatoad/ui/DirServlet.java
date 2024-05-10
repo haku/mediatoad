@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.zip.Deflater;
@@ -48,6 +50,7 @@ public class DirServlet extends HttpServlet {
 	static final String PARAM_SORT = "sort";
 	private static final int ITEMS_PER_PAGE = SearchServlet.MAX_RESULTS;
 
+	static final String PREF_KEY_FAVOURITE = "favourite";
 	private static final String PREF_KEY_SORT_MODIFIED = "sort_by_modified";
 	private static final String PREF_KEY_VIDEO_THUMBS = "video_thumbs";
 
@@ -114,13 +117,33 @@ public class DirServlet extends HttpServlet {
 		final Integer offset = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 		if (offset == null) return;
 
-		final Map<String, String> dirPrefs = readPrefs(node);
-		final boolean sortModified = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_SORT_MODIFIED));
-		final boolean videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
-
 		// If proxied from IndexServlet then paths are relative to root.
 		final String pathPrefix = req.getAttribute(PROXIED_FROM_INDEX_ATTR) != null ? "" : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
+
+		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
+		final ResultGroupScope favouritesScope;
+		final boolean favourite;
+		final boolean sortModified;
+		final boolean videoThumbs;
+		if (isRoot) {
+			favouritesScope = new ResultGroupScope("Favourites", null, null, pageScope);
+			final List<ContentNode> favourites = readFavourites(username);
+			appendNodes(favouritesScope, favourites);
+
+			favourite = false;
+			sortModified = false;
+			videoThumbs = false;
+		}
+		else {
+			final Map<String, String> dirPrefs = readNodePrefs(node);
+			favourite = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_FAVOURITE));
+			sortModified = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_SORT_MODIFIED));
+			videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
+
+			favouritesScope = null;
+		}
+
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
 		final long nodeTotalFileLength = node.getTotalFileLength();
@@ -147,13 +170,13 @@ public class DirServlet extends HttpServlet {
 		}
 
 		final ResultGroupScope resultScope = new ResultGroupScope(listTitle, null, nextPagePath, pageScope);
-
-		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
 		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
+				favouritesScope,
 				resultScope,
 				isRoot ? null : node.getParentId(),
 				!isRoot,
 				this.db != null && ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req),
+				favourite,
 				sortModified,
 				videoThumbs,
 				node.getId(),
@@ -171,7 +194,7 @@ public class DirServlet extends HttpServlet {
 		maybeAppendTopTags(resultScope, node, username);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
-		if (ContentGroup.ROOT.getId().equals(node.getId())) {
+		if (isRoot) {
 			pageScope.setDebugfooter(this.servletCommon.debugFooter());
 		}
 
@@ -194,10 +217,10 @@ public class DirServlet extends HttpServlet {
 		return listTitle;
 	}
 
-	private static void appendNodes(final ResultGroupScope resultScope, final List<ContentNode> nodesUserHasAuth) {
+	private static void appendNodes(final ResultGroupScope scope, final List<ContentNode> nodes) {
 		// TODO sort if sort mode set
-		for (final ContentNode n : nodesUserHasAuth) {
-			resultScope.addLocalItem(C.DIR_PATH_PREFIX + n.getId(), n.getTitle());
+		for (final ContentNode n : nodes) {
+			scope.addLocalItem(C.DIR_PATH_PREFIX + n.getId(), n.getTitle());
 		}
 	}
 
@@ -268,10 +291,32 @@ public class DirServlet extends HttpServlet {
 		resp.flushBuffer();
 	}
 
-	private Map<String, String> readPrefs(final ContentNode node) throws IOException {
+	private List<ContentNode> readFavourites(final String username) throws IOException {
+		if (this.db == null) return Collections.emptyList();
+
+		final Map<String, String> pathToValue;
+		try {
+			pathToValue = this.db.getAllNodePref(PREF_KEY_FAVOURITE);
+		}
+		catch (final SQLException e) {
+			throw new IOException(e);
+		}
+
+		final List<ContentNode> ret = new ArrayList<>();
+		for (final Entry<String, String> e : pathToValue.entrySet()) {
+			if (!Boolean.parseBoolean(e.getValue())) continue;
+
+			final ContentNode node = this.contentTree.getNode(e.getKey());
+			if (node == null || !node.isUserAuth(username)) continue;
+			ret.add(node);
+		}
+		return ret;
+	}
+
+	private Map<String, String> readNodePrefs(final ContentNode node) throws IOException {
 		if (node.getFile() == null || this.db == null) return Collections.emptyMap();
 		try {
-			return this.db.getDirPrefs(node.getFile());
+			return this.db.getNodePrefs(node.getId());
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);
@@ -279,17 +324,19 @@ public class DirServlet extends HttpServlet {
 	}
 
 	private void setPrefs(final ContentNode node, final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		if (!ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req)) {
+		if (!ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req) || node.getFile() == null) {
 			ServletCommon.returnForbidden(resp);
 			return;
 		}
 
+		final Boolean favourite = Boolean.valueOf(req.getParameter(PREF_KEY_FAVOURITE));
 		final Boolean sortModified = Boolean.valueOf(req.getParameter(PREF_KEY_SORT_MODIFIED));
 		final Boolean videoThumbs = Boolean.valueOf(req.getParameter(PREF_KEY_VIDEO_THUMBS));
 
 		try (final WritableMediaDb w = this.db.getWritable()) {
-			w.setDirPref(node.getFile(), PREF_KEY_SORT_MODIFIED, sortModified.toString());
-			w.setDirPref(node.getFile(), PREF_KEY_VIDEO_THUMBS, videoThumbs.toString());
+			w.setNodePref(node.getId(), PREF_KEY_FAVOURITE, favourite.booleanValue() ? favourite.toString() : null);
+			w.setNodePref(node.getId(), PREF_KEY_SORT_MODIFIED, sortModified.booleanValue() ? sortModified.toString() : null);
+			w.setNodePref(node.getId(), PREF_KEY_VIDEO_THUMBS, videoThumbs.booleanValue() ? videoThumbs.toString() : null);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);

@@ -8,6 +8,12 @@
 	{{/is_sort_modified}}
 
 	<ul>
+		{{#favourites.list_items}}
+		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a></li>
+		{{/favourites.list_items}}
+	</ul>
+
+	<ul>
 		{{#results.list_items}}
 		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
 		{{/results.list_items}}
@@ -34,6 +40,10 @@
 	<div class="prefs">
 		<form action="" method="POST">
 			<input type="hidden" name="action" value="setprefs">
+			<span class="pref">
+				<label for="favourite">favourite</label>
+				<input type="checkbox" name="favourite" value="true" id="favourite" {{#is_favourite}}checked=checked{{/is_favourite}}>
+			</span>
 			<span class="pref">
 				<label for="sort_by_modified">sort by modified</label>
 				<input type="checkbox" name="sort_by_modified" value="true" id="sort_by_modified" {{#is_sort_modified}}checked=checked{{/is_sort_modified}}>
