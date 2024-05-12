@@ -139,14 +139,18 @@ public class MediaIndexTest {
 	}
 
 	@Test
-	public void itSeparatesVideosAndImages() throws Exception {
+	public void itSeparatesMediaType() throws Exception {
 		final List<File> expectedVideos = mockFiles(3, ".mkv");
 		final List<File> expectedImages = mockFiles(5, ".jpg");
+		final List<File> expectedDocs = mockFiles(5, ".pdf");
 
 		for (final File file : expectedVideos) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 		for (final File file : expectedImages) {
+			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
+		}
+		for (final File file : expectedDocs) {
 			this.undertest.fileFound(this.tmp.getRoot(), file, null, null);
 		}
 		waitForEmptyQueue();
@@ -160,6 +164,11 @@ public class MediaIndexTest {
 		assertEquals(1, imageDirs.size());
 		final ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
 		assertNodeWithItems(this.tmp.getRoot(), expectedImages, imgDirNode);
+
+		final List<ContentNode> docDirs = this.contentTree.getNode(ContentGroup.DOCUMENT.getId()).getCopyOfNodes();
+		assertEquals(1, docDirs.size());
+		final ContentNode docDirNode = this.contentTree.getNode(docDirs.get(0).getId());
+		assertNodeWithItems(this.tmp.getRoot(), expectedDocs, docDirNode);
 	}
 
 	@Test

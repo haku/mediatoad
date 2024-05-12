@@ -37,6 +37,7 @@ public class MediaIndex implements FileListener {
 	private final ContentNode videoContainer;
 	private final ContentNode imageContainer;
 	private final ContentNode audioContainer;
+	private final ContentNode docContainer;
 
 	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) throws IOException {
 		this.contentTree = contentTree;
@@ -49,11 +50,13 @@ public class MediaIndex implements FileListener {
 				this.videoContainer = contentTree.getRootNode();
 				this.imageContainer = contentTree.getRootNode();
 				this.audioContainer = contentTree.getRootNode();
+				this.docContainer = contentTree.getRootNode();
 				break;
 			case FLATTERN:
 				this.videoContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.VIDEO);
 				this.imageContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.IMAGE);
 				this.audioContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.AUDIO);
+				this.docContainer = makeFormatContainerOnTree(contentTree.getRootNode(), ContentGroup.DOCUMENT);
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown mode.");
@@ -149,6 +152,7 @@ public class MediaIndex implements FileListener {
 			case AUDIO:
 			case IMAGE:
 			case VIDEO:
+			case DOCUMENT:
 				putFileToContentTree(rootDir, file, format, onComplete);
 				break;
 			case SUBTITLES:
@@ -176,6 +180,9 @@ public class MediaIndex implements FileListener {
 				break;
 			case AUDIO:
 				formatContainer = this.audioContainer;
+				break;
+			case DOCUMENT:
+				formatContainer = this.docContainer;
 				break;
 			default:
 				throw new IllegalStateException();
