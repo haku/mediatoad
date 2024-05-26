@@ -21,7 +21,6 @@ import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 
 public class AutocompleteServlet extends HttpServlet {
 
-	private static final String CONTENT_TYPE_JSON = "text/json;charset=utf-8";
 	private static final long serialVersionUID = 7357804711012837077L;
 
 	private final TagAutocompleter tagAutocompleter;
@@ -70,7 +69,7 @@ public class AutocompleteServlet extends HttpServlet {
 			return;
 		}
 
-		resp.setContentType(CONTENT_TYPE_JSON);
+		resp.setContentType(ServletCommon.CONTENT_TYPE_JSON);
 		this.gson.toJson(tags, resp.getWriter());
 	}
 

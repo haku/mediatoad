@@ -71,6 +71,12 @@ public class TagAutocompleter {
 		});
 	}
 
+	public void changeTagCount(final String tag, final int delta) {
+		this.schExSvc.execute(() -> {
+			internalAddOrIncrementTag(tag, delta);
+		});
+	}
+
 	public List<TagFrequency> suggestTags(final String input) {
 		return binarySearch(this.tagsArr, input);
 	}

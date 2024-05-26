@@ -31,6 +31,8 @@ import com.vaguehope.dlnatoad.util.StringHelper;
 
 public class ServletCommon {
 
+	public static final String CONTENT_TYPE_JSON = "text/json;charset=utf-8";
+
 	private final ContentTree contentTree;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;

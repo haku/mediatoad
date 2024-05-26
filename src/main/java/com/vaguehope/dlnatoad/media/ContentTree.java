@@ -99,7 +99,7 @@ public class ContentTree {
 		maybeAddToRecent(item);
 	}
 
-	public List<ContentItem> getItemsForIds(final List<String> ids, final String username) {
+	public List<ContentItem> getItemsForIds(final Collection<String> ids, final String username) {
 		final List<ContentItem> ret = new ArrayList<>();
 		for (final String id : ids) {
 			final ContentItem item = getItem(id);

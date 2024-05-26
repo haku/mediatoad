@@ -67,6 +67,7 @@ import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
+import com.vaguehope.dlnatoad.ui.TagsServlet;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
 import com.vaguehope.dlnatoad.ui.WebdavDivertingHandler;
@@ -334,6 +335,7 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb, tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new TagsServlet(contentTree, mediaDb, tagAutocompleter)), "/" + C.TAGS_PATH);
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
