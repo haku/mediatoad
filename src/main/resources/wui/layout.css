@@ -1,3 +1,8 @@
+input, button {
+  min-height: 2em;
+  vertical-align: middle;
+}
+
 .link_row {
   margin: 0 0.5em;
   display: flex;
@@ -36,6 +41,67 @@
   top: 1em;
   border-radius: 0.5em;
   padding: 1em;
+  display: flex;
+  flex-direction: column;
+}
+#tag_editor {
+  position: fixed;
+  z-index: 100;
+  top: 5%;
+  left: 50%;
+  width: 18em;
+  max-height: 90%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-left: -9em; /* width/2 */
+  padding: 0;
+  text-align: center;
+  border-radius: 0.5em;
+}
+#tag_editor .title_holder {
+  position: sticky;
+  top: 0;
+  left: 0;
+  margin: 0 0 1em 0;
+  width: 100%;
+  padding: 0.5em 0;
+}
+#tag_editor .title {
+  margin: 0;
+}
+#tag_editor .content {
+  padding: 0 1em;
+}
+#tag_editor .newtag {
+  width: 18em;
+}
+#tag_editor .tagrow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0.5em 0;
+  min-height: 3em;
+}
+#tag_editor .tagrow .label {
+  flex-grow: 2;
+  margin: 0.5em;
+}
+#tag_editor .tagrow .label .tag {
+  margin: 0 0 0.1em 0;
+  word-wrap: anywhere;
+}
+#tag_editor .tagrow .label .cls {
+  margin: 0.1em 0 0 0;
+  font-size: 50%;
+}
+#tag_editor .tagrow .count {
+  flex-grow: 0;
+  min-width: 3em;
+}
+#tag_editor .tagrow .rmbtn {
+  flex-grow: 0;
+  min-width: 3em;
+  min-height: 3em;
 }
 
 .nextpage {
@@ -66,6 +132,9 @@
 .prefs .pref {
   display: block;
   margin: 0.5em;
+}
+.prefs .pref input {
+  min-height: 1em;
 }
 
 .mainimage {
@@ -101,4 +170,19 @@
   font-family: monospace;
   white-space: pre-wrap;
   overflow: scroll;
+}
+
+#popup-obfuscator {
+  background-color: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 4;
+  visibility: hidden;
+}
+#popup-obfuscator.is-visible {
+  background-color: rgba(0,0,0,.5);
+  visibility: visible;
 }

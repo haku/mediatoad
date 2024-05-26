@@ -13,14 +13,7 @@
 	{{#thumbs}}
 	<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
 	{{/thumbs}}
-
-	{{#db_enabled}}
-	<div id="selection_info" style="display:none;">
-		<p id="selection_msg"></p>
-		<button id="selection_edit_tags">Edit Tags</button>
-	</div>
-	<script src="{{path_prefix}}w/multiselect.js"></script>
-	{{/db_enabled}}
+	{{>multiselect}}
 
 	{{#next_page_path}}<a class="nextpage" href="{{{next_page_path}}}">Next Page</a>{{/next_page_path}}
 
@@ -31,5 +24,6 @@
 	{{/tags}}
 	{{/result_groups}}
 
+	{{#db_enabled}}<script src="{{path_prefix}}w/multiselect.js"></script>{{/db_enabled}}
 	{{/body}}
 {{/page}}

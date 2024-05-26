@@ -25,6 +25,12 @@ input, button {
 #selection_info {
   background-color: #103c32;
 }
+#tag_editor {
+  background-color: #103c32;
+}
+#tag_editor .title_holder {
+  background-color: #071925;
+}
 
 .prefs form {
   border: #69c6b0 0.1em solid;
