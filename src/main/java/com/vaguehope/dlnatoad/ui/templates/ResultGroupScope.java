@@ -40,8 +40,8 @@ public class ResultGroupScope {
 		addRemoteItem(prefixPath(path), title, size, duration);
 	}
 
-	public void addLocalThumb(final String item_path, final String thumb_path, final String title, final String classes) {
-		this.thumbs.add(new Thumb(prefixPath(item_path), prefixPath(thumb_path), title, shouldSetAutofucus(), classes));
+	public void addLocalThumb(final String item_id, final String item_path, final String thumb_path, final String title, final String classes) {
+		this.thumbs.add(new Thumb(item_id, prefixPath(item_path), prefixPath(thumb_path), title, shouldSetAutofucus(), classes));
 	}
 
 	public void addRemoteItem(final String path, final String title, final String size, final String duration) {
@@ -56,6 +56,7 @@ public class ResultGroupScope {
 
 		if (thumbnailGenerator != null && thumbnailGenerator.supported(i.getFormat().getContentGroup(), videoThumbs)) {
 			addLocalThumb(
+					i.getId(),
 					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
 					C.THUMBS_PATH_PREFIX + i.getId(),
 					i.getTitle(),
@@ -106,13 +107,15 @@ public class ResultGroupScope {
 	}
 
 	public static class Thumb {
+		public final String item_id;
 		public final String item_path;
 		public final String thumb_path;
 		public final String title;
 		public final boolean autofocus;
 		public final String classes;
 
-		Thumb(final String item_path, final String thumb_path, final String title, final boolean autofocus, final String classes) {
+		Thumb(final String item_id, final String item_path, final String thumb_path, final String title, final boolean autofocus, final String classes) {
+			this.item_id = item_id;
 			this.item_path = item_path;
 			this.thumb_path = thumb_path;
 			this.title = title;

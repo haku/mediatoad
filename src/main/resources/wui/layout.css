@@ -8,12 +8,13 @@
 .thumbnail {
   display: inline-flex;
   position: relative;
-  margin: 0.5em 0.5em 0 0.5em;
+  margin: 0.4em 0.4em 0 0.4em;
   justify-content: center;
   align-items: center;
   vertical-align: middle;
   width: 6em;
   height: 5em;
+  border: 2px solid transparent;
 }
 .thumbnail.video:before {
   content: '▶';
@@ -26,6 +27,15 @@
 .thumbnail img {
   max-width: 6em;
   max-height: 5em;
+  vertical-align: middle;
+}
+
+#selection_info {
+  position: fixed;
+  right: 1em;
+  top: 1em;
+  border-radius: 0.5em;
+  padding: 1em;
 }
 
 .nextpage {

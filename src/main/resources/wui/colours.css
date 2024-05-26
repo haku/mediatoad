@@ -5,7 +5,7 @@ body {
 a {
   color: #f3b1cb;
 }
-input {
+input, button {
   padding: 0.2em 0.5em;
   border-radius: 0.2em;
   background: #071925;
@@ -16,6 +16,14 @@ input {
 .thumbnail.video:before {
   color: #000;
   background: #f3b1cb;
+}
+.thumbnail.selected {
+  border-color: #69c6b0;
+  background-color: #103c32;
+}
+
+#selection_info {
+  background-color: #103c32;
 }
 
 .prefs form {
