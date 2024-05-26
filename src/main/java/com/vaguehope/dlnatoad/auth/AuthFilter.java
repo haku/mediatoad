@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.Users.User;
-import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
 public class AuthFilter implements Filter {
@@ -47,13 +46,11 @@ public class AuthFilter implements Filter {
 
 	private final Users users;
 	private final AuthTokens authTokens;
-	private final ContentTree contentTree;
 	private final boolean printAccessLog;
 
-	public AuthFilter(final Users users, final AuthTokens authTokens, final ContentTree contentTree, final boolean printAccessLog) {
+	public AuthFilter(final Users users, final AuthTokens authTokens, final boolean printAccessLog) {
 		this.users = users;
 		this.authTokens = authTokens;
-		this.contentTree = contentTree;
 		this.printAccessLog = printAccessLog;
 	}
 

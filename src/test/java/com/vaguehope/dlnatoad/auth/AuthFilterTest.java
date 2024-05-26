@@ -28,13 +28,11 @@ import org.teleal.common.mock.http.MockHttpServletRequest;
 import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.vaguehope.dlnatoad.auth.Users.User;
-import com.vaguehope.dlnatoad.media.ContentTree;
 
 public class AuthFilterTest {
 
 	private Users users;
 	private AuthTokens authTokens;
-	private ContentTree contentTree;
 	private AuthFilter undertest;
 
 	private MockHttpServletRequest req;
@@ -45,8 +43,7 @@ public class AuthFilterTest {
 	public void before() throws Exception {
 		this.users = mock(Users.class);
 		this.authTokens = mock(AuthTokens.class);
-		this.contentTree = mock(ContentTree.class);
-		this.undertest = new AuthFilter(this.users, this.authTokens, this.contentTree, true);
+		this.undertest = new AuthFilter(this.users, this.authTokens, true);
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 		this.chain = mock(FilterChain.class);
@@ -62,26 +59,24 @@ public class AuthFilterTest {
 		assertEquals(405, this.resp.getStatus());
 
 		verifyNoInteractions(this.chain);
-		verifyNoInteractions(this.contentTree);
 	}
 
 // Auth Disabled:
 
 	@Test
 	public void itAllowsGetWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, this.contentTree, true);
+		this.undertest = new AuthFilter(null, this.authTokens, true);
 		this.req.setMethod("GET");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
 		verify(this.chain).doFilter(this.req, this.resp);
-		verifyNoInteractions(this.contentTree);
 	}
 
 	@Test
 	public void itBlocksPostWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, this.contentTree, true);
+		this.undertest = new AuthFilter(null, this.authTokens, true);
 		this.req.setMethod("POST");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
@@ -89,7 +84,6 @@ public class AuthFilterTest {
 		assertEquals(405, this.resp.getStatus());
 		assertEquals("POST requires --userfile.\n", this.resp.getContentAsString());
 		verifyNoInteractions(this.chain);
-		verifyNoInteractions(this.contentTree);
 	}
 
 // Auth Enabled, Not Logged In:
@@ -103,7 +97,6 @@ public class AuthFilterTest {
 
 		assertEquals(200, this.resp.getStatus());
 		verify(this.chain).doFilter(this.req, this.resp);
-		verifyNoInteractions(this.contentTree);
 	}
 
 	@Test
@@ -127,7 +120,6 @@ public class AuthFilterTest {
 		assertEquals(200, this.resp.getStatus());
 		assertNull(ReqAttr.USERNAME.get(this.req));
 		verify(this.chain).doFilter(this.req, this.resp);
-		verifyNoInteractions(this.contentTree);
 	}
 
 	@Test
@@ -149,7 +141,6 @@ public class AuthFilterTest {
 		assertEquals("", cookie.getValue());
 
 		verify(this.chain).doFilter(this.req, this.resp);
-		verifyNoInteractions(this.contentTree);
 	}
 
 // Auth Enabled, Prompt For Login:

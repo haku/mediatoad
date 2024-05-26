@@ -315,7 +315,7 @@ public final class Main {
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
-		final AuthFilter authFilter = new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog());
+		final AuthFilter authFilter = new AuthFilter(users, authTokens, args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
