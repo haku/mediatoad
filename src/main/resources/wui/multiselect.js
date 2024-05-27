@@ -142,6 +142,7 @@ PopupHelper = {};
     });
     fetch(req).then(resp => {
       if (resp.status === 200) {
+        tagEditorNewTag.value = tag;
         resp.json().then(j => showTagsInEditor(item_ids, j));
         setTagEditorTitle();
       }
