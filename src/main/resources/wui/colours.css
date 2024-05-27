@@ -21,6 +21,15 @@ input, button {
   border-color: #69c6b0;
   background-color: #103c32;
 }
+.thumbnail.selected:before {
+  position: absolute;
+  display: block;
+  content: '';
+  border: 2px solid #69c6b0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 #selection_info {
   background-color: #103c32;
