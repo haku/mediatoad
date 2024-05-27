@@ -75,6 +75,9 @@ input, button {
 #tag_editor .newtag {
   width: 18em;
 }
+#tag_editor .tags {
+   min-height: 1em;
+}
 #tag_editor .tagrow {
   display: flex;
   flex-direction: row;
