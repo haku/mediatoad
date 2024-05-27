@@ -108,8 +108,13 @@ PopupHelper = {};
     onSelectionChange();
   };
 
+  const tagsPath = `${pathPrefix()}tags`;
+
   const setTagEditorTitle = (msg) => {
     if (msg) {
+      if (Response.prototype.isPrototypeOf(msg)) {
+        msg = 'failed: ' + msg.status + ' ' + msg.statusText;
+      }
       tagEditorTitle.innerText = msg;
     }
     else {
@@ -125,7 +130,7 @@ PopupHelper = {};
     console.log('remove', item_ids, tag, cls);
 
     setTagEditorTitle('Removing tag...');
-    const req = new Request('../tags', {
+    const req = new Request(tagsPath, {
       method: 'POST',
       cache: 'no-store',
       body: JSON.stringify({
@@ -141,7 +146,7 @@ PopupHelper = {};
         setTagEditorTitle();
       }
       else {
-        setTagEditorTitle('failed: ' + resp);
+        setTagEditorTitle(resp);
       }
     });
   };
@@ -193,7 +198,7 @@ PopupHelper = {};
     const item_ids = selectedItemIds();
 
     setTagEditorTitle('Adding tag...');
-    const req = new Request('../tags', {
+    const req = new Request(tagsPath, {
       method: 'POST',
       cache: 'no-store',
       body: JSON.stringify({
@@ -209,7 +214,7 @@ PopupHelper = {};
         setTagEditorTitle();
       }
       else {
-        setTagEditorTitle('failed: ' + resp);
+        setTagEditorTitle(resp);
       }
     });
   };
@@ -227,7 +232,7 @@ PopupHelper = {};
     tagEditorTags.innerHTML = '';
     PopupHelper.showPopup(tagEditor);
 
-    const req = new Request('../tags', {
+    const req = new Request(tagsPath, {
       method: 'POST',
       cache: 'no-store',
       body: JSON.stringify({
@@ -241,7 +246,7 @@ PopupHelper = {};
         setTagEditorTitle();
       }
       else {
-        setTagEditorTitle('failed: ' + resp);
+        setTagEditorTitle(resp);
       }
     });
   };
