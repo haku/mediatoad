@@ -25,6 +25,14 @@ const addTagAc = new autoComplete({
       item.innerHTML = `<span>${data.match}</span><span>(${data.value.count})</span>`;
     },
   },
+  searchEngine: (query, record) => {
+    const q = removeMatchOpertor(query);
+    const x = record.indexOf(q);
+    if (x >= 0) {
+        record = record.replace(q, `<mark>${q}</mark>`);
+    }
+    return record;
+  },
   events: {
     input: {
       keydown: (event) => {
