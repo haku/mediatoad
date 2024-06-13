@@ -129,14 +129,19 @@ public class TagAutocompleterTest {
 	}
 
 	@Test
-	public void itSuggestsTagMatchesBlåhaj() throws Exception {
+	public void itSuggestsTagMatchesWithUpperCaseAndAccents() throws Exception {
 		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			b.fileWithTags("bar");
+			b.fileWithTags("bat");
+			b.fileWithTags("foo");
 			b.fileWithTags("Blåhaj");
 		}
 		this.undertest.generateIndex();
 
 		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Blå"));
 		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Bla"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("bla"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("bl"));
 
 		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("låh"));
 		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("lah"));

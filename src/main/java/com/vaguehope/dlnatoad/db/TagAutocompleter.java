@@ -86,21 +86,29 @@ public class TagAutocompleter {
 		return binarySearch(this.fragmentsArr, input);
 	}
 
+	/**
+	 * the index arrays should only contain lowercase so that they are sorted correctly for case-insensitive binary searches.
+	 */
+	private static String indexForm(final String tag) {
+		return tag.toLowerCase();
+	}
+
 	private static List<TagFrequency> binarySearch(final FragmentAndTag[] idx, final String input) {
 		if (idx == null) return Collections.emptyList();
+		final String inputIndexForm = indexForm(input);
 
-		final FragmentPrefixComp comp = new FragmentPrefixComp(input);
-		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(input, "unused", -1), comp);
+		final FragmentPrefixComp comp = new FragmentPrefixComp(inputIndexForm);
+		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(inputIndexForm, "unused", -1), comp);
 		if (randomIndex < 0) return Collections.emptyList();
 
 		int rangeStarts = randomIndex;
 		int rangeEnds = randomIndex;
 		while (rangeStarts > -1
-				&& idx[rangeStarts].fragment.toLowerCase().startsWith(input.toLowerCase())) {
+				&& indexForm(idx[rangeStarts].fragment).startsWith(inputIndexForm)) {
 			rangeStarts--;
 		}
 		while (rangeEnds < idx.length
-				&& idx[rangeEnds].fragment.toLowerCase().startsWith(input.toLowerCase())) {
+				&& indexForm(idx[rangeEnds].fragment).startsWith(inputIndexForm)) {
 			rangeEnds++;
 		}
 		final FragmentAndTag[] matches = Arrays.copyOfRange(idx, rangeStarts + 1, rangeEnds);
@@ -131,7 +139,7 @@ public class TagAutocompleter {
 			else {
 				p1 = o1.fragment.substring(0, this.prefix.length());
 			}
-			return p1.compareToIgnoreCase(o2.fragment);
+			return p1.compareTo(o2.fragment);
 		}
 	}
 
@@ -144,10 +152,11 @@ public class TagAutocompleter {
 	private void generateTagsIndex(final List<TagFrequency> tags) {
 		final List<FragmentAndTag> idx = new ArrayList<>(tags.size());
 		for (final TagFrequency tf : tags) {
-			idx.add(new FragmentAndTag(tf.getTag(), tf.getTag(), tf.getCount()));
+			final String tagForIndex = indexForm(tf.getTag());
+			idx.add(new FragmentAndTag(tagForIndex, tf.getTag(), tf.getCount()));
 
-			final String without = StringUtils.stripAccents(tf.getTag());
-			if (!without.equals(tf.getTag())) {
+			final String without = StringUtils.stripAccents(tagForIndex);
+			if (!without.equals(tagForIndex)) {
 				idx.add(new FragmentAndTag(without, tf.getTag(), tf.getCount()));
 			}
 		}
@@ -179,12 +188,13 @@ public class TagAutocompleter {
 
 	private static List<FragmentAndTag> makeFragments(final List<TagFrequency> allTags) {
 		final List<FragmentAndTag> allFragments = new ArrayList<>();
-		for (final TagFrequency tag : allTags) {
-			allFragments.addAll(makeFragments(tag.getTag(), tag.getTag(), tag.getCount()));
+		for (final TagFrequency tf : allTags) {
+			final String tagIndexForm = indexForm(tf.getTag());
+			allFragments.addAll(makeFragments(tagIndexForm, tf.getTag(), tf.getCount()));
 
-			final String without = StringUtils.stripAccents(tag.getTag());
-			if (!without.equals(tag.getTag())) {
-				allFragments.addAll(makeFragments(without, tag.getTag(), tag.getCount()));
+			final String without = StringUtils.stripAccents(tagIndexForm);
+			if (!without.equals(tagIndexForm)) {
+				allFragments.addAll(makeFragments(without, tf.getTag(), tf.getCount()));
 			}
 		}
 		return allFragments;
@@ -208,8 +218,9 @@ public class TagAutocompleter {
 
 	// Only synchronized to stop it interleaving with itself.
 	private synchronized void addOrIncrementExactTag(final String tag, final int delta) {
-		final FragmentPrefixComp comp = new FragmentPrefixComp(tag);
-		final int randomIndex = Arrays.binarySearch(this.tagsArr, new FragmentAndTag(tag, "unused", -1), comp);
+		final String tagIndexForm = indexForm(tag);
+		final FragmentPrefixComp comp = new FragmentPrefixComp(tagIndexForm);
+		final int randomIndex = Arrays.binarySearch(this.tagsArr, new FragmentAndTag(tagIndexForm, "unused", -1), comp);
 
 		boolean found = false;
 		if (randomIndex >= 0) {
@@ -225,16 +236,18 @@ public class TagAutocompleter {
 			final FragmentAndTag[] newTagsArr = new FragmentAndTag[this.tagsArr.length + 1];
 			System.arraycopy(this.tagsArr, 0, newTagsArr, 0, newIndex);
 			System.arraycopy(this.tagsArr, newIndex, newTagsArr, newIndex + 1, this.tagsArr.length - newIndex);
-			newTagsArr[newIndex] = new FragmentAndTag(tag, tag, delta);
+			newTagsArr[newIndex] = new FragmentAndTag(tagIndexForm, tag, delta);
 			this.tagsArr = newTagsArr;
 		}
 	}
 
 	// Only synchronized to stop it interleaving with itself.
 	private synchronized void addOrIncrementFragments(final String tag, final int delta) {
+		final String tagIndexForm = indexForm(tag);
+
 		final List<String> fragments = new ArrayList<>();
 		for (int i = 1; i < tag.length(); i++) {
-			final String frag = tag.substring(i);
+			final String frag = tagIndexForm.substring(i);
 			if (Character.isWhitespace(frag.charAt(0))) continue;
 			fragments.add(frag);
 		}
@@ -250,11 +263,11 @@ public class TagAutocompleter {
 			int rangeStarts = randomIndex;
 			int rangeEnds = randomIndex;
 			while (rangeStarts > -1
-					&& this.fragmentsArr[rangeStarts].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
+					&& indexForm(this.fragmentsArr[rangeStarts].fragment).startsWith(frag)) {
 				rangeStarts--;
 			}
 			while (rangeEnds < this.fragmentsArr.length
-					&& this.fragmentsArr[rangeEnds].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
+					&& indexForm(this.fragmentsArr[rangeEnds].fragment).startsWith(frag)) {
 				rangeEnds++;
 			}
 			rangeStarts += 1;
