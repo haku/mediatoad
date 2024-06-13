@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,6 +145,11 @@ public class TagAutocompleter {
 		final List<FragmentAndTag> idx = new ArrayList<>(tags.size());
 		for (final TagFrequency tf : tags) {
 			idx.add(new FragmentAndTag(tf.getTag(), tf.getTag(), tf.getCount()));
+
+			final String without = StringUtils.stripAccents(tf.getTag());
+			if (!without.equals(tf.getTag())) {
+				idx.add(new FragmentAndTag(without, tf.getTag(), tf.getCount()));
+			}
 		}
 		// Ensure sort is consistent with lookup, sqlite can sort slightly differently sometimes.
 		idx.sort(FragmentAndTag.Order.FRAGMENT_ASC);
@@ -174,18 +180,23 @@ public class TagAutocompleter {
 	private static List<FragmentAndTag> makeFragments(final List<TagFrequency> allTags) {
 		final List<FragmentAndTag> allFragments = new ArrayList<>();
 		for (final TagFrequency tag : allTags) {
-			allFragments.addAll(makeFragments(tag.getTag(), tag.getCount()));
+			allFragments.addAll(makeFragments(tag.getTag(), tag.getTag(), tag.getCount()));
+
+			final String without = StringUtils.stripAccents(tag.getTag());
+			if (!without.equals(tag.getTag())) {
+				allFragments.addAll(makeFragments(without, tag.getTag(), tag.getCount()));
+			}
 		}
 		return allFragments;
 	}
 
-	static List<FragmentAndTag> makeFragments(final String tag, final int fileCount) {
-		if (tag.length() < 2) return Collections.emptyList();
+	static List<FragmentAndTag> makeFragments(final String tagToFragment, final String realTag, final int fileCount) {
+		if (tagToFragment.length() < 2) return Collections.emptyList();
 		final List<FragmentAndTag> ret = new ArrayList<>(); // TODO would simple array be faster?
-		for (int i = 1; i < tag.length(); i++) {
-			final String frag = tag.substring(i);
+		for (int i = 1; i < tagToFragment.length(); i++) {
+			final String frag = tagToFragment.substring(i);
 			if (Character.isWhitespace(frag.charAt(0))) continue;
-			ret.add(new FragmentAndTag(frag, tag, fileCount));
+			ret.add(new FragmentAndTag(frag, realTag, fileCount));
 		}
 		return ret;
 	}

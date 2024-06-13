@@ -54,7 +54,7 @@ public class TagAutocompleterTest {
 
 	@Test
 	public void itMakesFragments() throws Exception {
-		final List<FragmentAndTag> actual = TagAutocompleter.makeFragments("foobar", 10);
+		final List<FragmentAndTag> actual = TagAutocompleter.makeFragments("foobar", "foobar", 10);
 		assertThat(actual, contains(
 				new FragmentAndTag("oobar", "foobar", 10),
 				new FragmentAndTag("obar", "foobar", 10),
@@ -126,6 +126,20 @@ public class TagAutocompleterTest {
 				new TagFrequency("sooa", 25),
 				new TagFrequency("tooa", 25)
 				), actual);
+	}
+
+	@Test
+	public void itSuggestsTagMatchesBlåhaj() throws Exception {
+		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			b.fileWithTags("Blåhaj");
+		}
+		this.undertest.generateIndex();
+
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Blå"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Bla"));
+
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("låh"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("lah"));
 	}
 
 	@Test
