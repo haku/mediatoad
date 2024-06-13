@@ -108,7 +108,7 @@ public class DirServletTest {
 					"<li><a href=\"../c/" + i.getId() + "." + i.getFormat().getExt() + "\">"
 							+ i.getFile().getName() + "</a>"
 							+ " [<a href=\"../c/" + i.getId() + "." + i.getFormat().getExt()
-							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KB</a>]"
+							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KiB</a>]"
 							+ " (00:02:03)</li>"));
 		}
 
