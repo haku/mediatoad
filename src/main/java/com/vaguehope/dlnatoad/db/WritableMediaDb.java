@@ -346,6 +346,11 @@ public class WritableMediaDb implements Closeable {
 			if (e.isDeleted() == deleted && !updateModified) return false;
 
 			setTagModifiedAndDeleted(fileId, tag, cls, deleted, modifiled);
+
+			if (!e.getTag().equals(tag)) {  // tag case changed.
+				updateTagString(fileId, tag, cls);
+			}
+
 			return true;
 		}
 
@@ -377,6 +382,20 @@ public class WritableMediaDb implements Closeable {
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to set tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls), e);
+		}
+	}
+
+	public void updateTagString(final String fileId, final String tag, final String cls) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET tag=? WHERE file_id=? AND tag=? AND cls=?")) {
+			st.setString(1, tag);
+			st.setString(2, fileId);
+			st.setString(3, tag);
+			st.setString(4, cls);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured setting tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls), e);
 		}
 	}
 

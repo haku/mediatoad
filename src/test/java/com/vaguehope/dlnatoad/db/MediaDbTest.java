@@ -159,6 +159,19 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itUpdatesTagCaseOnReAdd() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
+			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+		}
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			assertTrue(w.addTag(fileId, "My-Tag", "", 1234567891L));
+		}
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("My-Tag", 1234567891L, false)));
+	}
+
+	@Test
 	public void itAllowsAddingTheSameTagTwiceWithDifferentCls() throws Exception {
 		final String fileId = "myid";
 		final File file = new File("/media/foo.wav");
