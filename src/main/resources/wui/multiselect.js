@@ -2,13 +2,14 @@ ClickHelper = {};
 (function() {
   const LONG_CLICK_MILLIS = 1000;
 
-  ClickHelper.setupLongClick = (element, onClick, onLongClick) => {
+  ClickHelper.setupLongClick = (element, onClick, onLongClick, allowLongClick) => {
     let pressTimer;
     let longClicked = false;
     let x = -1;
     let y = -1;
 
     element.addEventListener('contextmenu', (event) => {
+      if (!allowLongClick()) return;
       event.preventDefault();
     });
 
@@ -30,11 +31,13 @@ ClickHelper = {};
     });
 
     element.addEventListener('pointerdown', (event) => {
+      longClicked = false;
+      if (!allowLongClick()) return;
+
       event.preventDefault();
       x = event.screenX;
       y = event.screenY;
 
-      longClicked = false;
       pressTimer = window.setTimeout(() => {
         longClicked = true;
         onLongClick(event);
@@ -267,7 +270,10 @@ PopupHelper = {};
     const onLongClick = (event) => {
       invertSelection(t);
     };
-    ClickHelper.setupLongClick(t, onClick, onLongClick);
+    const allowLongClick = () => {
+      return selectedItems.size < 1;
+    };
+    ClickHelper.setupLongClick(t, onClick, onLongClick, allowLongClick);
     t.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.shiftKey || e.altKey) return;
       if (event.key === 'v') {
