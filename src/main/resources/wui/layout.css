@@ -51,16 +51,17 @@ input, button {
   top: 5%;
   left: 50%;
   width: 18em;
+  min-height: 20rem;
   max-height: 90%;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin-left: -9em; /* width/2 */
   padding: 0;
   text-align: center;
   border-radius: 0.5em;
 }
 #tag_editor .title_holder {
-  position: sticky;
   top: 0;
   left: 0;
   margin: 0 0 1em 0;
@@ -75,9 +76,6 @@ input, button {
 }
 #tag_editor .newtag {
   width: 18em;
-}
-#tag_editor .tags {
-   min-height: 1em;
 }
 #tag_editor .tagrow {
   display: flex;

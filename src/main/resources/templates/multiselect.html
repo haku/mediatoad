@@ -5,13 +5,16 @@
 </div>
 
 <div id="tag_editor" style="display:none;">
-  <div class="title_holder">
-    <p class="title"></p>
-  </div>
-  <div class="content">
-    <input type="text" class="newtag" value="" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
-    <div class="tags">
-    </div>
-  </div>
+	<div class="title_holder">
+		<p class="title"></p>
+	</div>
+	<div class="content">
+		<div class="autocomplete_wrapper addTag_wrapper">
+			<input type="text" id="addTag" name="addTag" class="newtag" value="" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+		</div>
+		<script src="../w/autocomplete-addtag.js"></script>
+		<div class="tags">
+		</div>
+	</div>
 </div>
 {{/db_enabled}}

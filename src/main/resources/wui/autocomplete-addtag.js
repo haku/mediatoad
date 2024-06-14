@@ -40,6 +40,7 @@ const addTagAc = new autoComplete({
           case 13:  // enter
             if (addTagAc.cursor >= 0) {
               event.preventDefault();
+              event.stopImmediatePropagation();
               addTagAc.select(addTagAc.cursor);
             }
             break;
