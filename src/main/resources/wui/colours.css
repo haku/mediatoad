@@ -21,7 +21,7 @@ input, button {
   border-color: #69c6b0;
   background-color: #103c32;
 }
-.thumbnail.selected:before {
+.thumbnail.selected:after {
   position: absolute;
   display: block;
   content: '';

@@ -24,6 +24,7 @@ input, button {
 .thumbnail.video:before {
   content: '▶';
   position: absolute;
+  z-index: 1;
   left: -0.5em;
   top: 1em;
   border-radius: 0.5em;
