@@ -170,6 +170,18 @@ public class AuthFilterTest {
 		verifyNoInteractions(this.chain);
 	}
 
+	@Test
+	public void itPromptsForLoginIfUserParam() throws Exception {
+		this.req.setMethod("GET");
+		this.req.setParameter("user", "foo");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(401, this.resp.getStatus());
+		assertEquals("Basic realm=\"Secure Area\"", this.resp.getHeader("WWW-Authenticate"));
+		verifyNoInteractions(this.chain);
+	}
+
 // Auth Enabled, Valid Creds:
 
 	@Test
@@ -263,6 +275,43 @@ public class AuthFilterTest {
 
 		assertEquals(200, this.resp.getStatus());
 		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itDoesNotPromptLoginIfUserParamMatchesCurrentUser() throws Exception {
+		this.req.setMethod("GET");
+		setValidSessionToken();
+		this.req.setParameter("user", "h4cker");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(200, this.resp.getStatus());
+		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itDoesPromptLoginIfUserParamDoesNotMatchCurrentUser() throws Exception {
+		this.req.setMethod("GET");
+		setValidSessionToken();
+		this.req.setParameter("user", "other");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(401, this.resp.getStatus());
+		assertEquals("Basic realm=\"Secure Area\"", this.resp.getHeader("WWW-Authenticate"));
+	}
+
+	@Test
+	public void itDoesPromptLoginIfUserParamDoesNotMatchCurrentUserAndBasicAuthStillSet() throws Exception {
+		this.req.setMethod("GET");
+		setValidSessionToken();
+		setValidCreds();
+		this.req.setParameter("user", "other");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(401, this.resp.getStatus());
+		assertEquals("Basic realm=\"Secure Area\"", this.resp.getHeader("WWW-Authenticate"));
 	}
 
 // Auth Enabled, Rejecting Invalid Creds:

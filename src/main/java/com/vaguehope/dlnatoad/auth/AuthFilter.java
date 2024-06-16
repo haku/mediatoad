@@ -82,7 +82,7 @@ public class AuthFilter implements Filter {
 			// Continue even if token is invalid as auth may be attached or may not be required.
 		}
 
-		if (this.users != null && user == null && (isPost(req) || isLoginRequest(req))) {
+		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req))) || isForceUserParam(req, user))) {
 			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 			if (authHeader64 != null
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
@@ -103,7 +103,7 @@ public class AuthFilter implements Filter {
 					return;
 				}
 				user = this.users.validUser(username, pass);
-				if (user == null) {
+				if (user == null || isForceUserParam(req, user)) {
 					send401AndMaybePromptLogin(req, resp);
 					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
 					return;
@@ -119,10 +119,6 @@ public class AuthFilter implements Filter {
 
 		final boolean needsAuth;
 		if (WRITE_METHODS.contains(req.getMethod())) {
-			if (this.users == null) {
-				ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST requires --userfile.");
-				return;
-			}
 			needsAuth = true;
 		}
 		else if (READ_METHODS.contains(req.getMethod())) {
@@ -131,6 +127,11 @@ public class AuthFilter implements Filter {
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method not supported.");
+			return;
+		}
+
+		if (needsAuth && this.users == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST requires --userfile.");
 			return;
 		}
 
@@ -190,6 +191,13 @@ public class AuthFilter implements Filter {
 
 	private static boolean isLoginRequest(final HttpServletRequest req) {
 		return "login".equalsIgnoreCase(req.getParameter("action"));
+	}
+
+	private static boolean isForceUserParam(final HttpServletRequest req, User user) {
+		final String param = req.getParameter("user");
+		if (param == null) return false;
+		if (user != null && user.getUsername().equals(param)) return false;
+		return true;
 	}
 
 	private static void send401AndMaybePromptLogin(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
