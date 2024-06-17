@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.AsyncCallback;
+import com.vaguehope.dlnatoad.util.FileHelper;
 import com.vaguehope.dlnatoad.util.Watcher.EventResult;
 import com.vaguehope.dlnatoad.util.Watcher.EventType;
 import com.vaguehope.dlnatoad.util.Watcher.FileListener;
@@ -196,20 +197,21 @@ public class MediaIndex implements FileListener {
 			case FLATTERN:
 			default:
 			final String dirId = this.mediaId.contentIdForDirectory(format.getContentGroup(), dir);
-			dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, dirId, dir);
+			final String dirPath = FileHelper.rootAndPath(rootDir, dir);
+			dirContainer = makeDirContainerOnTree(format.getContentGroup(), formatContainer, dirId, dir, dirPath);
 		}
 		return dirContainer;
 	}
 
 	private ContentNode makeFormatContainerOnTree(final ContentNode parentNode, final ContentGroup group) throws IOException {
-		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName());
+		return makeContainerOnTree(parentNode, group.getId(), group.getHumanName(), null, null, null);
 	}
 
 	private ContentNode makeDirContainerOnTree(final ContentGroup contentGroup, final ContentNode parentContainer,
-			final String id, final File dir) throws IOException {
+			final String id, final File dir, final String path) throws IOException {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final String sortName = dir.getAbsolutePath().toLowerCase();
-		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), sortName, dir);
+		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), sortName, dir, path);
 
 		findArtItem(dir, contentGroup, dirContainer, new AsyncCallback<ContentItem, IOException>() {
 			@Override
@@ -260,22 +262,19 @@ public class MediaIndex implements FileListener {
 			}
 
 			final String dirToCreateId = this.mediaId.contentIdForDirectory(groupForContainerId, dirToCreate);
-			makeDirContainerOnTree(format.getContentGroup(), parentContainer, dirToCreateId, dirToCreate);
+			final String dirPath = FileHelper.rootAndPath(rootDir, dirToCreate);
+			makeDirContainerOnTree(format.getContentGroup(), parentContainer, dirToCreateId, dirToCreate, dirPath);
 		}
 
 		final String dirId = this.mediaId.contentIdForDirectory(groupForContainerId, dir);
 		return this.contentTree.getNode(dirId);
 	}
 
-	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title) throws IOException {
-		return makeContainerOnTree(parentNode, id, title, null, null);
-	}
-
 	/**
 	 * If it already exists it will return the existing instance.
 	 */
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
-			final String sortName, final File file) throws IOException {
+			final String sortName, final File file, final String path) throws IOException {
 		final ContentNode existingNode = this.contentTree.getNode(id);
 		if (existingNode != null) return existingNode;
 
@@ -284,7 +283,7 @@ public class MediaIndex implements FileListener {
 				? title + " (restricted)"
 				: title;
 
-		final ContentNode newNode = new ContentNode(id, parentNode.getId(), modTitle, file, authList, sortName);
+		final ContentNode newNode = new ContentNode(id, parentNode.getId(), modTitle, file, path, authList, sortName);
 		if (parentNode.addNodeIfAbsent(newNode)) {
 			this.contentTree.addNode(newNode);
 			return newNode;

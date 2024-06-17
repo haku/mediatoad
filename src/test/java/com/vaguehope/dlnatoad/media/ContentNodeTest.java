@@ -20,13 +20,13 @@ public class ContentNodeTest {
 
 	@Test
 	public void itDoesNotModifyTitleIfNoAuthList() throws Exception {
-		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null);
+		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null, null);
 		assertEquals("title", n.getTitle());
 	}
 
 	@Test
 	public void itSortsNodesCaseSensitive() throws Exception {
-		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null);
+		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null, null);
 
 		n.addNodeIfAbsent(new ContentNode("1", n.getId(), "1", "2"));
 		n.addNodeIfAbsent(new ContentNode("2", n.getId(), "2", "B"));
@@ -40,7 +40,7 @@ public class ContentNodeTest {
 
 	@Test
 	public void itSortsItemsCaseInsitive() throws Exception {
-		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null);
+		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null, null);
 
 		n.addItemIfAbsent(new ContentItem("1", n.getId(), "2", null, null));
 		n.addItemIfAbsent(new ContentItem("2", n.getId(), "B", null, null));
@@ -55,7 +55,7 @@ public class ContentNodeTest {
 	@Ignore("Micro benchmark for checking performance of sort on insert.")
 	@Test
 	public void itAddsManyRandomItems() throws Exception {
-		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null);
+		final ContentNode n = new ContentNode("id", ContentGroup.AUDIO.getId(), "title", new File(""), null, null, null);
 		final int count = 5000;
 		final List<String> titles = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {

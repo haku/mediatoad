@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -27,6 +28,7 @@ public class ContentTree {
 
 	private final AuthSet authSet = new AuthSet();
 	private final Map<String, ContentNode> contentNodes = new ConcurrentHashMap<>();
+	private final Map<String, ContentNode> contentNodePaths = new ConcurrentHashMap<>();
 	private final ContentNode rootNode;
 	private final Map<String, ContentItem> contentItems = new ConcurrentHashMap<>();
 
@@ -45,7 +47,7 @@ public class ContentTree {
 		addNode(this.rootNode);
 
 		if (trackRecent) {
-			this.recentNode = new ContentNode(ContentGroup.RECENT.getId(), this.rootNode.getId(), ContentGroup.RECENT.getHumanName(), null, null, null, this.recent);
+			this.recentNode = new ContentNode(ContentGroup.RECENT.getId(), this.rootNode.getId(), ContentGroup.RECENT.getHumanName(), null, null, null, null, this.recent);
 			// TODO mark recent as not searchable.
 			addNode(this.recentNode);
 			this.rootNode.addNodeIfAbsent(this.recentNode);
@@ -87,6 +89,27 @@ public class ContentTree {
 	public void addNode (final ContentNode node) {
 		this.authSet.add(node.getAuthList());
 		this.contentNodes.put(node.getId(), node);
+		addNodePath(node);
+	}
+
+	public ContentNode getNodeByPath(final String path) {
+		return this.contentNodePaths.get(path);
+	}
+
+	Set<String> getNodePaths() {
+		return this.contentNodePaths.keySet();
+	}
+
+	private void addNodePath(final ContentNode node) {
+		if (node.getPath() == null) return;
+		final ContentNode existing = this.contentNodePaths.putIfAbsent(node.getPath(), node);
+		if (existing != null) LOG.warn("Dropping '{}' from pathmap because it has same path as '{}' relative to their respective roots: '{}'",
+				node.getFile().getAbsolutePath(), existing.getFile().getAbsolutePath(), existing.getPath());
+	}
+
+	private void removeNodePath(final ContentNode node) {
+		if (node.getPath() == null) return;
+		this.contentNodePaths.remove(node.getPath(), node);
 	}
 
 	public ContentItem getItem(final String id) {
@@ -128,6 +151,7 @@ public class ContentTree {
 			final Entry<String, ContentNode> e = nodeIttr.next();
 			if (file.equals(e.getValue().getFile())) {
 				nodeIttr.remove();
+				removeNodePath(e.getValue());
 				removeNodesAndItemsInNode(e.getValue());
 				removeNodeFromParent(e.getValue());
 				removeCount += 1;
@@ -151,6 +175,7 @@ public class ContentTree {
 	private void removeNodesAndItemsInNode(final ContentNode node) {
 		node.withEachNode((n) -> {
 			this.contentNodes.remove(n.getId());
+			removeNodePath(n);
 
 			// in theory this recursively getting a lock on a node via withEachNode() while within a lock
 			// could deadlock, but lets see if that ever happens in practice before switching to a list copy.
@@ -172,6 +197,7 @@ public class ContentTree {
 		}
 		if (isContainerEmptyAndRemoveable(parentNode)) {
 			this.contentNodes.remove(parentNode.getId());
+			removeNodePath(parentNode);
 			removeNodeFromParent(parentNode);
 		}
 	}
@@ -193,6 +219,7 @@ public class ContentTree {
 		}
 		if (isContainerEmptyAndRemoveable(parentNode)) {
 			this.contentNodes.remove(parentNode.getId());
+			removeNodePath(parentNode);
 			removeNodeFromParent(parentNode);
 		}
 	}

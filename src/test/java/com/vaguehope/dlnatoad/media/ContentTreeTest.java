@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class ContentTreeTest {
 
@@ -45,6 +46,7 @@ public class ContentTreeTest {
 	public void itHasDirs() throws Exception {
 		this.mockContent.givenMockDirs(7);
 		assertThat(this.undertest.getNodes(), hasSize(7 + 2));  // Extras for root and recent.
+		assertThat(this.undertest.getNodePaths(), hasSize(7));
 	}
 
 	@Test
@@ -65,6 +67,9 @@ public class ContentTreeTest {
 		assertThat(this.undertest.getNodes(), not(hasItem(c)));
 		assertThat(this.undertest.getNodes(), not(hasItem(b)));
 		assertThat(this.undertest.getNodes(), not(hasItem(a)));
+
+		assertThat(this.undertest.getNodes(), hasSize(2));  // Extras for root and recent.
+		assertThat(this.undertest.getNodePaths(), hasSize(0));
 	}
 
 	@Test
@@ -77,6 +82,34 @@ public class ContentTreeTest {
 		assertThat(this.undertest.getNodes(), not(hasItem(aa)));
 		assertThat(this.undertest.getNodes(), not(hasItem(bb)));
 		assertThat(this.undertest.getItems(), not(hasItem(b)));
+	}
+
+	@Test
+	public void itGetsNodeByPath() throws Exception {
+		final ContentNode a = this.mockContent.addMockDir("aa");
+		final ContentNode b = this.mockContent.addMockDir("bb", a);
+		assertEquals(b, this.undertest.getNodeByPath(this.tmp.getRoot().getName() + "/aa/bb"));
+	}
+
+	@Test
+	public void itKeepsFirstNodePathIfDuplicatePaths() throws Exception {
+		final File aRoot = this.tmp.newFolder("a", "foo");
+		final File bRoot = this.tmp.newFolder("b", "foo");
+
+		final File aDir = this.tmp.newFolder("a", "foo", "bar");
+		final File bDir = this.tmp.newFolder("b", "foo", "bar");
+
+		final String aPath = FileHelper.rootAndPath(aRoot, aDir);
+		final String bPath = FileHelper.rootAndPath(bRoot, bDir);
+		assertEquals(aPath, bPath);
+
+		ContentNode aNode = new ContentNode("id-a", "0", "title-a", aDir, aPath, null, null);
+		ContentNode bNode = new ContentNode("id-b", "0", "title-b", bDir, bPath, null, null);
+
+		this.undertest.addNode(aNode);
+		this.undertest.addNode(bNode);
+
+		assertEquals(aNode, this.undertest.getNodeByPath(aPath));
 	}
 
 	@Test
@@ -189,7 +222,7 @@ public class ContentTreeTest {
 	}
 
 	private static Consumer<File> sequentialTimeStamps() {
-		return new Consumer<File>() {
+		return new Consumer<>() {
 			@Override
 			public void accept(final File f) {
 				final int n = Integer.parseInt(f.getName().substring(0, f.getName().indexOf(".")).replace("id", ""));
