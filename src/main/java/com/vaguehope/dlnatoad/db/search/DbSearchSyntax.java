@@ -21,7 +21,7 @@ public class DbSearchSyntax {
 	private static String quoteSearchTerm(final String term) {
 		String t = term;
 		final String quote;
-		if (StringUtils.containsAny(t, ' ', '(', ')', '\t', '　')) {
+		if (StringUtils.containsAny(t, '"', '\'', ' ', '(', ')', '\t', '　')) {
 			if (t.indexOf('"') >= 0) {
 				if (t.indexOf('\'') >= 0) {
 					t = t.replace("'", "\\'");

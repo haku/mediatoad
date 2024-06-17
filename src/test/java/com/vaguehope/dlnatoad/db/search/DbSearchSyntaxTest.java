@@ -20,6 +20,9 @@ public class DbSearchSyntaxTest {
 		assertEquals("t='a \"b c\" \\'d e\\''", DbSearchSyntax.makeSingleTagSearch("a \"b c\" 'd e'"));
 		assertEquals("t=\"foo(b\"", DbSearchSyntax.makeSingleTagSearch("foo(b"));
 		assertEquals("t=\"bar)b\"", DbSearchSyntax.makeSingleTagSearch("bar)b"));
+		assertEquals("t=\"'a'\"", DbSearchSyntax.makeSingleTagSearch("'a'"));
+		assertEquals("t='\"a\"'", DbSearchSyntax.makeSingleTagSearch("\"a\""));
+		assertEquals("t='\\'\"\\'\"\\'\"\\'\"\\''", DbSearchSyntax.makeSingleTagSearch("'\"'\"'\"'\"'"));
 	}
 
 	@Test
