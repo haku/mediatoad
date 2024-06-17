@@ -1,5 +1,7 @@
 input, button {
-  min-height: 2em;
+  min-height: 2.5em;
+  box-sizing: border-box;
+  margin: 0 0.5em;
   vertical-align: middle;
 }
 
