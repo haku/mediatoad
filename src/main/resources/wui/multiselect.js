@@ -78,6 +78,8 @@ PopupHelper = {};
   const selectedItems = new Set();
   const selInfo = document.getElementById('selection_info');
   const selMsg = document.getElementById('selection_msg');
+  const selNone = document.getElementById('selection_none');
+  const selAll = document.getElementById('selection_all');
   const selEditTags = document.getElementById('selection_edit_tags');
 
   const tagEditor = document.getElementById('tag_editor');
@@ -110,6 +112,22 @@ PopupHelper = {};
     }
     onSelectionChange();
   };
+
+  selNone.addEventListener('click', (event) => {
+    selectedItems.clear();
+    for (let i = 0; i < items.length; i++) {
+      items[i].classList.remove('selected');
+    }
+    onSelectionChange();
+  });
+  selAll.addEventListener('click', (event) => {
+  const items = document.getElementsByClassName('thumbnail');
+    for (let i = 0; i < items.length; i++) {
+      selectedItems.add(items[i]);
+      items[i].classList.add('selected');
+    }
+    onSelectionChange();
+  });
 
   const tagsPath = `${pathPrefix()}tags`;
 

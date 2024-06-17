@@ -45,6 +45,9 @@ input, button {
   display: flex;
   flex-direction: column;
 }
+#selection_info button {
+  margin: 0.5em 0;
+}
 #tag_editor {
   position: fixed;
   z-index: 100;
