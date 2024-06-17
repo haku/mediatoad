@@ -84,24 +84,24 @@ public class AutocompleteServlet extends HttpServlet {
 	private List<TagFrequency> forSearch(final String fragment) {
 		final String toMatch = DbSearchSyntax.removeMatchOperator(fragment);
 		if (DbSearchSyntax.isTagMatchExact(fragment)) {
-			return addPrefix(this.tagAutocompleter.suggestTags(toMatch), "t=");
+			return makeSearch(this.tagAutocompleter.suggestTags(toMatch), "");
 		}
 		else if (DbSearchSyntax.isTagNotMatchExact(fragment)) {
-			return addPrefix(this.tagAutocompleter.suggestTags(toMatch), "-t=");
+			return makeSearch(this.tagAutocompleter.suggestTags(toMatch), "-");
 		}
 		else if (DbSearchSyntax.isTagMatchPartial(fragment)) {
-			return addPrefix(mergedPrefixAndFragmentSuggestions(toMatch), "t=");
+			return makeSearch(mergedPrefixAndFragmentSuggestions(toMatch), "");
 		}
 		else if (DbSearchSyntax.isTagNotMatchPartial(fragment)) {
-			return addPrefix(mergedPrefixAndFragmentSuggestions(toMatch), "-t=");
+			return makeSearch(mergedPrefixAndFragmentSuggestions(toMatch), "-");
 		}
 		throw new IllegalStateException("Fragment does not start with matches: " + fragment);
 	}
 
-	private static List<TagFrequency> addPrefix(final Collection<TagFrequency> tags, final String prefix) {
+	private static List<TagFrequency> makeSearch(final Collection<TagFrequency> tags, final String prefix) {
 		final List<TagFrequency> ret = new ArrayList<>(tags.size());
 		for (final TagFrequency tf : tags) {
-			ret.add(new TagFrequency(prefix + tf.getTag(), tf.getCount()));
+			ret.add(new TagFrequency(prefix + DbSearchSyntax.makeSingleTagSearch(tf.getTag()), tf.getCount()));
 		}
 		return ret;
 	}
