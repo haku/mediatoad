@@ -201,6 +201,44 @@ public class TagAutocompleterTest {
 		assertEquals(Arrays.asList(new TagFrequency("gg", 0)), this.undertest.suggestFragments("g"));
 	}
 
+	@Test
+	public void itIncrementsTagCount2() throws Exception {
+		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			b.fileWithTags("power line");
+			b.fileWithTags("power_lines");
+			b.fileWithTags("powerline");
+			b.fileWithTags("powerPuff");
+			b.fileWithTags("powerPuff_girls");
+			b.fileWithTags("powerpuff_girls_z");
+			b.fileWithTags("powers_");
+			b.fileWithTags("powerstrip");
+		}
+		this.undertest.generateIndex();
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		this.undertest.changeTagCount("powerpuff_girls", 1);
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		this.undertest.changeTagCount("powerpuff_girls", 1);
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerpuff_girls", 2),
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		assertEquals(Arrays.asList(), this.undertest.suggestFragments("powerp"));
+	}
+
 	private void mockFilesWithTags() throws IOException, InterruptedException, Exception {
 		try (final Batch b = this.mockMediaMetadataStore.batch()) {
 			for (char x = 'a'; x <= 'z'; x++) {
