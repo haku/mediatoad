@@ -85,6 +85,16 @@ public class SearchServletTest {
 	}
 
 	@Test
+	public void itDoesSimpleSearchFromParamWithExtraQuery() throws Exception {
+		this.req.setParameter("query", "t=foo OR t=bar");
+		this.req.setParameter("extra_query", "f~^/foo/bar");
+		this.undertest.doGet(this.req, this.resp);
+
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"(t&#61;foo OR t&#61;bar) f~^/foo/bar\" "));
+	}
+
+	@Test
 	public void itDoesSimpleSearchFromPath() throws Exception {
 		final ContentItem i0 = mockItem("thing 0", "foo");
 		mockItem("thing 1", "bar");

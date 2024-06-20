@@ -38,6 +38,14 @@ public class DbSearchSyntax {
 		return quote + t + quote;
 	}
 
+	public static String addBracketsIfNeeded(final String query) {
+		// TODO handle queries with brackets that do not need moar brackets.
+		if (query.contains("OR")) {
+			return "(" + query + ")";
+		}
+		return query;
+	}
+
 	public static boolean isFileMatchPartial (final String term) {
 		return term.startsWith("f~") || term.startsWith("F~");
 	}

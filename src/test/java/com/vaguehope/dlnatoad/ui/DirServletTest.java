@@ -264,6 +264,19 @@ public class DirServletTest {
 	}
 
 	@Test
+	public void itScopesSearchesToCurrentDir() throws Exception {
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+
+		this.req.setPathInfo("/" + mockDir.getId());
+		this.undertest.doGet(this.req, this.resp);
+		final String page = this.resp.getContentAsString();
+
+		assertThat(page, containsString("<input type=\"hidden\" name=\"extra_query\" value=\"f~^&quot;" + mockDir.getFile().getAbsolutePath() + "&quot;\">"));
+		assertThat(page, containsString("Search Here"));
+	}
+
+	@Test
 	public void itReturnsNodeAsAZipFile() throws Exception {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);

@@ -50,6 +50,7 @@ import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
@@ -74,6 +75,7 @@ import com.vaguehope.dlnatoad.util.FileHelper;
 public class SearchServlet extends HttpServlet {
 
 	static final String PARAM_QUERY = "query";
+	static final String PARAM_EXTRA_QUERY = "extra_query";
 	static final String PARAM_PAGE_LIMIT = "limit";
 	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
@@ -206,7 +208,13 @@ public class SearchServlet extends HttpServlet {
 
 	private static String queryFromReq(final HttpServletRequest req, final SearchPath searchPath) {
 		final String p = StringUtils.trimToNull(req.getParameter(PARAM_QUERY));
-		if (p != null) return p;
+		if (p != null) {
+			final String extra = StringUtils.trimToNull(req.getParameter(PARAM_EXTRA_QUERY));
+			if (extra != null) {
+				return DbSearchSyntax.addBracketsIfNeeded(p) + " " + extra;
+			}
+			return p;
+		}
 		return searchPath.query;
 	}
 

@@ -120,6 +120,7 @@ public class DirServlet extends HttpServlet {
 		// If proxied from IndexServlet then paths are relative to root.
 		final String pathPrefix = req.getAttribute(PROXIED_FROM_INDEX_ATTR) != null ? "" : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, node.getTitle(), pathPrefix);
+		if (node.getFile() != null) pageScope.setExtraQuery(DbSearchSyntax.makePathSearch(node.getFile()));
 
 		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
 		final ResultGroupScope favouritesScope;

@@ -34,7 +34,8 @@
 				<label for="remote">remote</label>
 			</span>
 			{{/allow_remote_search}}
-			<input type="submit" value="Search">
+			<input type="hidden" name="extra_query" value="{{extra_query}}">
+			<input type="submit" value="Search{{#extra_query}} Here{{/extra_query}}">
 		</form>
 		{{#db_enabled}}
 		<script src="{{path_prefix}}w/autocomplete-search.js"></script>
@@ -53,3 +54,5 @@
 <div id="popup-obfuscator"></div>
 </body>
 </html>
+{{! vim: noexpandtab softtabstop=0
+}}

@@ -42,6 +42,24 @@ public class DbSearchSyntaxTest {
 	}
 
 	@Test
+	public void itAddsBracketsIfNeeded() throws Exception {
+		assetDoesNotAddBrackets("t=foo");
+		assetDoesNotAddBrackets("t=foo AND t=bar");
+//		assetDoesNotAddBrackets("(t=foo OR t=bar)");  // TODO hand this case.
+
+		assetDoesAddBrackets("t=foo OR t=bar");
+		assetDoesAddBrackets("(t=foo OR t=bar) AND (t=bat OR t=baz)");
+	}
+
+	private static void assetDoesNotAddBrackets(String test) {
+		assertEquals(test, DbSearchSyntax.addBracketsIfNeeded(test));
+	}
+
+	private static void assetDoesAddBrackets(String test) {
+		assertEquals("(" + test + ")", DbSearchSyntax.addBracketsIfNeeded(test));
+	}
+
+	@Test
 	public void itDeterminsWidthOrHeight() throws Exception {
 		assertEquals(null, DbSearchSyntax.widthOrHeight(""));
 		assertEquals(null, DbSearchSyntax.widthOrHeight("a"));
