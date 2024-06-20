@@ -60,11 +60,18 @@ public class ItemServlet extends HttpServlet {
 	private static final Set<ContentGroup> VIEWABLE_FORMATS = ImmutableSet.of(ContentGroup.IMAGE, ContentGroup.VIDEO, ContentGroup.AUDIO);
 
 	// https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Containers
-	// a best-effort guess at what is worth trying to play in a <video> tag.
+	// a best-effort guess at what is worth trying to play in a <video> and <audio> tags.
 	private static final Set<MediaFormat> HTML_VIDEO_FORMATS = ImmutableSet.of(
 			MediaFormat.MP4,
 			MediaFormat.OGV,
 			MediaFormat.WEBM);
+	private static final Set<MediaFormat> HTML_AUDIO_FORMATS = ImmutableSet.of(
+			MediaFormat.FLAC,
+			MediaFormat.M4A,
+			MediaFormat.MP3,
+			MediaFormat.OGA,
+			MediaFormat.OGG,
+			MediaFormat.WAV);
 
 	private static final ThreadSafeDateFormatter DATE_FORMAT = new ThreadSafeDateFormatter("yyyy-MM-dd HH:mm:ss z", Locale.ENGLISH);
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
@@ -119,7 +126,8 @@ public class ItemServlet extends HttpServlet {
 		itemScope.type = item.getFormat().getMime();
 		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
 		itemScope.is_video = HTML_VIDEO_FORMATS.contains(item.getFormat());
-		itemScope.is_other = !itemScope.is_img && !itemScope.is_video;
+		itemScope.is_audio = HTML_AUDIO_FORMATS.contains(item.getFormat());
+		itemScope.is_other = !itemScope.is_img && !itemScope.is_video && !itemScope.is_audio;
 
 		itemScope.item_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
 		itemScope.item_file_name = item.getFile().getName();

@@ -13,6 +13,7 @@ public class ItemScope {
 	public String type;
 	public boolean is_img;
 	public boolean is_video;
+	public boolean is_audio;
 	public boolean is_other;
 
 	public String item_path;

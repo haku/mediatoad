@@ -22,6 +22,13 @@
 		</video>
 		{{/is_video}}
 
+		{{#is_audio}}
+		<audio controls>
+			<source src="{{item_path}}" type="{{type}}" />
+			<p>[ Browser does not suport playing this file ]</p>
+		</video>
+		{{/is_audio}}
+
 		{{#is_other}}
 		<p>{{item_file_name}}</p>
 		<p>[ Browser does not suport playing this file ]</p>
