@@ -6,11 +6,16 @@ a {
   color: #f3b1cb;
 }
 input, button {
-  padding: 0.2em 0.5em;
-  border-radius: 0.2em;
   background: #071925;
   border: #69c6b0 0.1em solid;
   color: #fff;
+}
+input[type=checkbox] {
+  accent-color: #69c6b0;
+}
+input[type=submit]:active, button:active {
+  color: #071925;
+  background-color: #69c6b0;
 }
 
 .thumbnail.video:before {

@@ -1,8 +1,18 @@
+body, div, input, label, p, span {
+  font-family: sans-serif;
+}
+a:link, a:visited {
+  text-decoration: none;
+}
+
 input, button {
+  font-size: 1em;
   min-height: 2.5em;
   box-sizing: border-box;
-  margin: 0 0.5em;
+  padding: 0.2em 0.5em;
+  margin: 0.2em 0.5em;
   vertical-align: middle;
+  border-radius: 0.2em;
 }
 
 .link_row {
@@ -78,9 +88,6 @@ input, button {
 }
 #tag_editor .content {
   padding: 0 1em;
-}
-#tag_editor .newtag {
-  width: 18em;
 }
 #tag_editor .tagrow {
   display: flex;
