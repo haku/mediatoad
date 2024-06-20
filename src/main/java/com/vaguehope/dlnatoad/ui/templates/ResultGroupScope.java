@@ -33,11 +33,12 @@ public class ResultGroupScope {
 	}
 
 	public void addLocalItem(final String path, final String title) {
-		addRemoteItem(prefixPath(path), title, null, null);
+		addLocalItem(path, null, title, null, null);
 	}
 
-	public void addLocalItem(final String path, final String title, final String size, final String duration) {
-		addRemoteItem(prefixPath(path), title, size, duration);
+	public void addLocalItem(final String item_path, final String file_path, final String title, final String size, final String duration) {
+		if (size != null && file_path == null) throw new IllegalArgumentException();
+		this.list_items.add(new IndexItem(prefixPath(item_path), prefixPath(file_path), title, shouldSetAutofucus(), size, duration));
 	}
 
 	public void addLocalThumb(final String item_id, final String item_path, final String thumb_path, final String title, final String classes) {
@@ -45,7 +46,7 @@ public class ResultGroupScope {
 	}
 
 	public void addRemoteItem(final String path, final String title, final String size, final String duration) {
-		this.list_items.add(new IndexItem(path, title, shouldSetAutofucus(), size, duration));
+		this.list_items.add(new IndexItem(path, path, title, shouldSetAutofucus(), size, duration));
 	}
 
 	public void addContentItem(
@@ -54,10 +55,12 @@ public class ResultGroupScope {
 			final ThumbnailGenerator thumbnailGenerator,
 			final boolean videoThumbs) throws IOException {
 
+		final String item_path = C.ITEM_PATH_PREFIX + i.getId() + linkQuery;
+
 		if (thumbnailGenerator != null && thumbnailGenerator.supported(i.getFormat().getContentGroup(), videoThumbs)) {
 			addLocalThumb(
 					i.getId(),
-					C.ITEM_PATH_PREFIX + i.getId() + linkQuery,
+					item_path,
 					C.THUMBS_PATH_PREFIX + i.getId(),
 					i.getTitle(),
 					i.getFormat().getContentGroup() == ContentGroup.VIDEO ? "video" : "");
@@ -66,6 +69,7 @@ public class ResultGroupScope {
 			final long fileLength = i.getFileLength();
 			final long durationSeconds = TimeUnit.MILLISECONDS.toSeconds(i.getDurationMillis());
 			addLocalItem(
+					item_path,
 					C.CONTENT_PATH_PREFIX + i.getId() + "." + i.getFormat().getExt(),
 					i.getFile().getName(),
 					fileLength > 0 ? FileHelper.readableFileSize(fileLength) : null,
@@ -74,6 +78,7 @@ public class ResultGroupScope {
 	}
 
 	private String prefixPath(final String path) {
+		if (path == null) return null;
 		if (this.pathPrefix == null || this.pathPrefix.length() < 1) return path;
 		return this.pathPrefix + path;
 	}
@@ -91,14 +96,16 @@ public class ResultGroupScope {
 	}
 
 	public static class IndexItem {
-		public final String path;
+		public final String item_path;
+		public final String file_path;
 		public final String title;
 		public final boolean autofocus;
 		public final String size;
 		public final String duration;
 
-		IndexItem(final String path, final String title, final boolean autofocus, final String size, final String duration) {
-			this.path = path;
+		IndexItem(final String item_path, final String file_path, final String title, final boolean autofocus, final String size, final String duration) {
+			this.item_path = item_path;
+			this.file_path = file_path;
 			this.title = title;
 			this.autofocus = autofocus;
 			this.size = size;

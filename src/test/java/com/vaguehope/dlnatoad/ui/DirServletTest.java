@@ -105,7 +105,7 @@ public class DirServletTest {
 
 		for (final ContentItem i : items) {
 			assertThat(page, containsString(
-					"<li><a href=\"../c/" + i.getId() + "." + i.getFormat().getExt() + "\">"
+					"<li><a href=\"../i/" + i.getId() + "?node&#61;" + mockDir.getId() + "\">"
 							+ i.getFile().getName() + "</a>"
 							+ " [<a href=\"../c/" + i.getId() + "." + i.getFormat().getExt()
 							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KiB</a>]"
@@ -230,7 +230,7 @@ public class DirServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("c/" + protecItems.get(0).getId() + "."));
+		assertThat(this.resp.getContentAsString(), containsString("i/" + protecItems.get(0).getId() + "?"));
 	}
 
 	@Test

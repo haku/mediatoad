@@ -9,13 +9,13 @@
 
 	<ul>
 		{{#favourites.list_items}}
-		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a></li>
+		<li><a href="{{item_path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a></li>
 		{{/favourites.list_items}}
 	</ul>
 
 	<ul>
 		{{#results.list_items}}
-		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
+		<li><a href="{{item_path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{file_path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
 		{{/results.list_items}}
 	</ul>
 

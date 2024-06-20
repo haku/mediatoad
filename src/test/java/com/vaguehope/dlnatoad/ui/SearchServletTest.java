@@ -81,7 +81,7 @@ public class SearchServletTest {
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getContentAsString(), containsString("<h3>Local items: 1</h3>"));
 		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
-		assertPageContainsItem(i0, "");
+		assertPageContainsItem(i0, "", "?query&#61;t%3Dfoo&amp;offset&#61;0");
 	}
 
 	@Test
@@ -105,7 +105,7 @@ public class SearchServletTest {
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getContentAsString(), containsString("<h3>Local items: 1</h3>"));
 		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
-		assertPageContainsItem(i0, "../");
+		assertPageContainsItem(i0, "../", "?query&#61;t%3Dfoo&amp;offset&#61;0");
 	}
 
 	@Test
@@ -121,9 +121,9 @@ public class SearchServletTest {
 		verify(this.contentServlet).service(this.req, this.resp);
 	}
 
-	private void assertPageContainsItem(final ContentItem i, final String pathPrefix) {
+	private void assertPageContainsItem(final ContentItem i, final String pathPrefix, final String itemQueryString) {
 		assertThat(this.resp.getContentAsString(), containsString(
-				"<li><a href=\"" + pathPrefix + "c/" + i.getId() + "." + i.getFormat().getExt() + "\" autofocus>"
+				"<li><a href=\"" + pathPrefix + "i/" + i.getId() + itemQueryString + "\" autofocus>"
 						+ i.getFile().getName() + "</a>"
 						+ " [<a href=\"" + pathPrefix + "c/" + i.getId() + "." + i.getFormat().getExt()
 						+ "\" download=\"" + i.getFile().getName() + "\">" + i.getFileLength() + " B</a>]</li>"));
