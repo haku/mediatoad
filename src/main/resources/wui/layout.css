@@ -155,7 +155,7 @@ input, button {
   text-align: center;
   position: relative;
 }
-.mainimage img {
+.mainimage img, .mainimage video {
   max-width: 100%;
   max-height: 50em;
 }

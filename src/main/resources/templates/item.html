@@ -7,16 +7,25 @@
 	</div>
 
 	<div class="mainimage">
-		{{^is_img}}
-		<p>{{item_file_name}}</p>
-		<p>[ no preview ]</p>
-		{{/is_img}}{{#is_img}}
+		{{#is_img}}
 		<img src="{{item_path}}">
 		<div class="nav">
 			{{#previous_path}}<a class="previous" href="{{previous_path}}"></a>{{/previous_path}}
 			{{#next_path}}<a class="next" href="{{next_path}}"></a>{{/next_path}}
 		</div>
 		{{/is_img}}
+
+		{{#is_video}}
+		<video controls>
+			<source src="{{item_path}}" type="{{type}}" />
+			<p>[ Browser does not suport playing this file ]</p>
+		</video>
+		{{/is_video}}
+
+		{{#is_other}}
+		<p>{{item_file_name}}</p>
+		<p>[ Browser does not suport playing this file ]</p>
+		{{/is_other}}
 	</div>
 
 	{{#db_enabled}}

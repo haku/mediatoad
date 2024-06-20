@@ -69,7 +69,6 @@ public class ItemServletTest {
 		assertThat(this.resp.getContentAsString(), containsString("<img src=\"../c/id00.jpeg\">"));
 	}
 
-	// TODO update this once there is proper viewer support.
 	@Test
 	public void itRendersVideo() throws Exception {
 		givenReqForUnprotectedItem(MediaFormat.MP4);
@@ -77,7 +76,8 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(),  containsString("<p>[ no preview ]</p>"));
+		assertThat(this.resp.getContentAsString(),  containsString("<video controls>"));
+		assertThat(this.resp.getContentAsString(),  containsString("<source src=\"../c/id00.mp4\" type=\"video/mp4\" />"));
 	}
 
 	// TODO update this once there is proper viewer support.
@@ -88,7 +88,7 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(),  containsString("<p>[ no preview ]</p>"));
+		assertThat(this.resp.getContentAsString(),  containsString("<p>[ Browser does not suport playing this file ]</p>"));
 	}
 
 	@Test
