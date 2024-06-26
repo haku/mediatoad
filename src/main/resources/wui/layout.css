@@ -15,6 +15,26 @@ input, button {
   border-radius: 0.2em;
 }
 
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+}
+.topbar .item {
+  display: flex;
+  align-items: center;
+  min-height: 2.5em;
+  margin: 0.2em 0.5em;
+}
+.topbar .expand {
+  flex-grow: 1;
+  display: flex;
+  flex-wrap: wrap;
+}
+#search {
+  min-width: 10em;
+  flex-grow: 1;
+}
+
 .link_row {
   margin: 0 0.5em;
   display: flex;
