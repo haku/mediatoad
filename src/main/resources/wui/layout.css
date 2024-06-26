@@ -35,6 +35,22 @@ input, button {
   flex-grow: 1;
 }
 
+.dropdown-holder {
+  position: relative;
+}
+.dropdown-holder>button {
+  margin-left: 0;
+  border: none;
+}
+.dropdown-items {
+  visibility: collapse;
+  position: absolute;
+  right: 0.5em;
+  margin-top: -0.5em;
+  border-radius: 0.25em;
+  padding: 1em;
+}
+
 .link_row {
   margin: 0 0.5em;
   display: flex;

@@ -18,6 +18,13 @@ input[type=submit]:active, button:active {
   background-color: #69c6b0;
 }
 
+.dropdown-holder>button.showing {
+  background-color: #103c32;
+}
+.dropdown-items {
+  background-color: #103c32;
+}
+
 .thumbnail.video:before {
   color: #000;
   background: #f3b1cb;
