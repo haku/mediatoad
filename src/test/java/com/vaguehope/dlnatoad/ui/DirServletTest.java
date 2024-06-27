@@ -260,7 +260,7 @@ public class DirServletTest {
 		final String expectedPath = mockDir.getFile().getAbsolutePath()
 				.replace(" ", "+")
 				.replace("/", "%2F");
-		assertThat(page, containsString("<a class=\"tag_simple_row_item\" href=\"../search?query=t%3Dfoo+f%7E%5E%22" + expectedPath + "%22\">foo (2)</a>"));
+		assertThat(page, containsString("<a class=\"item\" href=\"../search?query=t%3Dfoo+f%7E%5E%22" + expectedPath + "%22\">foo (2)</a>"));
 	}
 
 	@Test
