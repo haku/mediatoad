@@ -10,10 +10,12 @@
 		{{/list_items}}
 	</ul>
 
-	{{#thumbs}}
-	<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
-	{{/thumbs}}
-	{{>multiselect}}
+	<div class="thumbnails">
+		{{#thumbs}}
+		<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
+		{{/thumbs}}
+		{{>multiselect}}
+	</div>
 
 	{{#next_page_path}}<a class="nextpage" href="{{{next_page_path}}}">Next Page</a>{{/next_page_path}}
 
@@ -27,3 +29,5 @@
 	{{#db_enabled}}<script src="{{path_prefix}}w/multiselect.js"></script>{{/db_enabled}}
 	{{/body}}
 {{/page}}
+{{! vim: noexpandtab softtabstop=0
+}}

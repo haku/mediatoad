@@ -58,13 +58,19 @@ input, button {
   gap: 1em;
 }
 
+.thumbnails {
+  display: grid;
+  grid: auto-flow / repeat(auto-fit, minmax(6em, 1fr));
+  gap: 1em;
+  padding: 0.5em;
+  place-items: center;
+}
 .thumbnail {
   display: inline-flex;
   position: relative;
-  margin: 0.4em 0.4em 0 0.4em;
+  margin: 0;
   justify-content: center;
   align-items: center;
-  vertical-align: middle;
   width: 6em;
   height: 5em;
   border: 2px solid transparent;
