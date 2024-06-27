@@ -49,14 +49,56 @@ input, button {
   margin-top: -0.5em;
   border-radius: 0.25em;
   padding: 1em;
+  z-index: 1;
 }
 
 .link_row {
-  margin: 0 0.5em;
   display: flex;
-  justify-content: flex-end;
+  margin: 1em 0;
+}
+.link_row .left, .link_row .right {
+  flex-grow: 1;
+  margin: 0 0.5em;
+  display: inline-flex;
   gap: 1em;
 }
+.link_row .left {
+}
+.link_row .right {
+  justify-content: flex-end;
+}
+
+.tag_row {
+  margin: 1em 0;
+}
+.tag_row .item {
+  padding-right: 0.5em;
+  display: inline-block;
+}
+
+.text_details {
+  padding: 0.5em;
+  font-family: monospace;
+  white-space: pre-wrap;
+  overflow: scroll;
+}
+
+#popup-obfuscator {
+  background-color: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 4;
+  visibility: hidden;
+}
+#popup-obfuscator.is-visible {
+  background-color: rgba(0,0,0,.5);
+  visibility: visible;
+}
+
+/* thumbs */
 
 .thumbnails {
   display: grid;
@@ -167,17 +209,6 @@ input, button {
   text-align: center;
 }
 
-.tag_simple_row_item {
-  padding-right: 0.5em;
-  display: inline-block;
-}
-
-.prevnext_bar {
-  margin: 1em;
-  display: flex;
-  justify-content: space-between;
-}
-
 .prefs {
   margin: 1em 0.5em;
   text-align: right;
@@ -191,6 +222,14 @@ input, button {
 }
 .prefs .pref input {
   min-height: 1em;
+}
+
+/* item page */
+
+.prevnext_bar {
+  margin: 1em;
+  display: flex;
+  justify-content: space-between;
 }
 
 .mainimage {
@@ -221,24 +260,27 @@ input, button {
   height: 100%;
 }
 
-.text_details {
-  padding: 0.5em;
-  font-family: monospace;
-  white-space: pre-wrap;
-  overflow: scroll;
+.addtagbar_wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 1em;
 }
-
-#popup-obfuscator {
-  background-color: transparent;
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  z-index: 4;
-  visibility: hidden;
+.addtagbar_wrapper>div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1;
+  max-width: 30em;
 }
-#popup-obfuscator.is-visible {
-  background-color: rgba(0,0,0,.5);
-  visibility: visible;
+.addtagbar_wrapper form {
+  display: inline-flex;
+  flex-grow: 1;
+}
+.addTag_wrapper {
+  display: inline-flex;
+  flex-grow: 1;
+}
+#addTag {
+  flex-grow: 1;
+  min-width: 10em;
 }

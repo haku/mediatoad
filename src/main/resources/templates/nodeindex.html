@@ -1,9 +1,14 @@
 {{<page}}
 	{{$body}}
-	<h3>{{results.group_title}}{{#up_link_path}} <a id="up" href="{{up_link_path}}">up</a>{{/up_link_path}}</h3>
+	<h3>{{results.group_title}}</h3>
 	{{^is_sort_modified}}
 	<div class="link_row">
-		<span><a href="?sort=modified">Sort by Modified</a></span>
+		<span class="left">
+			{{#up_link_path}}<a id="up" href="{{up_link_path}}">Up</a>{{/up_link_path}}
+		</span>
+		<span class="right">
+			<a href="?sort=modified">Sort by Modified</a>
+		</span>
 	</div>
 	{{/is_sort_modified}}
 
@@ -30,14 +35,18 @@
 	{{#results.next_page_path}}<a class="nextpage" href="{{{results.next_page_path}}}">Next Page</a>{{/results.next_page_path}}
 
 	<h3>Tags</h3>
-	{{^results.tags}}{{results.no_tags_msg}}{{/results.tags}}
-	{{#results.tags}}
-	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
-	{{/results.tags}}
+	<div class="tag_row">
+		{{^results.tags}}{{results.no_tags_msg}}{{/results.tags}}
+		{{#results.tags}}
+		<a class="item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
+		{{/results.tags}}
+	</div>
 
 	{{#show_list_link_row}}
 	<div class="link_row">
-		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
+		<span class="right">
+			<a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a>
+		</span>
 	</div>
 
 	{{#show_prefs}}
