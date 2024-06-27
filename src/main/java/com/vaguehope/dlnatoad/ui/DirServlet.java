@@ -178,7 +178,7 @@ public class DirServlet extends HttpServlet {
 				!isRoot,
 				this.db != null && ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req),
 				favourite,
-				sort == Order.MODIFIED_DESC,
+				isRoot || sort == Order.MODIFIED_DESC,
 				videoThumbs,
 				node.getId(),
 				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
