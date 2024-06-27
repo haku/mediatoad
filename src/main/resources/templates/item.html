@@ -45,12 +45,12 @@
 	</div>
 
 	{{#edit_tags}}
-	<form action="" method="POST">
+	<form class="removetags" action="" method="POST">
 		<input type="hidden" name="action" value="rmtags">
 		{{#tags}}
-		<input type="checkbox" name="b64tag" style="margin: 0.5em;" value="{{b64}}" id="{{b64}}"><label style="margin: 0.5em;" for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label><br>
+		<div><input type="checkbox" name="b64tag" value="{{b64}}" id="{{b64}}"><label for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label></div>
 		{{/tags}}
-		<input type="submit" value="Delete" style="margin: 0.5em;">
+		<input type="submit" value="Delete">
 	</form>
 	{{/edit_tags}}
 

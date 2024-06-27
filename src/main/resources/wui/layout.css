@@ -260,6 +260,10 @@ input, button {
   height: 100%;
 }
 
+.removetags input[type="checkbox"] {
+  min-height: 1.5em;
+}
+
 .addtagbar_wrapper {
   display: flex;
   justify-content: center;
