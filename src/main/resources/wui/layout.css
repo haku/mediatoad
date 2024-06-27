@@ -70,6 +70,7 @@ input, button {
 
 .tag_row {
   margin: 1em 0;
+  text-align: center;
 }
 .tag_row .item {
   padding-right: 0.5em;
