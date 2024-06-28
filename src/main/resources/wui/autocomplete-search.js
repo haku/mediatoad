@@ -25,7 +25,6 @@ const searchAc = new autoComplete({
   name: "search",
   selector: "#search",
   wrapper: false,
-  placeHolder: "search",
   data: {
     src: async (query) => {
       try {

@@ -26,11 +26,12 @@
 
 		<form class="expand" action="{{path_prefix}}search" method="GET">
 			<div class="autocomplete_wrapper search_wrapper expand">
-				<input type="text" id="search" name="query" value="{{query}}" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+				<input type="text" id="search" name="query" value="{{query}}" placeholder="search{{#extra_query}} here{{/extra_query}}"
+						autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
 			</div>
 			<input type="hidden" name="extra_query" value="{{extra_query}}">
 			<span style="display: inline-flex;">
-				<input type="submit" value="Search{{#extra_query}} Here{{/extra_query}}">
+				<input type="submit" value="Search">
 				{{#allow_remote_search}}
 				<div class="dropdown-holder" id="search_menu">
 					<button class=dropdown">...</button>
