@@ -273,7 +273,7 @@ public class DirServletTest {
 		final String page = this.resp.getContentAsString();
 
 		assertThat(page, containsString("<input type=\"hidden\" name=\"extra_query\" value=\"f~^&quot;" + mockDir.getFile().getAbsolutePath() + "&quot;\">"));
-		assertThat(page, containsString("Search Here"));
+		assertThat(page, containsString("search here"));
 	}
 
 	@Test
