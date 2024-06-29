@@ -6,7 +6,7 @@ const addTagAc = new autoComplete({
   data: {
     src: async (query) => {
       try {
-        const source = await fetch(`../ac?mode=addtag&fragment=${encodeURIComponent(query)}`);
+        const source = await fetch(`${pathPrefix()}ac?mode=addtag&fragment=${encodeURIComponent(query)}`);
         const data = await source.json();
         return data;
       } catch (error) {
