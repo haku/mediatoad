@@ -48,7 +48,11 @@ public class MediaDb {
 					+ "size INT NOT NULL, "
 					+ "modified INT NOT NULL, "
 					+ "hash STRING NOT NULL, "
-					+ "id STRING NOT NULL"
+					+ "id STRING NOT NULL, "
+					+ "auth STRING NOT NULL DEFAULT '0', "
+					+ "missing INT(1) NOT NULL DEFAULT 0, "
+					+ "md5 STRING, "
+					+ "mimetype STRING"
 					+ ");");
 		}
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
