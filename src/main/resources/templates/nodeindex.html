@@ -1,16 +1,19 @@
 {{<page}}
+	{{$topbar}}
+		{{#up_link_path}}
+		<span class="item"><a id="up" href="{{up_link_path}}">Up</a></span>
+		{{/up_link_path}}
+	{{/topbar}}
+
 	{{$body}}
 	<h3>{{results.group_title}}</h3>
+	{{^is_sort_modified}}
 	<div class="link_row">
-		<span class="left">
-			{{#up_link_path}}<a id="up" href="{{up_link_path}}">Up</a>{{/up_link_path}}
-		</span>
 		<span class="right">
-			{{^is_sort_modified}}
 			<a href="?sort=modified">Sort by Modified</a>
-			{{/is_sort_modified}}
 		</span>
 	</div>
+	{{/is_sort_modified}}
 
 	<ul>
 		{{#favourites.list_items}}
