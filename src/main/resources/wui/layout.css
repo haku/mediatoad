@@ -136,15 +136,26 @@ input, button {
 
 #selection_info {
   position: fixed;
-  right: 1em;
   top: 1em;
   border-radius: 0.5em;
   padding: 1em;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  text-align: center;
+  width: 90%;
+}
+#selection_info button,
+#selection_info p {
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  flex-basis: 0;
 }
 #selection_info button {
-  margin: 0.5em 0;
+  flex-grow: 1;
+}
+#selection_info p {
+  flex-grow: 2;
+  text-wrap: nowrap;
 }
 #tag_editor {
   position: fixed;
