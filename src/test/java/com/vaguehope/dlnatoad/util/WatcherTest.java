@@ -56,7 +56,7 @@ public class WatcherTest {
 		roots.add(this.tmpRoot);
 		this.listener = mock(FileListener.class);
 		this.time = new Time.FakeTime();
-		this.undertest = new Watcher(roots, MediaFormat.MediaFileFilter.INSTANCE, this.listener, this.time, 200);
+		this.undertest = new Watcher(roots, MediaFormat.MediaFileFilter.INSTANCE, this.listener, this.time, 10);
 	}
 
 	@After
@@ -113,7 +113,7 @@ public class WatcherTest {
 			if (System.nanoTime() - startTime > TimeUnit.SECONDS.toNanos(timeoutSeconds)) {
 				fail("Timeout waiting for watch event count.");
 			}
-			Thread.sleep(200);
+			Thread.sleep(10);
 		}
 	}
 

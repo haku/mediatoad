@@ -379,7 +379,7 @@ public class MediaIndexTest {
 				tasks.add(r);
 			}
 			if (tasks.size() == 0 && this.schEx.getActiveCount() < 1) return;
-			Thread.sleep(200);
+			Thread.sleep(10);
 		}
 		fail("After timeout queue has items: " + tasks);
 	}

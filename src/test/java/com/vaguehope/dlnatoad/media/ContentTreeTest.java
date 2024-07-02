@@ -202,7 +202,7 @@ public class ContentTreeTest {
 
 	@Test
 	public void itRemovesOldItemsFromRecent() throws Exception {
-		final List<ContentItem> mockItems = this.mockContent.givenMockItems(300, sequentialTimeStamps());
+		final List<ContentItem> mockItems = this.mockContent.givenMockItems(205, sequentialTimeStamps());
 		final List<ContentItem> expected = mockItems.subList(mockItems.size() - 200, mockItems.size());
 		Collections.reverse(expected);
 
