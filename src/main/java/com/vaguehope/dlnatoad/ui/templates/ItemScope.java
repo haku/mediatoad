@@ -10,6 +10,7 @@ public class ItemScope {
 	public String previous_path;
 	public String next_path;
 
+	public String item_id;
 	public String type;
 	public boolean is_img;
 	public boolean is_video;

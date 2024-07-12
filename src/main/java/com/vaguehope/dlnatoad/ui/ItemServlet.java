@@ -123,6 +123,7 @@ public class ItemServlet extends HttpServlet {
 		final ItemScope itemScope = new ItemScope();
 		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, itemScope);
 
+		itemScope.item_id = item.getId();
 		itemScope.type = item.getFormat().getMime();
 		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
 		itemScope.is_video = HTML_VIDEO_FORMATS.contains(item.getFormat());

@@ -17,6 +17,10 @@ input[type=submit]:active, button:active {
   color: #071925;
   background-color: #69c6b0;
 }
+input[type=submit]:disabled, button:disabled {
+  border-color: #696969;
+  color: #696969;
+}
 
 .dropdown-holder>button.showing {
   background-color: #103c32;

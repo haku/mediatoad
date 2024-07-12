@@ -58,7 +58,7 @@
 	<div class="addtagbar_wrapper">
 		<div>
 			<a style="padding-right: 0.5em;" href="{{{tags_edit_path}}}">Edit</a>
-			<form action="{{{tags_post_path}}}" method="POST">
+			<form action="{{{tags_post_path}}}" method="POST" id="addtag_form" item_id="{{item_id}}">
 				<input type="hidden" name="action" value="addtag">
 				<div class="autocomplete_wrapper addTag_wrapper">
 					<input type="text" id="addTag" name="addTag" value="" {{#autofocus_add_tag}}autofocus{{/autofocus_add_tag}}
@@ -81,6 +81,8 @@
 		</span>
 	</div>
 	<div class="text_details">{{details}}</div>
+
+	<script src="../w/item.js"></script>
 	{{/body}}
 {{/page}}
 {{! vim: noexpandtab softtabstop=0

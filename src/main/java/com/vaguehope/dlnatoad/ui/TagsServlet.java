@@ -26,6 +26,7 @@ import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -164,7 +165,7 @@ public class TagsServlet extends HttpServlet {
 		}
 		final List<TagFrequency> ret = new ArrayList<>();
 		for (final Entry<Tag> e : tagCounts.entrySet()) {
-			ret.add(new TagFrequency(e.getElement().getTag(), e.getElement().getCls(), e.getCount()));
+			ret.add(new TagFrequencyUi(e.getElement().getTag(), e.getElement().getCls(), e.getCount()));
 		}
 		ret.sort(TagFrequency.Order.COUNT_DESC);
 
@@ -177,6 +178,16 @@ public class TagsServlet extends HttpServlet {
 		String tag;
 		String cls;
 		List<String> ids;
+	}
+
+
+	public class TagFrequencyUi extends TagFrequency {
+		private final String search;
+
+		public TagFrequencyUi(String tag, String cls, int count) {
+			super(tag, cls, count);
+			this.search = DbSearchSyntax.makeSingleTagSearch(tag);
+		}
 	}
 
 }
