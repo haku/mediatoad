@@ -78,9 +78,9 @@ public class TagsServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertEquals("["
-				+ "{\"tag\":\"tag0\",\"cls\":\"\",\"count\":2},"
-				+ "{\"tag\":\"tag0\",\"cls\":\"foo\",\"count\":1},"
-				+ "{\"tag\":\"tag1\",\"cls\":\"foo\",\"count\":1}"
+				+ "{\"search\":\"t\\u003dtag0\",\"tag\":\"tag0\",\"cls\":\"\",\"count\":2},"
+				+ "{\"search\":\"t\\u003dtag0\",\"tag\":\"tag0\",\"cls\":\"foo\",\"count\":1},"
+				+ "{\"search\":\"t\\u003dtag1\",\"tag\":\"tag1\",\"cls\":\"foo\",\"count\":1}"
 				+ "]", this.resp.getContentAsString());
 	}
 
@@ -100,7 +100,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", 2);
 	}
 
@@ -127,7 +127,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"tag\":\"othertag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dothertag\",\"tag\":\"othertag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", -2);
 	}
 
@@ -148,7 +148,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", 2);
 	}
 
