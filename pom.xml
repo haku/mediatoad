@@ -339,6 +339,11 @@
 			<artifactId>imageio-jpeg</artifactId>
 			<version>${twelvemonkeys-imageio.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-tiff</artifactId>
+			<version>${twelvemonkeys-imageio.version}</version>
+		</dependency>
 
 		<!-- Util -->
 
