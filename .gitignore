@@ -5,3 +5,4 @@ bin
 .settings
 tree.txt
 userfile
+db.db
