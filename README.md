@@ -95,7 +95,7 @@ directories where they have permission.  user2 has read-only access irrespective
 of per-direction permissions.
 
 ```
-user1 $2a$10$su3ctfwMCULBeBvk0WDffuyGV/rJki4IZrFHrqs8XjtCXykMs5wii +edittags
+user1 $2a$10$su3ctfwMCULBeBvk0WDffuyGV/rJki4IZrFHrqs8XjtCXykMs5wii +edittags +editdirprefs
 user2 $2a$10$wV3v3YKOS4Iy8IFoA.ucnugDRrDMWdx2yv3Jx5rc0JCgtEWHmQMNi
 ```
 
@@ -113,7 +113,7 @@ user1 has permission to view and to add and remove tags.  user2 has read-only
 access.  No other users have any access.
 
 ```
-user1 +edittags
+user1 +edittags +editdirprefs
 user2
 ```
 
