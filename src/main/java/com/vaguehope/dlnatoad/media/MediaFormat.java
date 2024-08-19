@@ -32,6 +32,9 @@ public enum MediaFormat {
 	JPG("jpg", "image/jpeg", ContentGroup.IMAGE),
 	PNG("png", "image/png", ContentGroup.IMAGE),
 	WEBP("webp", "image/webp", ContentGroup.IMAGE),
+        TIF("tif", "image/tiff", ContentGroup.IMAGE),
+        TIFF("tiff", "image/tiff", ContentGroup.IMAGE),
+        NEF("nef", "image/x-nikon-nef", ContentGroup.IMAGE),
 
 	AAC("aac", "audio/aac", ContentGroup.AUDIO),
 	AC3("ac3", "audio/ac3", ContentGroup.AUDIO),
