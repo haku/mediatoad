@@ -26,7 +26,7 @@ public enum MediaFormat {
 	RMVB("rmvb", "application/vnd.rn-realmedia-vbr", ContentGroup.VIDEO),
 	WEBM("webm", "video/webm", ContentGroup.VIDEO),
 	WMV("wmv", "video/x-ms-wmv", ContentGroup.VIDEO),
-	_3GP("3gp", "video/3gpp", ContentGroup.VIDEO),	
+	_3GP("3gp", "video/3gpp", ContentGroup.VIDEO),
 
 	GIF("gif", "image/gif", ContentGroup.IMAGE),
 	JPEG("jpeg", "image/jpeg", ContentGroup.IMAGE),
