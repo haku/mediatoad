@@ -22,7 +22,7 @@ public class ImageResizerTest {
 
 	@Before
 	public void before() throws Exception {
-		this.undertest = new ImageResizer(this.tmp.newFolder());
+		this.undertest = new ImageResizer();
 	}
 
 	@Test
@@ -31,7 +31,8 @@ public class ImageResizerTest {
 		try (final InputStream is = ImageResizer.class.getResourceAsStream("/icon.png")) {
 			FileUtils.copyInputStreamToFile(is, in);
 		}
-		final File f = this.undertest.resizeFile(in, 24, 0.8f);
+		final File f = this.tmp.newFile();
+		this.undertest.scaleImageToFile(in, 24, 0.8f, f);
 		assertTrue(f.exists());
 		assertThat(f.length(), greaterThan(1L));
 	}
@@ -39,7 +40,8 @@ public class ImageResizerTest {
 	@Ignore
 	@Test
 	public void itDecodesLocalFile() throws Exception {
-		final File f = this.undertest.resizeFile(new File(new File(System.getProperty("user.home")), "Art/test.jpg"), 200, 0.8f);
+		final File f = this.tmp.newFile();
+		this.undertest.scaleImageToFile(new File(new File(System.getProperty("user.home")), "Art/test.jpg"), 200, 0.8f, f);
 		assertTrue(f.exists());
 		assertThat(f.length(), greaterThan(1L));
 	}

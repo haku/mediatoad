@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -78,6 +79,20 @@ public class AutocompleteServletTest {
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1}"
 				+ "]",
 				this.resp.getContentAsString());
+	}
+
+	@Test
+	public void itSuggestsForSearchEqualsWithSpacesAndBrackets() throws Exception {
+		setSearchParams("t=bar");
+
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(Arrays.asList(new TagFrequency("bar foo", 3)));
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals("[{\"tag\":\"t\\u003d\\\"bar foo\\\"\",\"count\":3}]", this.resp.getContentAsString());
+
+		this.resp = new MockHttpServletResponse();
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(Arrays.asList(new TagFrequency("bar(foo)", 3)));
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals("[{\"tag\":\"t\\u003d\\\"bar(foo)\\\"\",\"count\":3}]", this.resp.getContentAsString());
 	}
 
 	@Test

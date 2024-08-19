@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,29 +44,38 @@ public class DbCache {
 		this.dirTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
 				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(1, TimeUnit.DAYS)
+				.expireAfterWrite(5, TimeUnit.DAYS)
 				.ticker(ticker)
 				.build(new DirTopTagLoader());
 		this.searchTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
 				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(1, TimeUnit.DAYS)
+				.expireAfterWrite(5, TimeUnit.DAYS)
 				.ticker(ticker)
 				.build(new SearchTopTagLoader());
 	}
 
+	/**
+	 * null means loading in progress.
+	 */
 	public List<TagFrequency> dirTopTags(final Set<BigInteger> authIds, final String pathPrefix) throws SQLException {
-		return readCache(this.dirTopTags, new CacheKey(authIds, pathPrefix));
+		return readCacheWithTimeout(this.dirTopTags, new CacheKey(authIds, pathPrefix));
 	}
 
+	/**
+	 * null means loading in progress.
+	 */
 	public List<TagFrequency> searchTopTags(final Set<BigInteger> authIds, final String query) throws SQLException {
-		return readCache(this.searchTopTags, new CacheKey(authIds, query));
+		return readCacheWithTimeout(this.searchTopTags, new CacheKey(authIds, query));
 	}
 
-	private static <T> T readCache(final LoadingCache<CacheKey, ValueAndVersion<T>> cache, final CacheKey key) throws SQLException {
+	private <T> T readCacheWithTimeout(final LoadingCache<CacheKey, ValueAndVersion<T>> cache, final CacheKey key) throws SQLException {
+		final ListenableFuture<ValueAndVersion<T>> f = Futures.submit(() -> cache.get(key), this.executor);
 		try {
-			final ValueAndVersion<T> val = cache.get(key);
-			return val == null ? null : val.value;
+			return f.get(200, TimeUnit.MILLISECONDS).value;
+		}
+		catch (final InterruptedException | TimeoutException e) {
+			return null;  // null indicates loading (empty list returned if no results).
 		}
 		catch (final ExecutionException e) {
 			if (e.getCause() instanceof SQLException) {

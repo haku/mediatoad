@@ -1,29 +1,80 @@
 {{<page}}
+	{{$topbar}}
+		{{#up_link_path}}
+		<span class="item"><a id="up" href="{{up_link_path}}">Up</a></span>
+		{{/up_link_path}}
+	{{/topbar}}
+
 	{{$body}}
-	<h3>{{results.group_title}}{{#up_link_path}} <a id="up" href="{{up_link_path}}">up</a>{{/up_link_path}}</h3>
-	{{#show_list_link_row}}
+	<h3>{{results.group_title}}</h3>
+	{{^is_sort_modified}}
 	<div class="link_row">
-		<span><a href="?sort=modified">Sort by Modified</a></span>
-		<span><a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a></span>
+		<span class="right">
+			<a href="?sort=modified">Sort by Modified</a>
+		</span>
 	</div>
-	{{/show_list_link_row}}
+	{{/is_sort_modified}}
+
+	<ul>
+		{{#favourites.list_items}}
+		<li><a href="{{item_path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a></li>
+		{{/favourites.list_items}}
+	</ul>
+
 	<ul>
 		{{#results.list_items}}
-		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
+		<li><a href="{{item_path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{file_path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
 		{{/results.list_items}}
 	</ul>
 
-	{{#results.thumbs}}
-	<span class="thumbnail"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
-	{{/results.thumbs}}
+	<div class="thumbnails">
+		{{#results.thumbs}}
+		<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
+		{{/results.thumbs}}
+		{{>multiselect}}
+		{{#db_enabled}}<script src="{{path_prefix}}w/multiselect.js"></script>{{/db_enabled}}
+	</div>
 
 	{{#results.next_page_path}}<a class="nextpage" href="{{{results.next_page_path}}}">Next Page</a>{{/results.next_page_path}}
 
 	<h3>Tags</h3>
-	{{^results.tags}}(no tags){{/results.tags}}
-	{{#results.tags}}
-	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
-	{{/results.tags}}
+	<div class="tag_row">
+		{{^results.tags}}{{results.no_tags_msg}}{{/results.tags}}
+		{{#results.tags}}
+		<a class="item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
+		{{/results.tags}}
+	</div>
+
+	{{#show_list_link_row}}
+	<div class="link_row">
+		<span class="right">
+			<a href="{{node_id}}.zip" download="{{node_file_name}}.zip">As .zip ({{node_total_size}})</a>
+		</span>
+	</div>
+
+	{{#show_prefs}}
+	<div class="prefs">
+		<form action="" method="POST">
+			<input type="hidden" name="action" value="setprefs">
+			<span class="pref">
+				<label for="favourite">favourite</label>
+				<input type="checkbox" name="favourite" value="true" id="favourite" {{#is_favourite}}checked=checked{{/is_favourite}}>
+			</span>
+			<span class="pref">
+				<label for="sort_by_modified">sort by modified</label>
+				<input type="checkbox" name="sort_by_modified" value="true" id="sort_by_modified" {{#is_sort_modified}}checked=checked{{/is_sort_modified}}>
+			</span>
+			<span class="pref">
+				<label for="video_thumbs">video thumbnails</label>
+				<input type="checkbox" name="video_thumbs" value="true" id="video_thumbs" {{#is_video_thumbs}}checked=checked{{/is_video_thumbs}}>
+			</span>
+			<input type="submit" value="Save" style="margin: 0.5em;">
+		</form>
+	</div>
+	{{/show_prefs}}
+	{{/show_list_link_row}}
 
 	{{/body}}
 {{/page}}
+{{! vim: noexpandtab softtabstop=0
+}}

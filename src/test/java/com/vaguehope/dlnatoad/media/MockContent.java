@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.util.FileHelper;
 
 public class MockContent {
 
@@ -105,14 +106,22 @@ public class MockContent {
 
 	public ContentNode addMockDir (final String id, final ContentNode parent, final AuthList authlist) throws IOException {
 		final File dir;
+		final String path;
 		if (this.tmp != null) {
-			dir = this.tmp.newFolder(id);
+			if (parent.getFile() != null) {
+				dir = new File(parent.getFile(), id);
+			}
+			else {
+				dir = this.tmp.newFolder(id);
+			}
+			path = FileHelper.rootAndPath(this.tmp.getRoot(), dir);
 		}
 		else {
 			dir = null;
+			path = null;
 		}
 
-		final ContentNode node = new ContentNode(id.replace(" ", ""), parent.getId(), id, dir, authlist, null);
+		final ContentNode node = new ContentNode(id.replace(" ", ""), parent.getId(), id, dir, path, authlist, null);
 		this.contentTree.addNode(node);
 		parent.addNodeIfAbsent(node);
 		return node;

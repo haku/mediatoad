@@ -86,7 +86,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				tasks.add(r);
 			}
 			if (tasks.size() == 0 && stpe.getActiveCount() < 1) return;
-			Thread.sleep(100);
+			Thread.sleep(10);
 		}
 		fail("After timeout queue has items: " + tasks);
 	}

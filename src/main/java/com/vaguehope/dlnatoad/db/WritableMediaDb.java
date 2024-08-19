@@ -346,6 +346,11 @@ public class WritableMediaDb implements Closeable {
 			if (e.isDeleted() == deleted && !updateModified) return false;
 
 			setTagModifiedAndDeleted(fileId, tag, cls, deleted, modifiled);
+
+			if (!e.getTag().equals(tag)) {  // tag case changed.
+				updateTagString(fileId, tag, cls);
+			}
+
 			return true;
 		}
 
@@ -379,5 +384,47 @@ public class WritableMediaDb implements Closeable {
 			throw new SQLException(String.format("Failed to set tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls), e);
 		}
 	}
+
+	public void updateTagString(final String fileId, final String tag, final String cls) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET tag=? WHERE file_id=? AND tag=? AND cls=?")) {
+			st.setString(1, tag);
+			st.setString(2, fileId);
+			st.setString(3, tag);
+			st.setString(4, cls);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured setting tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls), e);
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// prefs:
+
+	public void setNodePref(final String nodeId, final String key, final String value) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement("DELETE FROM nodeprefs WHERE id=? AND key=?")) {
+			st.setString(1, nodeId);
+			st.setString(2, key);
+			st.executeUpdate();
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to remove prev prefs for %s: key=%s", nodeId, key), e);
+		}
+
+		if (value == null) return;
+
+		try (final PreparedStatement st = this.conn.prepareStatement("INSERT INTO nodeprefs (id,key,value) VALUES(?,?,?)")) {
+			st.setString(1, nodeId);
+			st.setString(2, key);
+			st.setString(3, value);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured inserting dirpref for %s: key=%s: value='%s'", nodeId, key, value));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set dirpref for %s: key=%s value='%s'", nodeId, key, value), e);
+		}
+	}
+
 
 }

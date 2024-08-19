@@ -71,7 +71,7 @@ public class NodeConverterTest {
 	@Test
 	public void itDoesNotMakeContainersWithAuthLists() throws Exception {
 		final ContentNode input = new ContentNode("id", "pid", "title", null);
-		input.addNodeIfAbsent(new ContentNode("0", "id", "0", null, mock(AuthList.class), null));
+		input.addNodeIfAbsent(new ContentNode("0", "id", "0", null, null, mock(AuthList.class), null));
 		input.addNodeIfAbsent(new ContentNode("1", "id", "1", null));
 
 		final List<Container> actual = this.undertest.makeSubContainersWithoutTheirSubContainers(input);

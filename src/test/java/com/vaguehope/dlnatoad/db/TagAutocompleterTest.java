@@ -54,7 +54,7 @@ public class TagAutocompleterTest {
 
 	@Test
 	public void itMakesFragments() throws Exception {
-		final List<FragmentAndTag> actual = TagAutocompleter.makeFragments("foobar", 10);
+		final List<FragmentAndTag> actual = TagAutocompleter.makeFragments("foobar", "foobar", 10);
 		assertThat(actual, contains(
 				new FragmentAndTag("oobar", "foobar", 10),
 				new FragmentAndTag("obar", "foobar", 10),
@@ -73,26 +73,13 @@ public class TagAutocompleterTest {
 
 		final List<TagFrequency> actual = this.undertest.suggestTags("foo");
 		assertEquals(Arrays.asList(
-				new TagFrequency("fooa", 25),
-				new TagFrequency("fooob", 24),
-				new TagFrequency("fooc", 23),
-				new TagFrequency("foood", 22),
-				new TagFrequency("fooe", 21),
-				new TagFrequency("fooof", 20),
-				new TagFrequency("foog", 19),
-				new TagFrequency("foooh", 18),
-				new TagFrequency("fooi", 17),
-				new TagFrequency("foooj", 16),
-				new TagFrequency("fook", 15),
-				new TagFrequency("foool", 14),
-				new TagFrequency("foom", 13),
-				new TagFrequency("fooon", 12),
-				new TagFrequency("fooo", 11),
-				new TagFrequency("fooop", 10),
-				new TagFrequency("fooq", 9),
-				new TagFrequency("fooor", 8),
-				new TagFrequency("foos", 7),
-				new TagFrequency("fooot", 6)
+				new TagFrequency("fooa", 7),
+				new TagFrequency("fooob", 6),
+				new TagFrequency("fooc", 5),
+				new TagFrequency("foood", 4),
+				new TagFrequency("fooe", 3),
+				new TagFrequency("fooof", 2),
+				new TagFrequency("foog", 1)
 				), actual);
 	}
 
@@ -105,27 +92,40 @@ public class TagAutocompleterTest {
 
 		final List<TagFrequency> actual = this.undertest.suggestFragments("oo");
 		assertEquals(Arrays.asList(
-				new TagFrequency("aooa", 25),
-				new TagFrequency("booa", 25),
-				new TagFrequency("cooa", 25),
-				new TagFrequency("dooa", 25),
-				new TagFrequency("eooa", 25),
-				new TagFrequency("fooa", 25),
-				new TagFrequency("gooa", 25),
-				new TagFrequency("hooa", 25),
-				new TagFrequency("iooa", 25),
-				new TagFrequency("jooa", 25),
-				new TagFrequency("kooa", 25),
-				new TagFrequency("looa", 25),
-				new TagFrequency("mooa", 25),
-				new TagFrequency("nooa", 25),
-				new TagFrequency("oooa", 25),
-				new TagFrequency("pooa", 25),
-				new TagFrequency("qooa", 25),
-				new TagFrequency("rooa", 25),
-				new TagFrequency("sooa", 25),
-				new TagFrequency("tooa", 25)
+				new TagFrequency("aooa", 7),
+				new TagFrequency("booa", 7),
+				new TagFrequency("cooa", 7),
+				new TagFrequency("dooa", 7),
+				new TagFrequency("eooa", 7),
+				new TagFrequency("fooa", 7),
+				new TagFrequency("gooa", 7),
+				new TagFrequency("aooob", 6),
+				new TagFrequency("booob", 6),
+				new TagFrequency("cooob", 6),
+				new TagFrequency("dooob", 6),
+				new TagFrequency("eooob", 6),
+				new TagFrequency("fooob", 6),
+				new TagFrequency("gooob", 6)
 				), actual);
+	}
+
+	@Test
+	public void itSuggestsTagMatchesWithUpperCaseAndAccents() throws Exception {
+		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			b.fileWithTags("bar");
+			b.fileWithTags("bat");
+			b.fileWithTags("foo");
+			b.fileWithTags("Blåhaj");
+		}
+		this.undertest.generateIndex();
+
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Blå"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("Bla"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("bla"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestTags("bl"));
+
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("låh"));
+		assertEquals(Arrays.asList(new TagFrequency("Blåhaj", 1)), this.undertest.suggestFragments("lah"));
 	}
 
 	@Test
@@ -182,11 +182,49 @@ public class TagAutocompleterTest {
 		assertEquals(Arrays.asList(new TagFrequency("gg", 0)), this.undertest.suggestFragments("g"));
 	}
 
+	@Test
+	public void itIncrementsTagCount2() throws Exception {
+		try (final Batch b = this.mockMediaMetadataStore.batch()) {
+			b.fileWithTags("power line");
+			b.fileWithTags("power_lines");
+			b.fileWithTags("powerline");
+			b.fileWithTags("powerPuff");
+			b.fileWithTags("powerPuff_girls");
+			b.fileWithTags("powerpuff_girls_z");
+			b.fileWithTags("powers_");
+			b.fileWithTags("powerstrip");
+		}
+		this.undertest.generateIndex();
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		this.undertest.changeTagCount("powerpuff_girls", 1);
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		this.undertest.changeTagCount("powerpuff_girls", 1);
+		assertEquals(Arrays.asList(
+				new TagFrequency("powerpuff_girls", 2),
+				new TagFrequency("powerPuff", 1),
+				new TagFrequency("powerPuff_girls", 1),
+				new TagFrequency("powerpuff_girls_z", 1)),
+				this.undertest.suggestTags("powerp"));
+
+		assertEquals(Arrays.asList(), this.undertest.suggestFragments("powerp"));
+	}
+
 	private void mockFilesWithTags() throws IOException, InterruptedException, Exception {
 		try (final Batch b = this.mockMediaMetadataStore.batch()) {
-			for (char x = 'a'; x <= 'z'; x++) {
-				for (char y = 'a'; y <= 'z'; y++) {
-					for (int i = 0; i < 'z' - y; i++) {
+			for (char x = 'a'; x <= 'g'; x++) {
+				for (char y = 'a'; y <= 'g'; y++) {
+					for (int i = 0; i <= 'g' - y; i++) {
 						b.fileWithTags(x + "oo" + (y % 2 == 0 ? "o" : "") + y);
 					}
 				}

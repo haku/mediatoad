@@ -20,6 +20,9 @@ public class DbSearchSyntaxTest {
 		assertEquals("t='a \"b c\" \\'d e\\''", DbSearchSyntax.makeSingleTagSearch("a \"b c\" 'd e'"));
 		assertEquals("t=\"foo(b\"", DbSearchSyntax.makeSingleTagSearch("foo(b"));
 		assertEquals("t=\"bar)b\"", DbSearchSyntax.makeSingleTagSearch("bar)b"));
+		assertEquals("t=\"'a'\"", DbSearchSyntax.makeSingleTagSearch("'a'"));
+		assertEquals("t='\"a\"'", DbSearchSyntax.makeSingleTagSearch("\"a\""));
+		assertEquals("t='\\'\"\\'\"\\'\"\\'\"\\''", DbSearchSyntax.makeSingleTagSearch("'\"'\"'\"'\"'"));
 	}
 
 	@Test
@@ -36,6 +39,24 @@ public class DbSearchSyntaxTest {
 	public void itUrlEscapesAsExpected() throws Exception {
 		assertEquals("t%3D%22foo+bar%22", UrlEscapers.urlFormParameterEscaper().escape("t=\"foo bar\""));
 		assertEquals("t%3D6%2Bthings", UrlEscapers.urlFormParameterEscaper().escape("t=6+things"));
+	}
+
+	@Test
+	public void itAddsBracketsIfNeeded() throws Exception {
+		assetDoesNotAddBrackets("t=foo");
+		assetDoesNotAddBrackets("t=foo AND t=bar");
+//		assetDoesNotAddBrackets("(t=foo OR t=bar)");  // TODO hand this case.
+
+		assetDoesAddBrackets("t=foo OR t=bar");
+		assetDoesAddBrackets("(t=foo OR t=bar) AND (t=bat OR t=baz)");
+	}
+
+	private static void assetDoesNotAddBrackets(String test) {
+		assertEquals(test, DbSearchSyntax.addBracketsIfNeeded(test));
+	}
+
+	private static void assetDoesAddBrackets(String test) {
+		assertEquals("(" + test + ")", DbSearchSyntax.addBracketsIfNeeded(test));
 	}
 
 	@Test

@@ -9,6 +9,7 @@ public class PageScope {
 	public final String query;
 	public final boolean allow_remote_search;
 
+	public String extra_query;
 	public String debugfooter;
 
 	public PageScope(final String page_title, final String path_prefix, final String username, final boolean db_enabled, final String query, final boolean allow_remote_search) {
@@ -22,6 +23,10 @@ public class PageScope {
 
 	public void setDebugfooter(final String debugfooter) {
 		this.debugfooter = debugfooter;
+	}
+
+	public void setExtraQuery(String extraQuery) {
+		this.extra_query = extraQuery;
 	}
 
 }

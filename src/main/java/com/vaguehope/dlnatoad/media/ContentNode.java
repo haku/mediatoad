@@ -22,6 +22,7 @@ public class ContentNode extends AbstractContent {
 
 	private final String sortKey;
 	private final File file;
+	private final String path;
 	private final AuthList authList;
 
 	private final List<ContentNode> nodes = new ArrayList<>();
@@ -31,17 +32,18 @@ public class ContentNode extends AbstractContent {
 	private volatile long lastModified = 0L;
 
 	public ContentNode (final String id, final String parentId, final String title, final String sortKey) {
-		this(id, parentId, title, null, null, sortKey);
+		this(id, parentId, title, null, null, null, sortKey);
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final AuthList authList, final String sortKey) {
-		this(id, parentId, title, dir, authList, sortKey, new ArrayList<>());
+	public ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey) {
+		this(id, parentId, title, dir, path, authList, sortKey, new ArrayList<>());
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
+	public ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
 		super(id, parentId, title);
 		if (parentId == null)  throw new IllegalArgumentException("parentId must not be null.");
 		this.file = dir;
+		this.path = path;
 		this.authList = authList;
 		this.sortKey = sortKey;
 		this.items = itemsCollection;
@@ -111,6 +113,10 @@ public class ContentNode extends AbstractContent {
 
 	public File getFile () {
 		return this.file;
+	}
+
+	public String getPath() {
+		return this.path;
 	}
 
 	public long getLastModified() {

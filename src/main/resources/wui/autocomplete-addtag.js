@@ -6,7 +6,7 @@ const addTagAc = new autoComplete({
   data: {
     src: async (query) => {
       try {
-        const source = await fetch(`../ac?mode=addtag&fragment=${escape(query)}`);
+        const source = await fetch(`${pathPrefix()}ac?mode=addtag&fragment=${encodeURIComponent(query)}`);
         const data = await source.json();
         return data;
       } catch (error) {
@@ -25,6 +25,14 @@ const addTagAc = new autoComplete({
       item.innerHTML = `<span>${data.match}</span><span>(${data.value.count})</span>`;
     },
   },
+  searchEngine: (query, record) => {
+    const q = removeMatchOpertor(query);
+    const x = record.indexOf(q);
+    if (x >= 0) {
+        record = record.replace(q, `<mark>${q}</mark>`);
+    }
+    return record;
+  },
   events: {
     input: {
       keydown: (event) => {
@@ -32,6 +40,7 @@ const addTagAc = new autoComplete({
           case 13:  // enter
             if (addTagAc.cursor >= 0) {
               event.preventDefault();
+              event.stopImmediatePropagation();
               addTagAc.select(addTagAc.cursor);
             }
             break;

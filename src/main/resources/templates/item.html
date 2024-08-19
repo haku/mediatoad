@@ -7,53 +7,82 @@
 	</div>
 
 	<div class="mainimage">
-		<img src="{{img_path}}">
+		{{#is_img}}
+		<img src="{{item_path}}">
 		<div class="nav">
 			{{#previous_path}}<a class="previous" href="{{previous_path}}"></a>{{/previous_path}}
 			{{#next_path}}<a class="next" href="{{next_path}}"></a>{{/next_path}}
 		</div>
+		{{/is_img}}
+
+		{{#is_video}}
+		<video controls>
+			<source src="{{item_path}}" type="{{type}}" />
+			<p>[ Browser does not suport playing this file ]</p>
+		</video>
+		{{/is_video}}
+
+		{{#is_audio}}
+		<audio controls>
+			<source src="{{item_path}}" type="{{type}}" />
+			<p>[ Browser does not suport playing this file ]</p>
+		</video>
+		{{/is_audio}}
+
+		{{#is_other}}
+		<p>{{item_file_name}}</p>
+		<p>[ Browser does not suport playing this file ]</p>
+		{{/is_other}}
 	</div>
 
-	{{#db_enabled}}
-	<div>
+{{#db_enabled}}
+	<div class="tag_row">
 		{{^edit_tags}}
 		{{#tags}}
-		<a class="tag_simple_row_item" href="{{{search_path}}}">{{tag}}</a>
+		<a class="item" href="{{{search_path}}}">{{tag}}</a>
 		{{/tags}}
 		{{/edit_tags}}
+	</div>
 
-		{{#edit_tags}}
-		<form action="" method="POST">
-			<input type="hidden" name="action" value="rmtags">
-			{{#tags}}
-			<input type="checkbox" name="b64tag" style="margin: 0.5em;" value="{{b64}}" id="{{b64}}"><label style="margin: 0.5em;" for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label><br>
-			{{/tags}}
-			<input type="submit" value="Delete" style="margin: 0.5em;">
-		</form>
-		{{/edit_tags}}
+	{{#edit_tags}}
+	<form class="removetags" action="" method="POST">
+		<input type="hidden" name="action" value="rmtags">
+		{{#tags}}
+		<div><input type="checkbox" name="b64tag" value="{{b64}}" id="{{b64}}"><label for="{{b64}}">{{tag}}{{#cls}} ({{cls}}){{/cls}}</label></div>
+		{{/tags}}
+		<input type="submit" value="Delete">
+	</form>
+	{{/edit_tags}}
 
-		{{#tags_edit_path}}
-		<div style="padding: 0.5em; display: flex; justify-content: center;">
+	{{#tags_edit_path}}
+	<div class="addtagbar_wrapper">
+		<div>
 			<a style="padding-right: 0.5em;" href="{{{tags_edit_path}}}">Edit</a>
-			<form style="display:inline;" action="{{{tags_post_path}}}" method="POST">
+			<form action="{{{tags_post_path}}}" method="POST" id="addtag_form" item_id="{{item_id}}">
 				<input type="hidden" name="action" value="addtag">
 				<div class="autocomplete_wrapper addTag_wrapper">
 					<input type="text" id="addTag" name="addTag" value="" {{#autofocus_add_tag}}autofocus{{/autofocus_add_tag}}
-						style="width: 20em;" autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
+						autocomplete="off" spellcheck=false autocorrect="off" autocapitalize="off">
 				</div>
 				<input type="submit" value="Add">
 			</form>
 			<script src="../w/autocomplete-addtag.js"></script>
 		</div>
-		{{/tags_edit_path}}
 	</div>
-	{{/db_enabled}}
+	{{/tags_edit_path}}
+{{/db_enabled}}
 
 	<div class="link_row">
-		<a href="{{img_path}}" download="{{img_file_name}}">Download</a>
-		<a href="{{dir_path}}">{{dir_name}}</a>
+		<span class="left">
+			<a href="{{item_path}}" download="{{item_file_name}}">Download</a>
+		</span>
+		<span class="right">
+			<a href="{{dir_path}}">{{dir_name}}</a>
+		</span>
 	</div>
 	<div class="text_details">{{details}}</div>
+
+	<script src="../w/item.js"></script>
 	{{/body}}
 {{/page}}
 {{! vim: noexpandtab softtabstop=0

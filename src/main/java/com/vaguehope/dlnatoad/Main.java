@@ -53,6 +53,7 @@ import com.vaguehope.dlnatoad.media.MediaId;
 import com.vaguehope.dlnatoad.media.MediaIndex;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
 import com.vaguehope.dlnatoad.media.MediaInfo;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.rpc.client.RemoteContentServlet;
 import com.vaguehope.dlnatoad.rpc.client.RpcClient;
 import com.vaguehope.dlnatoad.rpc.server.MediaImpl;
@@ -66,10 +67,12 @@ import com.vaguehope.dlnatoad.ui.ItemServlet;
 import com.vaguehope.dlnatoad.ui.SearchServlet;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
+import com.vaguehope.dlnatoad.ui.TagsServlet;
 import com.vaguehope.dlnatoad.ui.ThumbsServlet;
 import com.vaguehope.dlnatoad.ui.UpnpServlet;
+import com.vaguehope.dlnatoad.ui.WebdavDivertingHandler;
+import com.vaguehope.dlnatoad.ui.WebdavServlet;
 import com.vaguehope.dlnatoad.util.ExecutorHelper;
-import com.vaguehope.dlnatoad.util.ImageResizer;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
@@ -140,9 +143,9 @@ public final class Main {
 		final ExecutorService miExSvc = ExecutorHelper.newExecutor(1, "mi");
 
 		final File thumbsDir = args.getThumbsDir();
-		final ImageResizer imageResizer =
+		final ThumbnailGenerator thumbnailGenerator =
 				thumbsDir != null
-				? new ImageResizer(thumbsDir)
+				? new ThumbnailGenerator(thumbsDir)
 				: null;
 
 		final File dbFile = args.getDb();
@@ -165,7 +168,7 @@ public final class Main {
 		}
 
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
-		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, imageResizer, miExSvc);
+		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, thumbnailGenerator, miExSvc);
 		final ContentTree contentTree = new ContentTree();
 
 		final File dropDir = args.getDropDir();
@@ -196,7 +199,7 @@ public final class Main {
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
 		final Server server = startContentServer(
-				contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, imageResizer, args, bindAddresses, hostName);
+				contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, bindAddresses, hostName);
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
@@ -234,7 +237,7 @@ public final class Main {
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
-			final ImageResizer imageResizer,
+			final ThumbnailGenerator thumbnailGenerator,
 			final Args args,
 			final List<InetAddress> bindAddresses,
 			final String hostName) throws Exception {
@@ -249,9 +252,9 @@ public final class Main {
 		}
 
 		while (true) {
-			final ServletContextHandler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
-			final ServletContextHandler mainHandler = makeContentHandler(
-					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, imageResizer, args, hostName);
+			final Handler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
+			final Handler mainHandler = makeContentHandler(
+					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -283,7 +286,7 @@ public final class Main {
 		}
 	}
 
-	private static ServletContextHandler makeContentHandler(
+	private static Handler makeContentHandler(
 			final ContentTree contentTree,
 			final MediaId mediaId,
 			final MediaDb mediaDb,
@@ -291,7 +294,7 @@ public final class Main {
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
 			final RpcClient rpcClient,
-			final ImageResizer imageResizer,
+			final ThumbnailGenerator thumbnailGenerator,
 			final Args args,
 			final String hostName) throws ArgsException, IOException {
 
@@ -313,8 +316,8 @@ public final class Main {
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
-		final FilterHolder authFilterHolder = new FilterHolder(new AuthFilter(users, authTokens, contentTree, args.isPrintAccessLog()));
-		servletHandler.addFilter(authFilterHolder, "/*", null);
+		final AuthFilter authFilter = new AuthFilter(users, authTokens, args.isPrintAccessLog());
+		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory);
@@ -324,21 +327,37 @@ public final class Main {
 
 		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null, args.getTemplateRoot());
 
-		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, imageResizer, dbCache);
+		final DirServlet dirServlet = new DirServlet(servletCommon, contentTree, thumbnailGenerator, mediaDb, dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
-		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, mediaDb, dbCache, upnpService, rpcClient, imageResizer)), "/search");
+		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, contentServlet, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
-		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, imageResizer)), "/" + C.THUMBS_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb, tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new TagsServlet(contentTree, mediaDb, tagAutocompleter)), "/" + C.TAGS_PATH);
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
 
-		return servletHandler;
+		final ServletContextHandler webavHandler = makeWebdavHandler(authFilter, contentTree, mediaDb, args);
+
+		return new WebdavDivertingHandler(webavHandler, servletHandler);
 	}
 
-	private static ServletContextHandler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+	private static ServletContextHandler makeWebdavHandler(final AuthFilter authFilter, final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+		final ServletContextHandler handler = new ServletContextHandler();
+		handler.setContextPath("/");
+
+		if (args.isPrintAccessLog()) {
+			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		}
+
+		handler.addFilter(new FilterHolder(authFilter), "/*", null);
+		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree, mediaDb)), "/*");
+		return handler;
+	}
+
+	private static Handler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 

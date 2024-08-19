@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,7 +48,11 @@ public class MediaDb {
 					+ "size INT NOT NULL, "
 					+ "modified INT NOT NULL, "
 					+ "hash STRING NOT NULL, "
-					+ "id STRING NOT NULL"
+					+ "id STRING NOT NULL, "
+					+ "auth STRING NOT NULL DEFAULT '0', "
+					+ "missing INT(1) NOT NULL DEFAULT 0, "
+					+ "md5 STRING, "
+					+ "mimetype STRING"
 					+ ");");
 		}
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
@@ -84,6 +90,15 @@ public class MediaDb {
 		}
 		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
+
+		if (!tableExists("nodeprefs")) {
+			executeSql("CREATE TABLE nodeprefs ("
+					+ "id STRING NOT NULL, "
+					+ "key STRING NOT NULL, "
+					+ "value STRING NOT NULL, "
+					+ "UNIQUE(id, key)"
+					+ ");");
+		}
 	}
 
 	@SuppressWarnings("resource")
@@ -303,26 +318,6 @@ public class MediaDb {
 	}
 
 	// FIXME this does not honour auth.
-	@Deprecated
-	public List<TagFrequency> getAutocompleteSuggestions(final String fragment, final int countLimit, final boolean startsWithOnly) throws SQLException {
-		final String sql = "SELECT tag, COUNT(DISTINCT file_id) AS count"
-				+ " FROM tags"
-				+ " WHERE tag LIKE ? ESCAPE ? AND deleted=0 AND cls NOT LIKE '.%'"
-				+ " GROUP BY tag"
-				+ " ORDER BY count DESC, tag ASC"
-				+ " LIMIT ?;";
-		try (final PreparedStatement st = this.dbConn.prepareStatement(sql)) {
-			String matcher = Sqlite.escapeSearch(fragment) + "%";
-			if (!startsWithOnly) matcher = "%" + matcher;
-			st.setString(1, matcher);
-			st.setString(2, Sqlite.SEARCH_ESC);
-			st.setInt(3, countLimit);
-			st.setMaxRows(countLimit);
-			return readTagFrequencyResultSet(countLimit, st);
-		}
-	}
-
-	// FIXME this does not honour auth.
 	public List<TagFrequency> getAllTagsNotMissingNotDeleted() throws SQLException {
 		final String sql = "SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
 				+ " FROM files, tags"
@@ -346,6 +341,36 @@ public class MediaDb {
 			return ret;
 		}
 	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// prefs:
+
+	public Map<String, String> getNodePrefs(final String nodeId) throws SQLException {
+		final Map<String, String> ret = new HashMap<>();
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT key, value FROM nodeprefs WHERE id=?;")) {
+			st.setString(1, nodeId);
+			try (final ResultSet rs = st.executeQuery()) {
+				while (rs.next()) {
+					ret.put(rs.getString(1), rs.getString(2));
+				}
+				return ret;
+			}
+		}
+	}
+
+	public Map<String, String> getAllNodePref(final String key) throws SQLException {
+		final Map<String, String> ret = new HashMap<>();
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT id, value FROM nodeprefs WHERE key=?;")) {
+			st.setString(1, key);
+			try (final ResultSet rs = st.executeQuery()) {
+				while (rs.next()) {
+					ret.put(rs.getString(1), rs.getString(2));
+				}
+				return ret;
+			}
+		}
+	}
+
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

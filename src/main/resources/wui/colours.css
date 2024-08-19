@@ -5,12 +5,62 @@ body {
 a {
   color: #f3b1cb;
 }
-input {
-  padding: 0.2em 0.5em;
-  border-radius: 0.2em;
+input, button {
   background: #071925;
   border: #69c6b0 0.1em solid;
   color: #fff;
+}
+input[type=checkbox] {
+  accent-color: #69c6b0;
+}
+input[type=submit]:active, button:active {
+  color: #071925;
+  background-color: #69c6b0;
+}
+input[type=submit]:disabled, button:disabled {
+  border-color: #696969;
+  color: #696969;
+}
+
+.dropdown-holder>button.showing {
+  background-color: #103c32;
+}
+.dropdown-items {
+  background-color: #103c32;
+}
+
+.thumbnail.video:before {
+  color: #000;
+  background: #f3b1cb;
+}
+.thumbnail.selected {
+  border-color: #69c6b0;
+  background-color: #103c32;
+}
+.thumbnail.selected:after {
+  position: absolute;
+  display: block;
+  content: '';
+  border: 2px solid #69c6b0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: -1;
+}
+
+#selection_info {
+  background-color: #103c32;
+}
+#tag_editor {
+  background-color: #103c32;
+}
+#tag_editor .title_holder {
+  background-color: #071925;
+}
+
+.prefs form {
+  border: #69c6b0 0.1em solid;
+  border-radius: 0.2em;
 }
 
 .mainimage img {

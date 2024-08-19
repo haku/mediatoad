@@ -38,7 +38,10 @@ import com.google.common.collect.ImmutableMap;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
+import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
+import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
@@ -46,7 +49,7 @@ import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
-import com.vaguehope.dlnatoad.util.ImageResizer;
+import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 
 public class DirServletTest {
 
@@ -55,7 +58,7 @@ public class DirServletTest {
 	private ServletCommon servletCommon;
 	private ContentTree contentTree;
 	private MockContent mockContent;
-	private ImageResizer imageResizer;
+	private ThumbnailGenerator thumbnailGenerator;
 	private DirServlet undertest;
 
 	private MockHttpServletRequest req;
@@ -66,10 +69,10 @@ public class DirServletTest {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 
-		this.imageResizer = new ImageResizer(this.tmp.getRoot());
+		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, null);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, null);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
@@ -80,7 +83,7 @@ public class DirServletTest {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
 		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
-		final List<ContentItem> items = this.mockContent.givenMockItems(5, mockDir);
+		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.MP3, 5, mockDir);
 		final List<ContentItem> thumbItems = this.mockContent.givenMockItems(MediaFormat.JPEG, 3, mockDir);
 
 		for (final ContentItem i : items) {
@@ -94,7 +97,7 @@ public class DirServletTest {
 		assertEquals(200, this.resp.getStatus());
 
 		final String page = this.resp.getContentAsString();
-		assertThat(page, containsString("<title>dir 0 - DLNAtoad (hostName)</title>"));
+		assertThat(page, containsString("<title>dir 0 - MediaToad (hostName)</title>"));
 
 		assertThat(page, containsString(
 				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
@@ -102,16 +105,16 @@ public class DirServletTest {
 
 		for (final ContentItem i : items) {
 			assertThat(page, containsString(
-					"<li><a href=\"../c/" + i.getId() + "." + i.getFormat().getExt() + "\">"
+					"<li><a href=\"../i/" + i.getId() + "?node&#61;" + mockDir.getId() + "\">"
 							+ i.getFile().getName() + "</a>"
 							+ " [<a href=\"../c/" + i.getId() + "." + i.getFormat().getExt()
-							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KB</a>]"
+							+ "\" download=\"" + i.getId() + "." + i.getFormat().getExt() + "\">9.8 KiB</a>]"
 							+ " (00:02:03)</li>"));
 		}
 
 		for (final ContentItem thumb : thumbItems) {
 			assertThat(page, containsString(
-					"<span class=\"thumbnail\">"
+					"<span class=\"thumbnail \" item_id=\"" + thumb.getId() + "\">"
 							+ "<a href=\"../i/" + thumb.getId() + "?node=" + mockDir.getId() + "\">"
 							+ "<img src=\"../t/" + thumb.getId() + "\" title=\"" + thumb.getTitle() + "\">"
 							+ "</a></span>"));
@@ -148,6 +151,30 @@ public class DirServletTest {
 	}
 
 	@Test
+	public void itShowsFavourites() throws Exception {
+		final MediaDb db = new InMemoryMediaDb();
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, db, null);
+
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
+
+		try (final WritableMediaDb w = db.getWritable()) {
+			w.setNodePref(subDir.getId(), DirServlet.PREF_KEY_FAVOURITE, Boolean.TRUE.toString());
+		}
+
+		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals(200, this.resp.getStatus());
+
+		final String page = this.resp.getContentAsString();
+
+		assertThat(page, containsString(
+				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
+						+ subDir.getTitle() + "</a></li>"));
+	}
+
+	@Test
 	public void itPaginates() throws Exception {
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
@@ -176,7 +203,7 @@ public class DirServletTest {
 		final AuthList authlist = mock(AuthList.class);
 		when(authlist.hasUser("shork")).thenReturn(true);
 		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", this.contentTree.getRootNode(), authlist);
-		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
+		final List<ContentItem> protecItems = this.mockContent.givenMockItems(MediaFormat.MP3, 10, protecDir);
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
 		this.undertest.doGet(this.req, this.resp);
@@ -203,7 +230,7 @@ public class DirServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("c/" + protecItems.get(0).getId() + "."));
+		assertThat(this.resp.getContentAsString(), containsString("i/" + protecItems.get(0).getId() + "?"));
 	}
 
 	@Test
@@ -219,7 +246,7 @@ public class DirServletTest {
 	@Test
 	public void itShowsTopTags() throws Exception {
 		final DbCache dbCache = mock(DbCache.class);
-		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.imageResizer, dbCache);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, dbCache);
 
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
@@ -233,7 +260,20 @@ public class DirServletTest {
 		final String expectedPath = mockDir.getFile().getAbsolutePath()
 				.replace(" ", "+")
 				.replace("/", "%2F");
-		assertThat(page, containsString("<a class=\"tag_simple_row_item\" href=\"../search?query=t%3Dfoo+f%7E%5E%22" + expectedPath + "%22\">foo (2)</a>"));
+		assertThat(page, containsString("<a class=\"item\" href=\"../search?query=t%3Dfoo+f%7E%5E%22" + expectedPath + "%22\">foo (2)</a>"));
+	}
+
+	@Test
+	public void itScopesSearchesToCurrentDir() throws Exception {
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+
+		this.req.setPathInfo("/" + mockDir.getId());
+		this.undertest.doGet(this.req, this.resp);
+		final String page = this.resp.getContentAsString();
+
+		assertThat(page, containsString("<input type=\"hidden\" name=\"extra_query\" value=\"f~^&quot;" + mockDir.getFile().getAbsolutePath() + "&quot;\">"));
+		assertThat(page, containsString("search here"));
 	}
 
 	@Test

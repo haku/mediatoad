@@ -48,6 +48,7 @@ public abstract class MyFileServlet extends DefaultServlet {
 			this.factory = factory;
 		}
 
+		@SuppressWarnings("resource")
 		@Override
 		public HttpContent getContent(final String pathInContext, final int maxBufferSize) throws IOException {
 			final Resource res = this.factory.getResource(pathInContext);

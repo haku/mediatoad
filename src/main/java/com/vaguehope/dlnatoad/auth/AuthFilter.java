@@ -19,11 +19,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.Users.User;
-import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
 public class AuthFilter implements Filter {
@@ -45,13 +46,11 @@ public class AuthFilter implements Filter {
 
 	private final Users users;
 	private final AuthTokens authTokens;
-	private final ContentTree contentTree;
 	private final boolean printAccessLog;
 
-	public AuthFilter(final Users users, final AuthTokens authTokens, final ContentTree contentTree, final boolean printAccessLog) {
+	public AuthFilter(final Users users, final AuthTokens authTokens, final boolean printAccessLog) {
 		this.users = users;
 		this.authTokens = authTokens;
-		this.contentTree = contentTree;
 		this.printAccessLog = printAccessLog;
 	}
 
@@ -83,7 +82,7 @@ public class AuthFilter implements Filter {
 			// Continue even if token is invalid as auth may be attached or may not be required.
 		}
 
-		if (this.users != null && user == null && (isPost(req) || isLoginRequest(req))) {
+		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req))) || isForceUserParam(req, user))) {
 			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 			if (authHeader64 != null
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
@@ -104,7 +103,7 @@ public class AuthFilter implements Filter {
 					return;
 				}
 				user = this.users.validUser(username, pass);
-				if (user == null) {
+				if (user == null || isForceUserParam(req, user)) {
 					send401AndMaybePromptLogin(req, resp);
 					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
 					return;
@@ -120,10 +119,6 @@ public class AuthFilter implements Filter {
 
 		final boolean needsAuth;
 		if (WRITE_METHODS.contains(req.getMethod())) {
-			if (this.users == null) {
-				ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST requires --userfile.");
-				return;
-			}
 			needsAuth = true;
 		}
 		else if (READ_METHODS.contains(req.getMethod())) {
@@ -132,6 +127,11 @@ public class AuthFilter implements Filter {
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Method not supported.");
+			return;
+		}
+
+		if (needsAuth && this.users == null) {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "POST requires --userfile.");
 			return;
 		}
 
@@ -149,6 +149,9 @@ public class AuthFilter implements Filter {
 
 			if (user.hasPermission(Permission.EDITTAGS)) {
 				ReqAttr.ALLOW_EDIT_TAGS.set(req, Boolean.TRUE);
+			}
+			if (user.hasPermission(Permission.EDITDIRPREFS)) {
+				ReqAttr.ALLOW_EDIT_DIR_PREFS.set(req, Boolean.TRUE);
 			}
 		}
 
@@ -190,6 +193,13 @@ public class AuthFilter implements Filter {
 		return "login".equalsIgnoreCase(req.getParameter("action"));
 	}
 
+	private static boolean isForceUserParam(final HttpServletRequest req, User user) {
+		final String param = req.getParameter("user");
+		if (param == null) return false;
+		if (user != null && user.getUsername().equals(param)) return false;
+		return true;
+	}
+
 	private static void send401AndMaybePromptLogin(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
 		if (isGet(req) || isLoginRequest(req)) {
 			resp.setHeader(WWW_AUTHENTICATE, BASIC_REALM);
@@ -199,17 +209,23 @@ public class AuthFilter implements Filter {
 
 	private void setTokenCookie (final String username, final HttpServletResponse resp) throws IOException {
 		final String token = this.authTokens.newToken(username);
-		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
+		final Cookie cookie = makeAuthCookie(token);
 		cookie.setMaxAge((int) TimeUnit.MILLISECONDS.toSeconds(Auth.MAX_TOKEN_AGE_MILLIS));
-		cookie.setPath("/");
 		resp.addCookie(cookie);
 	}
 
 	private static void clearTokenCookie(final HttpServletResponse resp) throws IOException {
-		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, "");
+		final Cookie cookie = makeAuthCookie("");
 		cookie.setMaxAge(0);
-		cookie.setPath("/");
 		resp.addCookie(cookie);
+	}
+
+	private static Cookie makeAuthCookie(final String token) {
+		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
+		cookie.setPath("/");
+		cookie.setHttpOnly(true);
+		cookie.setComment(HttpCookie.getCommentWithAttributes("", false, SameSite.STRICT));
+		return cookie;
 	}
 
 }

@@ -21,7 +21,7 @@ public class DbSearchSyntax {
 	private static String quoteSearchTerm(final String term) {
 		String t = term;
 		final String quote;
-		if (StringUtils.containsAny(t, ' ', '(', ')', '\t', '　')) {
+		if (StringUtils.containsAny(t, '"', '\'', ' ', '(', ')', '\t', '　')) {
 			if (t.indexOf('"') >= 0) {
 				if (t.indexOf('\'') >= 0) {
 					t = t.replace("'", "\\'");
@@ -36,6 +36,14 @@ public class DbSearchSyntax {
 			quote = "";
 		}
 		return quote + t + quote;
+	}
+
+	public static String addBracketsIfNeeded(final String query) {
+		// TODO handle queries with brackets that do not need moar brackets.
+		if (query.contains("OR")) {
+			return "(" + query + ")";
+		}
+		return query;
 	}
 
 	public static boolean isFileMatchPartial (final String term) {

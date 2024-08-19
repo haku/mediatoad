@@ -6,22 +6,31 @@
 
 	<ul>
 		{{#list_items}}
-		<li><a href="{{path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
+		<li><a href="{{item_path}}"{{#autofocus}} autofocus{{/autofocus}}>{{title}}</a>{{#size}} [<a href="{{file_path}}" download="{{title}}">{{size}}</a>]{{/size}}{{#duration}} ({{duration}}){{/duration}}</li>
 		{{/list_items}}
 	</ul>
 
-	{{#thumbs}}
-	<span class="thumbnail"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
-	{{/thumbs}}
+	<div class="thumbnails">
+		{{#thumbs}}
+		<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
+		{{/thumbs}}
+		{{>multiselect}}
+	</div>
 
 	{{#next_page_path}}<a class="nextpage" href="{{{next_page_path}}}">Next Page</a>{{/next_page_path}}
-	
+
 	<h3>Tags</h3>
-	{{^tags}}(no tags){{/tags}}
-	{{#tags}}
-	<a class="tag_simple_row_item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
-	{{/tags}}
+	<div class="tag_row">
+		{{^tags}}{{no_tags_msg}}{{/tags}}
+		{{#tags}}
+		<a class="item" href="{{path_prefix}}{{{path}}}">{{tag}} ({{count}})</a>
+		{{/tags}}
+	</div>
+
 	{{/result_groups}}
 
+	{{#db_enabled}}<script src="{{path_prefix}}w/multiselect.js"></script>{{/db_enabled}}
 	{{/body}}
 {{/page}}
+{{! vim: noexpandtab softtabstop=0
+}}

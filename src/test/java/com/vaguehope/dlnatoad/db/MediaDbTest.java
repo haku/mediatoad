@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public class MediaDbTest {
@@ -155,6 +156,19 @@ public class MediaDbTest {
 			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, false)));
+	}
+
+	@Test
+	public void itUpdatesTagCaseOnReAdd() throws Exception {
+		final String fileId = "myid";
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
+			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+		}
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			assertTrue(w.addTag(fileId, "My-Tag", "", 1234567891L));
+		}
+		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("My-Tag", 1234567891L, false)));
 	}
 
 	@Test
@@ -305,32 +319,6 @@ public class MediaDbTest {
 	}
 
 	@Test
-	public void itGetsAutocompleteSuggestions() throws Exception {
-		try (final WritableMediaDb w = this.undertest.getWritable()) {
-			for (int i = 0; i < 10; i++) {
-				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar", "barbat");
-				w.addTag("id-" + i, "foobar", "place", 1234567891L);
-				w.addTag("id-" + i, "foo hidden", ".class", 1234567891L);  // . classes should be excluded
-				if (i > 5) w.addTag("id-" + i, "batfoo", 1234567891L);
-				if (i > 6) w.addTag("id-" + i, "foored", 1234567891L);
-				if (i > 7) w.addTag("id-" + i, "foogreen", 1234567891L);
-			}
-			for (int i = 10; i < 20; i++) {
-				addMockFiles(w, "id-" + i, BigInteger.ZERO, "foobar", "popping", "pingpop");
-				w.mergeTag("id-" + i, "foodeleted", "", 1234567890L, true);
-			}
-		}
-		assertThat(this.undertest.getAutocompleteSuggestions("fo", 3, false), contains(
-				new TagFrequency("foobar", 20),
-				new TagFrequency("batfoo", 4),
-				new TagFrequency("foored", 3)));
-		assertThat(this.undertest.getAutocompleteSuggestions("foo", 3, true), contains(
-				new TagFrequency("foobar", 20),
-				new TagFrequency("foored", 3),
-				new TagFrequency("foogreen", 2)));
-	}
-
-	@Test
 	public void itGetsAllTags() throws Exception {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			for (int i = 0; i < 10; i++) {
@@ -341,6 +329,33 @@ public class MediaDbTest {
 		}
 		assertThat(this.undertest.getAllTagsNotMissingNotDeleted(), contains(
 				new TagFrequency("foobar", 10)));
+	}
+
+	@Test
+	public void itSetsAndReadsPrefs() throws Exception {
+		final String id1 = "486023200074112812592441620153605687291657744882-somewhere";
+		final String id2 = "457356430841943070727738514685648663226656335856-somewhere_else";
+
+		assertThat(this.undertest.getNodePrefs(id1).entrySet(), hasSize(0));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setNodePref(id1, "my_pref_1", "true");
+			w.setNodePref(id2, "my_pref_1", "true");
+			w.setNodePref(id1, "my_pref_2", "false");
+		}
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "false"), this.undertest.getNodePrefs(id1));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setNodePref(id1, "my_pref_2", "true");
+		}
+		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "true"), this.undertest.getNodePrefs(id1));
+
+		assertEquals(ImmutableMap.of(id1, "true", id2, "true"), this.undertest.getAllNodePref("my_pref_1"));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setNodePref(id1, "my_pref_1", null);
+		}
+		assertEquals(ImmutableMap.of(id2, "true"), this.undertest.getAllNodePref("my_pref_1"));
 	}
 
 	private static void addMockFiles(final WritableMediaDb w, final String id, final BigInteger auth, final String... tags) throws SQLException {

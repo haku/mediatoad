@@ -25,11 +25,10 @@ const searchAc = new autoComplete({
   name: "search",
   selector: "#search",
   wrapper: false,
-  placeHolder: "search",
   data: {
     src: async (query) => {
       try {
-        const source = await fetch(`${pathPrefix()}ac?mode=search&fragment=${escape(query)}`);
+        const source = await fetch(`${pathPrefix()}ac?mode=search&fragment=${encodeURIComponent(query)}`);
         const data = await source.json();
         return data;
       } catch (error) {
@@ -117,6 +116,7 @@ function clickLinkById(id) {
   if (a) a.click();
 }
 document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.shiftKey) return;
   if (!e.altKey) {
     switch (e.target.tagName.toLowerCase()) {
       case 'input':

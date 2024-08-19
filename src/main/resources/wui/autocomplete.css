@@ -11,8 +11,8 @@
   left: 0;
   right: 0;
   padding: 0;
-  margin: 0 0 0 0;
-  border: 1px solid;
+  margin: 0 0.5em;
+  border: 0.1em solid;
   z-index: 1000;
   outline: none;
   background-color: Window;

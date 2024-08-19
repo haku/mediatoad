@@ -1,27 +1,34 @@
-DLNAtoad
-========
+MediaToad
+=========
+
+(formally DLNAtoad but it now also does other stuff, and renaming the repo might
+break things)
 
 What is this?
 -------------
 
-A minimal DLNA media server in a single jar.  On start up it will index the
-working directory and make any media found available via DLNA.
-
-Why?
-----
-
-The few good free DLNA server implementations I found online were clunky with
-awkward config.  I wanted something that was ultra simple without any extra
-(unsecured) admin APIs I do not want but which will always be a (if minor)
-security worry.
+A minimal media server in a single jar. On start up it will index the working
+directory and make any media found available via a web interface (defaults to
+port 8192) and via DLNA.  Additional features like user management and tagging
+are optional and enabled via CLI flags.
 
 How do I use it?
 ----------------
 
-It compiles to a runnable jar.  Run it in the top directory you want to share.
-Your DLNA device should magically detect it on your LAN.  DLNA is magical like
-that.  Media files are identified purely on file extension.  Known extensions
-are in the `src/main/java/com/vaguehope/dlnatoad/media/MediaFormat.java` file.
+It compiles to a runnable jar. Run it in the top directory you want to share.
+Your DLNA device should magically detect it on your LAN. DLNA is magical like
+that. Media files are identified purely on file extension. Known extensions are
+in the `src/main/java/com/vaguehope/dlnatoad/media/MediaFormat.java` file.
+
+How can I compile it?
+---------------------
+
+It's a Java Maven project.
+
+```shell
+$ mvn clean install
+$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
+```
 
 Any configuration?
 ------------------
@@ -33,72 +40,91 @@ current directory:
 $ java -jar dlnatoad.jar foo/ bar/
 ```
 
-### Other Args
+Instead of listing paths on the command line a text file of directories can be
+given using the `--tree` pointing to a file with one path per line.
 
-```shell
- --db VAL             : Path for metadata DB.
- --thumbs VAL         : Path for caching image thumbnails.
- -a (--accesslog)     : print access log line at end of each request. (default:
-                        false)
- -d (--daemon)        : detach form terminal and run in bakground. (default:
-                        false)
- -i (--interface) VAL : Hostname or IP address of interface to bind to.
- -s (--simplify)      : simplify directory structure. (default: false)
- -t (--tree) <file>   : file root dirs to scan, one per line.
- -v (--verbose)       : print log lines for various events. (default: false)
+Ideally it should not have write access to any of the media directories, it will
+never be needed as data is only ever stored in the DB.
+
+### Thumbnails
+
+If you want the web interface to show thumbnails the `--thumbs` flag must point
+to a directory where they can be written to.  Thumbnails will be generated as
+part of scanning for files on start up and whenever new files are found.
+Currently thumbnails are only generated for images files.
+
+### DB and Tagging
+
+If you want metadata to be collected and used, use `--db` to specify where this
+data should be stored.  It will be created if it does not exist.  This sqlite DB
+will also be used for storing any tags added to files.
+
+All files will be hashed so that metadata can be reassociated when a file is
+moved or renamed.  Metadata will be preserved so long as file content and name
+do not change at the same time - leave sufficient time for each change to be
+fully observed.
+
+### Reading Media Info
+
+If a DB is provided to store it, media info like duration etc will be read using
+`ffprobe`.  If ffprobe can not be found on `PATH` this will be skipped.
+
+### Users and Auth
+
+WARNING: this auth system is BEST EFFORT, do not trust it to protect anything
+important.  Auth changes are only loaded on startup and are not dynamically
+updated.  The process must be restarted after any auth changes.
+
+Directories can be restricted to specific users and users must have explicit
+permission to edit item tags.  Any directory protected with an AUTH file will
+not be exported via DLNA, since that has no concept of permissions.
+
+Uses are listed in a text file specified by the `--userfile` flag in the format
+described below.  Additionally `--sessiondir` must point to an empty writable
+directory where session tokens can be stored.  For obvious security reasons no
+other processes on the system should be able to read or write to the directory.
+
+The users file has the following format:
+
+```
+$username $bcrypt_hash $permissions
 ```
 
-Instead of specifying every path on the command line, a text file of
-directories can be used using the `--tree` option.  This should be a text file
-with one path per line.
+For example this specifies 2 users.  user1 has permission to edit tags in
+directories where they have permission.  user2 has read-only access irrespective
+of per-direction permissions.
 
-If you want metadata to be remembered, you must use `--db` to specify where
-this data should be stored.  It will be created if it does not exist.
-
-If you want thumbnails to be generated for image files you must specify a
-directory to store them in using `--thumbs`.  Thumbnails will not be generated
-for videos or other non-image formats.  You must use another tool to generate
-these.  Thumbnails will be looked for in the same directory as the media files
-using a bunch of filename-matching rules defined in
-`src/main/java/com/vaguehope/dlnatoad/media/CoverArtHelper.java`.
-
-How can I compile it?
----------------------
-
-Its a Maven project.
-
-```shell
-$ mvn clean install
-$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
+```
+user1 $2a$10$su3ctfwMCULBeBvk0WDffuyGV/rJki4IZrFHrqs8XjtCXykMs5wii +edittags
+user2 $2a$10$wV3v3YKOS4Iy8IFoA.ucnugDRrDMWdx2yv3Jx5rc0JCgtEWHmQMNi
 ```
 
-How does it work?
------------------
+Currently there is no sign-up page in the UI, but users can be added on the
+command line with the following command.  Alternatively just ask them to
+generate and send a bcrypt hash :3.
 
-It advertises its self on the LAN and provides simple directory listing service
-via UPnP (using the Cling library).  When the renderer wants to play a media
-file it fetches it via HTTP from the embedded Jetty server.  The RANGE header is
-used to fetch parts of files.
+```
+$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar --userfile $path_to_file --adduser
+```
 
-What does it use?
------------------
+Directories are protected by placing AUTH files in them listing one username per
+line.  Each name may be followed by permissions.  In the following example,
+user1 has permission to view and to add and remove tags.  user2 has read-only
+access.  No other users have any access.
 
-### Cling
+```
+user1 +edittags
+user2
+```
 
-A very useful set of libraries for working with UPnP.
+If a subdirectory has its own AUTH file a user must appear in all AUTH files in
+parent directories to have access.  Permissions are taken from the first AUTH
+file found going back up the directory tree.
 
-http://4thline.org/projects/cling/
+Running as a Service
+--------------------
 
-### Jetty 8
+See the `systemd` directory for an example unit file.
 
-Provides a HTTP server implementation that directly supports the RANGE header
-for serving the actual content.
-
-http://www.eclipse.org/jetty/
-
-### 3rd party code in this repository
-
-Some classes are based on code from WireMe and are used under the Apache 2
-License.  WireMe was also used as a general example of how to expose content via
-DLNA using the Cling library.  See https://code.google.com/p/wireme/ for more
-details.
+<!-- vim: textwidth=80 noautoindent nocindent
+-->

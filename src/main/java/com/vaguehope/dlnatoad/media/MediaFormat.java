@@ -42,12 +42,14 @@ public enum MediaFormat {
 	OGA("oga", "audio/ogg", ContentGroup.AUDIO),
 	OGG("ogg", "audio/ogg", ContentGroup.AUDIO),
 	RA("ra", "audio/vnd.rn-realaudio", ContentGroup.AUDIO),
-	WAV("wav", "audio/vnd.wave", ContentGroup.AUDIO),
+	WAV("wav", "audio/wave", ContentGroup.AUDIO),
 	WMA("wma", "audio/x-ms-wma", ContentGroup.AUDIO),
 
 	SRT("srt", "text/srt", ContentGroup.SUBTITLES),
 	SSA("ssa", "text/x-ssa", ContentGroup.SUBTITLES),
 	ASS("ass", "text/x-ass", ContentGroup.SUBTITLES),
+
+	PDF("pdf", "application/pdf", ContentGroup.DOCUMENT),
 	;
 
 	private static final Map<String, MediaFormat> EXT_TO_FORMAT;

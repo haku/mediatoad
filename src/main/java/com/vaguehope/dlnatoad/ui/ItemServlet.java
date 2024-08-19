@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.mustachejava.Mustache;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.UrlEscapers;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.Permission;
@@ -41,6 +42,7 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.ui.templates.ItemScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
@@ -54,6 +56,22 @@ public class ItemServlet extends HttpServlet {
 	private static final String PARAM_PREV_OFFSET = "prevoffset";
 	private static final String PARAM_NEXT_ID = "nextid";
 	private static final String PARAM_NEXT_OFFSET = "nextoffset";
+
+	private static final Set<ContentGroup> VIEWABLE_FORMATS = ImmutableSet.of(ContentGroup.IMAGE, ContentGroup.VIDEO, ContentGroup.AUDIO);
+
+	// https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Containers
+	// a best-effort guess at what is worth trying to play in a <video> and <audio> tags.
+	private static final Set<MediaFormat> HTML_VIDEO_FORMATS = ImmutableSet.of(
+			MediaFormat.MP4,
+			MediaFormat.OGV,
+			MediaFormat.WEBM);
+	private static final Set<MediaFormat> HTML_AUDIO_FORMATS = ImmutableSet.of(
+			MediaFormat.FLAC,
+			MediaFormat.M4A,
+			MediaFormat.MP3,
+			MediaFormat.OGA,
+			MediaFormat.OGG,
+			MediaFormat.WAV);
 
 	private static final ThreadSafeDateFormatter DATE_FORMAT = new ThreadSafeDateFormatter("yyyy-MM-dd HH:mm:ss z", Locale.ENGLISH);
 	private static final Logger LOG = LoggerFactory.getLogger(ItemServlet.class);
@@ -105,9 +123,16 @@ public class ItemServlet extends HttpServlet {
 		final ItemScope itemScope = new ItemScope();
 		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, itemScope);
 
-		itemScope.img_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
-		itemScope.img_file_name = item.getFile().getName();
-		itemScope.dir_path = "../" + node.getId();
+		itemScope.item_id = item.getId();
+		itemScope.type = item.getFormat().getMime();
+		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
+		itemScope.is_video = HTML_VIDEO_FORMATS.contains(item.getFormat());
+		itemScope.is_audio = HTML_AUDIO_FORMATS.contains(item.getFormat());
+		itemScope.is_other = !itemScope.is_img && !itemScope.is_video && !itemScope.is_audio;
+
+		itemScope.item_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
+		itemScope.item_file_name = item.getFile().getName();
+		itemScope.dir_path = "../d/" + node.getId();
 		itemScope.dir_name = node.getTitle();
 
 		if (this.mediaDb != null) {
@@ -226,7 +251,7 @@ public class ItemServlet extends HttpServlet {
 		if (prevI >= 0) {
 			for (int i = prevI; i >= 0; i--) {
 				final ContentItem ci = results.get(i);
-				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				if (!VIEWABLE_FORMATS.contains(ci.getFormat().getContentGroup())) continue;
 				prevI = i;
 				prevItem = ci;
 				break;
@@ -235,7 +260,7 @@ public class ItemServlet extends HttpServlet {
 		if (nextI >= 0 && nextI < results.size()) {
 			for (int i = nextI; i < results.size(); i++) {
 				final ContentItem ci = results.get(i);
-				if (ci.getFormat().getContentGroup() != ContentGroup.IMAGE) continue;
+				if (!VIEWABLE_FORMATS.contains(ci.getFormat().getContentGroup())) continue;
 				nextI = i;
 				nextItem = ci;
 				break;
@@ -286,7 +311,7 @@ public class ItemServlet extends HttpServlet {
 				sortParam = null;
 			}
 
-			allPath = "../" + node.getId() + (sortParam != null ? "?" + sortParam : "");
+			allPath = "../d/" + node.getId() + (sortParam != null ? "?" + sortParam : "");
 			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
 			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + (sortParam != null ? "&" + sortParam : "");
 		}

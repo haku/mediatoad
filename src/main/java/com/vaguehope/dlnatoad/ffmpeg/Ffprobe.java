@@ -3,24 +3,31 @@ package com.vaguehope.dlnatoad.ffmpeg;
 import java.io.File;
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Ffprobe {
+
+	private static final String FFPROBE = "ffprobe";
+	private static final Logger LOG = LoggerFactory.getLogger(Ffprobe.class);
 
 	private static Boolean isAvailable = null;
 
 	public static boolean isAvailable () {
 		if (isAvailable == null) {
 			try {
-				isAvailable = ProcessHelper.runAndWait("ffprobe", "-version").size() > 0;
+				isAvailable = ProcessHelper.runAndWait(FFPROBE, "-version").size() > 0;
 			}
 			catch (final IOException e) {
 				isAvailable = false;
+				LOG.warn("{} not found, file media info such as duration will not be read.", FFPROBE);
 			}
 		}
 		return isAvailable.booleanValue();
 	}
 
 	private static void checkAvailable() throws IOException {
-		if (!isAvailable()) throw new IOException("ffprobe not avilable.");
+		if (!isAvailable()) throw new IOException(FFPROBE + " not avilable.");
 	}
 
 	/**
@@ -30,7 +37,7 @@ public class Ffprobe {
 		checkAvailable();
 		final FfprobeParser parser = new FfprobeParser();
 		ProcessHelper.runAndWait(new String[] {
-				"ffprobe",
+				FFPROBE,
 				"-hide_banner",
 				"-show_streams",
 				"-show_format",

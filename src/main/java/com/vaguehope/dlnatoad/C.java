@@ -4,12 +4,12 @@ import java.util.regex.Pattern;
 
 public interface C {
 
-	String APPNAME = "DLNAtoad";
+	String APPNAME = "MediaToad";
 
 	String METADATA_MANUFACTURER = "VagueHope";
 
-	String METADATA_MODEL_NAME = "DLNAtoad";
-	String METADATA_MODEL_DESCRIPTION = "DLNAtoad MediaServer";
+	String METADATA_MODEL_NAME = "MediaToad";
+	String METADATA_MODEL_DESCRIPTION = "MediaToad Server";
 	String METADATA_MODEL_NUMBER = "v1";
 
 	int HTTP_PORT = 8192;
@@ -31,6 +31,8 @@ public interface C {
 	String ITEM_PATH_PREFIX = "i/";
 	String STATIC_FILES_PATH_PREFIX = "w/";
 	String THUMBS_PATH_PREFIX = "t/";
+	String SEARCH_PATH_PREFIX = "search/";
+	String TAGS_PATH = "tags";
 
 	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
 

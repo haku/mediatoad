@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +72,12 @@ public class TagAutocompleter {
 		});
 	}
 
+	public void changeTagCount(final String tag, final int delta) {
+		this.schExSvc.execute(() -> {
+			internalAddOrIncrementTag(tag, delta);
+		});
+	}
+
 	public List<TagFrequency> suggestTags(final String input) {
 		return binarySearch(this.tagsArr, input);
 	}
@@ -79,24 +86,21 @@ public class TagAutocompleter {
 		return binarySearch(this.fragmentsArr, input);
 	}
 
+	/**
+	 * the index arrays should only contain lowercase so that they are sorted correctly for case-insensitive binary searches.
+	 */
+	private static String indexForm(final String tag) {
+		return tag.toLowerCase();
+	}
+
 	private static List<TagFrequency> binarySearch(final FragmentAndTag[] idx, final String input) {
 		if (idx == null) return Collections.emptyList();
+		final String inputIndexForm = indexForm(input);
 
-		final FragmentPrefixComp comp = new FragmentPrefixComp(input);
-		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(input, "unused", -1), comp);
-		if (randomIndex < 0) return Collections.emptyList();
+		final Range range = searchIndexArray(idx, inputIndexForm);
+		if (!range.found) return Collections.emptyList();
 
-		int rangeStarts = randomIndex;
-		int rangeEnds = randomIndex;
-		while (rangeStarts > -1
-				&& idx[rangeStarts].fragment.toLowerCase().startsWith(input.toLowerCase())) {
-			rangeStarts--;
-		}
-		while (rangeEnds < idx.length
-				&& idx[rangeEnds].fragment.toLowerCase().startsWith(input.toLowerCase())) {
-			rangeEnds++;
-		}
-		final FragmentAndTag[] matches = Arrays.copyOfRange(idx, rangeStarts + 1, rangeEnds);
+		final FragmentAndTag[] matches = Arrays.copyOfRange(idx, range.start, range.end);
 		Arrays.sort(matches, FragmentAndTag.Order.COUNT_DESC);
 
 		// set to remove duplicates, eg: searching "2" will match "123923" as both "23923" and "23" fragments.
@@ -124,7 +128,7 @@ public class TagAutocompleter {
 			else {
 				p1 = o1.fragment.substring(0, this.prefix.length());
 			}
-			return p1.compareToIgnoreCase(o2.fragment);
+			return p1.compareTo(o2.fragment);
 		}
 	}
 
@@ -137,7 +141,13 @@ public class TagAutocompleter {
 	private void generateTagsIndex(final List<TagFrequency> tags) {
 		final List<FragmentAndTag> idx = new ArrayList<>(tags.size());
 		for (final TagFrequency tf : tags) {
-			idx.add(new FragmentAndTag(tf.getTag(), tf.getTag(), tf.getCount()));
+			final String tagForIndex = indexForm(tf.getTag());
+			idx.add(new FragmentAndTag(tagForIndex, tf.getTag(), tf.getCount()));
+
+			final String without = StringUtils.stripAccents(tagForIndex);
+			if (!without.equals(tagForIndex)) {
+				idx.add(new FragmentAndTag(without, tf.getTag(), tf.getCount()));
+			}
 		}
 		// Ensure sort is consistent with lookup, sqlite can sort slightly differently sometimes.
 		idx.sort(FragmentAndTag.Order.FRAGMENT_ASC);
@@ -167,19 +177,25 @@ public class TagAutocompleter {
 
 	private static List<FragmentAndTag> makeFragments(final List<TagFrequency> allTags) {
 		final List<FragmentAndTag> allFragments = new ArrayList<>();
-		for (final TagFrequency tag : allTags) {
-			allFragments.addAll(makeFragments(tag.getTag(), tag.getCount()));
+		for (final TagFrequency tf : allTags) {
+			final String tagIndexForm = indexForm(tf.getTag());
+			allFragments.addAll(makeFragments(tagIndexForm, tf.getTag(), tf.getCount()));
+
+			final String without = StringUtils.stripAccents(tagIndexForm);
+			if (!without.equals(tagIndexForm)) {
+				allFragments.addAll(makeFragments(without, tf.getTag(), tf.getCount()));
+			}
 		}
 		return allFragments;
 	}
 
-	static List<FragmentAndTag> makeFragments(final String tag, final int fileCount) {
-		if (tag.length() < 2) return Collections.emptyList();
+	static List<FragmentAndTag> makeFragments(final String tagToFragment, final String realTag, final int fileCount) {
+		if (tagToFragment.length() < 2) return Collections.emptyList();
 		final List<FragmentAndTag> ret = new ArrayList<>(); // TODO would simple array be faster?
-		for (int i = 1; i < tag.length(); i++) {
-			final String frag = tag.substring(i);
+		for (int i = 1; i < tagToFragment.length(); i++) {
+			final String frag = tagToFragment.substring(i);
 			if (Character.isWhitespace(frag.charAt(0))) continue;
-			ret.add(new FragmentAndTag(frag, tag, fileCount));
+			ret.add(new FragmentAndTag(frag, realTag, fileCount));
 		}
 		return ret;
 	}
@@ -191,64 +207,79 @@ public class TagAutocompleter {
 
 	// Only synchronized to stop it interleaving with itself.
 	private synchronized void addOrIncrementExactTag(final String tag, final int delta) {
-		final FragmentPrefixComp comp = new FragmentPrefixComp(tag);
-		final int randomIndex = Arrays.binarySearch(this.tagsArr, new FragmentAndTag(tag, "unused", -1), comp);
+		if (this.tagsArr == null) return;
+		final String tagIndexForm = indexForm(tag);
 
-		boolean found = false;
-		if (randomIndex >= 0) {
-			final FragmentAndTag match = this.tagsArr[randomIndex];
-			if (tag.equals(match.tag)) {
-				this.tagsArr[randomIndex] = match.changeCount(delta);
-				found = true;
-			}
+		final Range range = searchIndexArray(this.tagsArr, tagIndexForm);
+		boolean incremented = false;
+		if (range.found) {
+			incremented = incrementRange(this.tagsArr, range, tag, tagIndexForm, delta);
 		}
 
-		if (!found && delta > 0) {
-			final int newIndex = randomIndex >= 0 ? randomIndex : 0 - randomIndex - 1;
+		if (!incremented && delta > 0) {
+			final int newIndex = range.randomIndex >= 0 ? range.randomIndex : 0 - range.randomIndex - 1;
 			final FragmentAndTag[] newTagsArr = new FragmentAndTag[this.tagsArr.length + 1];
 			System.arraycopy(this.tagsArr, 0, newTagsArr, 0, newIndex);
 			System.arraycopy(this.tagsArr, newIndex, newTagsArr, newIndex + 1, this.tagsArr.length - newIndex);
-			newTagsArr[newIndex] = new FragmentAndTag(tag, tag, delta);
+			newTagsArr[newIndex] = new FragmentAndTag(tagIndexForm, tag, delta);
 			this.tagsArr = newTagsArr;
 		}
 	}
 
 	// Only synchronized to stop it interleaving with itself.
 	private synchronized void addOrIncrementFragments(final String tag, final int delta) {
+		if (this.fragmentsArr == null) return;
+		final String tagIndexForm = indexForm(tag);
+
 		final List<String> fragments = new ArrayList<>();
 		for (int i = 1; i < tag.length(); i++) {
-			final String frag = tag.substring(i);
+			final String frag = tagIndexForm.substring(i);
 			if (Character.isWhitespace(frag.charAt(0))) continue;
 			fragments.add(frag);
 		}
 
 		for (final String frag : fragments) {
-			final FragmentPrefixComp comp = new FragmentPrefixComp(frag);
-			final int randomIndex = Arrays.binarySearch(this.fragmentsArr, new FragmentAndTag(frag, "unused", -1), comp);
+			final Range range = searchIndexArray(this.fragmentsArr, frag);
 
 			// TODO atm this only increments fragments already in the index.
 			// it does not insert new fragments, as that would require re-ranking them etc.
-			if (randomIndex < 0) continue;
+			if (!range.found) continue;
 
-			int rangeStarts = randomIndex;
-			int rangeEnds = randomIndex;
-			while (rangeStarts > -1
-					&& this.fragmentsArr[rangeStarts].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
-				rangeStarts--;
-			}
-			while (rangeEnds < this.fragmentsArr.length
-					&& this.fragmentsArr[rangeEnds].fragment.toLowerCase().startsWith(frag.toLowerCase())) {
-				rangeEnds++;
-			}
-			rangeStarts += 1;
+			incrementRange(this.fragmentsArr, range, tag, frag, delta);
+		}
+	}
 
-			for (int i = rangeStarts; i < rangeEnds; i++) {
-				final FragmentAndTag match = this.fragmentsArr[i];
-				if (tag.equals(match.tag) && frag.equals(match.fragment)) {
-					this.fragmentsArr[i] = match.changeCount(delta);
-				}
+	private static Range searchIndexArray(final FragmentAndTag[] idx, final String inputIndexForm) {
+		if (idx == null) throw new IllegalArgumentException("null idx");
+
+		final FragmentPrefixComp comp = new FragmentPrefixComp(inputIndexForm);
+		final int randomIndex = Arrays.binarySearch(idx, new FragmentAndTag(inputIndexForm, "unused", -1), comp);
+		if (randomIndex < 0) return new Range(randomIndex);
+
+		int start = randomIndex;
+		while (start > -1 && idx[start].fragment.startsWith(inputIndexForm)) {
+			start--;
+		}
+		start += 1;
+
+		int end = randomIndex;
+		while (end < idx.length && idx[end].fragment.startsWith(inputIndexForm)) {
+			end++;
+		}
+
+		return new Range(start, end, randomIndex);
+	}
+
+	private static boolean incrementRange(FragmentAndTag[] ixd, final Range range, final String tag, final String frag, final int delta) {
+		boolean found = false;
+		for (int i = range.start; i < range.end; i++) {
+			final FragmentAndTag match = ixd[i];
+			if (tag.equals(match.tag) && frag.equals(match.fragment)) {
+				found = true;
+				ixd[i] = match.changeCount(delta);
 			}
 		}
+		return found;
 	}
 
 	static class FragmentAndTag {
@@ -312,6 +343,26 @@ public class TagAutocompleter {
 					return a.tag.compareTo(b.tag);
 				}
 			}
+		}
+	}
+
+	static class Range {
+		final boolean found;
+		final int start;
+		final int end;
+		final int randomIndex;
+
+		public Range(final int start, final int end, int randomIndex) {
+			this.found = true;
+			this.start = start;
+			this.end = end;
+			this.randomIndex = randomIndex;
+		}
+		public Range(int randomIndex) {
+			this.found = false;
+			this.start = Integer.MIN_VALUE;
+			this.end = Integer.MIN_VALUE;
+			this.randomIndex = randomIndex;
 		}
 	}
 

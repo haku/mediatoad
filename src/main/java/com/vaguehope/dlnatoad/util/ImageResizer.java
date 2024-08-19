@@ -23,7 +23,6 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,13 +30,9 @@ import com.google.common.collect.Iterators;
 
 public class ImageResizer {
 
-	private static final Object[] LOCK = new Object[0];
 	private static final Logger LOG = LoggerFactory.getLogger(ImageResizer.class);
 
-	private final File cacheDir;
-
-	public ImageResizer(final File cacheDir) {
-		this.cacheDir = cacheDir;
+	public ImageResizer() {
 		forceReaderOrder();
 		LOG.info("Supported formats: {}", Arrays.toString(ImageIO.getReaderFileSuffixes()));
 	}
@@ -63,24 +58,9 @@ public class ImageResizer {
 	/**
 	 * @param quality Max 1.0.
 	 */
-	public File resizeFile (final File inF, final int size, final float quality) throws IOException {
-		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());
+	public void scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
 		if (size < 16 || size > 1000) throw new IllegalArgumentException("Invalid size: " + size);
 
-		final String outName = HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size + ".jpg";
-		final File outDir = new File(new File(this.cacheDir, outName.substring(0, 1)), outName.substring(1, 2));
-		final File outF = new File(outDir, outName);
-
-		if (outF.exists() && outF.lastModified() > inF.lastModified()) return outF;
-
-		// TODO do something better than this nasty rate-limiting hack.
-		synchronized (LOCK) {
-			FileUtils.forceMkdir(outDir);
-			return scaleImageToFile(inF, size, quality, outF);
-		}
-	}
-
-	private static File scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
 		final BufferedImage inImg = readImage(inF);
 
 		if (inImg.getWidth() < 1 || inImg.getHeight() < 1) throw new IllegalArgumentException("Image too small: " + inF.getAbsolutePath());
@@ -101,7 +81,6 @@ public class ImageResizer {
 
 		final BufferedImage outImg = scaleImage(inImg, width, height);
 		writeImageViaTmpFile(outImg, quality, outF);
-		return outF;
 	}
 
 	private static BufferedImage readImage(final File file) throws IOException {

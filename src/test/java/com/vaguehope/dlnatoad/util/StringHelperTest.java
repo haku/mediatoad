@@ -19,6 +19,7 @@ public class StringHelperTest {
 		assertEquals("foobar", StringHelper.removePrefix("/foobar", "/"));
 		assertEquals("", StringHelper.removePrefix("/", "/"));
 		assertEquals("foobar", StringHelper.removePrefix("c/foobar", "c/"));
+		assertEquals("/bar", StringHelper.removePrefix("/foo/bar", "/foo"));
 
 		assertEquals("", StringHelper.removePrefix("", "/"));
 		assertEquals(null, StringHelper.removePrefix(null, "/"));
