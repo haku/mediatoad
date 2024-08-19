@@ -20,7 +20,6 @@ public enum MediaFormat {
 	MP4("mp4", "video/mp4", ContentGroup.VIDEO),
 	MPEG("mpeg", "video/mpeg", ContentGroup.VIDEO),
 	MPG("mpg", "video/mpeg", ContentGroup.VIDEO),
-	M4V("m4v", "video/m4v", ContentGroup.VIDEO),
 	OGM("ogm", "video/ogg", ContentGroup.VIDEO),
 	OGV("ogv", "video/ogg", ContentGroup.VIDEO),
 	RMVB("rmvb", "application/vnd.rn-realmedia-vbr", ContentGroup.VIDEO),
