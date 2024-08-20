@@ -6,12 +6,22 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.ffmpeg.ProcessHelper.ProcessException;
+
+import io.prometheus.metrics.core.metrics.Counter;
+
 public class Ffmpeg {
 
 	private static final String FFMPEG = "ffmpeg";
 	private static final Logger LOG = LoggerFactory.getLogger(Ffprobe.class);
 
 	private static Boolean isAvailable = null;
+
+	private static final Counter INVOCATIONS_METRIC = Counter.builder()
+			.name("ffmpeg_invocations")
+			.labelNames("exitcode")
+			.help("count of ffmpeg executations.")
+			.register();
 
 	public static boolean isAvailable () {
 		if (isAvailable == null) {
@@ -35,9 +45,17 @@ public class Ffmpeg {
 		// https://ffmpeg.org/ffmpeg-filters.html#select_002c-aselect
 		// https://ffmpeg.org/ffmpeg-filters.html#scale-1
 		// https://ffmpeg.org/ffmpeg-utils.html
-		ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "gt(scene\\,0.5)+gt(n\\,300)"));
-		if (!thumbnailFile.exists()) {
-			ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "1"));
+
+		try {
+			ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "gt(scene\\,0.5)+gt(n\\,300)"));
+			if (!thumbnailFile.exists()) {
+				ProcessHelper.runAndWait(thumbCmd(videoFile, thumbnailFile, size, "1"));
+			}
+			INVOCATIONS_METRIC.labelValues("0").inc();
+		}
+		catch (final ProcessException e) {
+			INVOCATIONS_METRIC.labelValues(String.valueOf(e.getExitCode())).inc();
+			throw e;
 		}
 	}
 

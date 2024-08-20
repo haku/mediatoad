@@ -80,6 +80,8 @@ import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.util.Watcher;
 
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+
 public final class Main {
 
 	protected static final Logger LOG = LoggerFactory.getLogger(Main.class);
@@ -159,6 +161,7 @@ public final class Main {
 			mediaDb = new MediaDb(dbFile);
 			dbCache = new DbCache(mediaDb, fsExSvc, args.isVerboseLog());
 			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
+			mediaMetadataStore.registerMetrics(PrometheusRegistry.defaultRegistry);
 			tagAutocompleter = new TagAutocompleter(mediaDb, fsExSvc);
 		}
 		else {
@@ -171,6 +174,7 @@ public final class Main {
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
 		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, thumbnailGenerator, miExSvc);
 		final ContentTree contentTree = new ContentTree();
+		contentTree.registerMetrics(PrometheusRegistry.defaultRegistry);
 
 		final File dropDir = args.getDropDir();
 		final TagDeterminerController tagDeterminerController = new TagDeterminerController(args, contentTree, mediaDb);

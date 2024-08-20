@@ -24,6 +24,9 @@ import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
+import io.prometheus.metrics.core.metrics.GaugeWithCallback;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+
 public class MediaMetadataStore {
 
 	private static final long FILE_BATCH_START_DELAY_MILLIS = 100;  // Yield to other activities / DB writers.
@@ -31,9 +34,22 @@ public class MediaMetadataStore {
 	private static final int INFO_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
 
+	// NOTE: this will fail is more than once instance of Watcher exists.
+	// if that is ever needed, will need to keep track of instances and add queue depths together.
+	private final GaugeWithCallback fileQueueMetric = GaugeWithCallback.builder()
+			.name("db_update_file_queue_size")
+			.help("number of files that are inaccessable or very recently modified.")
+			.callback((cb) -> cb.call(this.fileQueue.size()))
+			.build();
+	private final GaugeWithCallback infoQueueMetric = GaugeWithCallback.builder()
+			.name("db_write_info_queue_size")
+			.help("number of files that are inaccessable or very recently modified.")
+			.callback((cb) -> cb.call(this.storeInfoQueue.size()))
+			.build();
+
 	private final BlockingQueue<FileTask> fileQueue = new LinkedBlockingQueue<>();
 	private final AtomicBoolean fileIdWorkerRunning = new AtomicBoolean(false);
-	private final BlockingQueue<FileIdAndInfo> storeDuraionQueue = new LinkedBlockingQueue<>();
+	private final BlockingQueue<FileIdAndInfo> storeInfoQueue = new LinkedBlockingQueue<>();
 
 	private final MediaDb mediaDb;
 	private final ScheduledExecutorService exSvc;
@@ -44,6 +60,11 @@ public class MediaMetadataStore {
 		this.exSvc = exSvc;
 		this.verboseLog = verboseLog;
 		exSvc.scheduleWithFixedDelay(new InfoWorker(), 0, INFO_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+	}
+
+	public void registerMetrics(final PrometheusRegistry registry) {
+		registry.register(this.fileQueueMetric);
+		registry.register(this.infoQueueMetric);
 	}
 
 	public MediaDb getMediaDb() {
@@ -342,7 +363,7 @@ public class MediaMetadataStore {
 	}
 
 	public void storeFileInfoAsync(final String fileId, final File file, final FileInfo info) throws SQLException, InterruptedException {
-		this.storeDuraionQueue.put(new FileIdAndInfo(fileId, file, info));
+		this.storeInfoQueue.put(new FileIdAndInfo(fileId, file, info));
 	}
 
 	private class InfoWorker implements Runnable {
@@ -351,7 +372,7 @@ public class MediaMetadataStore {
 		public void run() {
 			try {
 				final List<FileIdAndInfo> todo = new ArrayList<>();
-				MediaMetadataStore.this.storeDuraionQueue.drainTo(todo);
+				MediaMetadataStore.this.storeInfoQueue.drainTo(todo);
 				if (todo.size() > 0) {
 					try (final WritableMediaDb w = MediaMetadataStore.this.mediaDb.getWritable()) {
 						w.storeInfos(todo);

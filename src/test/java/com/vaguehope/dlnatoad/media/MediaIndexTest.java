@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +59,7 @@ public class MediaIndexTest {
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo());
 	}
 
+	@After
 	public void after() {
 		if (this.schEx != null) this.schEx.shutdownNow();
 	}

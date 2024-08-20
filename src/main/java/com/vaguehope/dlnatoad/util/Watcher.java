@@ -55,14 +55,14 @@ public class Watcher {
 	private static final Counter FILES_FOUND_METRIC = Counter.builder()
 			.name("files_found")
 			.labelNames("event")
-			.help("count of files found, grouped by how they were found")
+			.help("count of files found, grouped by how they were found.")
 			.register();
 	private static final CounterDataPoint FILES_FOUND_SCAN_METRIC = FILES_FOUND_METRIC.labelValues("scan");
 	private static final CounterDataPoint FILES_FOUND_NOTIFY_METRIC = FILES_FOUND_METRIC.labelValues("notify");
 
 	private static final Counter FILES_GONE_METRIC = Counter.builder()
 			.name("files_gone")
-			.help("count of files deleted or moved")
+			.help("count of files deleted or moved.")
 			.register();
 
 	// NOTE: this will fail is more than once instance of Watcher exists.
@@ -70,7 +70,7 @@ public class Watcher {
 	private final GaugeWithCallback filesWaitingMetric = GaugeWithCallback.builder()
 			.name("files_waiting")
 			.help("number of files that are inaccessable or very recently modified.")
-			.callback((cb) -> cb.call(this.waitingFiles.size(), new String[] {}))
+			.callback((cb) -> cb.call(this.waitingFiles.size()))
 			.register();
 
 	/**

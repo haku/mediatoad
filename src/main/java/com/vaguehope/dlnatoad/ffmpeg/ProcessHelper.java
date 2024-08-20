@@ -25,7 +25,7 @@ public class ProcessHelper {
 		return ret;
 	}
 
-	public static void runAndWait (final String[] cmd, final Listener<String> onLine) throws IOException {
+	public static void runAndWait (final String[] cmd, final Listener<String> onLine) throws ProcessException, IOException {
 		Exception exception = null;
 
 		final ProcessBuilder pb = new ProcessBuilder(cmd);
@@ -51,24 +51,24 @@ public class ProcessHelper {
 				if (p.waitFor(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
 					final int result = p.exitValue();
 					if (result != 0 && exception == null) {
-						throw new IOException("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + result);
+						throw new ProcessException(cmd, result);
 					}
 				}
 				else {
 					p.destroyForcibly();
 					if (exception == null) {
 						if (p.waitFor(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-							throw new IOException("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + p.exitValue());
+							throw new ProcessException(cmd, p.exitValue());
 						}
 						else {
-							throw new IOException("Process has not exited and did not shutdown when requested: " + Arrays.toString(cmd));
+							throw new ProcessException(cmd, FailureReason.PROCESS_TERMINATION_FAILED);
 						}
 					}
 				}
 			}
-			catch (InterruptedException e1) {
+			catch (final InterruptedException e1) {
 				if (exception == null) {
-					throw new IOException("Interupted waiting for process: " + Arrays.toString(cmd));
+					throw new ProcessException(cmd, FailureReason.INTERUPTED_WHILE_WAITING);
 				}
 			}
 		}
@@ -76,8 +76,58 @@ public class ProcessHelper {
 		if (exception != null) {
 			if (exception instanceof RuntimeException) throw (RuntimeException) exception;
 			if (exception instanceof IOException) throw (IOException) exception;
-			throw new IOException(exception.toString(), exception);
+			throw new ProcessException(cmd, exception);
 		}
+	}
+
+	public enum FailureReason {
+		NON_ZERO_EXIT_CODE,
+		PROCESS_TERMINATION_FAILED,
+		INTERUPTED_WHILE_WAITING,
+		EXCEPTION;
+	}
+
+	public static class ProcessException extends IOException {
+
+		private static final long serialVersionUID = -7155994946532421402L;
+
+		private final String[] cmd;
+		private final FailureReason reason;
+		private final int exitCode;
+
+		public ProcessException(final String[] cmd, final FailureReason reason) {
+			super("Process failed: cmd=" + Arrays.toString(cmd) + " " + reason);
+			this.cmd = cmd;
+			this.reason = reason;
+			this.exitCode = Integer.MAX_VALUE;
+		}
+
+		public ProcessException(final String[] cmd, final int exitCode) {
+			super("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + exitCode);
+			this.cmd = cmd;
+			this.reason = FailureReason.NON_ZERO_EXIT_CODE;
+			this.exitCode = exitCode;
+		}
+
+		public ProcessException(final String[] cmd, final Exception e) {
+			super("Process failed: cmd=" + Arrays.toString(cmd) + ": " + e.toString(), e);
+			this.cmd = cmd;
+			this.reason = FailureReason.EXCEPTION;
+			this.exitCode = Integer.MAX_VALUE;
+		}
+
+		public String[] getCmd() {
+			return this.cmd;
+		}
+
+		public FailureReason getReason() {
+			return this.reason;
+		}
+
+		public int getExitCode() {
+			return this.exitCode;
+		}
+
 	}
 
 }

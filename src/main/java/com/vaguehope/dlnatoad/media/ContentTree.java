@@ -18,11 +18,27 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.AuthSet;
 
+import io.prometheus.metrics.core.metrics.GaugeWithCallback;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+
 /**
  * Based on a class from WireMe and used under Apache 2 License. See
  * https://code.google.com/p/wireme/ for more details.
  */
 public class ContentTree {
+
+	// NOTE: this will fail is more than once instance of Watcher exists.
+	// if that is ever needed, will need to keep track of instances and add queue depths together.
+	private final GaugeWithCallback nodeCountMetric = GaugeWithCallback.builder()
+			.name("content_node_count")
+			.help("number of directories in the index.")
+			.callback((cb) -> cb.call(this.contentNodes.size()))
+			.build();
+	private final GaugeWithCallback itemCountMetric = GaugeWithCallback.builder()
+			.name("content_item_count")
+			.help("number of files in the index.")
+			.callback((cb) -> cb.call(this.contentItems.size()))
+			.build();
 
 	private static final Logger LOG = LoggerFactory.getLogger(ContentTree.class);
 
@@ -55,6 +71,11 @@ public class ContentTree {
 		else {
 			this.recentNode = null;
 		}
+	}
+
+	public void registerMetrics(final PrometheusRegistry registry) {
+		registry.register(this.nodeCountMetric);
+		registry.register(this.itemCountMetric);
 	}
 
 	public AuthSet getAuthSet() {

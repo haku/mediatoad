@@ -6,12 +6,22 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.ffmpeg.ProcessHelper.ProcessException;
+
+import io.prometheus.metrics.core.metrics.Counter;
+
 public class Ffprobe {
 
 	private static final String FFPROBE = "ffprobe";
 	private static final Logger LOG = LoggerFactory.getLogger(Ffprobe.class);
 
 	private static Boolean isAvailable = null;
+
+	private static final Counter INVOCATIONS_METRIC = Counter.builder()
+			.name("ffprobe_invocations")
+			.labelNames("exitcode")
+			.help("count of ffprobe executations.")
+			.register();
 
 	public static boolean isAvailable () {
 		if (isAvailable == null) {
@@ -36,15 +46,22 @@ public class Ffprobe {
 	public static FfprobeInfo inspect (final File inFile) throws IOException {
 		checkAvailable();
 		final FfprobeParser parser = new FfprobeParser();
-		ProcessHelper.runAndWait(new String[] {
-				FFPROBE,
-				"-hide_banner",
-				"-show_streams",
-				"-show_format",
-				"-print_format", "flat",
-				inFile.getAbsolutePath()
-		}, parser);
-		return parser.build();
+		try {
+			ProcessHelper.runAndWait(new String[] {
+					FFPROBE,
+					"-hide_banner",
+					"-show_streams",
+					"-show_format",
+					"-print_format", "flat",
+					inFile.getAbsolutePath()
+			}, parser);
+			INVOCATIONS_METRIC.labelValues("0").inc();
+			return parser.build();
+		}
+		catch (final ProcessException e) {
+			INVOCATIONS_METRIC.labelValues(String.valueOf(e.getExitCode())).inc();
+			throw e;
+		}
 	}
 
 }
