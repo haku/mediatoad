@@ -30,6 +30,8 @@ import com.vaguehope.dlnatoad.util.TreeWalker.Hiker;
 
 import io.prometheus.metrics.core.datapoints.CounterDataPoint;
 import io.prometheus.metrics.core.metrics.Counter;
+import io.prometheus.metrics.core.metrics.CounterWithCallback;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 
 public class Watcher {
 
@@ -61,6 +63,14 @@ public class Watcher {
 	private static final Counter FILES_GONE_METRIC = Counter.builder()
 			.name("files_gone")
 			.help("count of files deleted or moved")
+			.register();
+
+	// NOTE: this will fail is more than once instance of Watcher exists.
+	// if that is ever needed, will need to keep track of instances and add queue depths together.
+	private final CounterWithCallback filesWaitingMetric = CounterWithCallback.builder()
+			.name("files_waiting")
+			.help("count of files that are inaccessable or very recently modified.")
+			.callback((cb) -> cb.call(this.waitingFiles.size(), new String[] {}))
 			.register();
 
 	/**
@@ -142,6 +152,7 @@ public class Watcher {
 	}
 
 	public void shutdown () {
+		PrometheusRegistry.defaultRegistry.unregister(this.filesWaitingMetric);
 		this.running = false;
 	}
 
