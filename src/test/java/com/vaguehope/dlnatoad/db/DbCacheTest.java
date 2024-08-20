@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +30,11 @@ public class DbCacheTest {
 		this.db = mock(MediaDb.class);
 		this.ticker = new FakeTicker();
 		this.undertest = new DbCache(this.db, (e) -> e.run(), true, this.ticker);
+	}
+
+	@Test
+	public void itReturnsEmptySet() throws Exception {
+		assertEquals(Collections.emptyList(), this.undertest.dirTopTags(Collections.emptySet(), "some/path"));
 	}
 
 	@Test
