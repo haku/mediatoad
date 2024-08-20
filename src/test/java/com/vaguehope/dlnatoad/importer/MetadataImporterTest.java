@@ -58,6 +58,13 @@ public class MetadataImporterTest {
 				inv.getArgument(0, Runnable.class).run();
 				return null;
 			}
+		}).when(this.schEx).execute(any(Runnable.class));
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer (final InvocationOnMock inv) throws Throwable {
+				inv.getArgument(0, Runnable.class).run();
+				return null;
+			}
 		}).when(this.schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
 		this.time = new Time.FakeTime();

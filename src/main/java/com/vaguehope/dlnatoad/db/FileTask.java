@@ -16,6 +16,7 @@ class FileTask {
 	private final File file;
 	private final BigInteger auth;
 	private final MediaIdCallback callback;
+	private final FileData newFileData;
 	private final Runnable genericCallback;
 
 	public FileTask(final File file, final BigInteger auth, final MediaIdCallback callback) {
@@ -26,6 +27,7 @@ class FileTask {
 		this.file = file;
 		this.auth = auth;
 		this.callback = callback;
+		this.newFileData = null;
 		this.genericCallback = null;
 	}
 
@@ -34,6 +36,7 @@ class FileTask {
 		this.file = file;
 		this.auth = null;
 		this.callback = null;
+		this.newFileData = null;
 		this.genericCallback = null;
 	}
 
@@ -42,7 +45,17 @@ class FileTask {
 		this.file = null;
 		this.auth = null;
 		this.callback = null;
+		this.newFileData = null;
 		this.genericCallback = callback;
+	}
+
+	private FileTask(final Action action, final File file, final BigInteger auth, final MediaIdCallback callback, final FileData newFileData, final Runnable genericCallback) {
+		this.action = action;
+		this.file = file;
+		this.auth = auth;
+		this.callback = callback;
+		this.newFileData = newFileData;
+		this.genericCallback = genericCallback;
 	}
 
 	public Action getAction() {
@@ -63,6 +76,14 @@ class FileTask {
 
 	public Runnable getGenericCallback() {
 		return this.genericCallback;
+	}
+
+	public FileData getNewFileData() {
+		return this.newFileData;
+	}
+
+	public FileTask withNewFileData(final FileData data) {
+		return new FileTask(this.action, this.file, this.auth, this.callback, data, this.genericCallback);
 	}
 
 	@Override

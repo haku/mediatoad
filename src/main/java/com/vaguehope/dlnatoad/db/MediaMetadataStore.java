@@ -126,7 +126,7 @@ public class MediaMetadataStore {
 				try {
 					f = this.fileQueue.poll(10, TimeUnit.MILLISECONDS);
 				}
-				catch (InterruptedException e) {/* ignore */}
+				catch (final InterruptedException e) {/* ignore */}
 				if (f != null) {
 					genericCallback = f.getGenericCallback();
 					if (genericCallback != null) break;
@@ -150,22 +150,22 @@ public class MediaMetadataStore {
 		}
 	}
 
-	private void processFile(final WritableMediaDb w, final FileTask f) {
+	private void processFile(final WritableMediaDb w, final FileTask task) {
 		try {
-			switch (f.getAction()) {
+			switch (task.getAction()) {
 			case ID:
-				addOrUpdateFileData(w, f.getFile(), f.getAuth(), f.getCallback());
+				addOrUpdateFileData(w, task);
 				break;
 			case GONE:
 				// This is best effort as the file might have already been merged into another depending on message order.
-				w.setFileMissing(f.getFile().getAbsolutePath(), true, /* dbMustChange= */false);
+				w.setFileMissing(task.getFile().getAbsolutePath(), true, /* dbMustChange= */false);
 				break;
 			default:
-				LOG.error("Task missing action: {}", f);
+				LOG.error("Task missing action: {}", task);
 			}
 		}
 		catch (final Exception e) {
-			final MediaIdCallback callback = f.getCallback();
+			final MediaIdCallback callback = task.getCallback();
 			if (callback != null) {
 				if (e instanceof IOException) {
 					callback.onError((IOException) e);
@@ -175,20 +175,25 @@ public class MediaMetadataStore {
 				}
 			}
 			else {
-				LOG.error("File task {} failed.", f, e);
+				LOG.error("File task {} failed.", task, e);
 			}
 		}
 	}
 
-	private void addOrUpdateFileData(final WritableMediaDb w, final File file, final BigInteger auth, final MediaIdCallback callback) throws SQLException, IOException {
+	private void addOrUpdateFileData(final WritableMediaDb w, final FileTask task) throws SQLException, IOException {
+		final File file = task.getFile();
 		final FileData oldFileData = w.readFileData(file);
 		final String id;
 		if (oldFileData == null) {
-			final FileData newFileData = generateNewFileData(w, file);
+			final FileData newFileData = generateNewFileData(w, task);
+			if (newFileData == null) return;  // This signals work has been put back on the queue.
+
 			id = canonicaliseAndStoreId(w, newFileData);
 		}
 		else if (file.exists() && !oldFileData.upToDate(file)) {
-			final FileData updatedFileData = generateUpdatedFileData(w, file, oldFileData);
+			final FileData updatedFileData = generateUpdatedFileData(w, oldFileData, task);
+			if (updatedFileData == null) return;  // This signals work has been put back on the queue.
+
 			id = canonicaliseAndStoreId(w, updatedFileData);
 		}
 		else {
@@ -200,7 +205,7 @@ public class MediaMetadataStore {
 
 				// Back fill MD5 if needed.
 				if (oldFileData.getMd5() == null) {
-					final String md5 = HashHelper.md5(file).toString(16);
+					final String md5 = HashHelper.md5(file).toString(16);  // slow.
 					w.updateFileData(file, oldFileData.withMd5(md5));
 				}
 
@@ -225,10 +230,10 @@ public class MediaMetadataStore {
 				}
 			}
 		}
-		if (oldFileData == null || !oldFileData.hasAuth(auth)) {
-			w.updateFileAuth(file, auth);
+		if (oldFileData == null || !oldFileData.hasAuth(task.getAuth())) {
+			w.updateFileAuth(file, task.getAuth());
 		}
-		callback.onResult(id);
+		task.getCallback().onResult(id);
 	}
 
 	private static String canonicaliseAndStoreId(final WritableMediaDb w, final FileData fileData) throws SQLException {
@@ -240,8 +245,32 @@ public class MediaMetadataStore {
 		return id;
 	}
 
-	private FileData generateNewFileData(final WritableMediaDb w, final File file) throws IOException, SQLException {
-		FileData fileData = FileData.forFile(file); // Slow.
+	private void generateFileDataAsync(final File file, final FileTask task) {
+		this.exSvc.execute(() -> {
+			try {
+				final FileData fileData = FileData.forFile(file);  // Slow.
+				this.fileQueue.put(task.withNewFileData(fileData));
+				scheduleFileIdBatchIfNeeded();
+			}
+			catch (final IOException e) {
+				task.getCallback().onError(e);
+			}
+			catch (final Exception e) {
+				task.getCallback().onError(new IOException(e));
+			}
+		});
+	}
+
+	// returns null if work is being processed async.
+	private FileData generateNewFileData(final WritableMediaDb w, final FileTask task) throws IOException, SQLException {
+		final File file = task.getFile();
+
+		if (task.getNewFileData() == null) {
+			generateFileDataAsync(file, task);
+			return null;
+		}
+
+		FileData fileData = task.getNewFileData();
 		Collection<FileAndId> filesToRemove = null;
 
 		// A preexisting ID will only be used only if no other files with that hash still exist.
@@ -270,9 +299,15 @@ public class MediaMetadataStore {
 		return fileData;
 	}
 
-	private FileData generateUpdatedFileData(final WritableMediaDb w, final File file, final FileData oldFileData) throws SQLException, IOException {
-		final FileData newFileData = FileData.forFile(file).withId(oldFileData.getId()); // Slow.
-		return processUpdatedFileData(w, file, newFileData, oldFileData);
+	// returns null if work is being processed async.
+	private FileData generateUpdatedFileData(final WritableMediaDb w, final FileData oldFileData, final FileTask task) throws SQLException, IOException {
+		if (task.getNewFileData() == null) {
+			generateFileDataAsync(task.getFile(), task);
+			return null;
+		}
+
+		final FileData newFileData = task.getNewFileData().withId(oldFileData.getId());
+		return processUpdatedFileData(w, task.getFile(), newFileData, oldFileData);
 	}
 
 	private FileData processUpdatedFileData(final WritableMediaDb w, final File file, final FileData newFileData, final FileData oldFileData) throws SQLException, IOException {

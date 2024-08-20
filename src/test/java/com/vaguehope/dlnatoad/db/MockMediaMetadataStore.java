@@ -69,6 +69,13 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				inv.getArgument(0, Runnable.class).run();
 				return null;
 			}
+		}).when(schEx).execute(any(Runnable.class));
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer (final InvocationOnMock inv) throws Throwable {
+				inv.getArgument(0, Runnable.class).run();
+				return null;
+			}
 		}).when(schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 		return schEx;
 	}
@@ -170,7 +177,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		public void close() throws Exception {
 			final long startTime = System.nanoTime();
 			for (final Future<?> future : this.futures) {
-				future.get();
+				future.get(60, TimeUnit.SECONDS);
 			}
 			final long endTime = System.nanoTime();
 			LOG.info("Mock files IDed in: {}ms", TimeUnit.NANOSECONDS.toMillis(endTime - startTime));
