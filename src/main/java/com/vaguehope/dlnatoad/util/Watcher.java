@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.util.TreeWalker.Hiker;
 
+import io.prometheus.metrics.core.datapoints.CounterDataPoint;
+import io.prometheus.metrics.core.metrics.Counter;
+
 public class Watcher {
 
 	public enum EventType {
@@ -46,6 +49,19 @@ public class Watcher {
 		EventResult fileModified (final File rootDir, File file, Runnable onUsed) throws IOException;
 		void fileGone (File file, boolean isDir) throws IOException;
 	}
+
+	private static final Counter FILES_FOUND_METRIC = Counter.builder()
+			.name("files_found")
+			.labelNames("event")
+			.help("count of files found, grouped by how they were found")
+			.register();
+	private static final CounterDataPoint FILES_FOUND_SCAN_METRIC = FILES_FOUND_METRIC.labelValues("scan");
+	private static final CounterDataPoint FILES_FOUND_NOTIFY_METRIC = FILES_FOUND_METRIC.labelValues("notify");
+
+	private static final Counter FILES_GONE_METRIC = Counter.builder()
+			.name("files_gone")
+			.help("count of files deleted or moved")
+			.register();
 
 	/**
 	 * Do not fire modified event until file has stopped changing for this long.
@@ -289,22 +305,42 @@ public class Watcher {
 		}
 	}
 
-	protected void callListener (final Kind<Path> kind, final File file, boolean isDir, final File rootDir, final EventType eventType) {
+	private void callListener (final Kind<Path> kind, final File file, boolean isDir, final File rootDir, final EventType eventType) {
 		LOG.debug("Calling listener: {} {}", file.getAbsolutePath(), kind);
 		try {
 			if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
+				incFoundMetric(eventType, isDir);
 				this.listener.fileFound(rootDir, file, eventType, null);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_MODIFY) {
 				this.listener.fileModified(rootDir, file, null);
 			}
 			else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
+				incGoneMetric(isDir);
 				this.listener.fileGone(file, isDir);
 			}
 		}
 		catch (final Exception e) { // NOSONAR do not allow errors to kill watcher.
 			LOG.warn("Listener failed: {} {}: {}", kind.name(), file.getAbsolutePath(), e);
 		}
+	}
+
+	private static void incFoundMetric(EventType eventType, boolean isDir) {
+		if (isDir) return;
+		switch (eventType) {
+			case SCAN:
+				FILES_FOUND_SCAN_METRIC.inc();
+				return;
+			case NOTIFY:
+				FILES_FOUND_NOTIFY_METRIC.inc();
+				return;
+			default:
+		}
+	}
+
+	private static void incGoneMetric(boolean isDir) {
+		if (isDir) return;
+		FILES_GONE_METRIC.inc();
 	}
 
 	@SuppressWarnings("unchecked")

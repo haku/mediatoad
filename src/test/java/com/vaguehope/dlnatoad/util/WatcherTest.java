@@ -32,10 +32,13 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import com.vaguehope.dlnatoad.MetricAssert;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.util.Watcher.EventResult;
 import com.vaguehope.dlnatoad.util.Watcher.EventType;
 import com.vaguehope.dlnatoad.util.Watcher.FileListener;
+
+import io.prometheus.metrics.model.snapshots.Labels;
 
 public class WatcherTest {
 
@@ -47,6 +50,7 @@ public class WatcherTest {
 	private Time.FakeTime time;
 	private Watcher undertest;
 	private Future<Void> undertestRunFuture;
+	private MetricAssert metricAssert;
 
 	@Before
 	public void before() throws Exception {
@@ -57,6 +61,7 @@ public class WatcherTest {
 		this.listener = mock(FileListener.class);
 		this.time = new Time.FakeTime();
 		this.undertest = new Watcher(roots, MediaFormat.MediaFileFilter.INSTANCE, this.listener, this.time, 10);
+		this.metricAssert = new MetricAssert();
 	}
 
 	@After
@@ -66,7 +71,7 @@ public class WatcherTest {
 
 	private void startWatcher(final int waitForEventCount, final int timeoutSeconds) throws Exception {
 		final AtomicInteger calls = new AtomicInteger(0);
-		final Answer<EventResult> answer = new Answer<EventResult>() {
+		final Answer<EventResult> answer = new Answer<>() {
 			@Override
 			public EventResult answer(final InvocationOnMock invocation) throws Throwable {
 				final int invocationNumber = calls.incrementAndGet();
@@ -132,6 +137,8 @@ public class WatcherTest {
 		startWatcher(1, 10);
 		waitForWatcher(10);
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
+
+		this.metricAssert.assertCounter("files_found", Labels.of("event", "scan"), 1);
 	}
 
 	@Test
@@ -147,6 +154,8 @@ public class WatcherTest {
 		this.time.advance(2, TimeUnit.SECONDS);
 		waitForWatcher(10);
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.NOTIFY, null);
+
+		this.metricAssert.assertCounter("files_found", Labels.of("event", "notify"), 1);
 	}
 
 	@Test
@@ -207,6 +216,8 @@ public class WatcherTest {
 
 		verify(this.listener).fileFound(this.tmpRoot, f1, EventType.SCAN, null);
 		verify(this.listener, timeout(10000)).fileGone(f1, false);
+
+		this.metricAssert.assertCounter("files_gone", Labels.of(), 1);
 	}
 
 	@Test

@@ -20,6 +20,7 @@
 		<grpc.version>1.66.0</grpc.version>
 		<jetty.version>10.0.22</jetty.version>
 		<jupnp.version>3.0.2</jupnp.version>
+		<prometheus.version>1.3.1</prometheus.version>
 		<slf4j.version>2.0.16</slf4j.version>
 		<teleal.version>1.0.14</teleal.version>
 		<twelvemonkeys-imageio.version>3.11.0</twelvemonkeys-imageio.version>
@@ -371,6 +372,26 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>33.3.0-jre</version>
+		</dependency>
+
+		<!-- Prometheus -->
+
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>prometheus-metrics-core</artifactId>
+			<version>${prometheus.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>prometheus-metrics-instrumentation-jvm</artifactId>
+			<version>${prometheus.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.prometheus</groupId>
+			<artifactId>prometheus-metrics-exporter-common</artifactId>
+			<version>${prometheus.version}</version>
 		</dependency>
 
 		<!-- Logging -->

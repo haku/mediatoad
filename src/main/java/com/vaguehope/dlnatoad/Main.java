@@ -73,6 +73,7 @@ import com.vaguehope.dlnatoad.ui.UpnpServlet;
 import com.vaguehope.dlnatoad.ui.WebdavDivertingHandler;
 import com.vaguehope.dlnatoad.ui.WebdavServlet;
 import com.vaguehope.dlnatoad.util.ExecutorHelper;
+import com.vaguehope.dlnatoad.util.JettyPrometheusServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
@@ -338,6 +339,8 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new TagsServlet(contentTree, mediaDb, tagAutocompleter)), "/" + C.TAGS_PATH);
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new IndexServlet(contentTree, contentServlet, dirServlet)), "/*");
+
+		servletHandler.addServlet(new ServletHolder(new JettyPrometheusServlet()), "/metrics");
 
 		final ServletContextHandler webavHandler = makeWebdavHandler(authFilter, contentTree, mediaDb, args);
 
