@@ -18,12 +18,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.prometheus.metrics.core.metrics.Histogram;
+import io.prometheus.metrics.model.snapshots.Unit;
+
 public class WritableMediaDb implements Closeable {
+
+	private static final Histogram TRANSACTION_DURATION = Histogram.builder()
+			.name("db_write_transaction_duration")
+			.unit(Unit.SECONDS)
+			.classicExponentialUpperBounds(0.01, 2, 13)  // [0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56, 5.12, 10.24, 20.48, 40.96]
+			.help("Duraction of write transactions, irrespective of their outcome.")
+			.register();
 
 	private static final Logger LOG = LoggerFactory.getLogger(WritableMediaDb.class);
 
 	private final Connection conn;
 	private final AtomicLong writeCounter;
+	private final long startTime;
 
 	protected WritableMediaDb(final Connection conn, final AtomicLong writeCounter) throws SQLException {
 		this.writeCounter = writeCounter;
@@ -31,6 +42,7 @@ public class WritableMediaDb implements Closeable {
 			throw new IllegalArgumentException("AutoCommit must not be enabled.");
 		}
 		this.conn = conn;
+		this.startTime = System.nanoTime();
 	}
 
 	@Override
@@ -41,6 +53,7 @@ public class WritableMediaDb implements Closeable {
 			committed = true;
 		}
 		finally {
+			TRANSACTION_DURATION.observe(Unit.nanosToSeconds(System.nanoTime() - this.startTime));
 			try {
 				this.conn.close();
 			}
