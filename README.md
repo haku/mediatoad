@@ -1,8 +1,8 @@
 MediaToad
 =========
 
-(formally DLNAtoad but it now also does other stuff, and renaming the repo might
-break things)
+(formally called DLNAtoad but it now also does other stuff, code renaming will
+happen gradually)
 
 What is this?
 -------------
