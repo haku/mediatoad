@@ -122,7 +122,7 @@ public class TagDeterminerControllerTest {
 
 		final InOrder uploadOrder = inOrder(reqObs);
 		uploadOrder.verify(reqObs).onNext(DetermineTagsRequest.newBuilder()
-				.setFileExt("jpeg")
+				.setMimetype("image/jpeg")
 				.setContent(ByteString.copyFrom(FileUtils.readFileToByteArray(itemA.getFile())))
 				.build());
 		uploadOrder.verify(reqObs).onCompleted();

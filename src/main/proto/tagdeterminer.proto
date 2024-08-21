@@ -18,7 +18,7 @@ message AboutReply {
 }
 
 message DetermineTagsRequest {
-  string file_ext = 1;
+  string mimetype = 1;
   bytes content = 2;
 }
 message DetermineTagsReply {

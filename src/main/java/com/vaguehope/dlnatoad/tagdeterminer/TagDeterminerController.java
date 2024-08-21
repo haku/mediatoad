@@ -262,7 +262,7 @@ public class TagDeterminerController {
 			int readLength;
 			while ((readLength = is.read(buffer, 0, MESSAGE_SIZE_BYTES)) != -1) {
 				final DetermineTagsRequest req = DetermineTagsRequest.newBuilder()
-						.setFileExt(item.getFormat().getExt())  // TODO only send on first part?
+						.setMimetype(item.getFormat().getMime())  // TODO only send on first part?
 						.setContent(ByteString.copyFrom(buffer, 0, readLength))
 						.build();
 				reqObs.onNext(req);
