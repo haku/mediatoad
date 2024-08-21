@@ -74,6 +74,16 @@ public final class StringHelper {
 		return s;
 	}
 
+	public static String removeFirstMatchingPrefix(final String s, final String... prefixes) {
+		if (s == null) return null;
+		for (final String prefix : prefixes) {
+			if (s.startsWith(prefix)) {
+				return s.substring(prefix.length());
+			}
+		}
+		return s;
+	}
+
 	public static String removeSuffix(String s, String suffix) {
 		if (s == null) return null;
 		if (s.endsWith(suffix)) {

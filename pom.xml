@@ -4,11 +4,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.vaguehope.dlnatoad</groupId>
-	<artifactId>dlnatoad</artifactId>
+	<groupId>com.vaguehope.mediatoad</groupId>
+	<artifactId>mediatoad</artifactId>
 	<version>1-SNAPSHOT</version>
 	<packaging>jar</packaging>
-	<name>dlnatoad</name>
+	<name>mediatoad</name>
 
 	<properties>
 		<java.version>11</java.version>

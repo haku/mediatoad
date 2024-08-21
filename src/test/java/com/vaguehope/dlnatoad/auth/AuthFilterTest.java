@@ -135,7 +135,7 @@ public class AuthFilterTest {
 		assertNull(ReqAttr.USERNAME.get(this.req));
 
 		final Cookie cookie = getSingleCookie();
-		assertEquals("DLNATOADTOKEN", cookie.getName());
+		assertEquals("MEDIATOADTOKEN", cookie.getName());
 		assertEquals("/", cookie.getPath());
 		assertEquals(0, cookie.getMaxAge());
 		assertEquals("", cookie.getValue());
@@ -208,7 +208,7 @@ public class AuthFilterTest {
 		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
 
 		final Cookie cookie = getSingleCookie();
-		assertEquals("DLNATOADTOKEN", cookie.getName());
+		assertEquals("MEDIATOADTOKEN", cookie.getName());
 		assertThat(cookie.getMaxAge(), greaterThan(1));
 		assertEquals("the-secret-token", cookie.getValue());
 		assertEquals("/", cookie.getPath());
@@ -369,7 +369,7 @@ public class AuthFilterTest {
 	}
 
 	private void setSessionTokenCookie(String token) {
-		Cookie cookie = new Cookie("DLNATOADTOKEN", token);
+		Cookie cookie = new Cookie("MEDIATOADTOKEN", token);
 		this.req.setCookies(new Cookie[] { cookie });
 	}
 

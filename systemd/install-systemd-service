@@ -1,8 +1,8 @@
 #!/bin/bash
 set -eu
 
-cp -v ./dlnatoad.service /etc/systemd/system/
+cp -v ./mediatoad.service /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable dlnatoad
-systemctl start dlnatoad
-systemctl status dlnatoad
+systemctl enable mediatoad
+systemctl start mediatoad
+systemctl status mediatoad

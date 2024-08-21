@@ -152,7 +152,7 @@ public class ServletCommon {
 		if (pathInfo == null || pathInfo.length() < 1 || !pathInfo.startsWith("/")) {
 			return null;
 		}
-		return StringHelper.removePrefix(pathInfo, "/" + C.REVERSE_PROXY_PATH);
+		return StringHelper.removeFirstMatchingPrefix(pathInfo, "/" + C.MAIN_REVERSE_PROXY_PATH, "/" + C.OLD_REVERSE_PROXY_PATH);
 	}
 
 	public static String fileFromPath(final String pathInfo) {
@@ -176,8 +176,10 @@ public class ServletCommon {
 
 	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 			"/",
-			"/" + C.REVERSE_PROXY_PATH,
-			"/" + C.REVERSE_PROXY_PATH + "/"
+			"/" + C.MAIN_REVERSE_PROXY_PATH,
+			"/" + C.MAIN_REVERSE_PROXY_PATH + "/",
+			"/" + C.OLD_REVERSE_PROXY_PATH,
+			"/" + C.OLD_REVERSE_PROXY_PATH + "/"
 			)));
 
 	public static String idFromPath(final String pathInfo, final String defVal) {

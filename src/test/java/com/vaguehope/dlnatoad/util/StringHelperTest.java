@@ -26,6 +26,20 @@ public class StringHelperTest {
 	}
 
 	@Test
+	public void itRemovesFirstMatchingPrefix() throws Exception {
+		assertEquals("foobar", StringHelper.removeFirstMatchingPrefix("/foobar", "/"));
+		assertEquals("", StringHelper.removeFirstMatchingPrefix("/", "/"));
+		assertEquals("foobar", StringHelper.removeFirstMatchingPrefix("c/foobar", "c/"));
+		assertEquals("/bar", StringHelper.removeFirstMatchingPrefix("/foo/bar", "/foo"));
+
+		assertEquals("", StringHelper.removeFirstMatchingPrefix("", "/"));
+		assertEquals(null, StringHelper.removeFirstMatchingPrefix(null, "/"));
+
+		assertEquals("/bar", StringHelper.removeFirstMatchingPrefix("/foo/bar", "/foo", "/bat"));
+		assertEquals("/bar", StringHelper.removeFirstMatchingPrefix("/bat/bar", "/foo", "/bat"));
+	}
+
+	@Test
 	public void itRemovesTrailingString() throws Exception {
 		assertEquals("foobar", StringHelper.removeSuffix("foobar/", "/"));
 		assertEquals("", StringHelper.removeSuffix("/", "/"));

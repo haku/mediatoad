@@ -379,18 +379,13 @@ public final class Main {
 
 	protected static RewriteHandler wrapWithRewrites(final Handler wrapped) {
 		final RewriteHandler rewrites = new RewriteHandler();
-
 		// Do not modify the request object because:
 		// - RuleContainer.apply() messes up the encoding.
 		// - ServletHelper.getReqPath() knows how to remove the prefix.
 		rewrites.setRewriteRequestURI(false);
 		rewrites.setRewritePathInfo(false);
-
-		final RewritePatternRule r = new RewritePatternRule();
-		r.setPattern("/" + C.REVERSE_PROXY_PATH + "/*");
-		r.setReplacement("/");
-		rewrites.addRule(r);
-
+		rewrites.addRule(new RewritePatternRule("/" + C.MAIN_REVERSE_PROXY_PATH + "/*", "/"));
+		rewrites.addRule(new RewritePatternRule("/" + C.OLD_REVERSE_PROXY_PATH + "/*", "/"));
 		rewrites.setHandler(wrapped);
 		return rewrites;
 	}

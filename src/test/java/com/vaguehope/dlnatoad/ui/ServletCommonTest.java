@@ -25,6 +25,11 @@ public class ServletCommonTest {
 		assertEquals("123", ServletCommon.idFromPath("/foo/123", "0"));
 		assertEquals("123", ServletCommon.idFromPath("/dlnatoad/foo/123", "0"));
 		assertEquals("123", ServletCommon.idFromPath("/dlnatoad/foo/123.ext", "0"));
+
+		assertEquals("123", ServletCommon.idFromPath("/mediatoad/c/123", "0"));
+		assertEquals("123", ServletCommon.idFromPath("/mediatoad/c/123.ext", "0"));
+		assertEquals("123", ServletCommon.idFromPath("/mediatoad/t/123", "0"));
+		assertEquals("123", ServletCommon.idFromPath("/mediatoad/t/123.ext", "0"));
 	}
 
 	@Test
@@ -43,6 +48,11 @@ public class ServletCommonTest {
 		assertEquals("0", ServletCommon.firstDirFromPath("/dlnatoad/0/"));
 		assertEquals("0", ServletCommon.firstDirFromPath("/dlnatoad/0/foo.ext"));
 		assertEquals("abc", ServletCommon.firstDirFromPath("/dlnatoad/abc/foo.ext"));
+
+		assertEquals(null, ServletCommon.firstDirFromPath("/mediatoad/0"));
+		assertEquals("0", ServletCommon.firstDirFromPath("/mediatoad/0/"));
+		assertEquals("0", ServletCommon.firstDirFromPath("/mediatoad/0/foo.ext"));
+		assertEquals("abc", ServletCommon.firstDirFromPath("/mediatoad/abc/foo.ext"));
 	}
 
 	@Test
@@ -56,6 +66,9 @@ public class ServletCommonTest {
 		assertEquals("0", ServletCommon.fileFromPath("/dlnatoad/0"));
 		assertEquals("t=tag", ServletCommon.fileFromPath("/t=tag"));
 		assertEquals("t=tag", ServletCommon.fileFromPath("/dlnatoad/t=tag"));
+
+		assertEquals("0", ServletCommon.fileFromPath("/mediatoad/0"));
+		assertEquals("t=tag", ServletCommon.fileFromPath("/mediatoad/t=tag"));
 	}
 
 }

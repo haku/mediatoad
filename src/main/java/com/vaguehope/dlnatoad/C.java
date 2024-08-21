@@ -23,7 +23,9 @@ public interface C {
 	 */
 	int MIN_ADVERTISEMENT_AGE_SECONDS = 300;
 
-	String REVERSE_PROXY_PATH = "dlnatoad";
+	String MAIN_REVERSE_PROXY_PATH = "mediatoad";
+	String OLD_REVERSE_PROXY_PATH = "dlnatoad";
+
 	String CONTENT_PATH_PREFIX = "c/";
 	String REMOTE_CONTENT_PATH_PREFIX = "rc/";
 	String AUTOCOMPLETE_PATH = "ac";

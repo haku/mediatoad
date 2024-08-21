@@ -235,7 +235,7 @@ public class TagAutocompleterTest {
 	@Ignore
 	@Test
 	public void itLoadsRealDbData() throws Exception {
-		final File dbFile = new File(new File(System.getProperty("user.home")), "tmp/dlnatoad-db");
+		final File dbFile = new File(new File(System.getProperty("user.home")), "tmp/mediatoad-db");
 		final MediaDb db = new MediaDb(dbFile);
 		final TagAutocompleter ut = new TagAutocompleter(db, this.schEx);
 		ut.generateIndex();

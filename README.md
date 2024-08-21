@@ -27,7 +27,7 @@ It's a Java Maven project.
 
 ```shell
 $ mvn clean install
-$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar
+$ java -jar target/mediatoad-1-SNAPSHOT-jar-with-dependencies.jar
 ```
 
 Any configuration?
@@ -37,7 +37,7 @@ You can include multiple specific root directories instead of defaulting to the
 current directory:
 
 ```shell
-$ java -jar dlnatoad.jar foo/ bar/
+$ java -jar mediatoad.jar foo/ bar/
 ```
 
 Instead of listing paths on the command line a text file of directories can be
@@ -108,7 +108,7 @@ command line with the following command.  Alternatively just ask them to
 generate and send a bcrypt hash :3.
 
 ```
-$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar --userfile $path_to_file --adduser
+$ java -jar target/mediatoad-1-SNAPSHOT-jar-with-dependencies.jar --userfile $path_to_file --adduser
 ```
 
 Directories are protected by placing AUTH files in them listing one username per
@@ -205,7 +205,7 @@ static files and templates are read from so refreshing the page shows changes
 immediately.
 
 ```
-$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar --accesslog --webroot src/main/resources/wui --templateroot src/main/resources/templates
+$ java -jar target/mediatoad-1-SNAPSHOT-jar-with-dependencies.jar --accesslog --webroot src/main/resources/wui --templateroot src/main/resources/templates
 ```
 
 <!-- vim: textwidth=80 noautoindent nocindent

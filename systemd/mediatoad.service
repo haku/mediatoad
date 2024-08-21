@@ -9,11 +9,11 @@ User=librarian
 ExecStart=/usr/bin/java \
           -XX:+PerfDisableSharedMem \
           -XX:-UsePerfData \
-          -jar /home/librarian/dlnatoad/dlnatoad.jar \
-          --idfile /home/librarian/dlnatoad/systemid \
-          --tree /home/librarian/dlnatoad/tree \
-          --db /home/librarian/dlnatoad/db \
-          --thumbs /home/librarian/dlnatoad/thumbs
+          -jar /home/librarian/mediatoad/mediatoad.jar \
+          --idfile /home/librarian/mediatoad/systemid \
+          --tree /home/librarian/mediatoad/tree \
+          --db /home/librarian/mediatoad/db \
+          --thumbs /home/librarian/mediatoad/thumbs
 Restart=always
 RestartSec=60
 KillSignal=SIGINT
