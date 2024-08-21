@@ -49,9 +49,13 @@ never be needed as data is only ever stored in the DB.
 ### Thumbnails
 
 If you want the web interface to show thumbnails the `--thumbs` flag must point
-to a directory where they can be written to.  Thumbnails will be generated as
-part of scanning for files on start up and whenever new files are found.
-Currently thumbnails are only generated for images files.
+to a directory where they can be written to.  Thumbnails for images will be
+generated as part of scanning for files on start up and whenever new files are
+found.
+
+Thumbnails for videos can be enabled per-directory, though this is very
+experimental.  Users with +editdirprefs can find this option at the bottom of
+each directory page.  This uses ffmpeg which much be available in PATH.
 
 ### DB and Tagging
 
