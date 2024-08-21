@@ -125,10 +125,88 @@ If a subdirectory has its own AUTH file a user must appear in all AUTH files in
 parent directories to have access.  Permissions are taken from the first AUTH
 file found going back up the directory tree.
 
+### Tag Determiners
+
+Tag determiners (TD) are a mechanism to use external processes (such as ML
+models) to automatically add tags to content.  A TD implements the simple RPC
+service in `src/main/proto/tagdeterminer.proto`.  The TD will be send the file
+content and mimetype, and returns a list of tags that will be added to the item.
+
+Which files have already been send to the TD is tracked by added a hidden tag (a
+tag with a class starting with a '.'), which the TD returns from `About` RPC in
+the `tag_cls` field.
+
+To connect to a TD use the `--tagdeterminer` flag, which specifies the URL of
+the service and which content should be sent to it in the format `URL|query`:
+
+```
+--tagdeterminer 'https://my-service.example.com|f~/mnt/photos/ OR f~/mnt/pictures/'
+```
+
+The query syntax is the same as used in the web UI.  Multiple TDs can be
+configured by repeating the flag.
+
+Query Syntax
+------------
+
+There are 2 query engines depending on if a DB is used or not.  If there is no
+DB, then it is a simple substring search of filenames.  If DB is enabled, there
+is the syntax described below.
+
+NOTE This syntax is somewhat work-in-progress and may change.  This
+documentation may be incomplete, see `DbSearchParserTest` for tested examples.
+
+| query                    | what it matches |
+| ---                      | --- |
+| `foo`                    | file path or tags containing `foo` |
+| `f~foo`                  | file path containing `foo`|
+| `f~^/foo`                | file path starting with `/foo`|
+| `f~foo$`                 | file path ends with `foo`|
+| `-f~foo`                 | file path does not contain `foo` |
+| `t=foo`                  | exact tag `foo` |
+| `-t=foo`                 | not exact tag `foo` |
+| `t~foo`                  | tag containing `foo` |
+| `t~^foo`                 | tag starts with `foo` |
+| `t~foo$`                 | tag ends with `foo` |
+| `-t~foo`                 | tag not containing `foo` |
+| `t>3`                    | has 4 or more tags |
+| `t<3`                    | has 2 or fewer tags |
+| `w=1920 h>1080`          | width exactly 1920 pixels and height is more than 1080 pixels |
+| `w>=2000 h<=1000`        | width is 2000 pixels or more, height is 1000 pixels or less |
+| `type=image`             | mimetype starts with `image/` |
+| `type=image/jpeg`        | mimetype is exactly `image/jpeg` |
+| `t="foo bar"`            | exact tag `foo bar` |
+| `t="foo\"bar"`           | exact tag `foo"bar` |
+| `t=foo OR t~bar`         | exact tag `foo` or tag containing `bar` |
+| `t=foo OR (f~bar t=baz)` | exact tag `foo` or both file path contains `bar` and exact tag `baz` |
+
+* Terms separated by whitespace are implicitly ANDed together.
+* Either `"` or `'` can be used.
+* Quotes can be placed anywhere bash-style, eg `t=fo"o b"ar` is the same as
+  `t="foo bar"`.
+* Use backslash `\` to escape things.
+* Open brackets `(` must be preceded by whitespace and close brackets `)` must
+  be followed by whitespace,  eg `a(bcd)e` will be searched for as is.
+* Queries are currently limited to 10 terms.
+
+
 Running as a Service
 --------------------
 
 See the `systemd` directory for an example unit file.
+
+Development Workflow
+--------------------
+
+### Web UI
+
+To make working on HTML/JS/CSS files easier, there are flags to override where
+static files and templates are read from so refreshing the page shows changes
+immediately.
+
+```
+$ java -jar target/dlnatoad-1-SNAPSHOT-jar-with-dependencies.jar --accesslog --webroot src/main/resources/wui --templateroot src/main/resources/templates
+```
 
 <!-- vim: textwidth=80 noautoindent nocindent
 -->

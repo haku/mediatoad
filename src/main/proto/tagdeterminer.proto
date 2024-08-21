@@ -13,14 +13,27 @@ service TagDeterminer {
 
 message AboutRequest {}
 message AboutReply {
+  // Friendly name of the TD, only used for UI and logging.
   string name = 1;
+
+  // used to track which TD added which tags.
+  // also used to track which files have been send to the TD with a hidden tag:
+  // eg for a model called "MyTD" a tag with (tag="MyTD" cls=".MyTD") will be used.
+  // this MUST remain constant forever, otherwise all content will be re-sent
+  // and double-tagged.
+  // must match: ^([A-Za-z0-9])+$
   string tag_cls = 2;
 }
 
 message DetermineTagsRequest {
+  // typical content type, eg image/jpeg.
   string mimetype = 1;
+
+  // content of the media, divided into chunks.
   bytes content = 2;
 }
 message DetermineTagsReply {
+  // list of tags to be added to the item.
+  // return empty list if no tags can be determined.
   repeated string tag = 1;
 }
