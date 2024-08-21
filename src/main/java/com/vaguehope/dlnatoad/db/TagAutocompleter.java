@@ -1,5 +1,6 @@
 package com.vaguehope.dlnatoad.db;
 
+import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,6 +85,30 @@ public class TagAutocompleter {
 
 	public List<TagFrequency> suggestFragments(final String input) {
 		return binarySearch(this.fragmentsArr, input);
+	}
+
+	public void dumpTo(final PrintWriter w) {
+		if (this.tagsArr != null) {
+			w.println("tagsArr:");
+			for (final FragmentAndTag f : this.tagsArr) {
+				printFragment(w, f);
+			}
+		}
+		w.println();
+		if (this.fragmentsArr != null) {
+			w.println("fragmentsArr:");
+			for (final FragmentAndTag f : this.fragmentsArr) {
+				printFragment(w, f);
+			}
+		}
+	}
+
+	private static void printFragment(final PrintWriter w, final FragmentAndTag f) {
+		w.print(StringUtils.rightPad(f.fragment, 40));
+		w.print("  ");
+		w.print(StringUtils.rightPad(f.tag, 40));
+		w.print("  ");
+		w.println(f.fileCount);
 	}
 
 	/**

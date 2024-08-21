@@ -51,6 +51,10 @@ public class AutocompleteServlet extends HttpServlet {
 				return;
 			}
 		}
+		else if (req.getParameter("dump") != null && ReqAttr.USERNAME.get(req) != null) {
+			this.tagAutocompleter.dumpTo(resp.getWriter());
+			return;
+		}
 
 		final String mode = ServletCommon.readRequiredParam(req, resp, "mode", 1);
 		if (mode == null) return;
