@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,14 +53,16 @@ public class MediaMetadataStore {
 	private final BlockingQueue<FileIdAndInfo> storeInfoQueue = new LinkedBlockingQueue<>();
 
 	private final MediaDb mediaDb;
-	private final ScheduledExecutorService exSvc;
+	private final ScheduledExecutorService dbEx;
+	private final ExecutorService fsEx;
 	private final boolean verboseLog;
 
-	public MediaMetadataStore(final MediaDb mediaDb, final ScheduledExecutorService exSvc, final boolean verboseLog) {
+	public MediaMetadataStore(final MediaDb mediaDb, final ScheduledExecutorService dbEx, final ExecutorService fsEx, final boolean verboseLog) {
 		this.mediaDb = mediaDb;
-		this.exSvc = exSvc;
+		this.dbEx = dbEx;
+		this.fsEx = fsEx;
 		this.verboseLog = verboseLog;
-		exSvc.scheduleWithFixedDelay(new InfoWorker(), 0, INFO_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
+		dbEx.scheduleWithFixedDelay(new InfoWorker(), 0, INFO_WRITE_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
 	public void registerMetrics(final PrometheusRegistry registry) {
@@ -99,7 +102,7 @@ public class MediaMetadataStore {
 
 	private void scheduleFileIdBatchIfNeeded() {
 		if (this.fileIdWorkerRunning.compareAndSet(false, true)) {
-			this.exSvc.schedule(new FileWorker(), FILE_BATCH_START_DELAY_MILLIS, TimeUnit.MILLISECONDS);
+			this.dbEx.schedule(new FileWorker(), FILE_BATCH_START_DELAY_MILLIS, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -246,7 +249,7 @@ public class MediaMetadataStore {
 	}
 
 	private void generateFileDataAsync(final File file, final FileTask task) {
-		this.exSvc.execute(() -> {
+		this.fsEx.execute(() -> {
 			try {
 				final FileData fileData = FileData.forFile(file);  // Slow.
 				this.fileQueue.put(task.withNewFileData(fileData));

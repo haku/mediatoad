@@ -6,10 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -17,16 +13,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
+import com.vaguehope.dlnatoad.FakeScheduledExecutorService;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
@@ -44,32 +38,17 @@ public class MetadataImporterTest {
 
 	private FakeTime time;
 	private MediaDb mediaDb;
-	private ScheduledExecutorService schEx;
+	private ScheduledExecutorService fakeEx;
 	private MediaMetadataStore mediaMetadataStore;
 	private File dropDir;
 	private MetadataImporter undertest;
 
 	@Before
 	public void before() throws Exception {
-		this.schEx = mock(ScheduledExecutorService.class);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(this.schEx).execute(any(Runnable.class));
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(this.schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
-
 		this.time = new Time.FakeTime();
 		this.mediaDb = new InMemoryMediaDb();
-		this.mediaMetadataStore = new MediaMetadataStore(this.mediaDb, this.schEx, true);
+		this.fakeEx = new FakeScheduledExecutorService();
+		this.mediaMetadataStore = new MediaMetadataStore(this.mediaDb, this.fakeEx, this.fakeEx, true);
 		this.dropDir = this.tmp.newFolder();
 		this.undertest = new MetadataImporter(this.dropDir, this.mediaDb, true, this.time);
 

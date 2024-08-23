@@ -54,7 +54,7 @@ public class MediaIndexTest {
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
-		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, true);
+		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
 		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo());
 	}

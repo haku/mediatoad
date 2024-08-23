@@ -1,10 +1,6 @@
 package com.vaguehope.dlnatoad.db;
 
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,11 +21,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.FakeScheduledExecutorService;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
 import com.vaguehope.dlnatoad.util.DaemonThreadFactory;
@@ -48,36 +43,17 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 	}
 
 	public static MockMediaMetadataStore withMockExSvc(final TemporaryFolder tmp) throws SQLException {
-		return new MockMediaMetadataStore(tmp, makeMockExSvc());
+		return new MockMediaMetadataStore(tmp, new FakeScheduledExecutorService());
 	}
 
 	private MockMediaMetadataStore(final TemporaryFolder tmp, final ScheduledExecutorService exSvc) throws SQLException {
-		super(new InMemoryMediaDb(), exSvc, false);
+		super(new InMemoryMediaDb(), exSvc, exSvc, false);
 		this.tmp = tmp;
 		this.exSvc = exSvc;
 	}
 
 	private static ScheduledExecutorService makeRealExSvc() {
 		return new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("mmms", Thread.MIN_PRIORITY));
-	}
-
-	private static ScheduledExecutorService makeMockExSvc() {
-		final ScheduledExecutorService schEx = mock(ScheduledExecutorService.class);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(schEx).execute(any(Runnable.class));
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
-		return schEx;
 	}
 
 	public void waitForEmptyQueue() throws InterruptedException {

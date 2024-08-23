@@ -10,10 +10,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
@@ -32,9 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
+import com.vaguehope.dlnatoad.FakeScheduledExecutorService;
 import com.vaguehope.dlnatoad.media.StoringMediaIdCallback;
 
 public class MediaMetadataStoreTest {
@@ -45,7 +43,7 @@ public class MediaMetadataStoreTest {
 
 	private Random rnd;
 	private File dbFile;
-	private ScheduledExecutorService schEx;
+	private ScheduledExecutorService fakeEx;
 	private MediaMetadataStore undertest;
 
 	private Runnable durationWorker;
@@ -55,26 +53,11 @@ public class MediaMetadataStoreTest {
 		this.rnd = new Random();
 		this.dbFile = this.tmp.newFile("id-db.db3");
 
-		this.schEx = mock(ScheduledExecutorService.class);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(this.schEx).execute(any(Runnable.class));
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer (final InvocationOnMock inv) throws Throwable {
-				inv.getArgument(0, Runnable.class).run();
-				return null;
-			}
-		}).when(this.schEx).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
-
-		this.undertest = new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true);
+		this.fakeEx = spy(new FakeScheduledExecutorService());
+		this.undertest = new MediaMetadataStore(new MediaDb(this.dbFile), this.fakeEx, this.fakeEx, true);
 
 		final ArgumentCaptor<Runnable> cap = ArgumentCaptor.forClass(Runnable.class);
-		verify(this.schEx).scheduleWithFixedDelay(cap.capture(), eq(0L), eq(30L), any(TimeUnit.class));
+		verify(this.fakeEx).scheduleWithFixedDelay(cap.capture(), eq(0L), eq(30L), any(TimeUnit.class));
 		this.durationWorker = cap.getValue();
 	}
 
@@ -90,7 +73,7 @@ public class MediaMetadataStoreTest {
 
 	@Test
 	public void itConnectsToExistingDb () throws Exception {
-		assertNotNull(new MediaMetadataStore(new MediaDb(this.dbFile), this.schEx, true));
+		assertNotNull(new MediaMetadataStore(new MediaDb(this.dbFile), this.fakeEx, this.fakeEx, true));
 	}
 
 	@Test

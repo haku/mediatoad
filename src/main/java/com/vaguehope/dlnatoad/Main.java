@@ -142,8 +142,11 @@ public final class Main {
 		final List<InetAddress> bindAddresses = args.getInterfaces();
 		final InetAddress selfAddress = NetHelper.guessSelfAddress(bindAddresses);
 
-		final ScheduledExecutorService fsExSvc = ExecutorHelper.newScheduledExecutor(1, "fs");
-		final ExecutorService miExSvc = ExecutorHelper.newExecutor(1, "mi");
+		// For DB operations, ideally no other long running work should be in this pool.
+		final ScheduledExecutorService dbEx = ExecutorHelper.newScheduledExecutor(1, "db");
+
+		// Only for hashing files.
+		final ExecutorService fsEx = ExecutorHelper.newExecutor(1, "fs");
 
 		final File thumbsDir = args.getThumbsDir();
 		final ThumbnailGenerator thumbnailGenerator =
@@ -159,10 +162,10 @@ public final class Main {
 		if (dbFile != null) {
 			LOG.info("DB: {}", dbFile.getAbsolutePath());
 			mediaDb = new MediaDb(dbFile);
-			dbCache = new DbCache(mediaDb, fsExSvc, args.isVerboseLog());
-			mediaMetadataStore = new MediaMetadataStore(mediaDb, fsExSvc, args.isVerboseLog());
+			dbCache = new DbCache(mediaDb, dbEx, args.isVerboseLog());
+			mediaMetadataStore = new MediaMetadataStore(mediaDb, dbEx, fsEx, args.isVerboseLog());
 			mediaMetadataStore.registerMetrics(PrometheusRegistry.defaultRegistry);
-			tagAutocompleter = new TagAutocompleter(mediaDb, fsExSvc);
+			tagAutocompleter = new TagAutocompleter(mediaDb, dbEx);
 		}
 		else {
 			mediaDb = null;
@@ -172,7 +175,7 @@ public final class Main {
 		}
 
 		final MediaId mediaId = new MediaId(mediaMetadataStore);
-		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, thumbnailGenerator, miExSvc);
+		final MediaInfo mediaInfo = new MediaInfo(mediaMetadataStore, thumbnailGenerator, ExecutorHelper.newExecutor(1, "mi"));
 		final ContentTree contentTree = new ContentTree();
 		contentTree.registerMetrics(PrometheusRegistry.defaultRegistry);
 
@@ -180,9 +183,9 @@ public final class Main {
 		final TagDeterminerController tagDeterminerController = new TagDeterminerController(args, contentTree, mediaDb);
 		final Runnable afterInitialScanIdsAllFiles = () -> {
 			if (mediaDb != null) {
-				new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(fsExSvc);
+				new DbCleaner(contentTree, mediaDb, args.isVerboseLog()).start(dbEx);
 				if (dropDir != null) {
-					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(fsExSvc);
+					new MetadataImporter(dropDir, mediaDb, args.isVerboseLog()).start(dbEx);
 				}
 				tagAutocompleter.start();
 				tagDeterminerController.start();
@@ -225,8 +228,7 @@ public final class Main {
 		upnpService.getRegistry().addDevice(new MediaServer(systemId, contentTree, nodeConverter, hostName, args.isPrintAccessLog(), externalUrls.getSelfUri()).getDevice());
 
 		// Periodic rescan to catch missed devices.
-		final ScheduledExecutorService upnpExSvc = ExecutorHelper.newScheduledExecutor(1, "up");
-		upnpExSvc.scheduleWithFixedDelay(() -> {
+		ExecutorHelper.newScheduledExecutor(1, "up").scheduleWithFixedDelay(() -> {
 			upnpService.getControlPoint().search();
 			if (args.isVerboseLog()) LOG.info("Scanning for devices.");
 		}, 0, C.DEVICE_SEARCH_INTERVAL_MINUTES, TimeUnit.MINUTES);
