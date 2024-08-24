@@ -315,6 +315,32 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itFindsDuplicatesHonouringAuth() throws Exception {
+		final BigInteger user0 = BigInteger.valueOf(100001L);
+		final BigInteger user1 = BigInteger.valueOf(100002L);
+
+		final byte[] a = MockMediaMetadataStore.randomBytes();
+		final String a0 = this.mockMediaMetadataStore.addFileWithContentAndAuth(a, BigInteger.ZERO);
+		final String a1 = this.mockMediaMetadataStore.addFileWithContentAndAuth(a, BigInteger.ZERO);
+		final String a2 = this.mockMediaMetadataStore.addFileWithContentAndAuth(a, user0);
+		final String a3 = this.mockMediaMetadataStore.addFileWithContentAndAuth(a, user1);
+		final String a4 = this.mockMediaMetadataStore.addFileWithContentAndAuth(a, user1);
+		assertEquals(a0, a1);
+		assertEquals(a0, a2);
+		assertEquals(a0, a3);
+		assertEquals(a0, a4);
+
+		runQuery("dupes>0", a0);
+		runQuery("dupes>1");
+
+		runQuery("dupes>1", ImmutableSet.of(user0), a0);
+		runQuery("dupes>2", ImmutableSet.of(user0));
+
+		runQuery("dupes>2", ImmutableSet.of(user1), a0);
+		runQuery("dupes>3", ImmutableSet.of(user1));
+	}
+
+	@Test
 	public void itSearchesForPartialMatchFileNameQuoted () throws Exception {
 		final String term = "some awesome? band desu";
 

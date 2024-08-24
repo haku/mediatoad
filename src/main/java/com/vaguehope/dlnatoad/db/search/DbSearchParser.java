@@ -58,7 +58,7 @@ public class DbSearchParser {
 
 	// +1 to ? value because syntax is "dupes>0" but query is counting total occurrences.
 	private static final String _SQL_MEDIAFILES_WHERES_DUPE_COUNT_GREATER_THAN =
-			" (files.hash IN (SELECT hash FROM files WHERE missing=0 GROUP BY hash HAVING COUNT(hash) > ? + 1))";
+			" (files.hash IN (SELECT hash FROM files WHERE missing=0 AND AUTH GROUP BY hash HAVING COUNT(hash) > ? + 1))";
 
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
@@ -94,7 +94,7 @@ public class DbSearchParser {
 		}
 
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
-		appendWhereTerms(sql, terms);
+		appendWhereTerms(sql, terms, authIds);
 
 		sql.append(" ORDER BY ");
 		for (int i = 0; i < sort.length; i++) {
@@ -114,13 +114,13 @@ public class DbSearchParser {
 		SqlFragments.appendWhereAuth(fileQuery, authIds);
 
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
-		appendWhereTerms(fileQuery, terms);
+		appendWhereTerms(fileQuery, terms, authIds);
 
 		final String tagQuery = _SQL_TAG_FREQUENCY_SELECT.replace("FILEQUERY", fileQuery.toString());
 		return new TagFrequencySearch(tagQuery, terms);
 	}
 
-	private static void appendWhereTerms (final StringBuilder sql, final List<String> terms) {
+	private static void appendWhereTerms (final StringBuilder sql, final List<String> terms, final Set<BigInteger> authIds) {
 		if (terms.size() > 0) {
 			sql.append(_SQL_AND);
 			sql.append(" ( ");
@@ -196,7 +196,7 @@ public class DbSearchParser {
 					sql.append(_SQL_MEDIAFILES_WHERE_INFOS.replace("WOH", woh));
 				}
 				else if (DbSearchSyntax.isDupeCountGreaterThan(term)) {
-					sql.append(_SQL_MEDIAFILES_WHERES_DUPE_COUNT_GREATER_THAN);
+					sql.append(_SQL_MEDIAFILES_WHERES_DUPE_COUNT_GREATER_THAN.replace("AUTH", SqlFragments.makeWhereAuth(authIds)));
 				}
 				else {
 					sql.append(_SQL_MEDIAFILES_WHERES_FILEORTAG);

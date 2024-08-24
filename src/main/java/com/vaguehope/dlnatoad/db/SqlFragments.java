@@ -18,4 +18,10 @@ public class SqlFragments {
 		sql.append(")");
 	}
 
+	public static String makeWhereAuth(final Set<BigInteger> authIds) {
+		final StringBuilder a = new StringBuilder();
+		SqlFragments.appendWhereAuth(a, authIds);
+		return a.toString();
+	}
+
 }
