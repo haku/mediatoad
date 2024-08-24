@@ -118,10 +118,11 @@ public class ItemServlet extends HttpServlet {
 			ServletCommon.returnDenied(resp, username);
 			return;
 		}
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 
 		final PageScope pageScope = this.servletCommon.pageScope(req, item.getTitle(), "../");
 		final ItemScope itemScope = new ItemScope();
-		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, itemScope);
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, authIds, itemScope);
 
 		itemScope.item_id = item.getId();
 		itemScope.type = item.getFormat().getMime();
@@ -158,12 +159,23 @@ public class ItemServlet extends HttpServlet {
 			try {
 				final FileData fileData = this.mediaDb.getFileData(item.getFile());
 				if (fileData != null) {
+					final String absolutePath = item.getFile().getAbsolutePath();
+
 					itemScope.details = item.getTitle();
 					itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
 					itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
 					itemScope.details += "\n" + "MD5: " + fileData.getMd5();
-					itemScope.details += "\n" + item.getFile().getAbsolutePath();
+					itemScope.details += "\n" + absolutePath;
 					itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getLastModified()));
+
+					final Collection<String> duplicates = this.mediaDb.getFilesWithHash(authIds, fileData.getHash());
+					if (duplicates.size() > 1) {
+						itemScope.details += "\n\nduplicates:";
+						for (final String path : duplicates) {
+							if (path.equals(absolutePath)) continue;
+							itemScope.details += "\n" + path;
+						}
+					}
 				}
 			}
 			catch (final SQLException e) {
@@ -178,6 +190,7 @@ public class ItemServlet extends HttpServlet {
 	/**
 	 * Returns query params for paths to self for POSTs.
 	 * return always starts with '?'.
+	 * @param authIds
 	 */
 	private String printPrevNextLinks(
 			final HttpServletRequest req,
@@ -185,6 +198,7 @@ public class ItemServlet extends HttpServlet {
 			final ContentItem item,
 			final ContentNode node,
 			final String username,
+			final Set<BigInteger> authIds,
 			final ItemScope itemScope) throws IOException {
 		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String prevIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_PREV_ID, null);
@@ -205,7 +219,6 @@ public class ItemServlet extends HttpServlet {
 			if (offsetParam == null) return "";
 
 			searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
-			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 			final List<String> ids;
 			try {
 				ids = DbSearchParser.parseSearch(query, authIds, SearchServlet.RESULT_SORT_ORDER)
