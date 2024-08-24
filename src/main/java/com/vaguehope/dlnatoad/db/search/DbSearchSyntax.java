@@ -126,6 +126,10 @@ public class DbSearchSyntax {
 		return null;
 	}
 
+	public static boolean isDupeCountGreaterThan (final String term) {
+		return term.startsWith("dupes>");
+	}
+
 	/**
 	 * If input is invalid default value is 1.
 	 */

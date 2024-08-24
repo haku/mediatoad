@@ -81,6 +81,12 @@ public class DbSearchSyntaxTest {
 	}
 
 	@Test
+	public void itDeterminsDupeCount() throws Exception {
+		assertEquals(true, DbSearchSyntax.isDupeCountGreaterThan("dupes>0"));
+		assertEquals(true, DbSearchSyntax.isDupeCountGreaterThan("dupes>1"));
+	}
+
+	@Test
 	public void itExtractsCounts() throws Exception {
 		assertEquals(0, DbSearchSyntax.removeCountOperator("t<0"));
 		assertEquals(0, DbSearchSyntax.removeCountOperator("T<0"));
@@ -119,6 +125,9 @@ public class DbSearchSyntaxTest {
 
 		assertEquals(1920, DbSearchSyntax.removeCountOperator("w<=1920"));
 		assertEquals(1920, DbSearchSyntax.removeCountOperator("W<=1920"));
+
+		assertEquals(0, DbSearchSyntax.removeCountOperator("dupes>0"));
+		assertEquals(1, DbSearchSyntax.removeCountOperator("dupes>1"));
 	}
 
 }

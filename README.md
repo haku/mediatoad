@@ -175,6 +175,7 @@ documentation may be incomplete, see `DbSearchParserTest` for tested examples.
 | `w>=2000 h<=1000`        | width is 2000 pixels or more, height is 1000 pixels or less |
 | `type=image`             | mimetype starts with `image/` |
 | `type=image/jpeg`        | mimetype is exactly `image/jpeg` |
+| `dupes>0`                | has 1 or more duplicates, based on file hash |
 | `t="foo bar"`            | exact tag `foo bar` |
 | `t="foo\"bar"`           | exact tag `foo"bar` |
 | `t=foo OR t~bar`         | exact tag `foo` or tag containing `bar` |

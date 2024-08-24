@@ -15,11 +15,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,35 +75,39 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 	}
 
 	public String addFileWithTags(final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, null, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, randomBytes(), null, tags);
 	}
 
 	public String addMissingFileWithTags(final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, true, null, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, true, randomBytes(), null, tags);
 	}
 
 	public String addFileWithAuthAndTags(final BigInteger auth, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", auth, false, null, tags);
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", auth, false, randomBytes(), null, tags);
 	}
 
-	public String addFileWithInfoAndTags(final FileInfo info, String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, info, tags);
+	public String addFileWithInfoAndTags(final FileInfo info, final String... tags) throws IOException, InterruptedException, SQLException {
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, randomBytes(), info, tags);
 	}
 
 	public String addFileWithName(final String nameFragment) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, null);
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, randomBytes(), null);
 	}
 
 	public String addFileWithName(final String nameFragment, final String nameSuffex) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, null);
+		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, randomBytes(), null);
 	}
 
 	public String addFileWithNameAndTags(final String nameFragment, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, null, tags);
+		return addFileWithNameExtAndTags(nameFragment, ".ext", BigInteger.ZERO, false, randomBytes(), null, tags);
 	}
 
 	public String addFileWithNameAndSuffexAndTags(final String nameFragment, final String nameSuffex, final String... tags) throws IOException, InterruptedException, SQLException {
-		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, null, tags);
+		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, randomBytes(), null, tags);
+	}
+
+	public String addFileWithContent(final byte[] fileContent) throws IOException, InterruptedException, SQLException {
+		return addFileWithNameExtAndTags(RandomStringUtils.randomAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, fileContent, null);
 	}
 
 	private String addFileWithNameExtAndTags(
@@ -111,15 +115,16 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 			final String nameSuffex,
 			final BigInteger auth,
 			final boolean missing,
+			final byte[] fileContent,
 			final FileInfo info,
 			final String... tags) throws IOException, InterruptedException, SQLException {
 		final File mediaFile = File.createTempFile("mock_media_" + nameFragment, nameSuffex, this.tmp.getRoot());
-		FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(10, 50), StandardCharsets.UTF_8);
+		FileUtils.writeByteArrayToFile(mediaFile, fileContent);
 
 		final StoringMediaIdCallback cb = new StoringMediaIdCallback();
 		idForFile(mediaFile, auth, cb);
-		final String fileId = cb.getMediaId();
 		waitForEmptyQueue();
+		final String fileId = cb.getMediaId();
 
 		try (final WritableMediaDb w = getMediaDb().getWritable()) {
 			for (final String tag : tags) {
@@ -130,6 +135,13 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		}
 
 		return fileId;
+	}
+
+	public static byte[] randomBytes() {
+		final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+		final byte[] ret = new byte[rnd.nextInt(50, 100)];
+		rnd.nextBytes(ret);
+		return ret;
 	}
 
 	public void addNoiseToDb () throws Exception {
@@ -166,7 +178,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		}
 
 		public Future<String> addFileWithRandomTags() throws IOException, InterruptedException {
-			final int count = RandomUtils.nextInt(3, 10);
+			final int count = ThreadLocalRandom.current().nextInt(3, 10);
 			final String[] tags = new String[count];
 			for (int i = 0; i < count; i++) {
 				tags[i] = RandomStringUtils.randomPrint(20, 50);
@@ -180,7 +192,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 
 		public Future<String> fileWithNameExtAndTags(final String nameFragment, final String nameSuffex, final BigInteger auth, final boolean missing, final String... tags) throws IOException, InterruptedException {
 			final File mediaFile = File.createTempFile("mock_media_" + nameFragment, nameSuffex, MockMediaMetadataStore.this.tmp.getRoot());
-			FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(10, 50), StandardCharsets.UTF_8);
+			FileUtils.writeStringToFile(mediaFile, RandomStringUtils.randomPrint(50, 100), StandardCharsets.UTF_8);
 
 			final CompletableFuture<String> future = new CompletableFuture<>();
 			idForFile(mediaFile, auth, new MediaIdCallback() {

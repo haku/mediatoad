@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
@@ -292,6 +293,25 @@ public class DbSearchParserTest {
 				"happy_track_nyan~");
 
 		runQuery("t=some_awesome_band_desu t=happy_track_nyan~", expectedWithTags);
+	}
+
+	@Test
+	public void itFindsDuplicates() throws Exception {
+		final byte[] a = MockMediaMetadataStore.randomBytes();
+		final String a0 = this.mockMediaMetadataStore.addFileWithContent(a);
+		final String a1 = this.mockMediaMetadataStore.addFileWithContent(a);
+		final String a3 = this.mockMediaMetadataStore.addFileWithContent(a);
+		assertEquals(a0, a1);
+		assertEquals(a0, a3);
+
+		final byte[] b = MockMediaMetadataStore.randomBytes();
+		final String b0 = this.mockMediaMetadataStore.addFileWithContent(b);
+		final String b1 = this.mockMediaMetadataStore.addFileWithContent(b);
+		assertEquals(b0, b1);
+		assertNotEquals(a0, b0);
+
+		runQuery("dupes>0", a0, b0);
+		runQuery("dupes>1", a0);
 	}
 
 	@Test

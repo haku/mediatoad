@@ -56,6 +56,10 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERE_INFOS =
 			" (id IN (SELECT file_id FROM infos WHERE WOH?))";
 
+	// +1 to ? value because syntax is "dupes>0" but query is counting total occurrences.
+	private static final String _SQL_MEDIAFILES_WHERES_DUPE_COUNT_GREATER_THAN =
+			" (files.hash IN (SELECT hash FROM files WHERE missing=0 GROUP BY hash HAVING COUNT(hash) > ? + 1))";
+
 	private static final String _SQL_MEDIAFILES_WHERES_FILEORTAG =
 			" (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
@@ -191,6 +195,9 @@ public class DbSearchParser {
 				else if ((woh = DbSearchSyntax.widthOrHeight(term)) != null) {
 					sql.append(_SQL_MEDIAFILES_WHERE_INFOS.replace("WOH", woh));
 				}
+				else if (DbSearchSyntax.isDupeCountGreaterThan(term)) {
+					sql.append(_SQL_MEDIAFILES_WHERES_DUPE_COUNT_GREATER_THAN);
+				}
 				else {
 					sql.append(_SQL_MEDIAFILES_WHERES_FILEORTAG);
 				}
@@ -290,7 +297,8 @@ public class DbSearchParser {
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
 					}
 					else if (DbSearchSyntax.isTagCountLessThan(term) || DbSearchSyntax.isTagCountGreaterThan(term)
-							|| DbSearchSyntax.widthOrHeight(term) != null) {
+							|| DbSearchSyntax.widthOrHeight(term) != null
+							|| DbSearchSyntax.isDupeCountGreaterThan(term)) {
 						ps.setInt(parmIn++, DbSearchSyntax.removeCountOperator(term));
 					}
 					else {
