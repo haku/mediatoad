@@ -138,4 +138,17 @@ public class NodeConverterTest {
 		assertEquals("album", albumProp.getValue());
 	}
 
+	@Test
+	public void itIgnoresNonPlayerableTypes() throws Exception {
+		final ContentNode node = new ContentNode("pid", "node", "title", null);
+		final ContentItem i0 = new ContentItem("id0", "pid", "title", mock(File.class), MediaFormat.MP3);
+		final ContentItem i1 = new ContentItem("id1", "pid", "title", mock(File.class), MediaFormat.PDF);
+		node.addItemIfAbsent(i0);
+		node.addItemIfAbsent(i1);
+
+		final List<Item> actual = this.undertest.makeItems(node);
+		assertThat(actual, hasSize(1));
+		assertEquals("id0", actual.get(0).getId());
+	}
+
 }

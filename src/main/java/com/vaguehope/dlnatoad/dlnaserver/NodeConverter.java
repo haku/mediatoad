@@ -82,16 +82,27 @@ public class NodeConverter {
 
 	public List<Item> makeItems(final ContentNode n) {
 		final List<Item> ret = new ArrayList<>();
-		n.withEachItem(i -> ret.add(makeItem(i)));
+		n.withEachItem(i -> maybeMakeAndAddItem(ret, i));
 		return ret;
 	}
 
 	public List<Item> makeItems(final List<ContentItem> items) {
 		final List<Item> ret = new ArrayList<>();
 		for (final ContentItem i : items) {
-			ret.add(makeItem(i));
+			maybeMakeAndAddItem(ret, i);
 		}
 		return ret;
+	}
+
+	private void maybeMakeAndAddItem(final List<Item> ret, final ContentItem i) {
+		switch (i.getFormat().getContentGroup()) {
+		case VIDEO:
+		case IMAGE:
+		case AUDIO:
+			ret.add(makeItem(i));
+			break;
+		default:
+		}
 	}
 
 	public Item makeItem(final ContentItem c) {
