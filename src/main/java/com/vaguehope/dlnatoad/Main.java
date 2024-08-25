@@ -393,10 +393,16 @@ public final class Main {
 	}
 
 	private static Connector createHttpConnector(final Server server, final InetAddress bindAddress, final int port) {
-		final HttpConfiguration config = new HttpConfiguration();
+		final HttpConfiguration http1Config = new HttpConfiguration();
+		final HttpConnectionFactory http1 = new HttpConnectionFactory(http1Config);
 
-		final HttpConnectionFactory http1 = new HttpConnectionFactory(config);
-		final HTTP2CServerConnectionFactory http2 = new HTTP2CServerConnectionFactory(config);
+		final HttpConfiguration http2Config = new HttpConfiguration();
+		// increase from 30s default in org.eclipse.jetty.server.AbstractConnector._idleTimeout.
+		// work around for issue where kodi gets upset when the connection times out and complains:
+		// "Stream error in the HTTP/2 framing layer".
+		// since http2 is async, long timeouts should have minimal overhead?
+		http2Config.setIdleTimeout(TimeUnit.SECONDS.toMillis(300));
+		final HTTP2CServerConnectionFactory http2 = new HTTP2CServerConnectionFactory(http2Config);
 
 		final ServerConnector connector = new ServerConnector(server, http1, http2);
 		if (bindAddress != null) connector.setHost(bindAddress.getHostName());
