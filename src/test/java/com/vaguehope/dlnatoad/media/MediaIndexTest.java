@@ -50,8 +50,10 @@ public class MediaIndexTest {
 
 	@Before
 	public void before() throws Exception {
-		this.contentTree = new ContentTree();
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
+		this.schEx.setMaximumPoolSize(1);  // ensuring at most 1 thread makes it easier to
+
+		this.contentTree = new ContentTree();
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
@@ -372,6 +374,9 @@ public class MediaIndexTest {
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	private void waitForEmptyQueue() throws InterruptedException, SecurityException, ReflectiveOperationException {
+		assertEquals(1, this.schEx.getCorePoolSize());
+		this.schEx.execute(() -> {});  // no-op item so that when queue is empty all useful work is complete.
+
 		final long start = System.nanoTime();
 		List<Runnable> tasks = null;
 		while (System.nanoTime() - start < TEST_TIMEOUT_NANOS) {
