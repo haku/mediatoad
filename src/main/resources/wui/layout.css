@@ -251,7 +251,7 @@ input, button {
 }
 .mainimage img, .mainimage video {
   max-width: 100%;
-  max-height: 50em;
+  max-height: 70vh;
 }
 .mainimage .nav {
   position: absolute;
