@@ -13,7 +13,7 @@
 </head>
 <body>
 	<div class="topbar">
-		{{$topbar}}{{/topbar}}
+		{{#up_link_path}}<span class="item"><a id="up" href="{{up_link_path}}">Up</a></span>{{/up_link_path}}
 		<span class="item"><a href="{{path_prefix}}./">Home</a></span>
 		{{#username}}
 		<span class="item">[ {{username}} ]</span>

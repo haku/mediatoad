@@ -1,9 +1,9 @@
 {{<page}}
 	{{$body}}
 	<div class="prevnext_bar">
-		{{#previous_path}}<a id="previous" href="{{{previous_path}}}">&lt;= Previous</a>{{/previous_path}}{{^previous_path}}<span></span>{{/previous_path}}
-		<a id="up" href="{{{up_path}}}">{{up_title}}</a>
-		{{#next_path}}<a id="next" href="{{{next_path}}}">Next =&gt;</a>{{/next_path}}{{^next_path}}<span></span>{{/next_path}}
+		{{#previous_path}}<a id="previous" href="{{{previous_path}}}">&lt;= Previous</a>{{/previous_path}}{{^previous_path}}<span id="previous"></span>{{/previous_path}}
+		<span class="title">{{prevnext_title}}</span>
+		{{#next_path}}<a id="next" href="{{{next_path}}}">Next =&gt;</a>{{/next_path}}{{^next_path}}<span id="next"></span>{{/next_path}}
 	</div>
 
 	<div class="mainimage">

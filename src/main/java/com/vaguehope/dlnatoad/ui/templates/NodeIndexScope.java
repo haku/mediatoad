@@ -4,7 +4,6 @@ public class NodeIndexScope {
 
 	public final ResultGroupScope favourites;
 	public final ResultGroupScope results;
-	public final String up_link_path;
 	public final boolean show_list_link_row;
 	public final boolean show_prefs;
 	public final boolean is_favourite;
@@ -17,7 +16,6 @@ public class NodeIndexScope {
 	public NodeIndexScope(
 			final ResultGroupScope favourites,
 			final ResultGroupScope results,
-			final String up_link_path,
 			final boolean show_list_link_row,
 			final boolean show_prefs,
 			final boolean is_favourite,
@@ -27,7 +25,6 @@ public class NodeIndexScope {
 			final String node_file_name,
 			final String node_total_size) {
 		this.node_id = node_id;
-		this.up_link_path = up_link_path;
 		this.show_list_link_row = show_list_link_row;
 		this.show_prefs = show_prefs;
 		this.is_favourite = is_favourite;

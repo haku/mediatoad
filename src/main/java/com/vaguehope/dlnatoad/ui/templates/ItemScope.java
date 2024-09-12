@@ -5,8 +5,7 @@ import java.util.List;
 
 public class ItemScope {
 
-	public String up_path;
-	public String up_title;
+	public String prevnext_title;
 	public String previous_path;
 	public String next_path;
 

@@ -143,6 +143,7 @@ public class DirServlet extends HttpServlet {
 			videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
 
 			favouritesScope = null;
+			pageScope.setUpLinkPath(node.getParentId());
 		}
 
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
@@ -174,7 +175,6 @@ public class DirServlet extends HttpServlet {
 		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
 				favouritesScope,
 				resultScope,
-				isRoot ? null : node.getParentId(),
 				!isRoot,
 				this.db != null && ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req),
 				favourite,

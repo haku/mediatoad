@@ -244,6 +244,17 @@ input, button {
   display: flex;
   justify-content: space-between;
 }
+#previous {
+  flex-basis: 0;
+  flex-grow: 1;
+  text-wrap: nowrap;
+}
+#next {
+  flex-basis: 0;
+  flex-grow: 1;
+  text-wrap: nowrap;
+  text-align: right;
+}
 
 .mainimage {
   text-align: center;

@@ -122,8 +122,9 @@ public class ItemServlet extends HttpServlet {
 
 		final PageScope pageScope = this.servletCommon.pageScope(req, item.getTitle(), "../");
 		final ItemScope itemScope = new ItemScope();
-		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, authIds, itemScope);
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, authIds, pageScope, itemScope);
 
+		if (itemScope.prevnext_title == null) itemScope.prevnext_title = item.getTitle();
 		itemScope.item_id = item.getId();
 		itemScope.type = item.getFormat().getMime();
 		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
@@ -199,6 +200,7 @@ public class ItemServlet extends HttpServlet {
 			final ContentNode node,
 			final String username,
 			final Set<BigInteger> authIds,
+			final PageScope pageScope,
 			final ItemScope itemScope) throws IOException {
 		final String query = StringUtils.trimToNull(req.getParameter(SearchServlet.PARAM_QUERY));
 		final String prevIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_PREV_ID, null);
@@ -212,7 +214,7 @@ public class ItemServlet extends HttpServlet {
 			final Integer prevOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PREV_OFFSET, null, i -> i >= 0);
 			final Integer nextOffsetParam = ServletCommon.readIntParamWithDefault(req, resp, PARAM_NEXT_OFFSET, null, i -> i >= 0);
 			if ((prevIdParam != null && prevOffsetParam != null) || (nextIdParam != null && nextOffsetParam != null)) {
-				return printPrevNextLinksHtml(itemScope, query, null, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
+				return printPrevNextLinksHtml(pageScope, itemScope, query, null, null, prevIdParam, nextIdParam, prevOffsetParam, nextOffsetParam);
 			}
 
 			final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
@@ -238,7 +240,7 @@ public class ItemServlet extends HttpServlet {
 			sortParam = sort != null ? sortRaw : null;
 
 			if (prevIdParam != null || nextIdParam != null) {
-				return printPrevNextLinksHtml(itemScope, null, sortParam, node, prevIdParam, nextIdParam, null, null);
+				return printPrevNextLinksHtml(pageScope, itemScope, null, sortParam, node, prevIdParam, nextIdParam, null, null);
 			}
 
 			results = node.getCopyOfItems();
@@ -249,15 +251,19 @@ public class ItemServlet extends HttpServlet {
 			searchOffset = null;
 		}
 
+		int thisI = -1;
 		int prevI = -1;
 		int nextI = -1;
 		for (int i = 0; i < results.size(); i++) {
 			if (item.getId().equals(results.get(i).getId())) {
+				thisI = i;
 				prevI = i - 1;
 				nextI = i + 1;
 				break;
 			}
 		}
+
+		itemScope.prevnext_title = (thisI + 1) + "/" + results.size();
 
 		ContentItem prevItem = null;
 		ContentItem nextItem = null;
@@ -285,13 +291,14 @@ public class ItemServlet extends HttpServlet {
 		final Integer prevOffset = searchOffset != null ? searchOffset + prevI : null;
 		final Integer nextOffset = searchOffset != null ? searchOffset + nextI : null;
 
-		return printPrevNextLinksHtml(itemScope, query, sortParam, node, prevId, nextId, prevOffset, nextOffset);
+		return printPrevNextLinksHtml(pageScope, itemScope, query, sortParam, node, prevId, nextId, prevOffset, nextOffset);
 	}
 
 	/**
 	 * return always starts with '?'.
 	 */
 	private static String printPrevNextLinksHtml(
+			final PageScope pageScope,
 			final ItemScope itemScope,
 			final String query,
 			final String sort,
@@ -303,13 +310,11 @@ public class ItemServlet extends HttpServlet {
 		final StringBuilder editReqQueryParms = new StringBuilder();
 		final String linkQuery;
 		final String allPath;
-		final String allTitle;
 		if (query != null) {
 			final String searchQueryParam = SearchServlet.PARAM_QUERY + "="
 					+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
 			editReqQueryParms.append("&").append(searchQueryParam);
 			allPath = "../search?" + searchQueryParam;  // TODO extract path to constant.
-			allTitle = "All Results";
 			linkQuery = "?" + searchQueryParam + "&" + SearchServlet.PARAM_PAGE_OFFSET + "=";
 		}
 		else {
@@ -325,9 +330,10 @@ public class ItemServlet extends HttpServlet {
 			}
 
 			allPath = "../d/" + node.getId() + (sortParam != null ? "?" + sortParam : "");
-			allTitle = StringEscapeUtils.escapeHtml4(node.getTitle());
 			linkQuery = "?" + PARAM_NODE_ID + "=" + node.getId() + (sortParam != null ? "&" + sortParam : "");
 		}
+
+		pageScope.setUpLinkPath(allPath);
 
 		if (prevId != null) {
 			itemScope.previous_path = prevId;
@@ -337,9 +343,6 @@ public class ItemServlet extends HttpServlet {
 			editReqQueryParms.append("&").append(PARAM_PREV_ID).append("=").append(prevId);
 			if (prevOffset != null) editReqQueryParms.append("&").append(PARAM_PREV_OFFSET).append("=").append(prevOffset);
 		}
-
-		itemScope.up_path = allPath;
-		itemScope.up_title = allTitle;
 
 		if (nextId != null) {
 			itemScope.next_path = nextId;
