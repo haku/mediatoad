@@ -191,7 +191,7 @@ public class MediaDb {
 	}
 
 	public Collection<String> getFilesWithHash(final Set<BigInteger> authIds, final String hash) throws SQLException {
-		final String sql = "SELECT file FROM files WHERE hash=? AND " + SqlFragments.makeWhereAuth(authIds) + " ORDER BY file ASC;";
+		final String sql = "SELECT file FROM files WHERE missing=0 AND hash=? AND " + SqlFragments.makeWhereAuth(authIds) + " ORDER BY file ASC;";
 		try (final PreparedStatement st = this.dbConn.prepareStatement(sql)) {
 			st.setString(1, hash);
 			try (final ResultSet rs = st.executeQuery()) {
