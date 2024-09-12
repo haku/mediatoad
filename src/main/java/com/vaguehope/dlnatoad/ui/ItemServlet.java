@@ -163,7 +163,9 @@ public class ItemServlet extends HttpServlet {
 					final String absolutePath = item.getFile().getAbsolutePath();
 
 					itemScope.details = item.getTitle();
-					itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
+					if (item.getWidth() > 0 && item.getHeight() > 0) {
+						itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
+					}
 					itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
 					itemScope.details += "\n" + "MD5: " + fileData.getMd5();
 					itemScope.details += "\n" + absolutePath;
