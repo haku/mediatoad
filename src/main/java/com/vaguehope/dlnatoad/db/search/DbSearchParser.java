@@ -20,7 +20,7 @@ public class DbSearchParser {
 	// join against hashes so that only canonical IDs are returned,
 	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
-			"SELECT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
+			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
 
 	private static final String _SQL_TAG_FREQUENCY_SELECT =
 			"SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
