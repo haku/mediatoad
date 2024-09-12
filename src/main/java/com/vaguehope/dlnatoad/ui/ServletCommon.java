@@ -129,11 +129,11 @@ public class ServletCommon {
 		s.append(" in last 15 minutes.");
 		s.append("\n");
 
-		s.append("content: ");
+		s.append("nodes: ");
 		s.append(this.contentTree.getNodeCount());
-		s.append(" nodes, ");
+		s.append("\nitems: ");
 		s.append(this.contentTree.getItemCount());
-		s.append(" items.\n");
+		s.append("\n");
 
 		final long totalMemory = Runtime.getRuntime().totalMemory();
 		final long usedMemory = totalMemory - Runtime.getRuntime().freeMemory();
