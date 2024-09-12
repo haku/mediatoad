@@ -264,6 +264,9 @@ input, button {
   max-width: 100%;
   max-height: 70vh;
 }
+.mainimage video, .mainimage audio {
+  width: 100%;
+}
 .mainimage .nav {
   position: absolute;
   left: 0;
