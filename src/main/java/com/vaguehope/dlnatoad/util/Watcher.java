@@ -396,6 +396,8 @@ public class Watcher {
 		private final Time time;
 
 		private final long lastModifiedMillis;
+		private final long lastLength;
+
 		private final long readyAtTime;
 
 		public WaitingFile (final Path path, final File rootDir, final Kind<Path> eventKind, final Time time) {
@@ -406,6 +408,7 @@ public class Watcher {
 			this.time = time;
 
 			this.lastModifiedMillis = this.file.lastModified();
+			this.lastLength = this.file.length();
 
 			final long delay = Files.isReadable(path)
 					? MODIFIED_TIMEOUT_NANOS
@@ -418,7 +421,14 @@ public class Watcher {
 		}
 
 		public boolean isReady () {
-			return Files.isReadable(this.path) && this.file.lastModified() == this.lastModifiedMillis;
+			// the objective here is to detect if the file is still being written.
+			// if last-modified, size, etc changing actually indicate the file is being written to will vary across systems,
+			// so this is best effort.
+			// on unix-like systems a possible improvement might be to check `Files.getAttribute(path, "unix:ctime")` vs system clock ?
+
+			return Files.isReadable(this.path)
+					&& this.file.lastModified() == this.lastModifiedMillis
+					&& this.file.length() == this.lastLength;
 		}
 
 		public boolean exists () {
