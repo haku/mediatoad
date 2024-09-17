@@ -27,6 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterators;
+import com.twelvemonkeys.contrib.exif.EXIFUtilities;
+import com.twelvemonkeys.contrib.exif.Orientation;
+import com.twelvemonkeys.contrib.tiff.TIFFUtilities;
 
 public class ImageResizer {
 
@@ -94,10 +97,14 @@ public class ImageResizer {
 			while (readers.hasNext()) {
 				final ImageReader reader = readers.next();
 				try {
-					final ImageReadParam param = reader.getDefaultReadParam();
 					input.mark();
-					reader.setInput(input, true, true);
-					return reader.read(0, param);
+					reader.setInput(input, true, false);
+
+					final ImageReadParam param = reader.getDefaultReadParam();
+					final BufferedImage image = reader.read(0, param);
+
+					final Orientation orientation = EXIFUtilities.findImageOrientation(reader.getImageMetadata(0));
+					return TIFFUtilities.applyOrientation(image, orientation.value());
 				}
 				catch (final Exception e) {
 					input.reset();
