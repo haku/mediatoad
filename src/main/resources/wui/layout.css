@@ -15,6 +15,11 @@ input, button {
   border-radius: 0.2em;
 }
 
+.icon {
+  height: 2em;
+  vertical-align: middle;
+}
+
 .topbar {
   display: flex;
   flex-wrap: wrap;

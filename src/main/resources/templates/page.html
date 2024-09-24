@@ -13,17 +13,8 @@
 </head>
 <body>
 	<div class="topbar">
-		{{#up_link_path}}<span class="item"><a id="up" href="{{up_link_path}}">Up</a></span>{{/up_link_path}}
-		<span class="item"><a href="{{path_prefix}}./">Home</a></span>
-		{{#username}}
-		<span class="item">[ {{username}} ]</span>
-		{{/username}}
-		{{^username}}
-		<form action="" method="GET">
-			<input type="hidden" name="action" value="login">
-			<input type="submit" value="Login">
-		</form>
-		{{/username}}
+		{{#up_link_path}}<span class="item"><a id="up" href="{{up_link_path}}"><img class="icon" src="{{path_prefix}}w/backup.svg"></a></span>{{/up_link_path}}
+		<span class="item"><a href="{{path_prefix}}./"><img class="icon" src="{{path_prefix}}w/home.svg"></a></span>
 
 		<form class="expand" action="{{path_prefix}}search" method="GET">
 			<div class="autocomplete_wrapper search_wrapper expand">
@@ -47,6 +38,16 @@
 		{{#db_enabled}}
 		<script src="{{path_prefix}}w/autocomplete-search.js"></script>
 		{{/db_enabled}}
+
+		{{#username}}
+		<span class="item"><img class="icon" src="{{path_prefix}}w/user.svg"></span>
+		{{/username}}
+		{{^username}}
+		<form action="" method="GET">
+			<input type="hidden" name="action" value="login">
+			<input type="submit" value="Login">
+		</form>
+		{{/username}}
 	</div>
 
 {{$body}}
