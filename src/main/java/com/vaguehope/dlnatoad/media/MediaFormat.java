@@ -54,6 +54,8 @@ public enum MediaFormat {
 	ASS("ass", "text/x-ass", ContentGroup.SUBTITLES),
 
 	PDF("pdf", "application/pdf", ContentGroup.DOCUMENT),
+
+	ZIP("zip", "application/zip", ContentGroup.ARCHIVE),
 	;
 
 	private static final Map<String, MediaFormat> EXT_TO_FORMAT;
