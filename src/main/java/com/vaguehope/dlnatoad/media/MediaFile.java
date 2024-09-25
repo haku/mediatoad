@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.vaguehope.dlnatoad.util.InputStremWrapper;
 
 public abstract class MediaFile {
@@ -22,8 +24,20 @@ public abstract class MediaFile {
 		return new PlainMediaFile(file);
 	}
 
-	public static MediaFile forZip(final File zipFile, final ZipEntry e) {
-		return new ZipMediaFile(zipFile, e);
+	public static MediaFile forZip(final File zipFile, final ZipEntry entry) throws IOException {
+		return new ZipMediaFile(zipFile, entry.getName(), true, entry.getSize(), entry.getLastModifiedTime().toMillis());
+	}
+
+	public static MediaFile forZip(final File zipFile, final String subPath) throws IOException {
+		if (zipFile.exists()) {
+			try (final ZipFile zf = new ZipFile(zipFile)) {
+				final ZipEntry entry = zf.getEntry(subPath);
+				if (entry != null) {
+					return forZip(zipFile, entry);
+				}
+			}
+		}
+		return new ZipMediaFile(zipFile, subPath, false, -1, -1);
 	}
 
 	public abstract String name() throws IOException;
@@ -74,11 +88,18 @@ public abstract class MediaFile {
 	private static class ZipMediaFile extends MediaFile {
 
 		private final String subPath;
+		private final String name;
+		private final boolean exists;
+		private final long length;
+		private final long modified;
 
-		public ZipMediaFile(final File file, final ZipEntry e) {
+		public ZipMediaFile(final File file, final String subpath, final boolean exists, final long length, final long modified) throws IOException {
 			super(file);
-			this.subPath = e.getName();
-			// TODO read entry details here?
+			this.subPath = subpath;
+			this.name = StringUtils.defaultIfEmpty(StringUtils.substringAfterLast(this.subPath, "/"), this.subPath);
+			this.exists = exists;
+			this.length = length;
+			this.modified = modified;
 		}
 
 		@Override
@@ -88,31 +109,24 @@ public abstract class MediaFile {
 
 		@Override
 		public String name() throws IOException {
-			// TODO should this return just the name after the '/' ?
-			return this.subPath;
+			return this.name;
 		}
-
-		// BIG TODO: cache zipfile entry / read this in constructor.
 
 		@Override
 		public boolean exists() throws IOException {
-			try (final ZipFile zf = new ZipFile(this.file)) {
-				return zf.getEntry(this.subPath) != null;
-			}
+			return this.exists;
 		}
 
 		@Override
 		public long length() throws IOException {
-			try (final ZipFile zf = new ZipFile(this.file)) {
-				return zf.getEntry(this.subPath).getSize();
-			}
+			if (!this.exists) throw new UnsupportedOperationException();
+			return this.length;
 		}
 
 		@Override
 		public long modified() throws IOException {
-			try (final ZipFile zf = new ZipFile(this.file)) {
-				return zf.getEntry(this.subPath).getLastModifiedTime().toMillis();
-			}
+			if (!this.exists) throw new UnsupportedOperationException();
+			return this.modified;
 		}
 
 		@SuppressWarnings("resource")

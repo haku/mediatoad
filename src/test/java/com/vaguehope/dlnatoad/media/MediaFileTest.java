@@ -31,6 +31,10 @@ public class MediaFileTest {
 	public void itRepresentsAZipArchive() throws Exception {
 		final File archive = this.tmp.newFile("archive1.zip");
 		try (final ZipOutputStream zo = new ZipOutputStream(new FileOutputStream(archive))) {
+			zo.putNextEntry(new ZipEntry("root.jpeg"));
+			IOUtils.write("root content", zo, StandardCharsets.UTF_8);
+			zo.closeEntry();
+
 			zo.putNextEntry(new ZipEntry("dir1/file0.jpeg"));
 			IOUtils.write("test jpeg content", zo, StandardCharsets.UTF_8);
 			zo.closeEntry();
@@ -50,19 +54,25 @@ public class MediaFileTest {
 			}
 		}
 
-		assertThat(mediaFiles, hasSize(2));
+		assertThat(mediaFiles, hasSize(3));
 
 		MediaFile f0 = mediaFiles.get(0);
 		assertTrue(f0.exists());
-		assertEquals("dir1/file0.jpeg", f0.name());
-		assertEquals(17, f0.length());
-		assertEquals("test jpeg content", IOUtils.toString(f0.open(), StandardCharsets.UTF_8));
+		assertEquals("root.jpeg", f0.name());
+		assertEquals(12, f0.length());
+		assertEquals("root content", IOUtils.toString(f0.open(), StandardCharsets.UTF_8));
 
 		MediaFile f1 = mediaFiles.get(1);
 		assertTrue(f1.exists());
-		assertEquals("dir1/file1.mp3", f1.name());
-		assertEquals(16, f1.length());
-		assertEquals("test mp3 content", IOUtils.toString(f1.open(), StandardCharsets.UTF_8));
+		assertEquals("file0.jpeg", f1.name());
+		assertEquals(17, f1.length());
+		assertEquals("test jpeg content", IOUtils.toString(f1.open(), StandardCharsets.UTF_8));
+
+		MediaFile f2 = mediaFiles.get(2);
+		assertTrue(f2.exists());
+		assertEquals("file1.mp3", f2.name());
+		assertEquals(16, f2.length());
+		assertEquals("test mp3 content", IOUtils.toString(f2.open(), StandardCharsets.UTF_8));
 	}
 
 }
