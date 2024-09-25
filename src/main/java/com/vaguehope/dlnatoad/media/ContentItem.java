@@ -1,6 +1,5 @@
 package com.vaguehope.dlnatoad.media;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -12,7 +11,7 @@ import com.vaguehope.dlnatoad.util.ExConsumer;
 
 public class ContentItem extends AbstractContent {
 
-	private final File file;
+	private final MediaFile file;
 	private final MediaFormat format;
 
 	private final List<ContentItem> attachments = new ArrayList<>();
@@ -29,7 +28,7 @@ public class ContentItem extends AbstractContent {
 			final String id,
 			final String parentId,
 			final String title,
-			final File file,
+			final MediaFile file,
 			final MediaFormat format) {
 		super(id, parentId, title);
 		if (parentId == null) throw new IllegalArgumentException("parentId must not be null.");
@@ -112,7 +111,7 @@ public class ContentItem extends AbstractContent {
 		return this.file != null && this.file.exists();
 	}
 
-	public File getFile () {
+	public MediaFile getFile () {
 		return this.file;
 	}
 

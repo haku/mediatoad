@@ -1,6 +1,5 @@
 package com.vaguehope.dlnatoad.media;
 
-import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +20,7 @@ import com.vaguehope.dlnatoad.util.ExConsumer;
 public class ContentNode extends AbstractContent {
 
 	private final String sortKey;
-	private final File file;
+	private final MediaFile file;
 	private final String path;
 	private final AuthList authList;
 
@@ -35,11 +34,11 @@ public class ContentNode extends AbstractContent {
 		this(id, parentId, title, null, null, null, sortKey);
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey) {
+	public ContentNode (final String id, final String parentId, final String title, final MediaFile dir, final String path, final AuthList authList, final String sortKey) {
 		this(id, parentId, title, dir, path, authList, sortKey, new ArrayList<>());
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
+	public ContentNode (final String id, final String parentId, final String title, final MediaFile dir, final String path, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
 		super(id, parentId, title);
 		if (parentId == null)  throw new IllegalArgumentException("parentId must not be null.");
 		this.file = dir;
@@ -111,7 +110,7 @@ public class ContentNode extends AbstractContent {
 		return this.art;
 	}
 
-	public File getFile () {
+	public MediaFile getFile () {
 		return this.file;
 	}
 

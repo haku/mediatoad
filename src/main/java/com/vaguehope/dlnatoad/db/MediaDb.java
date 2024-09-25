@@ -21,6 +21,8 @@ import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 import org.sqlite.SQLiteConfig.TransactionMode;
 
+import com.vaguehope.dlnatoad.media.MediaFile;
+
 public class MediaDb {
 
 	public static final String COL_FILE = "file";
@@ -153,11 +155,11 @@ public class MediaDb {
 		}
 	}
 
-	public FileData getFileData(final File file) throws SQLException {
+	public FileData getFileData(final MediaFile file) throws SQLException {
 		return readFileDataFromConn(this.dbConn, file);
 	}
 
-	protected static FileData readFileDataFromConn(final Connection conn, final File file) throws SQLException {
+	protected static FileData readFileDataFromConn(final Connection conn, final MediaFile file) throws SQLException {
 		try (final PreparedStatement st = conn.prepareStatement("SELECT size, modified, hash, md5, mimetype, id, auth, missing FROM files WHERE file=?;")) {
 			st.setString(1, file.getAbsolutePath());
 			st.setMaxRows(2);

@@ -1,12 +1,11 @@
 package com.vaguehope.dlnatoad.db;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 
+import com.vaguehope.dlnatoad.media.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaFormat;
-import com.vaguehope.dlnatoad.util.HashHelper;
 import com.vaguehope.dlnatoad.util.HashHelper.Md5AndSha1;
 
 public class FileData {
@@ -82,7 +81,7 @@ public class FileData {
 		return this.mimeType;
 	}
 
-	public boolean upToDate (final File file) {
+	public boolean upToDate (final MediaFile file) {
 		return file.length() == this.size && file.lastModified() == this.modified;
 	}
 
@@ -106,8 +105,8 @@ public class FileData {
 		return new FileData(this.size, this.modified, this.hash, this.md5, this.mimeType, newId, this.auth, this.missing);
 	}
 
-	public static FileData forFile (final File file) throws IOException {
-		final Md5AndSha1 hashes = HashHelper.generateMd5AndSha1(file);
+	public static FileData forFile (final MediaFile file) throws IOException {
+		final Md5AndSha1 hashes = file.generateMd5AndSha1();
 		final MediaFormat format = MediaFormat.identify(file);
 		return new FileData(
 				file.length(),

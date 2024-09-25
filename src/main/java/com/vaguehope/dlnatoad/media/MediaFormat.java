@@ -98,6 +98,10 @@ public enum MediaFormat {
 		return identify(file.getName());
 	}
 
+	public static MediaFormat identify (final MediaFile file) {
+		return identify(file.getName());
+	}
+
 	public static MediaFormat identify (final String name) {
 		return EXT_TO_FORMAT.get(FilenameUtils.getExtension(name).toLowerCase());
 	}

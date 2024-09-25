@@ -5,15 +5,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
@@ -44,35 +40,28 @@ public class MediaFileTest {
 			zo.closeEntry();
 		}
 
-		final List<MediaFile> mediaFiles = new ArrayList<>();
-		try (final ZipInputStream zi = new ZipInputStream(new FileInputStream(archive))) {
-			ZipEntry e;
-			while ((e = zi.getNextEntry()) != null) {
-				final ByteArrayOutputStream content = new ByteArrayOutputStream();
-				IOUtils.copy(zi, content);
-				mediaFiles.add(MediaFile.forZip(archive, e));
-			}
-		}
-
+		final List<MediaFile> mediaFiles = MediaFile.expandZip(archive);
 		assertThat(mediaFiles, hasSize(3));
 
-		MediaFile f0 = mediaFiles.get(0);
+		final MediaFile f0 = mediaFiles.get(0);
 		assertTrue(f0.exists());
-		assertEquals("root.jpeg", f0.name());
+		assertEquals("root.jpeg", f0.getName());
 		assertEquals(12, f0.length());
 		assertEquals("root content", IOUtils.toString(f0.open(), StandardCharsets.UTF_8));
 
-		MediaFile f1 = mediaFiles.get(1);
+		final MediaFile f1 = mediaFiles.get(1);
 		assertTrue(f1.exists());
-		assertEquals("file0.jpeg", f1.name());
+		assertEquals("file0.jpeg", f1.getName());
 		assertEquals(17, f1.length());
 		assertEquals("test jpeg content", IOUtils.toString(f1.open(), StandardCharsets.UTF_8));
 
-		MediaFile f2 = mediaFiles.get(2);
+		final MediaFile f2 = mediaFiles.get(2);
 		assertTrue(f2.exists());
-		assertEquals("file1.mp3", f2.name());
+		assertEquals("file1.mp3", f2.getName());
 		assertEquals(16, f2.length());
 		assertEquals("test mp3 content", IOUtils.toString(f2.open(), StandardCharsets.UTF_8));
+
+
 	}
 
 }

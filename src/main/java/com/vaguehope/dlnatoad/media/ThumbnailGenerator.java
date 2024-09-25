@@ -36,7 +36,7 @@ public class ThumbnailGenerator {
 	}
 
 	public File generate(final ContentItem item) throws IOException {
-		final File inF = item.getFile();
+		final MediaFile inF = item.getFile();
 		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());
 
 		final File outF = chooseOutputFile(inF, THUMB_SIZE_PIXELS);
@@ -50,7 +50,7 @@ public class ThumbnailGenerator {
 		return outF;
 	}
 
-	private void doGenerate(final ContentItem item, final File inF, final File outF) throws IOException {
+	private void doGenerate(final ContentItem item, final MediaFile inF, final File outF) throws IOException {
 		switch (item.getFormat().getContentGroup()) {
 		case IMAGE:
 			this.imageResizer.scaleImageToFile(inF, THUMB_SIZE_PIXELS, THUMB_QUALITY, outF);
@@ -63,7 +63,7 @@ public class ThumbnailGenerator {
 		}
 	}
 
-	private File chooseOutputFile(final File inF, final int size) {
+	private File chooseOutputFile(final MediaFile inF, final int size) {
 		final String outName = HashHelper.md5(inF.getAbsolutePath()).toString(16) + "_" + size + ".jpg";
 		final File outDir = new File(new File(this.cacheDir, outName.substring(0, 1)), outName.substring(1, 2));
 		return new File(outDir, outName);

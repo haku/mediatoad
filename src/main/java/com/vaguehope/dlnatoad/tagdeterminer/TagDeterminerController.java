@@ -1,7 +1,6 @@
 package com.vaguehope.dlnatoad.tagdeterminer;
 
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -257,7 +256,7 @@ public class TagDeterminerController {
 			}
 		});
 
-		try (final BufferedInputStream is = new BufferedInputStream(new FileInputStream(item.getFile()))) {
+		try (final BufferedInputStream is = new BufferedInputStream(item.getFile().open())) {
 			final byte[] buffer = new byte[MESSAGE_SIZE_BYTES];
 			int readLength;
 			while ((readLength = is.read(buffer, 0, MESSAGE_SIZE_BYTES)) != -1) {

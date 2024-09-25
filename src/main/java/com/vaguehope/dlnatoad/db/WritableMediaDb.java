@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.media.MediaFile;
+
 import io.prometheus.metrics.core.metrics.Histogram;
 import io.prometheus.metrics.model.snapshots.Unit;
 
@@ -84,7 +86,7 @@ public class WritableMediaDb implements Closeable {
 	// File ID.
 	// The read methods are here so they are reading from the same transaction as the writes around them.
 
-	protected FileData readFileData (final File file) throws SQLException {
+	protected FileData readFileData (final MediaFile file) throws SQLException {
 		return MediaDb.readFileDataFromConn(this.conn, file);
 	}
 
@@ -107,7 +109,7 @@ public class WritableMediaDb implements Closeable {
 			try (final ResultSet rs = st.executeQuery()) {
 				final Collection<FileAndId> ret = new ArrayList<>();
 				while (rs.next()) {
-					ret.add(new FileAndId(new File(rs.getString(1)), rs.getString(2)));
+					ret.add(new FileAndId(MediaFile.fromPath(rs.getString(1)), rs.getString(2)));
 				}
 				return ret;
 			}
@@ -140,7 +142,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void storeFileData (final File file, final FileData fileData) throws SQLException {
+	protected void storeFileData (final MediaFile file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
 				"INSERT INTO files (file,size,modified,hash,md5,mimetype,id) VALUES (?,?,?,?,?,?,?);");
 		try {
@@ -162,7 +164,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void updateFileData (final File file, final FileData fileData) throws SQLException {
+	protected void updateFileData (final MediaFile file, final FileData fileData) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
 				"UPDATE files SET size=?,modified=?,hash=?,md5=?,mimetype=?,id=?,missing=? WHERE file=?;");
 		try {
@@ -185,7 +187,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void updateFileAuth(final File file, final BigInteger auth) throws SQLException {
+	protected void updateFileAuth(final MediaFile file, final BigInteger auth) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
 				"UPDATE files SET auth=? WHERE file=?;");
 		try {
@@ -218,7 +220,7 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
-	protected void removeFile (final File file) throws SQLException {
+	protected void removeFile (final MediaFile file) throws SQLException {
 		final PreparedStatement st = this.conn.prepareStatement(
 				"DELETE FROM files WHERE file=?;");
 		try {

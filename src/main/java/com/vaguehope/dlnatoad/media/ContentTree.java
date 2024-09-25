@@ -1,6 +1,5 @@
 package com.vaguehope.dlnatoad.media;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -161,7 +160,7 @@ public class ContentTree {
 	/**
 	 * Returns number of items removed.
 	 */
-	public int removeFile (final File file) {
+	public int removeFile (final MediaFile file) {
 		if (file == null) throw new IllegalArgumentException("file can not be null.");
 		int removeCount = 0;
 

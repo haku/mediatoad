@@ -1,20 +1,20 @@
 package com.vaguehope.dlnatoad.db;
 
-import java.io.File;
+import com.vaguehope.dlnatoad.media.MediaFile;
 
 public class FileAndId {
 
-	private final File file;
+	private final MediaFile file;
 	private final String id;
 
-	public FileAndId(final File file, final String id) {
+	public FileAndId(final MediaFile file, final String id) {
 		if (file == null) throw new IllegalArgumentException("file can not be null.");
 		if (id == null) throw new IllegalArgumentException("id can not be null.");
 		this.file = file;
 		this.id = id;
 	}
 
-	public File getFile() {
+	public MediaFile getFile() {
 		return this.file;
 	}
 

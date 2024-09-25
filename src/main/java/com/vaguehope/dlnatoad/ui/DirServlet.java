@@ -1,6 +1,5 @@
 package com.vaguehope.dlnatoad.ui;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
@@ -20,7 +19,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.github.mustachejava.Mustache;
@@ -37,6 +35,7 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentItem.Order;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFile;
 import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.ui.templates.NodeIndexScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
@@ -245,7 +244,7 @@ public class DirServlet extends HttpServlet {
 	private void maybeAppendTopTags(final ResultGroupScope resultScope, final ContentNode node, final String username) throws IOException {
 		if (this.dbCache == null) return;
 
-		final File dir = node.getFile();
+		final MediaFile dir = node.getFile();
 		final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
 		if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(node.getId())) return;
 
@@ -283,7 +282,7 @@ public class DirServlet extends HttpServlet {
 			e.setSize(i.getFileLength());
 			e.setTime(i.getLastModified());
 			zo.putNextEntry(e);
-			FileUtils.copyFile(i.getFile(), zo);
+			i.getFile().copyTo(zo);
 			zo.closeEntry();
 		});
 

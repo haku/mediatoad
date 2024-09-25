@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.dlnatoad.media.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
-import com.vaguehope.dlnatoad.util.HashHelper;
 
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -74,13 +74,13 @@ public class MediaMetadataStore {
 		return this.mediaDb;
 	}
 
-	public void idForFile(final File file, final BigInteger auth, final MediaIdCallback callback) throws IOException, InterruptedException {
+	public void idForFile(final MediaFile file, final BigInteger auth, final MediaIdCallback callback) throws IOException, InterruptedException {
 		if (!file.isFile()) throw new IOException("Not a file: " + file.getAbsolutePath());
 		this.fileQueue.put(new FileTask(file, auth, callback));
 		scheduleFileIdBatchIfNeeded();
 	}
 
-	public void fileGone(final File file) {
+	public void fileGone(final MediaFile file) {
 		try {
 			this.fileQueue.put(new FileTask(file));
 			scheduleFileIdBatchIfNeeded();
@@ -184,7 +184,7 @@ public class MediaMetadataStore {
 	}
 
 	private void addOrUpdateFileData(final WritableMediaDb w, final FileTask task) throws SQLException, IOException {
-		final File file = task.getFile();
+		final MediaFile file = task.getFile();
 		final FileData oldFileData = w.readFileData(file);
 		final String id;
 		if (oldFileData == null) {
@@ -208,7 +208,7 @@ public class MediaMetadataStore {
 
 				// Back fill MD5 if needed.
 				if (oldFileData.getMd5() == null) {
-					final String md5 = HashHelper.md5(file).toString(16);  // slow.
+					final String md5 = file.generateMd5AndSha1().getMd5().toString(16);  // slow.
 					w.updateFileData(file, oldFileData.withMd5(md5));
 				}
 
@@ -248,7 +248,7 @@ public class MediaMetadataStore {
 		return id;
 	}
 
-	private void generateFileDataAsync(final File file, final FileTask task) {
+	private void generateFileDataAsync(final MediaFile file, final FileTask task) {
 		this.fsEx.execute(() -> {
 			try {
 				final FileData fileData = FileData.forFile(file);  // Slow.
@@ -266,7 +266,7 @@ public class MediaMetadataStore {
 
 	// returns null if work is being processed async.
 	private FileData generateNewFileData(final WritableMediaDb w, final FileTask task) throws IOException, SQLException {
-		final File file = task.getFile();
+		final MediaFile file = task.getFile();
 
 		if (task.getNewFileData() == null) {
 			generateFileDataAsync(file, task);
@@ -313,7 +313,7 @@ public class MediaMetadataStore {
 		return processUpdatedFileData(w, task.getFile(), newFileData, oldFileData);
 	}
 
-	private FileData processUpdatedFileData(final WritableMediaDb w, final File file, final FileData newFileData, final FileData oldFileData) throws SQLException, IOException {
+	private FileData processUpdatedFileData(final WritableMediaDb w, final MediaFile file, final FileData newFileData, final FileData oldFileData) throws SQLException, IOException {
 		FileData fileData = newFileData;
 		Collection<FileAndId> filesToRemove = null;
 
@@ -364,7 +364,7 @@ public class MediaMetadataStore {
 		}
 	}
 
-	private static void excludeFile(final Collection<FileAndId> files, final File file) {
+	private static void excludeFile(final Collection<FileAndId> files, final MediaFile file) {
 		final int startSize = files.size();
 		for (final Iterator<FileAndId> i = files.iterator(); i.hasNext();) {
 			if (file.equals(i.next().getFile())) i.remove();
@@ -396,11 +396,11 @@ public class MediaMetadataStore {
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-	public FileInfo readFileInfo(final String fileId, final File file) throws SQLException {
+	public FileInfo readFileInfo(final String fileId, final MediaFile file) throws SQLException {
 		return this.mediaDb.readInfoCheckingFileSize(fileId, file.length());
 	}
 
-	public void storeFileInfoAsync(final String fileId, final File file, final FileInfo info) throws SQLException, InterruptedException {
+	public void storeFileInfoAsync(final String fileId, final MediaFile file, final FileInfo info) throws SQLException, InterruptedException {
 		this.storeInfoQueue.put(new FileIdAndInfo(fileId, file, info));
 	}
 

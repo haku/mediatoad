@@ -1,8 +1,6 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -17,6 +15,7 @@ import com.vaguehope.dlnatoad.db.search.SortOrder;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
+import com.vaguehope.dlnatoad.media.MediaFile;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
@@ -92,13 +91,13 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
-		final File file = item.getFile();
+		final MediaFile file = item.getFile();
 		if (!file.exists() || file.length() < 1) {
 			responseObserver.onError(Status.INTERNAL.withDescription("File missing.").asRuntimeException());
 			return;
 		}
 
-		try (final BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
+		try (final BufferedInputStream is = new BufferedInputStream(file.open())) {
 			final byte[] buffer = new byte[MESSAGE_SIZE_BYTES];
 			boolean first = true;
 			int readLength;

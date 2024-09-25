@@ -33,7 +33,7 @@ public class MediaInfo {
 		this.exSvc = exSvc;
 	}
 
-	public void readInfoAsync (final File file, final ContentItem item) {
+	public void readInfoAsync (final MediaFile file, final ContentItem item) {
 		if (this.mediaMetadataStore != null) {
 			this.exSvc.submit(new ReadInfoJob(file, item, this.mediaMetadataStore));
 		}
@@ -46,11 +46,11 @@ public class MediaInfo {
 
 	private static class ReadInfoJob implements Runnable {
 
-		private final File file;
+		private final MediaFile file;
 		private final ContentItem item;
 		private final MediaMetadataStore mediaMetadataStore;
 
-		public ReadInfoJob (final File file, final ContentItem item, final MediaMetadataStore mediaMetadataStore) {
+		public ReadInfoJob (final MediaFile file, final ContentItem item, final MediaMetadataStore mediaMetadataStore) {
 			this.file = file;
 			this.item = item;
 			this.mediaMetadataStore = mediaMetadataStore;

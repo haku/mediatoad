@@ -10,8 +10,10 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,14 +22,18 @@ import java.util.List;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.Lists;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
@@ -369,6 +375,24 @@ public class MediaIndexTest {
 
 		// If a thumbnail was found it would overwrite the item with a null title.
 		assertEquals("image.jpeg", item.getTitle());
+	}
+
+	@Test
+	public void itHandlesArchiveFile() throws Exception {
+		final File archive = this.tmp.newFile("archive.zip");
+		try (final ZipOutputStream zo = new ZipOutputStream(new FileOutputStream(archive))) {
+			zo.putNextEntry(new ZipEntry("file.jpeg"));
+			IOUtils.write("image content", zo, StandardCharsets.UTF_8);
+			zo.closeEntry();
+		}
+
+		this.undertest.fileFound(this.tmp.getRoot(), archive, null, null);
+		waitForEmptyQueue();
+
+		final List<ContentNode> imageDirs = this.contentTree.getNode(ContentGroup.IMAGE.getId()).getCopyOfNodes();
+		assertEquals(1, imageDirs.size());
+		final ContentNode imgDirNode = this.contentTree.getNode(imageDirs.get(0).getId());
+		//assertNodeWithItems(this.tmp.getRoot(), Arrays.asList(...), imgDirNode);
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,12 +1,12 @@
 package com.vaguehope.dlnatoad.db.search;
 
-import java.io.File;
 import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.media.MediaFile;
 
 public class DbSearchSyntax {
 
@@ -14,7 +14,7 @@ public class DbSearchSyntax {
 		return "t=" + quoteSearchTerm(tag);
 	}
 
-	public static String makePathSearch(final File file) {
+	public static String makePathSearch(final MediaFile file) {
 		return "f~^" + quoteSearchTerm(file.getAbsolutePath());
 	}
 

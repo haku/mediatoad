@@ -1,8 +1,8 @@
 package com.vaguehope.dlnatoad.db;
 
-import java.io.File;
 import java.math.BigInteger;
 
+import com.vaguehope.dlnatoad.media.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 
 class FileTask {
@@ -13,13 +13,13 @@ class FileTask {
 	}
 
 	private final Action action;
-	private final File file;
+	private final MediaFile file;
 	private final BigInteger auth;
 	private final MediaIdCallback callback;
 	private final FileData newFileData;
 	private final Runnable genericCallback;
 
-	public FileTask(final File file, final BigInteger auth, final MediaIdCallback callback) {
+	public FileTask(final MediaFile file, final BigInteger auth, final MediaIdCallback callback) {
 		if (file == null) throw new IllegalArgumentException("file can not be null.");
 		if (auth == null) throw new IllegalArgumentException("auth can not be null, use 0 instead.");
 		if (callback == null) throw new IllegalArgumentException("callback can not be null.");
@@ -31,7 +31,7 @@ class FileTask {
 		this.genericCallback = null;
 	}
 
-	public FileTask(final File file) {
+	public FileTask(final MediaFile file) {
 		this.action = Action.GONE;
 		this.file = file;
 		this.auth = null;
@@ -49,7 +49,7 @@ class FileTask {
 		this.genericCallback = callback;
 	}
 
-	private FileTask(final Action action, final File file, final BigInteger auth, final MediaIdCallback callback, final FileData newFileData, final Runnable genericCallback) {
+	private FileTask(final Action action, final MediaFile file, final BigInteger auth, final MediaIdCallback callback, final FileData newFileData, final Runnable genericCallback) {
 		this.action = action;
 		this.file = file;
 		this.auth = auth;
@@ -62,7 +62,7 @@ class FileTask {
 		return this.action;
 	}
 
-	public File getFile() {
+	public MediaFile getFile() {
 		return this.file;
 	}
 

@@ -1,9 +1,10 @@
 package com.vaguehope.dlnatoad.util;
 
-import java.io.File;
 import java.text.DecimalFormat;
 
 import org.apache.commons.io.FilenameUtils;
+
+import com.vaguehope.dlnatoad.media.MediaFile;
 
 public final class FileHelper {
 
@@ -22,7 +23,7 @@ public final class FileHelper {
 	/**
 	 * relative path from root to sub dir, including the name of the root dir.
 	 */
-	public static String rootAndPath(final File rootDir, final File subDir) {
+	public static String rootAndPath(final MediaFile rootDir, final MediaFile subDir) {
 		if (rootDir == null || subDir == null) throw new IllegalArgumentException();
 
 		final String root = FilenameUtils.getFullPath(FilenameUtils.normalizeNoEndSeparator(rootDir.getAbsolutePath(), true));

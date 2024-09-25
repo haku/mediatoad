@@ -65,8 +65,10 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public EventResult fileFound(final File rootDir, final File file, final EventType eventType, final Runnable onUsed)
-			throws IOException {
+	public EventResult fileFound(final File rawRootDir, final File rawFile, final EventType eventType, final Runnable onUsed) throws IOException {
+		final MediaFile rootDir = MediaFile.forFile(rawRootDir);
+		final MediaFile file = MediaFile.forFile(rawFile);
+
 		addFile(rootDir, file, new Runnable() {
 			@Override
 			public void run() {
@@ -80,12 +82,15 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public EventResult fileModified(final File rootDir, final File file, final Runnable onUsed) throws IOException {
-		if (!file.isFile()) return EventResult.NOT_ADDED;
+	public EventResult fileModified(final File rawRootDir, final File rawFile, final Runnable onUsed) throws IOException {
+		if (!rawFile.isFile()) return EventResult.NOT_ADDED;
 
-		final MediaFormat format = MediaFormat.identify(file);
+		final MediaFormat format = MediaFormat.identify(rawFile);
 		if (format == null) return EventResult.NOT_ADDED;
 
+
+		final MediaFile rootDir = MediaFile.forFile(rawRootDir);
+		final MediaFile file = MediaFile.forFile(rawFile);
 
 		final BigInteger authId;
 		if (format.getContentGroup() == ContentGroup.SUBTITLES) {
@@ -125,8 +130,10 @@ public class MediaIndex implements FileListener {
 	}
 
 	@Override
-	public void fileGone(final File file, final boolean isDir) throws IOException {
-		final MediaFormat format = MediaFormat.identify(file);
+	public void fileGone(final File rawFile, final boolean isDir) throws IOException {
+		final MediaFile file = MediaFile.forFile(rawFile);
+
+		final MediaFormat format = MediaFormat.identify(rawFile);
 		if (format != null) {
 			switch (format.getContentGroup()) {
 				case SUBTITLES:
@@ -142,7 +149,7 @@ public class MediaIndex implements FileListener {
 		this.mediaId.fileGoneAsync(file);
 	}
 
-	private void addFile(final File rootDir, final File file, final Runnable onComplete) throws IOException {
+	private void addFile(final MediaFile rootDir, final MediaFile file, final Runnable onComplete) throws IOException {
 		if (!rootDir.exists()) throw new IllegalArgumentException("Not found: " + rootDir);
 		if (!file.isFile()) return;
 
@@ -159,18 +166,42 @@ public class MediaIndex implements FileListener {
 			case SUBTITLES:
 				attachSubtitlesToItem(file, format, onComplete);
 				break;
+			case ARCHIVE:
+				expandArchive(rootDir, file, format, onComplete);
+				break;
 			default:
 		}
 	}
 
-	private void putFileToContentTree(final File rootDir, final File file, final MediaFormat format,
+	private void expandArchive(final MediaFile rootDir, final MediaFile file, final MediaFormat format, final Runnable onComplete) throws IOException {
+		// TODO check for feature flag here in args --expand-archives or something like that.
+
+		switch (format) {
+		case ZIP:
+			expandZip(rootDir, file, onComplete);
+			break;
+		default:
+		}
+	}
+
+	private void expandZip(final MediaFile rootDir, final MediaFile file, final Runnable onComplete) throws IOException {
+		for (final MediaFile mf : MediaFile.expandZip(file)) {
+			final MediaFormat format = MediaFormat.identify(mf.getName());
+			// TODO extend to other groups once this is working.
+			if (format == null || format.getContentGroup() != ContentGroup.IMAGE) continue;
+
+			putFileToContentTree(rootDir, mf, format, onComplete);
+		}
+	}
+
+	private void putFileToContentTree(final MediaFile rootDir, final MediaFile file, final MediaFormat format,
 			final Runnable onComplete) throws IOException {
-		final File dir = file.getParentFile();
+		final MediaFile dir = file.getParentFile();
 		final ContentNode dirContainer = dirToContentNode(rootDir, dir, format);
 		makeItemInContainer(format, dirContainer, file, file.getName(), onComplete);
 	}
 
-	private ContentNode dirToContentNode(final File rootDir, final File dir, final MediaFormat format) throws IOException {
+	private ContentNode dirToContentNode(final MediaFile rootDir, final MediaFile dir, final MediaFormat format) throws IOException {
 		final ContentNode formatContainer;
 		switch (format.getContentGroup()) { // FIXME make hashmap and look this up?
 			case VIDEO:
@@ -208,7 +239,7 @@ public class MediaIndex implements FileListener {
 	}
 
 	private ContentNode makeDirContainerOnTree(final ContentGroup contentGroup, final ContentNode parentContainer,
-			final String id, final File dir, final String path) throws IOException {
+			final String id, final MediaFile dir, final String path) throws IOException {
 		final ContentNode parentNode = this.contentTree.getNode(parentContainer.getId());
 		final String sortName = dir.getAbsolutePath().toLowerCase();
 		final ContentNode dirContainer = makeContainerOnTree(parentNode, id, dir.getName(), sortName, dir, path);
@@ -230,15 +261,15 @@ public class MediaIndex implements FileListener {
 	}
 
 	private ContentNode makeDirAndParentDirsContianersOnTree(final MediaFormat format,
-			final ContentNode formatContainer, final File rootDir, final File dir) throws IOException {
-		final List<File> dirsToCreate = new ArrayList<>();
+			final ContentNode formatContainer, final MediaFile rootDir, final MediaFile dir) throws IOException {
+		final List<MediaFile> dirsToCreate = new ArrayList<>();
 
 		// When in PRESERVE mode do not prefix dir IDs with the type.
 		final ContentGroup groupForContainerId = this.hierarchyMode == HierarchyMode.PRESERVE
 				? null
 				: format.getContentGroup();
 
-		File ittrDir = dir;
+		MediaFile ittrDir = dir;
 		while (ittrDir != null) {
 			final String ittrDirId = this.mediaId.contentIdForDirectory(groupForContainerId, ittrDir);
 			final ContentNode node = this.contentTree.getNode(ittrDirId);
@@ -250,7 +281,7 @@ public class MediaIndex implements FileListener {
 
 		Collections.reverse(dirsToCreate);
 
-		for (final File dirToCreate : dirsToCreate) {
+		for (final MediaFile dirToCreate : dirsToCreate) {
 			final ContentNode parentContainer;
 			if (rootDir.equals(dirToCreate)) {
 				parentContainer = formatContainer;
@@ -274,7 +305,7 @@ public class MediaIndex implements FileListener {
 	 * If it already exists it will return the existing instance.
 	 */
 	private ContentNode makeContainerOnTree(final ContentNode parentNode, final String id, final String title,
-			final String sortName, final File file, final String path) throws IOException {
+			final String sortName, final MediaFile file, final String path) throws IOException {
 		final ContentNode existingNode = this.contentTree.getNode(id);
 		if (existingNode != null) return existingNode;
 
@@ -294,7 +325,7 @@ public class MediaIndex implements FileListener {
 		return preExisting;
 	}
 
-	private void makeItemInContainer(final MediaFormat format, final ContentNode parent, final File file,
+	private void makeItemInContainer(final MediaFormat format, final ContentNode parent, final MediaFile file,
 			final String title, final Runnable onComplete) throws IOException {
 		this.mediaId.contentIdAsync(format.getContentGroup(), file, parent.getAuthId(), new MediaIdCallback() {
 			@Override
@@ -316,7 +347,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private boolean makeItemInContainer(final MediaFormat format, final ContentNode parent, final File file,
+	private boolean makeItemInContainer(final MediaFormat format, final ContentNode parent, final MediaFile file,
 			final String title, final String id) throws IOException {
 		if (parent.hasItemWithId(id)) return false;  // Optimistic lock.
 
@@ -339,13 +370,13 @@ public class MediaIndex implements FileListener {
 		return false;
 	}
 
-	private static void findMetadata(final File file, final ContentItem item) {
+	private static void findMetadata(final MediaFile file, final ContentItem item) {
 		final Metadata md = MetadataReader.read(file);
 		if (md == null) return;
 		item.setMetadata(md);
 	}
 
-	private void findArt(final File mediaFile, final MediaFormat mediaFormat, final ContentItem item, final ContentNode node) throws IOException {
+	private void findArt(final MediaFile mediaFile, final MediaFormat mediaFormat, final ContentItem item, final ContentNode node) throws IOException {
 		// Images are their own art so no need to search for anything.
 		if (mediaFormat.getContentGroup() == ContentGroup.IMAGE) return;
 
@@ -362,8 +393,8 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void findArtItem(final File mediaFile, final ContentGroup mediaContentGroup, final ContentNode node, final AsyncCallback<ContentItem, IOException> callback) throws IOException {
-		final File artFile = CoverArtHelper.findCoverArt(mediaFile);
+	private void findArtItem(final MediaFile mediaFile, final ContentGroup mediaContentGroup, final ContentNode node, final AsyncCallback<ContentItem, IOException> callback) throws IOException {
+		final MediaFile artFile = CoverArtHelper.findCoverArt(mediaFile);
 		if (artFile == null) return;
 
 		final MediaFormat artFormat = MediaFormat.identify(artFile);
@@ -387,7 +418,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void attachSubtitlesToItem(final File subtitlesFile, final MediaFormat subtitlesFormat,
+	private void attachSubtitlesToItem(final MediaFile subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
 		// Note that contentIdAsync() is used for a dir here to preserve ordering of events.
 		this.mediaId.contentIdAsync(ContentGroup.VIDEO, subtitlesFile.getParentFile(), null, new MediaIdCallback() {
@@ -397,7 +428,7 @@ public class MediaIndex implements FileListener {
 				if (dirNode == null) return;
 
 				dirNode.withEachItem(i -> {
-					final File itemFile = i.getFile();
+					final MediaFile itemFile = i.getFile();
 					if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
 						addSubtitlesToItem(i, subtitlesFile, subtitlesFormat, () -> {
 							LOG.info("subtitles for {}: {}", itemFile.getAbsolutePath(),
@@ -415,7 +446,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void deattachSubtitles(final File subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
+	private void deattachSubtitles(final MediaFile subtitlesFile, final MediaFormat subtitlesFormat) throws IOException {
 		final String dirNodeId = this.mediaId.contentIdForDirectory(ContentGroup.VIDEO, subtitlesFile.getParentFile());
 		final ContentNode dirNode = MediaIndex.this.contentTree.getNode(dirNodeId);
 		if (dirNode == null) return;
@@ -427,8 +458,8 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void findSubtitlesForItem(final ContentItem item, final File itemFile) throws IOException {
-		final File dir = itemFile.getParentFile();
+	private void findSubtitlesForItem(final ContentItem item, final MediaFile itemFile) throws IOException {
+		final MediaFile dir = itemFile.getParentFile();
 		if (dir == null) throw new NullPointerException("itemFile has null parent: " + itemFile);
 
 		final String[] fNames = dir.list(new BasenameFilter(itemFile));
@@ -440,12 +471,12 @@ public class MediaIndex implements FileListener {
 		for (final String fName : fNames) {
 			final MediaFormat fFormat = MediaFormat.identify(fName);
 			if (fFormat != null && fFormat.getContentGroup() == ContentGroup.SUBTITLES) {
-				addSubtitlesToItem(item, new File(dir, fName), fFormat, null);
+				addSubtitlesToItem(item, dir.containedFile(fName), fFormat, null);
 			}
 		}
 	}
 
-	private void addSubtitlesToItem(final ContentItem item, final File subtitlesFile, final MediaFormat subtitlesFormat,
+	private void addSubtitlesToItem(final ContentItem item, final MediaFile subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
 		// TODO actually look up the ContentNode and get the real auth value.
 		// For now exposing subtitles to people who guess their ID is not a big deal.
@@ -466,7 +497,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private void removeSubtitlesFromItem(final ContentItem item, final File subtitlesFile, final MediaFormat subtitlesFormat,
+	private void removeSubtitlesFromItem(final ContentItem item, final MediaFile subtitlesFile, final MediaFormat subtitlesFormat,
 			final Runnable onComplete) throws IOException {
 		// OK to use fake auth value here cos the file is being removed anyway.
 		this.mediaId.contentIdAsync(subtitlesFormat.getContentGroup(), subtitlesFile, BigInteger.ZERO, new MediaIdCallback() {
@@ -488,7 +519,7 @@ public class MediaIndex implements FileListener {
 
 		private final String baseName;
 
-		public BasenameFilter(final File file) {
+		public BasenameFilter(final MediaFile file) {
 			this.baseName = FilenameUtils.getBaseName(file.getName());
 		}
 

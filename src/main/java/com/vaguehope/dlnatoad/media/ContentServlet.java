@@ -50,7 +50,7 @@ public class ContentServlet extends MyFileServlet {
 			id = ServletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
-				return Resource.newResource(item.getFile());
+				return item.getFile().toResource();
 			}
 		}
 		catch (final IOException e) {
