@@ -221,6 +221,7 @@ public class ItemServlet extends HttpServlet {
 
 			final Integer offsetParam = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 			if (offsetParam == null) return "";
+			itemScope.prevnext_title = String.valueOf(offsetParam + 1);
 
 			searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
 			final List<String> ids;
@@ -265,7 +266,9 @@ public class ItemServlet extends HttpServlet {
 			}
 		}
 
-		itemScope.prevnext_title = (thisI + 1) + "/" + results.size();
+		if (itemScope.prevnext_title == null) {
+			itemScope.prevnext_title = (thisI + 1) + "/" + results.size();
+		}
 
 		ContentItem prevItem = null;
 		ContentItem nextItem = null;
