@@ -1,7 +1,5 @@
 package com.vaguehope.dlnatoad.util;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
-
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -18,15 +16,12 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.IIORegistry;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Iterators;
 import com.twelvemonkeys.contrib.exif.EXIFUtilities;
 import com.twelvemonkeys.contrib.exif.Orientation;
 import com.twelvemonkeys.contrib.tiff.TIFFUtilities;
@@ -46,26 +41,7 @@ public class ImageResizer {
 	private static final Logger LOG = LoggerFactory.getLogger(ImageResizer.class);
 
 	public ImageResizer() {
-		forceReaderOrder();
 		LOG.info("Supported formats: {}", Arrays.toString(ImageIO.getReaderFileSuffixes()));
-	}
-
-	// 12 Monkeys decoder is in installed cos it handles more file variants.
-	// But the internal decoder is way faster, so always try that one first.
-	private static void forceReaderOrder() {
-		final IIORegistry iioRegistry = IIORegistry.getDefaultInstance();
-		final Class<ImageReaderSpi> category = javax.imageio.spi.ImageReaderSpi.class;
-
-		final ImageReaderSpi sunReader = lookupProviderByName(iioRegistry, "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
-		final ImageReaderSpi monReader = lookupProviderByName(iioRegistry, "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
-
-		if (sunReader == null || monReader == null) {
-			LOG.warn("Did not find expected ImageReaderSpi classes to override order: sun={} 12mon={}", sunReader, monReader);
-			LOG.info("Known ImageReaderSpi: {}", Iterators.toString(iioRegistry.getServiceProviders(category, true)));
-			return;
-		}
-
-		iioRegistry.setOrdering(category, sunReader, monReader);
 	}
 
 	/**
