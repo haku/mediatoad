@@ -31,7 +31,17 @@ import com.twelvemonkeys.contrib.exif.EXIFUtilities;
 import com.twelvemonkeys.contrib.exif.Orientation;
 import com.twelvemonkeys.contrib.tiff.TIFFUtilities;
 
+import io.prometheus.metrics.core.datapoints.Timer;
+import io.prometheus.metrics.core.metrics.Histogram;
+import io.prometheus.metrics.model.snapshots.Unit;
+
 public class ImageResizer {
+
+	private static final Histogram RESIZE_DURATION = Histogram.builder()
+			.name("image_resize_duration")
+			.unit(Unit.SECONDS)
+			.help("Duraction of image resize operations.")
+			.register();
 
 	private static final Logger LOG = LoggerFactory.getLogger(ImageResizer.class);
 
@@ -62,6 +72,12 @@ public class ImageResizer {
 	 * @param quality Max 1.0.
 	 */
 	public void scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
+		try (final Timer timer = RESIZE_DURATION.startTimer()) {
+			doScaleImageToFile(inF, size, quality, outF);
+		}
+	}
+
+	public void doScaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
 		if (size < 16 || size > 1000) throw new IllegalArgumentException("Invalid size: " + size);
 
 		final BufferedImage inImg = readImage(inF);
