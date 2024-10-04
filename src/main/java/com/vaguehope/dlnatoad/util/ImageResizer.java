@@ -7,6 +7,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.twelvemonkeys.contrib.exif.EXIFUtilities;
 import com.twelvemonkeys.contrib.exif.Orientation;
 import com.twelvemonkeys.contrib.tiff.TIFFUtilities;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 import io.prometheus.metrics.core.datapoints.Timer;
 import io.prometheus.metrics.core.metrics.Histogram;
@@ -47,13 +49,13 @@ public class ImageResizer {
 	/**
 	 * @param quality Max 1.0.
 	 */
-	public void scaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
+	public void scaleImageToFile (final MediaFile inF, final int size, final float quality, final File outF) throws IOException {
 		try (final Timer timer = RESIZE_DURATION.startTimer()) {
 			doScaleImageToFile(inF, size, quality, outF);
 		}
 	}
 
-	public void doScaleImageToFile (final File inF, final int size, final float quality, final File outF) throws IOException {
+	private static void doScaleImageToFile (final MediaFile inF, final int size, final float quality, final File outF) throws IOException {
 		if (size < 16 || size > 1000) throw new IllegalArgumentException("Invalid size: " + size);
 
 		final BufferedImage inImg = readImage(inF);
@@ -78,11 +80,17 @@ public class ImageResizer {
 		writeImageViaTmpFile(outImg, quality, outF);
 	}
 
-	private static BufferedImage readImage(final File file) throws IOException {
-		try (ImageInputStream input = ImageIO.createImageInputStream(file)) {
+	private static BufferedImage readImage(final MediaFile file) throws IOException {
+		try (final InputStream is = file.open()) {
+			return readImage(is, file.getAbsolutePath());
+		}
+	}
+
+	private static BufferedImage readImage(final InputStream is, final String name) throws IOException {
+		try (ImageInputStream input = ImageIO.createImageInputStream(is)) {
 			final Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 			if (!readers.hasNext()) {
-				throw new IOException("No reader for: " + file);
+				throw new IOException("No reader for: " + name);
 			}
 
 			Exception lastException = null;
@@ -107,7 +115,7 @@ public class ImageResizer {
 				}
 			}
 			if (lastException != null) {
-				LOG.warn("Failed to decode \"{}\": {}", file.getAbsolutePath(), ExceptionHelper.causeTrace(lastException));
+				LOG.warn("Failed to decode \"{}\": {}", name, ExceptionHelper.causeTrace(lastException));
 				if (lastException instanceof IOException) throw (IOException) lastException;
 				throw new IOException(lastException);
 			}

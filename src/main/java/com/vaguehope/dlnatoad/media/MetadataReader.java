@@ -1,9 +1,10 @@
 package com.vaguehope.dlnatoad.media;
 
-import java.io.File;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 public class MetadataReader {
 
@@ -53,7 +54,7 @@ public class MetadataReader {
 	private static final Pattern ARTIST_FILE_NAME_PATTERN =
 			Pattern.compile("^(?<artist>.+?)\\s+?-\\s+?.+$");
 
-	public static Metadata read (final File file) {
+	public static Metadata read (final MediaFile file) {
 		if (file == null) return null;
 
 		{

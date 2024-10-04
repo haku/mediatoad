@@ -2,8 +2,11 @@ package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
+
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 public class CoverArtHelper {
 
@@ -13,8 +16,8 @@ public class CoverArtHelper {
 		throw new AssertionError();
 	}
 
-	public static File findCoverArt (final File file) {
-		final File dir = file.isDirectory() ? file : file.getParentFile();
+	public static MediaFile findCoverArt (final MediaFile file) throws IOException {
+		final MediaFile dir = file.isDirectory() ? file : file.getParentFile();
 
 		final String[] imgNames = dir.list(ImgFilenameFilter.INSTANCE);
 		if (imgNames == null || imgNames.length < 1) return null;
@@ -25,7 +28,7 @@ public class CoverArtHelper {
 		// Same name but with different extension.
 		if (baseName != null) {
 			for (final String imgName : imgNames) {
-				if (fileBaseName(imgName).equals(baseName)) return new File(dir, imgName);
+				if (fileBaseName(imgName).equals(baseName)) return dir.containedFile(imgName);
 			}
 		}
 
@@ -39,29 +42,29 @@ public class CoverArtHelper {
 			final String lcaseBaseName = baseName.toLowerCase(Locale.UK);
 			// Same name but with different case and extension.
 			for (int i = 0; i < imgNames.length; i++) {
-				if (lcaseImgBaseNames[i].equals(lcaseBaseName)) return new File(dir, imgNames[i]);
+				if (lcaseImgBaseNames[i].equals(lcaseBaseName)) return dir.containedFile(imgNames[i]);
 			}
 			// Image starts with the same name but with different case.
 			for (int i = 0; i < imgNames.length; i++) {
-				if (lcaseImgBaseNames[i].startsWith(lcaseBaseName)) return new File(dir, imgNames[i]);
+				if (lcaseImgBaseNames[i].startsWith(lcaseBaseName)) return dir.containedFile(imgNames[i]);
 			}
 			// Track starts with same name as image.
 			for (int i = 0; i < imgNames.length; i++) {
-				if (lcaseBaseName.startsWith(lcaseImgBaseNames[i])) return new File(dir, imgNames[i]);
+				if (lcaseBaseName.startsWith(lcaseImgBaseNames[i])) return dir.containedFile(imgNames[i]);
 			}
 		}
 
 		// Conventional name for entire directory.
 		for (final String name : DIR_FILE_NAMES) {
 			for (int i = 0; i < imgNames.length; i++) {
-				if (lcaseImgBaseNames[i].startsWith(name)) return new File(dir, imgNames[i]);
+				if (lcaseImgBaseNames[i].startsWith(name)) return dir.containedFile(imgNames[i]);
 			}
 		}
 
 		return null;
 	}
 
-	private static String fileBaseName (final File file) {
+	private static String fileBaseName (final MediaFile file) {
 		return fileBaseName(file.getName());
 	}
 

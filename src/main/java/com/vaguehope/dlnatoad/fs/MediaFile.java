@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -49,44 +50,31 @@ public abstract class MediaFile {
 		return new PlainMediaFile(file);
 	}
 
-	// TODO move to ZipDir.list()
-	static List<MediaFile> expandZip(final MediaFile zipFile) throws IOException {
-		final List<MediaFile> ret = new ArrayList<>();
-		try (final ZipInputStream zi = new ZipInputStream(zipFile.open())) {
-			ZipEntry e;
-			while ((e = zi.getNextEntry()) != null) {
-				zi.closeEntry();  // if this is not called then the entry is not populated.
-				ret.add(MediaFile.forZipEntry(zipFile, e));
-			}
-		}
-		return ret;
+	static MediaFile forZipEntry(final File zip, final ZipEntry entry) throws IOException {
+		return new ZipMediaFile(zip, entry.getName(), true, entry.getSize(), entry.getLastModifiedTime().toMillis());
 	}
 
-	public static MediaFile forZipEntry(final MediaFile file, final ZipEntry entry) throws IOException {
-		return new ZipMediaFile(file.file, entry.getName(), true, entry.getSize(), entry.getLastModifiedTime().toMillis());
-	}
-
-	public static MediaFile forZipEntry(final MediaFile file, final String subPath) throws IOException {
-		if (file.exists()) {
-			try (final ZipFile zf = new ZipFile(file.file)) {
+	static MediaFile forZipEntry(final File zip, final String subPath) throws IOException {
+		if (zip.exists()) {
+			try (final ZipFile zf = new ZipFile(zip)) {
 				final ZipEntry entry = zf.getEntry(subPath);
 				if (entry != null) {
-					return forZipEntry(file, entry);
+					return forZipEntry(zip, entry);
 				}
 			}
 		}
-		return new ZipMediaFile(file.file, subPath, false, -1, -1);
+		return new ZipMediaFile(zip, subPath, false, -1, -1);
 	}
 
-	public static boolean isZip(final File file) {
+	static boolean isZip(final File file) {
 		return isZip(file.getName());
 	}
 
-	public static boolean isZip(final MediaFile file) {
+	static boolean isZip(final MediaFile file) {
 		return isZip(file.getName());
 	}
 
-	public static boolean isZip(final String name) {
+	static boolean isZip(final String name) {
 		return "zip".equals(FilenameUtils.getExtension(name).toLowerCase());
 	}
 
@@ -96,7 +84,8 @@ public abstract class MediaFile {
 	public abstract boolean isFile();
 	public abstract boolean isDirectory();
 	public abstract MediaFile getParentFile();
-	public abstract String[] list(FilenameFilter filter);  // TODO make return MediaFile items
+	public abstract String[] list(FilenameFilter filter);
+	public abstract List<MediaFile> files(FilenameFilter filter) throws IOException;
 	public abstract MediaFile containedFile(String name) throws IOException;
 
 	public abstract long length();
@@ -115,7 +104,21 @@ public abstract class MediaFile {
 
 		@Override
 		public String toString() {
-			return String.format("PlainFile{%s, %s}", this.file.getAbsolutePath());
+			return String.format("PlainFile{%s}", this.file.getAbsolutePath());
+		}
+
+		@Override
+		public int hashCode() {
+			return this.file.hashCode();
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (obj == this) return true;
+			if (obj == null) return false;
+			if (!(obj instanceof PlainMediaFile)) return false;
+			final PlainMediaFile that = (PlainMediaFile) obj;
+			return Objects.equals(this.file, that.file);
 		}
 
 		@Override
@@ -151,6 +154,19 @@ public abstract class MediaFile {
 		@Override
 		public String[] list(final FilenameFilter filter) {
 			return this.file.list(filter);
+		}
+
+		@Override
+		public List<MediaFile> files(final FilenameFilter filter) throws IOException {
+			if (!isDirectory()) throw new UnsupportedOperationException("Not a directory: " + getAbsolutePath());
+			final File[] files = this.file.listFiles(filter);
+			if (files == null) throw new IOException("Failed to list files in: " + getAbsolutePath());
+
+			final List<MediaFile> ret = new ArrayList<>();
+			for (final File f : files) {
+				ret.add(MediaFile.forFile(f));
+			}
+			return ret;
 		}
 
 		@Override
@@ -202,7 +218,21 @@ public abstract class MediaFile {
 
 		@Override
 		public String toString() {
-			return String.format("ZipDir{%s, %s}", this.file.getAbsolutePath());
+			return String.format("ZipDir{%s}", this.file.getAbsolutePath());
+		}
+
+		@Override
+		public int hashCode() {
+			return this.file.hashCode();
+		}
+
+		@Override
+		public boolean equals(final Object obj) {
+			if (obj == this) return true;
+			if (obj == null) return false;
+			if (!(obj instanceof ZipDir)) return false;
+			final ZipDir that = (ZipDir) obj;
+			return Objects.equals(this.file, that.file);
 		}
 
 		@Override
@@ -241,8 +271,21 @@ public abstract class MediaFile {
 		}
 
 		@Override
+		public List<MediaFile> files(FilenameFilter filter) throws IOException {
+			final List<MediaFile> ret = new ArrayList<>();
+			try (final ZipInputStream zi = new ZipInputStream(new FileInputStream(this.file))) {
+				ZipEntry e;
+				while ((e = zi.getNextEntry()) != null) {
+					zi.closeEntry();  // if this is not called then the entry is not populated.
+					ret.add(MediaFile.forZipEntry(this.file, e));
+				}
+			}
+			return ret;
+		}
+
+		@Override
 		public MediaFile containedFile(final String name) throws IOException {
-			return forZipEntry(this, name);
+			return forZipEntry(this.file, name);
 		}
 
 		@Override
@@ -331,6 +374,11 @@ public abstract class MediaFile {
 
 		@Override
 		public String[] list(final FilenameFilter filter) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public List<MediaFile> files(FilenameFilter filter) throws IOException {
 			throw new UnsupportedOperationException();
 		}
 

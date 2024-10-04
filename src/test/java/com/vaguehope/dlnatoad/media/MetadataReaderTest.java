@@ -7,6 +7,7 @@ import java.io.File;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 
 
@@ -40,7 +41,7 @@ public class MetadataReaderTest {
 
 	private static void testFileNameExtraction(final String path, final String artist, final String album) {
 		assertEquals(new Metadata(artist, album),
-				MetadataReader.read(new File(path)));
+				MetadataReader.read(MediaFile.forFile(new File(path))));
 	}
 
 }

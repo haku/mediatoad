@@ -14,6 +14,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.fs.MediaFile;
+
 public class ImageResizerTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
@@ -32,7 +34,7 @@ public class ImageResizerTest {
 			FileUtils.copyInputStreamToFile(is, in);
 		}
 		final File f = this.tmp.newFile();
-		this.undertest.scaleImageToFile(in, 24, 0.8f, f);
+		this.undertest.scaleImageToFile(MediaFile.forFile(in), 24, 0.8f, f);
 		assertTrue(f.exists());
 		assertThat(f.length(), greaterThan(1L));
 	}
@@ -41,7 +43,7 @@ public class ImageResizerTest {
 	@Test
 	public void itDecodesLocalFile() throws Exception {
 		final File f = this.tmp.newFile();
-		this.undertest.scaleImageToFile(new File(new File(System.getProperty("user.home")), "Art/test.jpg"), 200, 0.8f, f);
+		this.undertest.scaleImageToFile(MediaFile.forFile(new File(new File(System.getProperty("user.home")), "Art/test.jpg")), 200, 0.8f, f);
 		assertTrue(f.exists());
 		assertThat(f.length(), greaterThan(1L));
 	}

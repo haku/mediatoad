@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.media;
+package com.vaguehope.dlnatoad.fs;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -17,12 +17,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.fs.MediaFile;
-
 public class MediaFileTest {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
+
+	@Test
+	public void itCreatesAFileInADirectory() throws Exception {
+		final MediaFile dir = MediaFile.forFile(this.tmp.newFolder());
+		assertTrue(dir.isDirectory());
+		final String fileName = "name.jpeg";
+
+		final MediaFile mf = dir.containedFile(fileName);
+		assertEquals(fileName, mf.getName());
+		assertEquals(dir, mf.getParentFile());
+	}
 
 	@SuppressWarnings("resource")
 	@Test
@@ -42,7 +51,8 @@ public class MediaFileTest {
 			zo.closeEntry();
 		}
 
-		final List<MediaFile> mediaFiles = MediaFile.expandZip(archive);
+		final MediaFile archiveMf = MediaFile.forFile(archive);
+		final List<MediaFile> mediaFiles = archiveMf.files(null);
 		assertThat(mediaFiles, hasSize(3));
 
 		final MediaFile f0 = mediaFiles.get(0);
@@ -53,17 +63,15 @@ public class MediaFileTest {
 
 		final MediaFile f1 = mediaFiles.get(1);
 		assertTrue(f1.exists());
-		assertEquals("file0.jpeg", f1.getName());
+		assertEquals("dir1/file0.jpeg", f1.getName());
 		assertEquals(17, f1.length());
 		assertEquals("test jpeg content", IOUtils.toString(f1.open(), StandardCharsets.UTF_8));
 
 		final MediaFile f2 = mediaFiles.get(2);
 		assertTrue(f2.exists());
-		assertEquals("file1.mp3", f2.getName());
+		assertEquals("dir1/file1.mp3", f2.getName());
 		assertEquals(16, f2.length());
 		assertEquals("test mp3 content", IOUtils.toString(f2.open(), StandardCharsets.UTF_8));
-
-
 	}
 
 }

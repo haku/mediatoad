@@ -10,6 +10,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.fs.MediaFile;
+
 public class CoverArtHelperTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();
@@ -23,20 +25,20 @@ public class CoverArtHelperTest {
 
 	@Test
 	public void itReturnsNullForNoMatch () throws Exception {
-		assertEquals(null, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, null);
 	}
 
 	@Test
 	public void itReturnsNullWhenNoBetterOptions () throws Exception {
 		givenNoise();
-		assertEquals(null, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, null);
 	}
 
 	@Test
 	public void itFindsCoverForDirectory () throws Exception {
 		givenNoise();
 		final File cover = this.tmp.newFile("cover.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.tmp.getRoot()));
+		testFindCoverArt(this.tmp.getRoot(), cover);
 	}
 
 	@Test
@@ -44,28 +46,28 @@ public class CoverArtHelperTest {
 		givenCoverNoise();
 		this.tmp.newFile("testItem thumb.jpg");
 		final File cover = this.tmp.newFile("testItem.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameButJpgExtMixedCase () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testItem.jpG");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameButMixedCaseAndJpgExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("TestItem.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameStartAndJpgExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testItem thumb.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	/**
@@ -77,49 +79,49 @@ public class CoverArtHelperTest {
 	public void itFindsCoverWithShortenedNameStartAndJpgExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testi.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameButJpegExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testItem.jpeg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameButGifExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testItem.gif");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverWithSameNameButPngExt () throws Exception {
 		givenCoverNoise();
 		final File cover = this.tmp.newFile("testItem.png");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverCalledCover () throws Exception {
 		givenNoise();
 		final File cover = this.tmp.newFile("cover.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverCalledCoverMixedCase () throws Exception {
 		givenNoise();
 		final File cover = this.tmp.newFile("coVeR.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
 	public void itFindsCoverCalledAlbum () throws Exception {
 		givenNoise();
 		final File cover = this.tmp.newFile("album.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
 	}
 
 	@Test
@@ -128,7 +130,17 @@ public class CoverArtHelperTest {
 		this.tmp.newFile("cover.jpg");
 		this.tmp.newFile("album.jpg");
 		final File cover = this.tmp.newFile("folder.jpg");
-		assertEquals(cover, CoverArtHelper.findCoverArt(this.mediaFile));
+		testFindCoverArt(this.mediaFile, cover);
+	}
+
+	public static void testFindCoverArt (final File input, final File expectedOutput) throws IOException {
+		final MediaFile actual = CoverArtHelper.findCoverArt(MediaFile.forFile(input));
+		if (expectedOutput == null) {
+			assertEquals(null, actual);
+		}
+		else {
+			assertEquals(expectedOutput.getAbsolutePath(), actual.getAbsolutePath());
+		}
 	}
 
 	private void givenCoverNoise () throws IOException {
