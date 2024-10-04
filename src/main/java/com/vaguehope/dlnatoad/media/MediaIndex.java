@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.AsyncCallback;
 import com.vaguehope.dlnatoad.util.FileHelper;

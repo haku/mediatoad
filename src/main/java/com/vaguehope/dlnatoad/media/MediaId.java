@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
 public class MediaId {

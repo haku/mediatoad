@@ -12,6 +12,7 @@ import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.ffmpeg.Ffprobe;
 import com.vaguehope.dlnatoad.ffmpeg.FfprobeInfo;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.util.ExceptionHelper;
 
 public class MediaInfo {

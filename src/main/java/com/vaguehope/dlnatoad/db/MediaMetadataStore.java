@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 

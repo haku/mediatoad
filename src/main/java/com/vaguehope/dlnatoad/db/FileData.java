@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.util.HashHelper.Md5AndSha1;
 

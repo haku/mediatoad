@@ -6,6 +6,7 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 
 import com.vaguehope.dlnatoad.ffmpeg.Ffmpeg;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.util.HashHelper;
 import com.vaguehope.dlnatoad.util.ImageResizer;
 

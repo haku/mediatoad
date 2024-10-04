@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.db;
 
 import java.math.BigInteger;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.media.MediaIdCallback;
 
 class FileTask {

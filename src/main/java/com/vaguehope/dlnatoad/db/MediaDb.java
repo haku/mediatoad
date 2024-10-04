@@ -21,7 +21,7 @@ import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 import org.sqlite.SQLiteConfig.TransactionMode;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 public class MediaDb {
 

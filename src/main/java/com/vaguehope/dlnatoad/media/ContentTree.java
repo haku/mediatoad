@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.AuthSet;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;

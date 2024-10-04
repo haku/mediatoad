@@ -10,6 +10,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jetty.http.MimeTypes;
 import org.jupnp.util.MimeType;
 
+import com.vaguehope.dlnatoad.fs.MediaFile;
+
 public enum MediaFormat {
 
 	AVI("avi", "video/avi", ContentGroup.VIDEO),

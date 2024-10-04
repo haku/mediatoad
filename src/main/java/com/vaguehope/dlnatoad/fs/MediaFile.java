@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad.media;
+package com.vaguehope.dlnatoad.fs;
 
 import java.io.File;
 import java.io.FileInputStream;

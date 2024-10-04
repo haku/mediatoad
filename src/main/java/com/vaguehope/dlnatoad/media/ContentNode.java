@@ -11,6 +11,7 @@ import java.util.Objects;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.Permission;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 import com.vaguehope.dlnatoad.util.ExConsumer;
 
 /**

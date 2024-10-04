@@ -4,7 +4,7 @@ import java.text.DecimalFormat;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 public final class FileHelper {
 

@@ -17,6 +17,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.fs.MediaFile;
+
 public class MediaFileTest {
 
 	@Rule

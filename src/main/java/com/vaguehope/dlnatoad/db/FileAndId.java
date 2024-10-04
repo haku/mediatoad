@@ -1,6 +1,6 @@
 package com.vaguehope.dlnatoad.db;
 
-import com.vaguehope.dlnatoad.media.MediaFile;
+import com.vaguehope.dlnatoad.fs.MediaFile;
 
 public class FileAndId {
 
