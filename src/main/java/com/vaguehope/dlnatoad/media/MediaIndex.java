@@ -166,31 +166,7 @@ public class MediaIndex implements FileListener {
 			case SUBTITLES:
 				attachSubtitlesToItem(file, format, onComplete);
 				break;
-			case ARCHIVE:
-				expandArchive(rootDir, file, format, onComplete);
-				break;
 			default:
-		}
-	}
-
-	private void expandArchive(final MediaFile rootDir, final MediaFile file, final MediaFormat format, final Runnable onComplete) throws IOException {
-		// TODO check for feature flag here in args --expand-archives or something like that.
-
-		switch (format) {
-		case ZIP:
-			expandZip(rootDir, file, onComplete);
-			break;
-		default:
-		}
-	}
-
-	private void expandZip(final MediaFile rootDir, final MediaFile file, final Runnable onComplete) throws IOException {
-		for (final MediaFile mf : MediaFile.expandZip(file)) {
-			final MediaFormat format = MediaFormat.identify(mf.getName());
-			// TODO extend to other groups once this is working.
-			if (format == null || format.getContentGroup() != ContentGroup.IMAGE) continue;
-
-			putFileToContentTree(rootDir, mf, format, onComplete);
 		}
 	}
 

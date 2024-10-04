@@ -14,6 +14,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -40,20 +41,16 @@ public abstract class MediaFile {
 	public static MediaFile forFile(final File file) {
 		if (file.isDirectory()) return new PlainMediaFile(file);
 
-		final MediaFormat format = MediaFormat.identify(file);
-		if (format != null && format.getContentGroup() == ContentGroup.ARCHIVE) {
-			switch (format) {
-			case ZIP:
-				return new ZipDir(file);
-			default:
-				throw new IllegalArgumentException("Unsupported archive type: " + format);
-			}
+		// TODO check for feature flag here in args --expand-archives or something like that.
+		if (isZip(file)) {
+			return new ZipDir(file);
 		}
 
 		return new PlainMediaFile(file);
 	}
 
-	public static List<MediaFile> expandZip(final MediaFile zipFile) throws IOException {
+	// TODO move to ZipDir.list()
+	static List<MediaFile> expandZip(final MediaFile zipFile) throws IOException {
 		final List<MediaFile> ret = new ArrayList<>();
 		try (final ZipInputStream zi = new ZipInputStream(zipFile.open())) {
 			ZipEntry e;
@@ -81,13 +78,25 @@ public abstract class MediaFile {
 		return new ZipMediaFile(file.file, subPath, false, -1, -1);
 	}
 
+	public static boolean isZip(final File file) {
+		return isZip(file.getName());
+	}
+
+	public static boolean isZip(final MediaFile file) {
+		return isZip(file.getName());
+	}
+
+	public static boolean isZip(final String name) {
+		return "zip".equals(FilenameUtils.getExtension(name).toLowerCase());
+	}
+
 	public abstract String getName();
 	public abstract String getAbsolutePath();  // TODO i think this is only ever used for DB entries?  TODO check this!
 	public abstract boolean exists();
 	public abstract boolean isFile();
 	public abstract boolean isDirectory();
 	public abstract MediaFile getParentFile();
-	public abstract String[] list(FilenameFilter filter);
+	public abstract String[] list(FilenameFilter filter);  // TODO make return MediaFile items
 	public abstract MediaFile containedFile(String name) throws IOException;
 
 	public abstract long length();

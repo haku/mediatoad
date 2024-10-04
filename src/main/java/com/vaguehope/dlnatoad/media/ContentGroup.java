@@ -16,8 +16,7 @@ public enum ContentGroup {
 	AUDIO("3-audio", "audio-", "Audio"),
 	SUBTITLES("4-subtitles", "subtitles-", "Subtitles"),
 	THUMBNAIL("5-thumbnails", "thumbnail-", "Thumbnails"),
-	DOCUMENT("6-docs", "doc-", "Documents"),
-	ARCHIVE("7-archive", "archive-", "Archives");
+	DOCUMENT("6-docs", "doc-", "Documents");
 
 	private static final Collection<String> IDS = Collections.unmodifiableCollection(
 			CollectionHelper.map(values(), new Function<ContentGroup, String>() {
