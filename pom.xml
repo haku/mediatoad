@@ -191,7 +191,7 @@
 
 		<repository>
 			<id>4thline.org-repo</id>
-			<url>http://4thline.org/m2</url>
+			<url>https://4thline.org/m2</url>
 			<layout>default</layout>
 			<releases>
 				<enabled>true</enabled>
