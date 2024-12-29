@@ -7,6 +7,11 @@ option java_outer_classname = "MediaToadProto";
 
 package mediatoad;
 
+message MediaNode {
+  string id = 1;
+  string title = 2;
+}
+
 message MediaItem {
   string id = 1;
   string title = 2;
@@ -15,26 +20,55 @@ message MediaItem {
   int64 duration_millis = 5;
 }
 
+enum FileExistance {
+  UNKNOWN = 0;
+  EXISTS = 1;
+  MISSING = 2;
+}
+
 service Media {
-  rpc Search (SearchRequest) returns (SearchReply) {}
+  rpc About (AboutRequest) returns (AboutReply) {}
+  rpc HasMedia (HasMediaRequest) returns (HasMediaReply) {}
   rpc ReadMedia (ReadMediaRequest) returns (stream ReadMediaReply) {}
+  rpc ListNode (ListNodeRequest) returns (ListNodeReply) {}
+  rpc Search (SearchRequest) returns (SearchReply) {}
 }
 
-message SearchRequest {
-  string query = 1;
+message AboutRequest {}
+message AboutReply {
+  // Friendly name of the TD, only used for UI and logging.
+  string name = 1;
 }
 
-message SearchReply {
-  repeated MediaItem result = 1;
+message HasMediaRequest {
+  string id = 1;
+}
+message HasMediaReply {
+  FileExistance existance = 1;
+  MediaItem item = 2;
 }
 
 message ReadMediaRequest {
   string id = 1;
   // TODO range requests.
 }
-
 message ReadMediaReply {
   bytes content = 1;
   int64 total_file_length = 2;
   string mime_type = 3;
+}
+
+message ListNodeRequest {
+  string node_id = 1;
+}
+message ListNodeReply {
+  repeated MediaNode node = 1;
+  repeated MediaItem item = 2;
+}
+
+message SearchRequest {
+  string query = 1;
+}
+message SearchReply {
+  repeated MediaItem result = 1;
 }
