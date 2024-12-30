@@ -20,6 +20,12 @@ message MediaItem {
   int64 duration_millis = 5;
 }
 
+message MediaTag {
+  string tag = 1;
+  string cls = 2;
+  int64 modified = 3;
+}
+
 enum FileExistance {
   UNKNOWN = 0;
   EXISTS = 1;
@@ -46,6 +52,7 @@ message HasMediaRequest {
 message HasMediaReply {
   FileExistance existance = 1;
   MediaItem item = 2;
+  repeated MediaTag tag = 3;
 }
 
 message ReadMediaRequest {
