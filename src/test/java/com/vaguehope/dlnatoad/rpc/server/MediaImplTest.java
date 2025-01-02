@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
@@ -23,6 +24,7 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
 
@@ -42,36 +44,93 @@ public class MediaImplTest {
 		this.undertest = new MediaImpl(this.contentTree, null);
 	}
 
+	// TODO test other methods!
+
 	@Test
 	public void itServesContent() throws Exception {
 		final ReadMediaRequest req = ReadMediaRequest.newBuilder().setId("someid").build();
+		final byte[] data = mockItemFileData("someid", "parentid", 1000 * 1024);
+
 		final StreamObserver<ReadMediaReply> respObs = mock(StreamObserver.class);
+		this.undertest.readMedia(req, respObs);
 
-		final ContentItem item = mock(ContentItem.class);
-		when(item.getParentId()).thenReturn("parentid");
-		when(item.getFormat()).thenReturn(MediaFormat.JPEG);
-		when(this.contentTree.getItem("someid")).thenReturn(item);
+		verify(respObs, Mockito.never()).onError(any(Throwable.class));
+		assertArrayEquals(data, extractResponseContent(4, respObs).toByteArray());
+	}
 
+	@Test
+	public void itHandlesSmallStartRangeRequest() throws Exception {
+		testRangeRequest(0, 99, 1000, 1);
+	}
+
+	@Test
+	public void itHandlesSmallMiddleRangeRequest() throws Exception {
+		testRangeRequest(200, 499, 1000, 1);
+	}
+
+	@Test
+	public void itHandlesSmallEndRangeRequest() throws Exception {
+		testRangeRequest(500, 999, 1000, 1);
+	}
+
+	@Test
+	public void itHandlesBigStartRangeRequest() throws Exception {
+		testRangeRequest(0, (int) (2.5 * 256 * 1024), 1000 * 1024, 3);
+	}
+
+	@Test
+	public void itHandlesBigMiddleRangeRequest() throws Exception {
+		testRangeRequest((int) (0.3 * 256 * 1024), 3 * 256 * 1024, 1000 * 1024, 3);
+	}
+
+	@Test
+	public void itHandlesBigEndRangeRequest() throws Exception {
+		testRangeRequest((int) (1.5 * 256 * 1024), (1024 * 1024) - 1, 1024 * 1024, 3);
+	}
+
+	private void testRangeRequest(int first, int last, int fileLength, int expectedChunkCount) throws IOException {
+		final ReadMediaRequest req = ReadMediaRequest.newBuilder()
+				.setId("someid")
+				.addRange(Range.newBuilder().setFirst(first).setLast(last).build())
+				.build();
+		final byte[] data = mockItemFileData("someid", "parentid", fileLength);
+
+		final StreamObserver<ReadMediaReply> respObs = mock(StreamObserver.class);
+		this.undertest.readMedia(req, respObs);
+
+		verify(respObs, Mockito.never()).onError(any(Throwable.class));
+		byte[] expected = new byte[last - first + 1];
+		System.arraycopy(data, first, expected, 0, expected.length);
+		assertArrayEquals(expected, extractResponseContent(expectedChunkCount, respObs).toByteArray());
+	}
+
+	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {
+		final ContentItem item = mockItem(id, parentId);
+		mockNode(parentId);
+		return makeFile(item, length);
+	}
+
+	private void mockNode(String id) {
 		final ContentNode node = mock(ContentNode.class);
-		when(this.contentTree.getNode("parentid")).thenReturn(node);
+		when(this.contentTree.getNode(id)).thenReturn(node);
+	}
 
+	private ContentItem mockItem(String id, String parentId) {
+		final ContentItem item = mock(ContentItem.class);
+		when(item.getId()).thenReturn(id);
+		when(item.getParentId()).thenReturn(parentId);
+		when(item.getFormat()).thenReturn(MediaFormat.JPEG);
+		when(this.contentTree.getItem(id)).thenReturn(item);
+		return item;
+	}
+
+	private byte[] makeFile(final ContentItem item, int length) throws IOException {
 		final File file = this.tmp.newFile();
-		final byte[] data = new byte[1000 * 1024];
+		final byte[] data = new byte[length];
 		fillArray(data);
 		FileUtils.writeByteArrayToFile(file, data);
 		when(item.getFile()).thenReturn(file);
-
-		this.undertest.readMedia(req, respObs);
-		verify(respObs, Mockito.never()).onError(any(Throwable.class));
-
-		final ArgumentCaptor<ReadMediaReply> cap = ArgumentCaptor.forClass(ReadMediaReply.class);
-		verify(respObs, times(4)).onNext(cap.capture());
-
-		final ByteArrayOutputStream actual = new ByteArrayOutputStream();
-		for (final ReadMediaReply r : cap.getAllValues()) {
-			r.getContent().writeTo(actual);
-		}
-		assertArrayEquals(data, actual.toByteArray());
+		return data;
 	}
 
 	private static void fillArray(final byte[] arr) {
@@ -79,6 +138,17 @@ public class MediaImplTest {
 		for (int i = 0; i < arr.length; i++) {
 			arr[i] = (byte) rnd.nextInt();
 		}
+	}
+
+	private static ByteArrayOutputStream extractResponseContent(int expectedChunks, final StreamObserver<ReadMediaReply> respObs) throws IOException {
+		final ArgumentCaptor<ReadMediaReply> cap = ArgumentCaptor.forClass(ReadMediaReply.class);
+		verify(respObs, times(expectedChunks)).onNext(cap.capture());
+
+		final ByteArrayOutputStream actual = new ByteArrayOutputStream();
+		for (final ReadMediaReply r : cap.getAllValues()) {
+			r.getContent().writeTo(actual);
+		}
+		return actual;
 	}
 
 }

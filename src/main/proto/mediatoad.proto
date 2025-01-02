@@ -48,7 +48,7 @@ service Media {
 
 message AboutRequest {}
 message AboutReply {
-  // Friendly name of the TD, only used for UI and logging.
+  // Friendly name, only used for UI and logging.
   string name = 1;
 }
 
@@ -56,7 +56,7 @@ message HasMediaRequest {
   string id = 1;
 }
 message HasMediaReply {
-  FileExistance existance = 1;
+  FileExistance existence = 1;
   MediaItem item = 2;
   repeated MediaTag tag = 3;
 }
@@ -69,6 +69,11 @@ message ReadMediaReply {
   bytes content = 1;
   int64 total_file_length = 2;
   string mime_type = 3;
+
+  // if multiple ranges are requests, indicates which range this is chunk
+  // is part of.  Indexed in the order of in the request.  also indicates
+  // ranged request was honoured, similar to HTTP 206.
+  optional int32 rangeIndex = 4;
 }
 
 message ListNodeRequest {
