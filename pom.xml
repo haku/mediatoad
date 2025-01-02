@@ -107,7 +107,9 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<!-- https://stackoverflow.com/questions/18107375 -->
-					<argLine>${argLine} -Duser.timezone=UTC</argLine>
+					<!-- https://maven.apache.org/surefire/maven-surefire-plugin/faq.html#late-property-evaluation -->
+					<!-- off for now cos it breaks eclipse :( -->
+					<!-- <argLine>@{argLine} -Duser.timezone=UTC</argLine> -->
 				</configuration>
 			</plugin>
 
