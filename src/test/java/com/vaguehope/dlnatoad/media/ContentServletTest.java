@@ -14,7 +14,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
@@ -24,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.util.RequestLoggingFilter;
+import com.vaguehope.common.servlet.RequestLoggingFilter;
 
 public class ContentServletTest {
 
@@ -85,7 +84,7 @@ public class ContentServletTest {
 		final ServletContextHandler contextHandler = new ServletContextHandler();
 		MediaFormat.addTo(contextHandler.getMimeTypes());
 		contextHandler.setContextPath("/");
-		contextHandler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		RequestLoggingFilter.addTo(contextHandler);
 		contextHandler.addServlet(new ServletHolder(this.undertest), "/");
 		this.server.setHandler(contextHandler);
 		this.server.start();

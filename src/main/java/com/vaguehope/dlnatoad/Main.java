@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
+import com.vaguehope.common.servlet.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
@@ -77,7 +78,6 @@ import com.vaguehope.dlnatoad.util.JettyPrometheusServlet;
 import com.vaguehope.dlnatoad.util.LogHelper;
 import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
-import com.vaguehope.dlnatoad.util.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.util.Watcher;
 
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -317,7 +317,7 @@ public final class Main {
 		servletHandler.setMaxFormKeys(10);
 
 		if (args.isPrintAccessLog()) {
-			servletHandler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+			RequestLoggingFilter.addTo(servletHandler);
 		}
 
 		final File userfile = args.getUserfile();
@@ -358,7 +358,7 @@ public final class Main {
 		handler.setContextPath("/");
 
 		if (args.isPrintAccessLog()) {
-			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+			RequestLoggingFilter.addTo(handler);
 		}
 
 		handler.addFilter(new FilterHolder(authFilter), "/*", null);
@@ -371,7 +371,7 @@ public final class Main {
 		handler.setContextPath("/");
 
 		if (args.isPrintAccessLog()) {
-			handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+			RequestLoggingFilter.addTo(handler);
 		}
 
 		final MediaImpl mediaImpl = new MediaImpl(contentTree, mediaDb);

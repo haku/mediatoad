@@ -21,7 +21,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -30,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.util.RequestLoggingFilter;
+import com.vaguehope.common.servlet.RequestLoggingFilter;
 
 public class StaticFilesServletTest {
 
@@ -104,7 +103,7 @@ public class StaticFilesServletTest {
 
 		final ServletContextHandler contextHandler = new ServletContextHandler();
 		contextHandler.setContextPath("/");
-		contextHandler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
+		RequestLoggingFilter.addTo(contextHandler);
 		contextHandler.addServlet(new ServletHolder(this.undertest), "/w/*");
 		this.server.setHandler(contextHandler);
 		this.server.start();

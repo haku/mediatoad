@@ -1,6 +1,7 @@
-package com.vaguehope.dlnatoad.util;
+package com.vaguehope.common.servlet;
 
 import java.io.IOException;
+import java.util.Enumeration;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -11,10 +12,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.net.HttpHeaders;
 
 public class RequestLoggingFilter implements Filter {
 
@@ -33,7 +34,7 @@ public class RequestLoggingFilter implements Filter {
 		final String remoteAddr = req.getRemoteAddr();
 		final String requestURI = req.getRequestURI();
 		final String method = req.getMethod();
-		final String ranges = StringHelper.join(req.getHeaders(HttpHeaders.RANGE), ",");
+		final String ranges = joinEnumeration(req.getHeaders("Range"), ",");
 
 		try {
 			chain.doFilter(request, response);
@@ -48,9 +49,22 @@ public class RequestLoggingFilter implements Filter {
 		}
 	}
 
+	private static String joinEnumeration(final Enumeration<String> en, final String join) {
+		if (en == null || !en.hasMoreElements()) return null;
+		StringBuilder s = new StringBuilder(en.nextElement());
+		while (en.hasMoreElements()) {
+			s.append(join).append(en.nextElement());
+		}
+		return s.toString();
+	}
+
 	@Override
 	public void destroy() {
 
+	}
+
+	public static void addTo(ServletContextHandler handler) {
+		handler.addFilter(new FilterHolder(new RequestLoggingFilter()), "/*", null);
 	}
 
 }
