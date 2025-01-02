@@ -79,7 +79,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.setItem(rpcItem);
 
 		for (final Tag t : tags) {
-			reply.addTag(MediaTag.newBuilder().setTag(t.getTag()).setCls(t.getCls()).setModified(t.getModified()).build());
+			reply.addTag(MediaTag.newBuilder().setTag(t.getTag()).setCls(t.getCls()).setModifiedMillis(t.getModified()).build());
 		}
 
 		responseObserver.onNext(reply.build());

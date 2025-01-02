@@ -23,13 +23,23 @@ message MediaItem {
 
 message MediaTag {
   string tag = 1;
+
+  // use empty string for manually tags, or identifier of tool when tags are determined automatically.
   string cls = 2;
-  int64 modified = 3;
+
+  // unix time stamp in milliseconds.
+  int64 modified_millis = 3;
 }
 
 enum FileExistance {
+  // file dose not exist.
   UNKNOWN = 0;
+
+  // file does exist.
   EXISTS = 1;
+
+  // file previously existed but no longer does.
+  // for special cases, generally only use UNKNOWN and EXISTS.
   MISSING = 2;
 }
 
@@ -44,6 +54,8 @@ service Media {
   rpc ReadMedia (ReadMediaRequest) returns (stream ReadMediaReply) {}
   rpc ListNode (ListNodeRequest) returns (ListNodeReply) {}
   rpc Search (SearchRequest) returns (SearchReply) {}
+  rpc ChooseMedia (ChooseMediaRequest) returns (ChooseMediaReply) {}
+  rpc RecordPlayback (RecordPlaybackRequest) returns (RecordPlaybackReply) {}
 }
 
 message AboutRequest {}
@@ -91,3 +103,39 @@ message SearchRequest {
 message SearchReply {
   repeated MediaItem result = 1;
 }
+
+enum ChooseMethod {
+  // impls with specific uses may weight the randomness as desired.
+  RANDOM = 0;
+
+  // prefer to choose media that has not been played recently,
+  // but still some amount of randomness.
+  LESS_RECENT = 1;
+}
+message ChooseMediaRequest {
+  // scope from which media is chosen.  if omitted then scope is all media.
+  string query = 1;
+
+  // TODO what to do if method is not supported?
+  ChooseMethod method = 2;
+
+  // how many unique files to choose, must be at least 1.
+  int32 count = 3;
+}
+message ChooseMediaReply {
+  repeated MediaItem item = 1;
+}
+
+message RecordPlaybackRequest {
+  // id of media that was played.
+  string id = 1;
+
+  // indicates that the track was played sufficiently to count as completed.
+  // if false, playback started but was abandoned before completion.
+  bool completed = 2;
+
+  // unix time stamp in milliseconds when playback started, so that "last played"
+  // can be recorded based on when it started instead of when it finished.
+  int64 start_time_millis = 3;
+}
+message RecordPlaybackReply {}
