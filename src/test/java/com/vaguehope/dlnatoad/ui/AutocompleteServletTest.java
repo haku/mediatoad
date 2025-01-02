@@ -14,8 +14,8 @@ import javax.servlet.ServletException;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaguehope.dlnatoad.MockHttpServletRequest;
-import com.vaguehope.dlnatoad.MockHttpServletResponse;
+import com.vaguehope.common.servlet.MockHttpServletRequest;
+import com.vaguehope.common.servlet.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 

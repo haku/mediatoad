@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad;
+package com.vaguehope.common.servlet;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -95,6 +96,13 @@ public class MockHttpServletRequest implements HttpServletRequest {
 	@Override
 	public String getHeader (final String headerName) {
 		return this.headers.get(headerName);
+	}
+
+	@Override
+	public Enumeration<String> getHeaders (final String headerName) {
+		String value = this.headers.get(headerName);
+		if (value == null) return Collections.emptyEnumeration();
+		return Collections.enumeration(Collections.singleton(value));
 	}
 
 	@Override
@@ -306,11 +314,6 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public Enumeration<String> getHeaderNames () {
-		throw new UnsupportedOperationException("Not implemented.");
-	}
-
-	@Override
-	public Enumeration<String> getHeaders (final String arg0) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 

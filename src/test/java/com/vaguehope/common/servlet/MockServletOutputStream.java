@@ -1,4 +1,4 @@
-package com.vaguehope.dlnatoad;
+package com.vaguehope.common.servlet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

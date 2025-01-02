@@ -13,8 +13,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.dlnatoad.MockHttpServletRequest;
-import com.vaguehope.dlnatoad.MockHttpServletResponse;
+import com.vaguehope.common.servlet.MockHttpServletRequest;
+import com.vaguehope.common.servlet.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.media.ContentItem;
