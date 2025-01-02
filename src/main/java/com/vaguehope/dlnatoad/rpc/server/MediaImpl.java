@@ -18,6 +18,12 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.AboutReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.AboutRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
@@ -39,6 +45,72 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	public MediaImpl(final ContentTree contentTree, final MediaDb mediaDb) {
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
+	}
+
+	@Override
+	public void about(AboutRequest request, StreamObserver<AboutReply> responseObserver) {
+		// TODO
+		super.about(request, responseObserver);
+	}
+
+	@Override
+	public void hasMedia(HasMediaRequest request, StreamObserver<HasMediaReply> responseObserver) {
+		// TODO
+		super.hasMedia(request, responseObserver);
+	}
+
+	@Override
+	public void listNode(ListNodeRequest request, StreamObserver<ListNodeReply> responseObserver) {
+		// TODO
+		super.listNode(request, responseObserver);
+	}
+
+	@Override
+	public void readMedia(final ReadMediaRequest request, final StreamObserver<ReadMediaReply> responseObserver) {
+		final ContentItem item = this.contentTree.getItem(request.getId());
+		if (item == null) {
+			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
+			return;
+		}
+
+		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		// TODO once user auth is a thing, check that here to allow access to protected items.
+		if (node == null || node.hasAuthList()) {
+			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
+			return;
+		}
+
+		final File file = item.getFile();
+		if (!file.exists() || file.length() < 1) {
+			responseObserver.onError(Status.INTERNAL.withDescription("File missing.").asRuntimeException());
+			return;
+		}
+
+		// TODO range requests!
+
+		try (final BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
+			final byte[] buffer = new byte[MESSAGE_SIZE_BYTES];
+			boolean first = true;
+			int readLength;
+			while ((readLength = is.read(buffer, 0, MESSAGE_SIZE_BYTES)) != -1) {
+				final ReadMediaReply.Builder builder = ReadMediaReply.newBuilder().setContent(ByteString.copyFrom(buffer, 0, readLength));
+				if (first) {
+					builder.setTotalFileLength(file.length());
+					builder.setMimeType(item.getFormat().getMime());
+					first = false;
+				}
+				responseObserver.onNext(builder.build());
+			}
+			responseObserver.onCompleted();
+		}
+		catch (final FileNotFoundException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription("File missing.").asRuntimeException());
+			return;
+		}
+		catch (final IOException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription("File error.").asRuntimeException());
+			return;
+		}
 	}
 
 	@Override
@@ -74,52 +146,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 					.setFileLength(i.getFileLength())
 					.setDurationMillis(i.getDurationMillis())
 					.build());
-		}
-	}
-
-	@Override
-	public void readMedia(final ReadMediaRequest request, final StreamObserver<ReadMediaReply> responseObserver) {
-		final ContentItem item = this.contentTree.getItem(request.getId());
-		if (item == null) {
-			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
-			return;
-		}
-
-		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-		if (node == null || node.hasAuthList()) {
-			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
-			return;
-		}
-
-		final File file = item.getFile();
-		if (!file.exists() || file.length() < 1) {
-			responseObserver.onError(Status.INTERNAL.withDescription("File missing.").asRuntimeException());
-			return;
-		}
-
-		try (final BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
-			final byte[] buffer = new byte[MESSAGE_SIZE_BYTES];
-			boolean first = true;
-			int readLength;
-			while ((readLength = is.read(buffer, 0, MESSAGE_SIZE_BYTES)) != -1) {
-				final ReadMediaReply.Builder builder = ReadMediaReply.newBuilder().setContent(ByteString.copyFrom(buffer, 0, readLength));
-				if (first) {
-					builder.setTotalFileLength(file.length());
-					builder.setMimeType(item.getFormat().getMime());
-					first = false;
-				}
-				responseObserver.onNext(builder.build());
-			}
-			responseObserver.onCompleted();
-		}
-		catch (final FileNotFoundException e) {
-			responseObserver.onError(Status.INTERNAL.withDescription("File missing.").asRuntimeException());
-			return;
-		}
-		catch (final IOException e) {
-			responseObserver.onError(Status.INTERNAL.withDescription("File error.").asRuntimeException());
-			return;
 		}
 	}
 
