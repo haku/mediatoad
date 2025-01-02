@@ -175,7 +175,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 					builder.setMimeType(item.getFormat().getMime());
 					first = false;
 				}
-				builder.setRangeIndex(0);
+				if (range != null) builder.setRangeIndex(0);
 				responseObserver.onNext(builder.build());
 
 				if (range != null) {

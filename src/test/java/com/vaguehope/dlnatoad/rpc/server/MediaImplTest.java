@@ -1,6 +1,8 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -10,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
@@ -55,7 +58,11 @@ public class MediaImplTest {
 		this.undertest.readMedia(req, respObs);
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
-		assertArrayEquals(data, extractResponseContent(4, respObs).toByteArray());
+		final List<ReadMediaReply> msgs = getRespMsgs(4, respObs);
+		assertEquals(1000 * 1024, msgs.get(0).getTotalFileLength());
+		assertEquals("image/jpeg", msgs.get(0).getMimeType());
+		assertFalse(msgs.get(0).hasRangeIndex());
+		assertArrayEquals(data, joinContent(msgs).toByteArray());
 	}
 
 	@Test
@@ -101,7 +108,11 @@ public class MediaImplTest {
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
 		byte[] expected = new byte[last - first + 1];
 		System.arraycopy(data, first, expected, 0, expected.length);
-		assertArrayEquals(expected, extractResponseContent(expectedChunkCount, respObs).toByteArray());
+		final List<ReadMediaReply> msgs = getRespMsgs(expectedChunkCount, respObs);
+		assertEquals(fileLength, msgs.get(0).getTotalFileLength());
+		assertEquals("image/jpeg", msgs.get(0).getMimeType());
+		assertEquals(0, msgs.get(0).getRangeIndex());
+		assertArrayEquals(expected, joinContent(msgs).toByteArray());
 	}
 
 	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {
@@ -140,15 +151,19 @@ public class MediaImplTest {
 		}
 	}
 
-	private static ByteArrayOutputStream extractResponseContent(int expectedChunks, final StreamObserver<ReadMediaReply> respObs) throws IOException {
+	private static List<ReadMediaReply> getRespMsgs(int expectedChunks, final StreamObserver<ReadMediaReply> respObs) {
 		final ArgumentCaptor<ReadMediaReply> cap = ArgumentCaptor.forClass(ReadMediaReply.class);
 		verify(respObs, times(expectedChunks)).onNext(cap.capture());
+		return cap.getAllValues();
+	}
 
+	private static ByteArrayOutputStream joinContent(final List<ReadMediaReply> msgs) throws IOException {
 		final ByteArrayOutputStream actual = new ByteArrayOutputStream();
-		for (final ReadMediaReply r : cap.getAllValues()) {
+		for (final ReadMediaReply r : msgs) {
 			r.getContent().writeTo(actual);
 		}
 		return actual;
 	}
+
 
 }
