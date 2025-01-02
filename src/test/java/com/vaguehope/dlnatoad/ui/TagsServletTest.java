@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -81,7 +81,7 @@ public class TagsServletTest {
 				+ "{\"search\":\"t\\u003dtag0\",\"tag\":\"tag0\",\"cls\":\"\",\"count\":2},"
 				+ "{\"search\":\"t\\u003dtag0\",\"tag\":\"tag0\",\"cls\":\"foo\",\"count\":1},"
 				+ "{\"search\":\"t\\u003dtag1\",\"tag\":\"tag1\",\"cls\":\"foo\",\"count\":1}"
-				+ "]", this.resp.getContentAsString());
+				+ "]", this.resp.getOutputAsString());
 	}
 
 	@Test
@@ -100,7 +100,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getOutputAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", 2);
 	}
 
@@ -127,7 +127,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"search\":\"t\\u003dothertag\",\"tag\":\"othertag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dothertag\",\"tag\":\"othertag\",\"cls\":\"\",\"count\":2}]", this.resp.getOutputAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", -2);
 	}
 
@@ -148,7 +148,7 @@ public class TagsServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getContentAsString());
+		assertEquals("[{\"search\":\"t\\u003dmytag\",\"tag\":\"mytag\",\"cls\":\"\",\"count\":2}]", this.resp.getOutputAsString());
 		verify(this.tagAutocompleter).changeTagCount("mytag", 2);
 	}
 
@@ -166,7 +166,7 @@ public class TagsServletTest {
 
 		this.undertest.service(this.req, this.resp);
 		assertEquals(403, this.resp.getStatus());
-		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals("Forbidden\n", this.resp.getOutputAsString());
 	}
 
 	@Test
@@ -189,7 +189,7 @@ public class TagsServletTest {
 
 		this.undertest.service(this.req, this.resp);
 		assertEquals(403, this.resp.getStatus());
-		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals("Forbidden\n", this.resp.getOutputAsString());
 	}
 
 	private static AuthList makeAuthList() {

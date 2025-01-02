@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 import org.junit.Before;
@@ -17,9 +18,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jupnp.UpnpService;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
@@ -79,8 +80,8 @@ public class SearchServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("<h3>Local items: 1</h3>"));
-		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
+		assertThat(this.resp.getOutputAsString(), containsString("<h3>Local items: 1</h3>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
 		assertPageContainsItem(i0, "", "?query&#61;t%3Dfoo&amp;offset&#61;0");
 	}
 
@@ -91,7 +92,7 @@ public class SearchServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"(t&#61;foo OR t&#61;bar) f~^/foo/bar\" "));
+		assertThat(this.resp.getOutputAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"(t&#61;foo OR t&#61;bar) f~^/foo/bar\" "));
 	}
 
 	@Test
@@ -103,8 +104,8 @@ public class SearchServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("<h3>Local items: 1</h3>"));
-		assertThat(this.resp.getContentAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
+		assertThat(this.resp.getOutputAsString(), containsString("<h3>Local items: 1</h3>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<input type=\"text\" id=\"search\" name=\"query\" value=\"t&#61;foo\" "));
 		assertPageContainsItem(i0, "../", "?query&#61;t%3Dfoo&amp;offset&#61;0");
 	}
 
@@ -121,8 +122,8 @@ public class SearchServletTest {
 		verify(this.contentServlet).service(this.req, this.resp);
 	}
 
-	private void assertPageContainsItem(final ContentItem i, final String pathPrefix, final String itemQueryString) {
-		assertThat(this.resp.getContentAsString(), containsString(
+	private void assertPageContainsItem(final ContentItem i, final String pathPrefix, final String itemQueryString) throws IOException {
+		assertThat(this.resp.getOutputAsString(), containsString(
 				"<li><a href=\"" + pathPrefix + "i/" + i.getId() + itemQueryString + "\" autofocus>"
 						+ i.getFile().getName() + "</a>"
 						+ " [<a href=\"" + pathPrefix + "c/" + i.getId() + "." + i.getFormat().getExt()

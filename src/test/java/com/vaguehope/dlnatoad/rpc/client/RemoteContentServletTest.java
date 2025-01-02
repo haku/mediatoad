@@ -14,10 +14,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.teleal.common.mock.http.MockHttpServletRequest;
 
 import com.google.protobuf.ByteString;
-import com.vaguehope.dlnatoad.MyMockHttpServletResponse;
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaBlockingStub;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
@@ -28,7 +28,7 @@ public class RemoteContentServletTest {
 	private RemoteContentServlet undertest;
 
 	private MockHttpServletRequest req;
-	private MyMockHttpServletResponse resp;
+	private MockHttpServletResponse resp;
 
 	@Before
 	public void before() throws Exception {
@@ -36,7 +36,7 @@ public class RemoteContentServletTest {
 		this.undertest = new RemoteContentServlet(this.rpcClient);
 
 		this.req = new MockHttpServletRequest();
-		this.resp = new MyMockHttpServletResponse();
+		this.resp = new MockHttpServletResponse();
 	}
 
 	@Test
@@ -55,7 +55,7 @@ public class RemoteContentServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		verify(stub).readMedia(ReadMediaRequest.newBuilder().setId("someid").build());
-		assertEquals("123456789", this.resp.getContentAsString());
+		assertEquals("123456789", this.resp.getOutputAsString());
 		assertEquals(9, this.resp.getContentLength());
 		assertEquals("image/jpeg", this.resp.getContentType());
 	}

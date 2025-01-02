@@ -1,7 +1,6 @@
 package com.vaguehope.dlnatoad.auth;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -14,8 +13,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.Cookie;
@@ -24,9 +23,9 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.junit.Before;
 import org.junit.Test;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.auth.Users.User;
 
 public class AuthFilterTest {
@@ -82,7 +81,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(405, this.resp.getStatus());
-		assertEquals("POST requires --userfile.\n", this.resp.getContentAsString());
+		assertEquals("POST requires --userfile.\n", this.resp.getOutputAsString());
 		verifyNoInteractions(this.chain);
 	}
 
@@ -247,7 +246,7 @@ public class AuthFilterTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
-		assertThat(this.resp.getCookies(), emptyArray());
+		assertThat(this.resp.getCookies(), hasSize(0));
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -262,7 +261,7 @@ public class AuthFilterTest {
 
 		assertEquals(200, this.resp.getStatus());
 		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
-		assertThat(this.resp.getCookies(), emptyArray());
+		assertThat(this.resp.getCookies(), hasSize(0));
 	}
 
 	@Test
@@ -370,13 +369,13 @@ public class AuthFilterTest {
 
 	private void setSessionTokenCookie(String token) {
 		Cookie cookie = new Cookie("MEDIATOADTOKEN", token);
-		this.req.setCookies(new Cookie[] { cookie });
+		this.req.addCookie(cookie);
 	}
 
 	private Cookie getSingleCookie() {
-		final Cookie[] cookies = this.resp.getCookies();
-		if (cookies.length != 1) fail("Expected 1 cookie: " + Arrays.toString(cookies));
-		return cookies[0];
+		final List<Cookie> cookies = this.resp.getCookies();
+		if (cookies.size() != 1) fail("Expected 1 cookie: " + cookies);
+		return cookies.get(0);
 	}
 
 }

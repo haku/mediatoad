@@ -28,13 +28,13 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.reflect.ReflectionObjectHandler;
 import com.google.common.collect.ImmutableMap;
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
@@ -96,7 +96,7 @@ public class DirServletTest {
 		this.undertest.doGet(this.req, this.resp);
 		assertEquals(200, this.resp.getStatus());
 
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 		assertThat(page, containsString("<title>dir 0 - MediaToad (hostName)</title>"));
 
 		assertThat(page, containsString(
@@ -140,7 +140,7 @@ public class DirServletTest {
 		this.req.setParameter("sort", "modified");
 		this.undertest.doGet(this.req, this.resp);
 
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 		assertEquals(200, this.resp.getStatus());
 
 		final Matcher m = Pattern.compile("i/[^?]+").matcher(page);
@@ -167,7 +167,7 @@ public class DirServletTest {
 		this.undertest.doGet(this.req, this.resp);
 		assertEquals(200, this.resp.getStatus());
 
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 
 		assertThat(page, containsString(
 				"<li><a href=\"../d/" + subDir.getId() + "\" autofocus>"
@@ -185,7 +185,7 @@ public class DirServletTest {
 		this.req.setParameter("limit", "5");
 		this.undertest.doGet(this.req, this.resp);
 
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 		assertEquals(200, this.resp.getStatus());
 
 		final Matcher m = Pattern.compile("i/[^?]+").matcher(page);
@@ -208,8 +208,8 @@ public class DirServletTest {
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
 		this.undertest.doGet(this.req, this.resp);
 
-		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-open\""));
-		assertThat(this.resp.getContentAsString(), not(containsString("dir-protec")));
+		assertThat(this.resp.getOutputAsString(), containsString("\"../d/dir-open\""));
+		assertThat(this.resp.getOutputAsString(), not(containsString("dir-protec")));
 
 		this.req.setPathInfo("/" + protecDir.getId());
 		this.resp = new MockHttpServletResponse();
@@ -222,15 +222,15 @@ public class DirServletTest {
 		this.resp = new MockHttpServletResponse();
 		this.undertest.doGet(this.req, this.resp);
 
-		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-open\""));
-		assertThat(this.resp.getContentAsString(), containsString("\"../d/dir-protec\""));
+		assertThat(this.resp.getOutputAsString(), containsString("\"../d/dir-open\""));
+		assertThat(this.resp.getOutputAsString(), containsString("\"../d/dir-protec\""));
 
 		this.req.setPathInfo("/" + protecDir.getId());
 		this.resp = new MockHttpServletResponse();
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("i/" + protecItems.get(0).getId() + "?"));
+		assertThat(this.resp.getOutputAsString(), containsString("i/" + protecItems.get(0).getId() + "?"));
 	}
 
 	@Test
@@ -240,7 +240,7 @@ public class DirServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("<h3>Recent"));
+		assertThat(this.resp.getOutputAsString(), containsString("<h3>Recent"));
 	}
 
 	@Test
@@ -255,7 +255,7 @@ public class DirServletTest {
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 
 		final String expectedPath = mockDir.getFile().getAbsolutePath()
 				.replace(" ", "+")
@@ -270,7 +270,7 @@ public class DirServletTest {
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.undertest.doGet(this.req, this.resp);
-		final String page = this.resp.getContentAsString();
+		final String page = this.resp.getOutputAsString();
 
 		assertThat(page, containsString("<input type=\"hidden\" name=\"extra_query\" value=\"f~^&quot;" + mockDir.getFile().getAbsolutePath() + "&quot;\">"));
 		assertThat(page, containsString("search here"));
@@ -289,7 +289,7 @@ public class DirServletTest {
 		assertEquals(200, this.resp.getStatus());
 
 		final List<String> actualNames = new ArrayList<>();
-		try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(this.resp.getContentAsByteArray()))) {
+		try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(this.resp.getOutputAsByteArray()))) {
 			ZipEntry e;
 			while ((e = zis.getNextEntry()) != null) {
 				actualNames.add(e.getName());

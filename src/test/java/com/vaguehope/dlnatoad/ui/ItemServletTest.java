@@ -18,9 +18,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -66,7 +66,7 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), containsString("<img src=\"../c/id00.jpeg\">"));
+		assertThat(this.resp.getOutputAsString(), containsString("<img src=\"../c/id00.jpeg\">"));
 	}
 
 	@Test
@@ -76,8 +76,8 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(),  containsString("<video controls>"));
-		assertThat(this.resp.getContentAsString(),  containsString("<source src=\"../c/id00.mp4\" type=\"video/mp4\" />"));
+		assertThat(this.resp.getOutputAsString(),  containsString("<video controls>"));
+		assertThat(this.resp.getOutputAsString(),  containsString("<source src=\"../c/id00.mp4\" type=\"video/mp4\" />"));
 	}
 
 	// TODO update this once there is proper viewer support.
@@ -88,7 +88,7 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(),  containsString("<p>[ Browser does not suport playing this file ]</p>"));
+		assertThat(this.resp.getOutputAsString(),  containsString("<p>[ Browser does not suport playing this file ]</p>"));
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class ItemServletTest {
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
-		assertThat(this.resp.getContentAsString(), not(containsString("Add")));  // TODO make better along with following test.
+		assertThat(this.resp.getOutputAsString(), not(containsString("Add")));  // TODO make better along with following test.
 	}
 
 	@Test
@@ -110,7 +110,7 @@ public class ItemServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		// TODO this assert could be much better.
-		assertThat(this.resp.getContentAsString(), containsString("<input type=\"submit\" value=\"Add\">"));
+		assertThat(this.resp.getOutputAsString(), containsString("<input type=\"submit\" value=\"Add\">"));
 	}
 
 	@Test
@@ -123,7 +123,7 @@ public class ItemServletTest {
 
 		assertEquals(200, this.resp.getStatus());
 		// TODO this assert could be much better.
-		assertThat(this.resp.getContentAsString(), containsString("<input type=\"submit\" value=\"Add\">"));
+		assertThat(this.resp.getOutputAsString(), containsString("<input type=\"submit\" value=\"Add\">"));
 	}
 
 	@Test
@@ -148,7 +148,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals("Forbidden\n", this.resp.getOutputAsString());
 		assertEquals(403, this.resp.getStatus());
 		verifyNoInteractions(this.mediaDb);
 		verifyNoInteractions(this.tagAutocompleter);
@@ -161,7 +161,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals("Forbidden\n", this.resp.getOutputAsString());
 		assertEquals(403, this.resp.getStatus());
 		verifyNoInteractions(this.mediaDb);
 	}
@@ -175,7 +175,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Forbidden\n", this.resp.getContentAsString());
+		assertEquals("Forbidden\n", this.resp.getOutputAsString());
 		assertEquals(403, this.resp.getStatus());
 		verifyNoInteractions(this.mediaDb);
 		verifyNoInteractions(this.tagAutocompleter);
@@ -189,7 +189,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Tag added.\n", this.resp.getContentAsString());
+		assertEquals("Tag added.\n", this.resp.getOutputAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), true, false).iterator().next().getTag());
 
@@ -205,7 +205,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Tag added.\n", this.resp.getContentAsString());
+		assertEquals("Tag added.\n", this.resp.getOutputAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), true, false).iterator().next().getTag());
 
@@ -224,7 +224,7 @@ public class ItemServletTest {
 
 		this.undertest.doPost(this.req, this.resp);
 
-		assertEquals("Tags removed.\n", this.resp.getContentAsString());
+		assertEquals("Tags removed.\n", this.resp.getOutputAsString());
 		assertEquals(303, this.resp.getStatus());
 		assertFalse(this.mediaDb.getTags(item.getId(), true, false).iterator().hasNext());
 
@@ -278,7 +278,7 @@ public class ItemServletTest {
 
 	private String givenRmTagParams() {
 		this.req.setParameter("action", "rmtags");
-		this.req.addParameter("b64tag", "bXl0YWc=:");
+		this.req.setParameter("b64tag", "bXl0YWc=:");
 		return "mytag";
 	}
 

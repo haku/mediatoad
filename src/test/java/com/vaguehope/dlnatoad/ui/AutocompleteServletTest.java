@@ -13,9 +13,9 @@ import javax.servlet.ServletException;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 
@@ -54,7 +54,7 @@ public class AutocompleteServletTest {
 				+ "{\"tag\":\"barfoo0\",\"count\":1},"
 				+ "{\"tag\":\"foo0\",\"count\":1}"
 				+ "]",
-				this.resp.getContentAsString());
+				this.resp.getOutputAsString());
 	}
 
 	@Test
@@ -78,7 +78,7 @@ public class AutocompleteServletTest {
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo1\",\"count\":2},"
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1}"
 				+ "]",
-				this.resp.getContentAsString());
+				this.resp.getOutputAsString());
 	}
 
 	@Test
@@ -87,12 +87,12 @@ public class AutocompleteServletTest {
 
 		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(Arrays.asList(new TagFrequency("bar foo", 3)));
 		this.undertest.doGet(this.req, this.resp);
-		assertEquals("[{\"tag\":\"t\\u003d\\\"bar foo\\\"\",\"count\":3}]", this.resp.getContentAsString());
+		assertEquals("[{\"tag\":\"t\\u003d\\\"bar foo\\\"\",\"count\":3}]", this.resp.getOutputAsString());
 
 		this.resp = new MockHttpServletResponse();
 		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(Arrays.asList(new TagFrequency("bar(foo)", 3)));
 		this.undertest.doGet(this.req, this.resp);
-		assertEquals("[{\"tag\":\"t\\u003d\\\"bar(foo)\\\"\",\"count\":3}]", this.resp.getContentAsString());
+		assertEquals("[{\"tag\":\"t\\u003d\\\"bar(foo)\\\"\",\"count\":3}]", this.resp.getOutputAsString());
 	}
 
 	@Test
@@ -124,7 +124,7 @@ public class AutocompleteServletTest {
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dbarfoo0\",\"count\":1},"
 				+ "{\"tag\":\"" + resPrefix + "t\\u003dfoobar0\",\"count\":1}"
 				+ "]",
-				this.resp.getContentAsString());
+				this.resp.getOutputAsString());
 	}
 
 	private static List<TagFrequency> listOfTagFrequency(final String prefix, final int count) {

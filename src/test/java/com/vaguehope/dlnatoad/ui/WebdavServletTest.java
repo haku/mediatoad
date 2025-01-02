@@ -12,9 +12,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.teleal.common.mock.http.MockHttpServletRequest;
-import org.teleal.common.mock.http.MockHttpServletResponse;
 
+import com.vaguehope.dlnatoad.MockHttpServletRequest;
+import com.vaguehope.dlnatoad.MockHttpServletResponse;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -91,7 +91,7 @@ public class WebdavServletTest {
 
 		assertThat(this.resp.getStatus(), equalTo(207));
 		assertThat(this.resp.getContentType(), equalTo("application/xml"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/</D:href>"));
 	}
 
 	@Test
@@ -105,9 +105,9 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/0-recent</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/id0</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/0-recent</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/id0</D:href>"));
 	}
 
 	@Test
@@ -124,8 +124,8 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Fri, 13 Feb 2009 23:31:30 UTC</D:getlastmodified>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/dir0/</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:getlastmodified>Fri, 13 Feb 2009 23:31:30 UTC</D:getlastmodified>"));
 	}
 
 	@Test
@@ -141,8 +141,8 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/i</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/dir0/</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/dir0/i</D:href>"));
 	}
 
 	@Test
@@ -161,9 +161,9 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/dir0/i</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:getcontenttype>video/mp4</D:getcontenttype>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 03:58:10 UTC</D:getlastmodified>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/dir0/i</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:getcontenttype>video/mp4</D:getcontenttype>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 03:58:10 UTC</D:getlastmodified>"));
 	}
 
 	@Test
@@ -177,7 +177,7 @@ public class WebdavServletTest {
 
 		assertThat(this.resp.getStatus(), equalTo(207));
 		assertThat(this.resp.getContentType(), equalTo("application/xml"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/search</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/search</D:href>"));
 	}
 
 	@Test
@@ -191,7 +191,7 @@ public class WebdavServletTest {
 
 		assertThat(this.resp.getStatus(), equalTo(207));
 		assertThat(this.resp.getContentType(), equalTo("application/xml"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/search/t=foo</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/search/t=foo</D:href>"));
 	}
 
 	@Test
@@ -206,8 +206,8 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>/search/t=foo</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>" + i0.getId() + ".jpeg</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>/search/t=foo</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>" + i0.getId() + ".jpeg</D:href>"));
 	}
 
 	@Test
@@ -225,9 +225,9 @@ public class WebdavServletTest {
 		this.undertest.service(this.req, this.resp);
 
 		assertThat(this.resp.getStatus(), equalTo(207));
-		assertThat(this.resp.getContentAsString(), containsString("<D:href>" + pathInfo + "</D:href>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:getcontenttype>image/jpeg</D:getcontenttype>"));
-		assertThat(this.resp.getContentAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 03:58:10 UTC</D:getlastmodified>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:href>" + pathInfo + "</D:href>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:getcontenttype>image/jpeg</D:getcontenttype>"));
+		assertThat(this.resp.getOutputAsString(), containsString("<D:getlastmodified>Mon, 14 Oct 2002 03:58:10 UTC</D:getlastmodified>"));
 	}
 
 	private ContentItem mockItem(final String name, final String... tags) throws Exception {
