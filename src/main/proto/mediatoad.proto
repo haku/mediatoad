@@ -10,6 +10,7 @@ package mediatoad;
 message MediaNode {
   string id = 1;
   string title = 2;
+  string parent_id = 3;
 }
 
 message MediaItem {
@@ -30,6 +31,11 @@ enum FileExistance {
   UNKNOWN = 0;
   EXISTS = 1;
   MISSING = 2;
+}
+
+message Range {
+  int64 first = 1;
+  int64 last = 2;  // inclusive, same and HTTP Range header.
 }
 
 service Media {
@@ -57,7 +63,7 @@ message HasMediaReply {
 
 message ReadMediaRequest {
   string id = 1;
-  // TODO range requests.
+  repeated Range range = 2;
 }
 message ReadMediaReply {
   bytes content = 1;
@@ -69,8 +75,9 @@ message ListNodeRequest {
   string node_id = 1;
 }
 message ListNodeReply {
-  repeated MediaNode node = 1;
-  repeated MediaItem item = 2;
+  MediaNode node = 1;
+  repeated MediaNode child = 2;
+  repeated MediaItem item = 3;
 }
 
 message SearchRequest {
