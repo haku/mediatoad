@@ -236,6 +236,8 @@ public class SearchServlet extends HttpServlet {
 		final Map<RemoteInstance, Future<SearchReply>> futures = new LinkedHashMap<>();
 		for (final RemoteInstance ri : this.rpcClient.getRemoteInstances()) {
 			final MediaFutureStub stub = this.rpcClient.getMediaFutureStub(ri.getId());
+
+			// TODO set search sort and max_results params!
 			final SearchRequest req = SearchRequest.newBuilder().setQuery(query).build();
 			final ListenableFuture<SearchReply> f = stub
 					.withDeadlineAfter(30, TimeUnit.SECONDS)

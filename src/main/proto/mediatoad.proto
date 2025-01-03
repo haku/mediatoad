@@ -97,8 +97,27 @@ message ListNodeReply {
   repeated MediaItem item = 3;
 }
 
+enum SortField {
+  FILE_PATH = 0;
+  DATE_ADDED = 1;
+  DURATION = 2;
+  FILE_SIZE = 3;
+  LAST_PLAYED = 4;
+  PLAYBACK_STARTED = 5;
+  PLAYBACK_COMPLETED = 6;
+}
+enum SortDirection {
+  ASC = 0;
+  DESC = 1;
+}
+message SortBy {
+  string SortField = 1;
+  SortDirection direction = 2;
+}
 message SearchRequest {
   string query = 1;
+  int32 max_results = 2;
+  repeated SortBy sort_by = 3;
 }
 message SearchReply {
   repeated MediaItem result = 1;

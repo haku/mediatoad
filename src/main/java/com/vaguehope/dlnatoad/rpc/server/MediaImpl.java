@@ -200,6 +200,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	public void search(final SearchRequest request, final StreamObserver<SearchReply> responseObserver) {
 		// TODO once user auth is a thing, check that here to allow access to protected items.
 
+		// TODO read sort and max_results for request!
+
 		final Integer offset = 0;
 		final Integer limit = MAX_SEARCH_RESULTS;
 
