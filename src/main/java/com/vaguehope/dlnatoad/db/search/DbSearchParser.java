@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -12,6 +13,7 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
 import com.vaguehope.dlnatoad.db.TagFrequency;
+import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
 
 public class DbSearchParser {
 
@@ -21,6 +23,8 @@ public class DbSearchParser {
 	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
+	private static final String _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE =
+			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN infos ON files.id = infos.file_id WHERE missing=0";
 
 	private static final String _SQL_TAG_FREQUENCY_SELECT =
 			"SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
@@ -71,23 +75,34 @@ public class DbSearchParser {
 			final String allTerms,
 			final Set<BigInteger> authIds,
 			final SortOrder sort) {
-		return parseSearch(allTerms, authIds, false, new SortOrder[] { sort });
+		return parseSearch(allTerms, authIds, false, Collections.singletonList(sort));
+	}
+
+	public static DbSearch parseSearch (
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final List<SortOrder> sorts) {
+		return parseSearch(allTerms, authIds, false, sorts);
 	}
 
 	public static DbSearch parseSearchWithAuthBypass (
 			final String allTerms,
 			final SortOrder sort) {
-		return parseSearch(allTerms, null, true, new SortOrder[] { sort });
+		return parseSearch(allTerms, null, true, Collections.singletonList(sort));
 	}
 
 	private static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
 			final boolean bypassAuthChecks,
-			final SortOrder[] sort) {
-		if (sort == null || sort.length < 1) throw new IllegalArgumentException("Sort must be specified");
+			final List<SortOrder> sorts) {
+		if (sorts == null || sorts.size() < 1) throw new IllegalArgumentException("Sort must be specified");
 
-		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
+		final String base = sorts.stream().anyMatch(s -> s.column() == SortColumn.DURATION)
+				? _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE
+				: _SQL_MEDIAFILES_SELECT;
+
+		final StringBuilder sql = new StringBuilder(base);
 		if (!bypassAuthChecks) {
 			sql.append(_SQL_AND);
 			SqlFragments.appendWhereAuth(sql, authIds);
@@ -97,9 +112,11 @@ public class DbSearchParser {
 		appendWhereTerms(sql, terms, authIds);
 
 		sql.append(" ORDER BY ");
-		for (int i = 0; i < sort.length; i++) {
-			if (i > 0) sql.append(",");
-			sql.append(sort[i].toSql());
+		boolean first = true;
+		for (final SortOrder s : sorts) {
+			if (!first) sql.append(",");
+			sql.append(s.toSql());
+			first = false;
 		}
 
 		return new DbSearch(sql.toString(), terms);

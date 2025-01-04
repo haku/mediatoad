@@ -66,7 +66,7 @@ public class DbSearchParserTest {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
 
-		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortOrder.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortColumn.FILE.asc());
 
 		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
 		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));
@@ -576,10 +576,43 @@ public class DbSearchParserTest {
 		assertThat(tagRes, contains(new TagFrequency("foobar", 3), new TagFrequency("desu", 2), new TagFrequency("thing", 2)));
 	}
 
+	@Test
+	public void itSortsResultsByFile() throws Exception {
+		final String id2 = mockMediaTrackWithNameContaining("thing 2");
+		final String id1 = mockMediaTrackWithNameContaining("thing 1");
+		final String id4 = mockMediaTrackWithNameContaining("thing 4");
+		final String id3 = mockMediaTrackWithNameContaining("thing 3");
+
+		assertThat(
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE.asc()).execute(this.mediaDb),
+				contains(id1, id2, id3, id4));
+
+		assertThat(
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE.desc()).execute(this.mediaDb),
+				contains(id4, id3, id2, id1));
+	}
+
+	@Test
+	public void itSortsResultsByDuration() throws Exception {
+		final String id2 = mockMediaTrackWithDuration(21000, "thing");
+		final String id1 = mockMediaTrackWithDuration(13000, "thing");
+		final String id4 = mockMediaTrackWithDuration(47000, "thing");
+		final String id3 = mockMediaTrackWithDuration(38000, "thing");
+		final String idNoD = mockMediaFileWithTags("thing");
+
+		assertThat(
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.asc()).execute(this.mediaDb),
+				contains(idNoD, id1, id2, id3, id4));
+
+		assertThat(
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.desc()).execute(this.mediaDb),
+				contains(id4, id3, id2, id1, idNoD));
+	}
+
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortOrder.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortColumn.FILE.asc());
 		if (expectedSql != null) assertEquals(expectedSql, parsed.getSql());
 		assertThat(parsed.getTerms(), contains(expectedTerms));
 	}
@@ -589,7 +622,7 @@ public class DbSearchParserTest {
 	}
 
 	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortOrder.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortColumn.FILE.asc());
 		final List<String> results = parsed.execute(this.mediaDb);
 		assertThat(results, containsInAnyOrder(expectedResults));
 	}
@@ -598,6 +631,10 @@ public class DbSearchParserTest {
 
 	private String mockMediaTrackWithNameContaining (final String nameFragment) throws Exception {
 		return this.mockMediaMetadataStore.addFileWithName(nameFragment);
+	}
+
+	private String mockMediaTrackWithDuration (long duration, final String... tags) throws Exception {
+		return this.mockMediaMetadataStore.addFileWithInfoAndTags(new FileInfo(duration, 0, 0), tags);
 	}
 
 	private String mockMediaTrackWithNameContaining (final String nameFragment, final String nameSuffex) throws Exception {

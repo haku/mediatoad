@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -14,7 +15,8 @@ import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
-import com.vaguehope.dlnatoad.db.search.SortOrder;
+import com.vaguehope.dlnatoad.db.search.SortColumn;
+import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -34,6 +36,8 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortBy;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortDirection;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -200,14 +204,38 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	public void search(final SearchRequest request, final StreamObserver<SearchReply> responseObserver) {
 		// TODO once user auth is a thing, check that here to allow access to protected items.
 
-		// TODO read sort and max_results for request!
+		final int maxResults = request.getMaxResults() == 0 ? MAX_SEARCH_RESULTS : request.getMaxResults();
+		if (maxResults < 1) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Invalid max_results.").asRuntimeException());
+			return;
+		}
 
-		final Integer offset = 0;
-		final Integer limit = MAX_SEARCH_RESULTS;
+		final List<SortOrder> sorts = new ArrayList<>();
+		for (final SortBy sb : request.getSortByList()) {
+			switch (sb.getSortField()) {
+			case FILE_PATH:
+				sorts.add(direction(SortColumn.FILE, sb.getDirection()));
+				break;
+			case DATE_ADDED:
+				// TODO MODIFIED is not reallllly the same as ADDED, would be nice to add a column for ADDED.
+				sorts.add(direction(SortColumn.MODIFIED, sb.getDirection()));
+				break;
+			case DURATION:
+				sorts.add(direction(SortColumn.DURATION, sb.getDirection()));
+				break;
+			case FILE_SIZE:
+				sorts.add(direction(SortColumn.FILE_SIZE, sb.getDirection()));
+				break;
+			default:
+				responseObserver.onError(Status.UNIMPLEMENTED.withDescription("Sort column not implemented.").asRuntimeException());
+				return;
+			}
+		}
+		if (sorts.size() < 1) sorts.add(SortColumn.FILE.asc());
 
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearch(request.getQuery(), null, SortOrder.FILE.asc()).execute(this.mediaDb, limit, offset);
+			ids = DbSearchParser.parseSearch(request.getQuery(), null, sorts).execute(this.mediaDb, maxResults, 0);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
@@ -219,6 +247,17 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		addItemsToSearchReply(ret, results);
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
+	}
+
+	private static SortOrder direction(final SortColumn order, final SortDirection direction) {
+		switch (direction) {
+		case ASC:
+			return order.asc();
+		case DESC:
+			return order.desc();
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
 
 	private static void addItemsToSearchReply(final SearchReply.Builder ret, final List<ContentItem> results) {

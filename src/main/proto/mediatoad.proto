@@ -111,7 +111,7 @@ enum SortDirection {
   DESC = 1;
 }
 message SortBy {
-  string SortField = 1;
+  SortField sort_field = 1;
   SortDirection direction = 2;
 }
 message SearchRequest {

@@ -37,7 +37,7 @@ import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
-import com.vaguehope.dlnatoad.db.search.SortOrder;
+import com.vaguehope.dlnatoad.db.search.SortColumn;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.RpcTarget;
@@ -203,7 +203,7 @@ public class TagDeterminerController {
 		final long dbWriteCount = this.db.getWriteCount();
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearchWithAuthBypass(query, SortOrder.MODIFIED.desc())
+			ids = DbSearchParser.parseSearchWithAuthBypass(query, SortColumn.MODIFIED.desc())
 					.execute(this.db, QUERY_LIMIT, 0);
 		}
 		catch (final SQLException e) {

@@ -16,7 +16,7 @@ import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
-import com.vaguehope.dlnatoad.db.search.SortOrder;
+import com.vaguehope.dlnatoad.db.search.SortColumn;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -108,7 +108,7 @@ public class WebdavServlet extends HttpServlet {
 	private List<ContentItem> runQuery(final String username, final String query) throws IOException {
 		try {
 			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortOrder.FILE.asc());
+			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortColumn.FILE.asc());
 			final List<String> ids = search.execute(this.db, MAX_SEARCH_ITEMS, 0);
 			return this.contentTree.getItemsForIds(ids, username);
 		}

@@ -52,7 +52,8 @@ import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
-import com.vaguehope.dlnatoad.db.search.SortOrder;
+import com.vaguehope.dlnatoad.db.search.SortColumn;
+import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -79,7 +80,7 @@ public class SearchServlet extends HttpServlet {
 	static final String PARAM_PAGE_LIMIT = "limit";
 	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
-	static final SortOrder RESULT_SORT_ORDER = SortOrder.MODIFIED.desc();
+	static final SortOrder RESULT_SORT_ORDER = SortColumn.MODIFIED.desc();
 
 	static final int MAX_RESULTS = 500;
 	private static final String ROOT_CONTENT_ID = "0"; // Root id of '0' is in the spec.
