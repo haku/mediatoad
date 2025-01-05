@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.tagdeterminer;
 
 import java.util.Objects;
 
-import com.vaguehope.dlnatoad.rpc.RpcTarget;
+import com.vaguehope.common.rpc.RpcTarget;
 
 public class TagDeterminer {
 

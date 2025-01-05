@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.vaguehope.common.rpc.RpcTarget;
 import com.vaguehope.dlnatoad.Args;
-import com.vaguehope.dlnatoad.rpc.RpcTarget;
 
 public class RpcClientTest {
 

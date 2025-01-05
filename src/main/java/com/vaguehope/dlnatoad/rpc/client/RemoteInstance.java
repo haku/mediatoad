@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.rpc.client;
 
 import java.util.Objects;
 
-import com.vaguehope.dlnatoad.rpc.RpcTarget;
+import com.vaguehope.common.rpc.RpcTarget;
 
 public class RemoteInstance {
 

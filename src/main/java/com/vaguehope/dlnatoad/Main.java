@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
+import com.vaguehope.common.rpc.RpcStatusServlet;
 import com.vaguehope.common.servlet.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.auth.AuthFilter;
@@ -339,6 +340,7 @@ public final class Main {
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, contentServlet, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
+		servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);  // TODO require permission like /upnp
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb, tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");

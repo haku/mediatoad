@@ -31,6 +31,8 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
+import com.vaguehope.common.rpc.RpcTarget;
+import com.vaguehope.common.rpc.RpcTarget.RpcConfigException;
 import com.vaguehope.dlnatoad.Args;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -40,7 +42,6 @@ import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.db.search.SortColumn;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
-import com.vaguehope.dlnatoad.rpc.RpcTarget;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerGrpc.TagDeterminerFutureStub;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerGrpc.TagDeterminerStub;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerProto.AboutReply;
@@ -99,8 +100,13 @@ public class TagDeterminerController {
 	private static TagDeterminer parseArg(final String arg) throws ArgsException {
 		final String[] parts = StringUtils.split(arg, "|", 2);
 		if (parts.length < 2) throw new ArgsException("Invalid URL and query: " + arg);
-		final RpcTarget target = RpcTarget.fromHttpUrl(parts[0]);
-		return new TagDeterminer(target, parts[1]);
+		try {
+			final RpcTarget target = RpcTarget.fromHttpUrl(parts[0]);
+			return new TagDeterminer(target, parts[1]);
+		}
+		catch (final RpcConfigException e) {
+			throw new ArgsException(e.getMessage());
+		}
 	}
 
 	public void start() {
@@ -114,7 +120,7 @@ public class TagDeterminerController {
 		});
 
 		for (final TagDeterminer d : this.determiners) {
-			final ManagedChannel channel = d.getTarget().makeChannelBuilder().build();
+			final ManagedChannel channel = d.getTarget().buildChannel();
 			this.managedChannels.put(d, channel);
 			this.stubs.put(d, TagDeterminerGrpc.newStub(channel));
 			this.futureStubs.put(d, TagDeterminerGrpc.newFutureStub(channel));
