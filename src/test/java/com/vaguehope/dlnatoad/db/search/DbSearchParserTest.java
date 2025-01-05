@@ -3,12 +3,15 @@ package com.vaguehope.dlnatoad.db.search;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +28,7 @@ import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMethod;
 
 public class DbSearchParserTest {
 
@@ -569,16 +573,6 @@ public class DbSearchParserTest {
 	}
 
 	@Test
-	public void itDoesATopTagsSearch() throws Exception {
-		mockMediaFileWithTags("desu", "foobar", "thing", "other");
-		mockMediaFileWithTags("foobar", "desu");
-		mockMediaFileWithTags("foobar", "thing");
-
-		final List<TagFrequency> tagRes = DbSearchParser.parseSearchForTags("t=foobar", null).execute(this.mediaDb, 3, 0);
-		assertThat(tagRes, contains(new TagFrequency("foobar", 3), new TagFrequency("desu", 2), new TagFrequency("thing", 2)));
-	}
-
-	@Test
 	public void itSortsResultsByFile() throws Exception {
 		final String id2 = mockMediaTrackWithNameContaining("thing 2");
 		final String id1 = mockMediaTrackWithNameContaining("thing 1");
@@ -611,6 +605,31 @@ public class DbSearchParserTest {
 				contains(id4, id3, id2, id1, idNoD));
 	}
 
+	@Test
+	public void itChoosesRandomMedia() throws Exception {
+		final Set<String> expectedIds = new HashSet<>();
+		for (int i = 0; i < 3; i++) {
+			expectedIds.add(this.mockMediaMetadataStore.addFileWithTags("thing"));
+		}
+		for (int i = 0; i < 20; i++) {
+			this.mockMediaMetadataStore.addFileWithTags("other");
+		}
+
+		final List<String> actual = DbSearchParser.parseSearchForChoose("t=thing", null, ChooseMethod.RANDOM).execute(this.mediaDb, 1, 0);
+		assertThat(actual, hasSize(1));
+		assertThat(expectedIds, hasItem(actual.get(0)));
+	}
+
+	@Test
+	public void itDoesATopTagsSearch() throws Exception {
+		mockMediaFileWithTags("desu", "foobar", "thing", "other");
+		mockMediaFileWithTags("foobar", "desu");
+		mockMediaFileWithTags("foobar", "thing");
+
+		final List<TagFrequency> tagRes = DbSearchParser.parseSearchForTags("t=foobar", null).execute(this.mediaDb, 3, 0);
+		assertThat(tagRes, contains(new TagFrequency("foobar", 3), new TagFrequency("desu", 2), new TagFrequency("thing", 2)));
+	}
+
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
@@ -635,7 +654,7 @@ public class DbSearchParserTest {
 		return this.mockMediaMetadataStore.addFileWithName(nameFragment);
 	}
 
-	private String mockMediaTrackWithDuration (long duration, final String... tags) throws Exception {
+	private String mockMediaTrackWithDuration (final long duration, final String... tags) throws Exception {
 		return this.mockMediaMetadataStore.addFileWithInfoAndTags(new FileInfo(duration, 0, 0), tags);
 	}
 

@@ -9,7 +9,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -23,6 +25,9 @@ import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.AboutReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.AboutRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMediaReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMediaRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMethod;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.FileExistance;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaRequest;
@@ -244,7 +249,38 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, null);
 
 		final SearchReply.Builder ret = SearchReply.newBuilder();
-		addItemsToSearchReply(ret, results);
+		for (final ContentItem i : results) {
+			ret.addResult(itemToRpcItem(i));
+		}
+		responseObserver.onNext(ret.build());
+		responseObserver.onCompleted();
+	}
+
+	// to match methods implemented in DbSearchParser.
+	private static final Set<ChooseMethod> IMPLEMENTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM);
+
+	@Override
+	public void chooseMedia(final ChooseMediaRequest request, final StreamObserver<ChooseMediaReply> responseObserver) {
+		if (!IMPLEMENTED_CHOOSE_METHODS.contains(request.getMethod())) {
+			responseObserver.onError(Status.UNIMPLEMENTED.withDescription("Method not supported.").asRuntimeException());
+			return;
+		}
+
+		final List<String> ids;
+		try {
+			ids = DbSearchParser.parseSearchForChoose(request.getQuery(), null, request.getMethod()).execute(this.mediaDb, request.getCount(), 0);
+		}
+		catch (final SQLException e) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
+			return;
+		}
+
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, null);
+
+		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
+		for (final ContentItem i : results) {
+			ret.addItem(itemToRpcItem(i));
+		}
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
 	}
@@ -257,12 +293,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return order.desc();
 		default:
 			throw new IllegalArgumentException();
-		}
-	}
-
-	private static void addItemsToSearchReply(final SearchReply.Builder ret, final List<ContentItem> results) {
-		for (final ContentItem i : results) {
-			ret.addResult(itemToRpcItem(i));
 		}
 	}
 

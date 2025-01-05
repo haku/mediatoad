@@ -14,6 +14,7 @@ import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMethod;
 
 public class DbSearchParser {
 
@@ -122,10 +123,26 @@ public class DbSearchParser {
 		return new DbSearch(sql.toString(), terms);
 	}
 
-	public static TagFrequencySearch parseSearchForTags (
-			final String allTerms,
-			final Set<BigInteger> authIds) {
+	public static DbSearch parseSearchForChoose(final String allTerms, final Set<BigInteger> authIds, final ChooseMethod method) {
+		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
+		sql.append(_SQL_AND);
+		SqlFragments.appendWhereAuth(sql, authIds);
 
+		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
+		appendWhereTerms(sql, terms, authIds);
+
+		switch (method) {
+		case RANDOM:
+			sql.append(" ORDER BY RANDOM()");
+			break;
+		default:
+			throw new IllegalArgumentException("Method not supported: " + method);
+		}
+
+		return new DbSearch(sql.toString(), terms);
+	}
+
+	public static TagFrequencySearch parseSearchForTags( final String allTerms, final Set<BigInteger> authIds) {
 		final StringBuilder fileQuery = new StringBuilder(_SQL_MEDIAFILES_SELECT);
 		fileQuery.append(_SQL_AND);
 		SqlFragments.appendWhereAuth(fileQuery, authIds);
