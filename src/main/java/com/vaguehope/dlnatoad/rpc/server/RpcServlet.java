@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.vaguehope.common.rpc.RpcMetrics;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
 import io.grpc.servlet.ServletAdapter;
@@ -19,7 +20,9 @@ public class RpcServlet extends HttpServlet {
 	private final ServletAdapter servletAdapter;
 
 	public RpcServlet(final MediaImpl mediaImpl) {
-		this.servletAdapter = new ServletServerBuilder().addService(mediaImpl).buildServletAdapter();
+		this.servletAdapter = new ServletServerBuilder().addService(mediaImpl)
+				.intercept(RpcMetrics.serverInterceptor())
+				.buildServletAdapter();
 	}
 
 	@Override

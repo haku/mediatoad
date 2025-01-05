@@ -19,16 +19,21 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ConnectivityState;
 import io.grpc.ForwardingClientCall.SimpleForwardingClientCall;
 import io.grpc.ForwardingClientCallListener.SimpleForwardingClientCallListener;
+import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 
 public class RpcMetrics {
 
 	// TODO use weak ref?
 	private static final Map<String, ManagedChannel> CHANNELS = new ConcurrentSkipListMap<>();
-	private static final Map<String, ClientRecorder> CLIENTS = new ConcurrentSkipListMap<>();
+	private static final Map<String, EndpointRecorder> CLIENTS = new ConcurrentSkipListMap<>();
+	private static final EndpointRecorder SERVER_RECORDER = new EndpointRecorder();
 
 	public static void monitorChannel(final ManagedChannel channel, final String channelName) {
 		if (CHANNELS.put(channelName, channel) != null) throw new IllegalArgumentException("Name already in use: " + channelName);
@@ -48,20 +53,28 @@ public class RpcMetrics {
 		return ret;
 	}
 
-	public static Set<Entry<String, ClientRecorder>> clientMetrics() {
+	public static Set<Entry<String, EndpointRecorder>> clientMetrics() {
 		return CLIENTS.entrySet();
 	}
 
 	public static ClientInterceptor clientInterceptor(final String clientName) {
-		final ClientRecorder recorder = new ClientRecorder(clientName);
+		final EndpointRecorder recorder = new EndpointRecorder();
 		if (CLIENTS.put(clientName, recorder) != null) throw new IllegalArgumentException("Name already in use: " + clientName);
-		return new MetricInterceptor(recorder);
+		return new ClientMetricInterceptor(recorder);
 	}
 
-	private static class MetricInterceptor implements ClientInterceptor {
-		private final ClientRecorder recorder;
+	public static Set<Entry<String, MethodMetrics>> serverMethodAndMetrics() {
+		return SERVER_RECORDER.methodAndMetrics();
+	}
 
-		public MetricInterceptor(final ClientRecorder recorder) {
+	public static ServerInterceptor serverInterceptor() {
+		return new ServerMetricInterceptor(SERVER_RECORDER);
+	}
+
+	private static class ClientMetricInterceptor implements ClientInterceptor {
+		private final EndpointRecorder recorder;
+
+		public ClientMetricInterceptor(final EndpointRecorder recorder) {
 			this.recorder = recorder;
 		}
 
@@ -71,11 +84,25 @@ public class RpcMetrics {
 		}
 	}
 
+	private static class ServerMetricInterceptor implements ServerInterceptor {
+		private final EndpointRecorder recorder;
+
+		public ServerMetricInterceptor(final EndpointRecorder recorder) {
+			this.recorder = recorder;
+		}
+
+		@Override
+		public <ReqT, RespT> io.grpc.ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+			MetricServerCall<ReqT, RespT> newCall = new MetricServerCall<>(this.recorder, call.getMethodDescriptor().getFullMethodName(), call);
+			return next.startCall(newCall, headers);
+		}
+	}
+
 	private static class MetricClientCall<ReqT, RespT> extends SimpleForwardingClientCall<ReqT, RespT> {
-		private final ClientRecorder recorder;
+		private final EndpointRecorder recorder;
 		private final String methodName;
 
-		public MetricClientCall(final ClientRecorder recorder, final String methodName, final ClientCall<ReqT, RespT> call) {
+		public MetricClientCall(final EndpointRecorder recorder, final String methodName, final ClientCall<ReqT, RespT> call) {
 			super(call);
 			this.recorder = recorder;
 			this.methodName = methodName;
@@ -100,18 +127,26 @@ public class RpcMetrics {
 		}
 	}
 
-	public static class ClientRecorder {
+	private static class MetricServerCall<ReqT, RespT> extends SimpleForwardingServerCall<ReqT, RespT> {
+		private final EndpointRecorder recorder;
+		private final String methodName;
 
-		private final String clientName;
+		public MetricServerCall(final EndpointRecorder recorder, final String methodName, final ServerCall<ReqT, RespT> delegate) {
+			super(delegate);
+			this.recorder = recorder;
+			this.methodName = methodName;
+		}
+
+		@Override
+		public void close(Status status, Metadata trailers) {
+			this.recorder.recordRequestResult(this.methodName, status.getCode());
+			super.close(status, trailers);
+		}
+	}
+
+	public static class EndpointRecorder {
+
 		private final ConcurrentMap<String, MethodMetrics> methodMetrics = new ConcurrentHashMap<>();
-
-		public ClientRecorder(final String clientName) {
-			this.clientName = clientName;
-		}
-
-		public String getClientName() {
-			return this.clientName;
-		}
 
 		public void recordRequestResult(final String methodName, final Status.Code status) {
 			MethodMetrics mm = this.methodMetrics.get(methodName);
