@@ -108,7 +108,7 @@ public class WebdavServlet extends HttpServlet {
 	private List<ContentItem> runQuery(final String username, final String query) throws IOException {
 		try {
 			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
-			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortColumn.FILE.asc());
+			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortColumn.FILE_PATH.asc());
 			final List<String> ids = search.execute(this.db, MAX_SEARCH_ITEMS, 0);
 			return this.contentTree.getItemsForIds(ids, username);
 		}

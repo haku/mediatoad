@@ -214,7 +214,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		for (final SortBy sb : request.getSortByList()) {
 			switch (sb.getSortField()) {
 			case FILE_PATH:
-				sorts.add(direction(SortColumn.FILE, sb.getDirection()));
+				sorts.add(direction(SortColumn.FILE_PATH, sb.getDirection()));
 				break;
 			case DATE_ADDED:
 				// TODO MODIFIED is not reallllly the same as ADDED, would be nice to add a column for ADDED.
@@ -231,7 +231,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				return;
 			}
 		}
-		if (sorts.size() < 1) sorts.add(SortColumn.FILE.asc());
+		if (sorts.size() < 1) sorts.add(SortColumn.FILE_PATH.asc());
 
 		final List<String> ids;
 		try {

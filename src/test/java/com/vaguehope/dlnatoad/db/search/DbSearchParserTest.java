@@ -66,7 +66,7 @@ public class DbSearchParserTest {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
 
-		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortColumn.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortColumn.FILE_PATH.asc());
 
 		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
 		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));
@@ -85,13 +85,13 @@ public class DbSearchParserTest {
 
 	@Test
 	public void itSearchesByType() throws Exception {
-		final String jpg = mockMediaTrackWithNameContaining("my photo", ".jpg");
-		final String jpeg = mockMediaTrackWithNameContaining("another photo", ".jpeg");
-		final String gif = mockMediaTrackWithNameContaining("thing", ".gif");
-		final String mp4 = mockMediaTrackWithNameContaining("thing", ".mp4");
-		final String avi = mockMediaTrackWithNameContaining("thing", ".avi");
-		final String mp3 = mockMediaTrackWithNameContaining("thing", ".mp3");
-		final String wav = mockMediaTrackWithNameContaining("thing", ".wav");
+		final String jpg = mockMediaTrackWithNameAndSuffexAndTags("my photo", ".jpg", "tag-foo");
+		final String jpeg = mockMediaTrackWithNameAndSuffexAndTags("another photo", ".jpeg", "tag-foo");
+		final String gif = mockMediaTrackWithNameAndSuffexAndTags("thing", ".gif", "tag-foo");
+		final String mp4 = mockMediaTrackWithNameAndSuffexAndTags("thing", ".mp4", "tag-foo");
+		final String avi = mockMediaTrackWithNameAndSuffexAndTags("thing", ".avi", "tag-foo");
+		final String mp3 = mockMediaTrackWithNameAndSuffexAndTags("thing", ".mp3", "tag-foo");
+		final String wav = mockMediaTrackWithNameAndSuffexAndTags("thing", ".wav", "tag-foo");
 
 		runQuery("type=image", jpg, jpeg, gif);
 		runQuery("type=video", mp4, avi);
@@ -100,6 +100,8 @@ public class DbSearchParserTest {
 		runQuery("type=image/jpeg", jpg, jpeg);
 		runQuery("type=video/mp4", mp4);
 		runQuery("type=audio/mpeg", mp3);
+
+		runQuery("(type=audio OR type=video) AND ( t=tag-foo )", mp3, wav, mp4, avi);
 	}
 
 	@Test
@@ -584,11 +586,11 @@ public class DbSearchParserTest {
 		final String id3 = mockMediaTrackWithNameContaining("thing 3");
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE.asc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb),
 				contains(id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE.desc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.desc()).execute(this.mediaDb),
 				contains(id4, id3, id2, id1));
 	}
 
@@ -612,7 +614,7 @@ public class DbSearchParserTest {
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortColumn.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortColumn.FILE_PATH.asc());
 		if (expectedSql != null) assertEquals(expectedSql, parsed.getSql());
 		assertThat(parsed.getTerms(), contains(expectedTerms));
 	}
@@ -622,7 +624,7 @@ public class DbSearchParserTest {
 	}
 
 	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortColumn.FILE.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortColumn.FILE_PATH.asc());
 		final List<String> results = parsed.execute(this.mediaDb);
 		assertThat(results, containsInAnyOrder(expectedResults));
 	}
@@ -647,6 +649,10 @@ public class DbSearchParserTest {
 
 	private String mockMediaFileWithNameFragmentAndTags (final String nameFragment, final String... tags) throws Exception {
 		return this.mockMediaMetadataStore.addFileWithNameAndTags(nameFragment, tags);
+	}
+
+	private String mockMediaTrackWithNameAndSuffexAndTags (final String nameFragment, final String nameSuffex, final String... tags) throws Exception {
+		return this.mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(nameFragment, nameSuffex, tags);
 	}
 
 }

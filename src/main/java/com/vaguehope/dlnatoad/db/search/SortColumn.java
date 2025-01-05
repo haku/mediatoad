@@ -2,7 +2,7 @@ package com.vaguehope.dlnatoad.db.search;
 
 public enum SortColumn {
 
-	FILE("file COLLATE NOCASE"),
+	FILE_PATH("file COLLATE NOCASE"),
 	FILE_SIZE("size"),
 	MODIFIED("modified"),
 	DURATION("duration");
