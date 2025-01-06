@@ -47,6 +47,7 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortBy;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortDirection;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortField;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -55,6 +56,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	private static final int MAX_SEARCH_RESULTS = 500;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
+
+	// to match search().
+	private static final Set<SortField> SUPPORTED_SORT_FIELDS = ImmutableSet.of(SortField.FILE_PATH, SortField.DATE_ADDED, SortField.DURATION, SortField.FILE_SIZE);
+	// to match methods implemented in DbSearchParser.
+	private static final Set<ChooseMethod> SUPPORTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
 
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
@@ -66,7 +72,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void about(final AboutRequest request, final StreamObserver<AboutReply> responseObserver) {
-		responseObserver.onNext(AboutReply.newBuilder().setName(C.APPNAME).build());
+		final AboutReply resp = AboutReply.newBuilder()
+				.setName(C.APPNAME)
+				.addAllSupportedSortField(SUPPORTED_SORT_FIELDS)
+				.addAllSupportedChooseMethod(SUPPORTED_CHOOSE_METHODS)
+				.build();
+		responseObserver.onNext(resp);
 		responseObserver.onCompleted();
 	}
 
@@ -232,12 +243,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		responseObserver.onCompleted();
 	}
 
-	// to match methods implemented in DbSearchParser.
-	private static final Set<ChooseMethod> IMPLEMENTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
-
 	@Override
 	public void chooseMedia(final ChooseMediaRequest request, final StreamObserver<ChooseMediaReply> responseObserver) {
-		if (!IMPLEMENTED_CHOOSE_METHODS.contains(request.getMethod())) {
+		if (!SUPPORTED_CHOOSE_METHODS.contains(request.getMethod())) {
 			responseObserver.onError(Status.UNIMPLEMENTED.withDescription("Method not supported.").asRuntimeException());
 			return;
 		}

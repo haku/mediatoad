@@ -62,6 +62,10 @@ message AboutRequest {}
 message AboutReply {
   // Friendly name, only used for UI and logging.
   string name = 1;
+
+  // supported options for other RPCs, so UIs know what to offer.
+  repeated SortField supported_sort_field = 10;
+  repeated ChooseMethod supported_choose_method = 11;
 }
 
 message HasMediaRequest {
