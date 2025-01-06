@@ -151,7 +151,7 @@ public class DbSearchParser {
 		case LESS_RECENT:
 			// if no last_played, default to 100 days.
 			sql.append(" ORDER BY ABS(RANDOM() % COALESCE("
-					+ "CAST(JULIANDAY() AS INT) - CAST(JULIANDAY(DATETIME(last_played/1000, 'unixepoch')) AS INT)"
+					+ "UNIXEPOCH()/86400 - last_played/86400000"
 					+ ", 100)) DESC, RANDOM()");
 			break;
 		default:
