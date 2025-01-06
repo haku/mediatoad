@@ -233,7 +233,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	}
 
 	// to match methods implemented in DbSearchParser.
-	private static final Set<ChooseMethod> IMPLEMENTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM);
+	private static final Set<ChooseMethod> IMPLEMENTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
 
 	@Override
 	public void chooseMedia(final ChooseMediaRequest request, final StreamObserver<ChooseMediaReply> responseObserver) {

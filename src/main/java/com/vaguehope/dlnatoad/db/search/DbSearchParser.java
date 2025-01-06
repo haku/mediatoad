@@ -26,6 +26,8 @@ public class DbSearchParser {
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
 	private static final String _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN infos ON files.id = infos.file_id WHERE missing=0";
+	private static final String _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE =
+			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
 
 	private static final String _SQL_TAG_FREQUENCY_SELECT =
 			"SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
@@ -124,7 +126,18 @@ public class DbSearchParser {
 	}
 
 	public static DbSearch parseSearchForChoose(final String allTerms, final Set<BigInteger> authIds, final ChooseMethod method) {
-		final StringBuilder sql = new StringBuilder(_SQL_MEDIAFILES_SELECT);
+		final StringBuilder sql = new StringBuilder();
+		switch (method) {
+		case RANDOM:
+			sql.append(_SQL_MEDIAFILES_SELECT);
+			break;
+		case LESS_RECENT:
+			sql.append(_SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE);
+			break;
+		default:
+			throw new IllegalArgumentException("Method not supported: " + method);
+		}
+
 		sql.append(_SQL_AND);
 		SqlFragments.appendWhereAuth(sql, authIds);
 
@@ -134,6 +147,12 @@ public class DbSearchParser {
 		switch (method) {
 		case RANDOM:
 			sql.append(" ORDER BY RANDOM()");
+			break;
+		case LESS_RECENT:
+			// if no last_played, default to 100 days.
+			sql.append(" ORDER BY ABS(RANDOM() % COALESCE("
+					+ "CAST(JULIANDAY() AS INT) - CAST(JULIANDAY(DATETIME(last_played/1000, 'unixepoch')) AS INT)"
+					+ ", 100)) DESC, RANDOM()");
 			break;
 		default:
 			throw new IllegalArgumentException("Method not supported: " + method);
