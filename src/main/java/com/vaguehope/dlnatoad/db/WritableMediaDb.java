@@ -413,6 +413,27 @@ public class WritableMediaDb implements Closeable {
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// playback:
+
+	public void recordPlayback(final String id, final long startTimeMillis, final boolean completed) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement(
+				"INSERT INTO playback(file_id, last_played, start_count, complete_count) VALUES(?,?,1,?)"
+				+ "ON CONFLICT(file_id) DO UPDATE SET last_played=?, start_count=start_count+1, complete_count=complete_count+?"
+				)) {
+			st.setString(1, id);
+			st.setLong(2, startTimeMillis);
+			st.setInt(3, completed ? 1 : 0);
+			st.setLong(4, startTimeMillis);
+			st.setInt(5, completed ? 1 : 0);
+			final int n = st.executeUpdate();
+			if (n < 1) throw new SQLException(String.format("No update occured recording playback for id=%s.", id));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to update playback for id=%s.", id), e);
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// prefs:
 
 	public void setNodePref(final String nodeId, final String key, final String value) throws SQLException {
@@ -438,6 +459,5 @@ public class WritableMediaDb implements Closeable {
 			throw new SQLException(String.format("Failed to set dirpref for %s: key=%s value='%s'", nodeId, key, value), e);
 		}
 	}
-
 
 }

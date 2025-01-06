@@ -90,6 +90,12 @@ public class MediaDb {
 		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
 
+		executeSql("CREATE TABLE IF NOT EXISTS playback ("
+				+ "file_id STRING NOT NULL PRIMARY KEY, "
+				+ "last_played INT NOT NULL, "
+				+ "start_count INT NOT NULL DEFAULT 0, "
+				+ "complete_count INT NOT NULL DEFAULT 0);");
+
 		if (!tableExists("nodeprefs")) {
 			executeSql("CREATE TABLE nodeprefs ("
 					+ "id STRING NOT NULL, "
@@ -352,6 +358,21 @@ public class MediaDb {
 				ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
 			}
 			return ret;
+		}
+	}
+
+//	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	// playback:
+
+	public Playback getPlayback(final String id) throws SQLException {
+		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT last_played, start_count, complete_count FROM playback WHERE file_id=?")) {
+			st.setString(1, id);
+			try (final ResultSet rs = st.executeQuery()) {
+				if (!rs.next()) return null;
+				final Playback ret = new Playback(rs.getLong(1), rs.getInt(2), rs.getInt(3));
+				if (rs.next()) throw new SQLException("Query for '" + id + "' playback retured more than one result.");
+				return ret;
+			}
 		}
 	}
 

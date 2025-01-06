@@ -332,6 +332,39 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itRecordsPlayback() throws Exception {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.recordPlayback("incomplete", 1234567890L, false);
+			w.recordPlayback("complete", 2234567890L, true);
+		}
+
+		final Playback incomplete1 = this.undertest.getPlayback("incomplete");
+		assertEquals(1234567890L, incomplete1.getDateLastPlayed());
+		assertEquals(1, incomplete1.getStartCount());
+		assertEquals(0, incomplete1.getCompleteCount());
+
+		final Playback complete1 = this.undertest.getPlayback("complete");
+		assertEquals(2234567890L, complete1.getDateLastPlayed());
+		assertEquals(1, complete1.getStartCount());
+		assertEquals(1, complete1.getCompleteCount());
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.recordPlayback("incomplete", 1534567890L, false);
+			w.recordPlayback("complete", 2534567890L, true);
+		}
+
+		final Playback incomplete2 = this.undertest.getPlayback("incomplete");
+		assertEquals(1534567890L, incomplete2.getDateLastPlayed());
+		assertEquals(2, incomplete2.getStartCount());
+		assertEquals(0, incomplete2.getCompleteCount());
+
+		final Playback complete2 = this.undertest.getPlayback("complete");
+		assertEquals(2534567890L, complete2.getDateLastPlayed());
+		assertEquals(2, complete2.getStartCount());
+		assertEquals(2, complete2.getCompleteCount());
+	}
+
+	@Test
 	public void itSetsAndReadsPrefs() throws Exception {
 		final String id1 = "486023200074112812592441620153605687291657744882-somewhere";
 		final String id2 = "457356430841943070727738514685648663226656335856-somewhere_else";

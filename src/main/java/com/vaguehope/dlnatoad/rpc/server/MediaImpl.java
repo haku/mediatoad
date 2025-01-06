@@ -10,12 +10,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
 import com.vaguehope.dlnatoad.db.search.SortColumn;
 import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
@@ -39,6 +41,8 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaTag;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortBy;
@@ -68,7 +72,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void hasMedia(final HasMediaRequest request, final StreamObserver<HasMediaReply> responseObserver) {
-		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
+		final ContentItem item = getItemCheckingAuth(request.getId(), () -> {
+			responseObserver.onNext(HasMediaReply.newBuilder().setExistence(FileExistance.UNKNOWN).build());
+			responseObserver.onCompleted();
+		});
+
+
 		if (item == null) return;
 
 		final MediaItem rpcItem = itemToRpcItem(item);
@@ -79,7 +88,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription("Failed to read tags from DB.").asRuntimeException());
-			responseObserver.onCompleted();
 			return;
 		}
 
@@ -93,28 +101,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		responseObserver.onNext(reply.build());
 		responseObserver.onCompleted();
-	}
-
-	/**
-	 * if response is null then error has already been returned to caller.
-	 */
-	private ContentItem getItemCheckingAuth(final String itemId, final StreamObserver<HasMediaReply> responseObserver) {
-		final ContentItem item = this.contentTree.getItem(itemId);
-		if (item == null) {
-			responseObserver.onNext(HasMediaReply.newBuilder().setExistence(FileExistance.UNKNOWN).build());
-			responseObserver.onCompleted();
-			return null;
-		}
-
-		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-		if (node == null || node.hasAuthList()) {
-			responseObserver.onNext(HasMediaReply.newBuilder().setExistence(FileExistance.UNKNOWN).build());
-			responseObserver.onCompleted();
-			return null;
-		}
-
-		return item;
 	}
 
 	@Override
@@ -139,18 +125,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void readMedia(final ReadMediaRequest request, final StreamObserver<ReadMediaReply> responseObserver) {
-		final ContentItem item = this.contentTree.getItem(request.getId());
-		if (item == null) {
-			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
-			return;
-		}
-
-		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-		if (node == null || node.hasAuthList()) {
-			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
-			return;
-		}
+		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
+		if (item == null) return;
 
 		final File file = item.getFile();
 		if (!file.exists() || file.length() < 1) {
@@ -283,6 +259,56 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void recordPlayback(final RecordPlaybackRequest request, final StreamObserver<RecordPlaybackReply> responseObserver) {
+		final long millisAgo = System.currentTimeMillis() - request.getStartTimeMillis();
+		if (millisAgo > TimeUnit.HOURS.toMillis(24)) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("start_time_millis more than 24h ago.").asRuntimeException());
+			return;
+		}
+		else if (millisAgo < 0) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("start_time_millis is in the future.").asRuntimeException());
+			return;
+		}
+
+		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
+		if (item == null) return;
+
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.recordPlayback(request.getId(), request.getStartTimeMillis(), request.getCompleted());
+		}
+		catch (final IOException | SQLException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+			return;
+		}
+	}
+
+	private ContentItem getItemCheckingAuth(final String id, final StreamObserver<?> responseObserver) {
+		return getItemCheckingAuth(id, () -> {
+			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
+		});
+	}
+
+	/**
+	 * if response is null then error has already been returned to caller.
+	 */
+	private ContentItem getItemCheckingAuth(final String itemId, final Runnable onNotFound) {
+		final ContentItem item = this.contentTree.getItem(itemId);
+		if (item == null) {
+			onNotFound.run();
+			return null;
+		}
+
+		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		// TODO once user auth is a thing, check that here to allow access to protected items.
+		if (node == null || node.hasAuthList()) {
+			onNotFound.run();
+			return null;
+		}
+
+		return item;
 	}
 
 	private static SortOrder direction(final SortColumn order, final SortDirection direction) {

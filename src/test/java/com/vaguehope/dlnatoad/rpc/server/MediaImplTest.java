@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
@@ -23,6 +24,8 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -30,6 +33,8 @@ import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 
 import io.grpc.stub.StreamObserver;
 
@@ -39,12 +44,18 @@ public class MediaImplTest {
 	public TemporaryFolder tmp = new TemporaryFolder();
 
 	private ContentTree contentTree;
+	private MediaDb mediaDb;
+	private WritableMediaDb writableMediaDb;
 	private MediaImpl undertest;
 
+	@SuppressWarnings("resource")
 	@Before
 	public void before() throws Exception {
 		this.contentTree = mock(ContentTree.class);
-		this.undertest = new MediaImpl(this.contentTree, null);
+		this.mediaDb = mock(MediaDb.class);
+		this.writableMediaDb = mock(WritableMediaDb.class);
+		when(this.mediaDb.getWritable()).thenReturn(this.writableMediaDb);
+		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
 	}
 
 	// TODO test other methods!
@@ -113,6 +124,23 @@ public class MediaImplTest {
 		assertEquals("image/jpeg", msgs.get(0).getMimeType());
 		assertEquals(0, msgs.get(0).getRangeIndex());
 		assertArrayEquals(expected, joinContent(msgs).toByteArray());
+	}
+
+	@SuppressWarnings("resource")
+	@Test
+	public void itRecordsPlayback() throws Exception {
+		mockItemFileData("someid", "parent", 1);
+		final long time = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
+		final RecordPlaybackRequest req = RecordPlaybackRequest.newBuilder()
+				.setId("someid")
+				.setStartTimeMillis(time)
+				.setCompleted(true)
+				.build();
+
+		final StreamObserver<RecordPlaybackReply> respObs = mock(StreamObserver.class);
+		this.undertest.recordPlayback(req, respObs);
+
+		verify(this.writableMediaDb).recordPlayback("someid", time, true);
 	}
 
 	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {
