@@ -102,17 +102,19 @@ message ListNodeReply {
 }
 
 enum SortField {
-  FILE_PATH = 0;
-  DATE_ADDED = 1;
-  DURATION = 2;
-  FILE_SIZE = 3;
-  LAST_PLAYED = 4;
-  PLAYBACK_STARTED = 5;
-  PLAYBACK_COMPLETED = 6;
+  UNSPECIFIED_ORDER = 0;
+  FILE_PATH = 1;
+  DATE_ADDED = 2;
+  DURATION = 3;
+  FILE_SIZE = 4;
+  LAST_PLAYED = 5;
+  PLAYBACK_STARTED = 6;
+  PLAYBACK_COMPLETED = 7;
 }
 enum SortDirection {
-  ASC = 0;
-  DESC = 1;
+  UNSPECIFIED_DIRECTION = 0;
+  ASC = 1;
+  DESC = 2;
 }
 message SortBy {
   SortField sort_field = 1;
@@ -128,12 +130,15 @@ message SearchReply {
 }
 
 enum ChooseMethod {
+  // by default, any method the impl desires.
+  UNSPECIFIED_METHOD = 0;
+
   // impls with specific uses may weight the randomness as desired.
-  RANDOM = 0;
+  RANDOM = 1;
 
   // prefer to choose media that has not been played recently,
   // but still some amount of randomness.
-  LESS_RECENT = 1;
+  LESS_RECENT = 2;
 }
 message ChooseMediaRequest {
   // scope from which media is chosen.  if omitted then scope is all media.

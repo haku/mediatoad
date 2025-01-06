@@ -58,9 +58,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
 
 	// to match search().
-	private static final Set<SortField> SUPPORTED_SORT_FIELDS = ImmutableSet.of(SortField.FILE_PATH, SortField.DATE_ADDED, SortField.DURATION, SortField.FILE_SIZE);
+	private static final Set<SortField> SUPPORTED_SORT_FIELDS = ImmutableSet.of(
+			SortField.UNSPECIFIED_ORDER, SortField.FILE_PATH, SortField.DATE_ADDED, SortField.DURATION, SortField.FILE_SIZE);
 	// to match methods implemented in DbSearchParser.
-	private static final Set<ChooseMethod> SUPPORTED_CHOOSE_METHODS = ImmutableSet.of(ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
+	private static final Set<ChooseMethod> SUPPORTED_CHOOSE_METHODS = ImmutableSet.of(
+			ChooseMethod.UNSPECIFIED_METHOD, ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
 
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
@@ -205,6 +207,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final List<SortOrder> sorts = new ArrayList<>();
 		for (final SortBy sb : request.getSortByList()) {
 			switch (sb.getSortField()) {
+			case UNSPECIFIED_ORDER:
 			case FILE_PATH:
 				sorts.add(direction(SortColumn.FILE_PATH, sb.getDirection()));
 				break;
@@ -321,6 +324,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	private static SortOrder direction(final SortColumn order, final SortDirection direction) {
 		switch (direction) {
+		case UNSPECIFIED_DIRECTION:
 		case ASC:
 			return order.asc();
 		case DESC:

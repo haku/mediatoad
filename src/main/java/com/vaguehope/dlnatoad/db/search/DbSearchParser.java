@@ -128,6 +128,7 @@ public class DbSearchParser {
 	public static DbSearch parseSearchForChoose(final String allTerms, final Set<BigInteger> authIds, final ChooseMethod method) {
 		final StringBuilder sql = new StringBuilder();
 		switch (method) {
+		case UNSPECIFIED_METHOD:
 		case RANDOM:
 			sql.append(_SQL_MEDIAFILES_SELECT);
 			break;
@@ -145,6 +146,7 @@ public class DbSearchParser {
 		appendWhereTerms(sql, terms, authIds);
 
 		switch (method) {
+		case UNSPECIFIED_METHOD:
 		case RANDOM:
 			sql.append(" ORDER BY RANDOM()");
 			break;
