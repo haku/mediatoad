@@ -606,6 +606,23 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itSortsResultsByDateLastPlayed() throws Exception {
+		final String id2 = this.mockMediaMetadataStore.addFileWithLastPlayedAndTags(1234567892123L, "thing");
+		final String id1 = this.mockMediaMetadataStore.addFileWithLastPlayedAndTags(1234567890123L, "thing");
+		final String id4 = this.mockMediaMetadataStore.addFileWithLastPlayedAndTags(1234567894123L, "thing");
+		final String id3 = this.mockMediaMetadataStore.addFileWithLastPlayedAndTags(1234567893123L, "thing");
+		final String idNoL = mockMediaFileWithTags("thing");
+
+		assertThat(
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.asc()).execute(this.mediaDb),
+				contains(idNoL, id1, id2, id3, id4));
+
+		assertThat(
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.desc()).execute(this.mediaDb),
+				contains(id4, id3, id2, id1, idNoL));
+	}
+
+	@Test
 	public void itChoosesRandomMedia() throws Exception {
 		final Set<String> expectedIds = new HashSet<>();
 		for (int i = 0; i < 3; i++) {

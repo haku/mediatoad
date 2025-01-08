@@ -59,7 +59,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	// to match search().
 	private static final Set<SortField> SUPPORTED_SORT_FIELDS = ImmutableSet.of(
-			SortField.UNSPECIFIED_ORDER, SortField.FILE_PATH, SortField.DATE_ADDED, SortField.DURATION, SortField.FILE_SIZE);
+			SortField.UNSPECIFIED_ORDER, SortField.FILE_PATH, SortField.DATE_ADDED, SortField.DURATION, SortField.FILE_SIZE,
+			SortField.LAST_PLAYED, SortField.PLAYBACK_STARTED, SortField.PLAYBACK_COMPLETED);
 	// to match methods implemented in DbSearchParser.
 	private static final Set<ChooseMethod> SUPPORTED_CHOOSE_METHODS = ImmutableSet.of(
 			ChooseMethod.UNSPECIFIED_METHOD, ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
@@ -220,6 +221,15 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				break;
 			case FILE_SIZE:
 				sorts.add(direction(SortColumn.FILE_SIZE, sb.getDirection()));
+				break;
+			case LAST_PLAYED:
+				sorts.add(direction(SortColumn.LAST_PLAYED, sb.getDirection()));
+				break;
+			case PLAYBACK_STARTED:
+				sorts.add(direction(SortColumn.START_COUNT, sb.getDirection()));
+				break;
+			case PLAYBACK_COMPLETED:
+				sorts.add(direction(SortColumn.COMPLETE_COUNT, sb.getDirection()));
 				break;
 			default:
 				responseObserver.onError(Status.UNIMPLEMENTED.withDescription("Sort column not implemented.").asRuntimeException());

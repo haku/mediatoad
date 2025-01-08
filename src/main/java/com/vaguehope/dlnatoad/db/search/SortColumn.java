@@ -5,7 +5,10 @@ public enum SortColumn {
 	FILE_PATH("file COLLATE NOCASE"),
 	FILE_SIZE("size"),
 	MODIFIED("modified"),
-	DURATION("duration");
+	DURATION("duration"),
+	LAST_PLAYED("last_played"),
+	START_COUNT("start_count"),
+	COMPLETE_COUNT("complete_count");
 
 	private final String sqlColumnName;
 

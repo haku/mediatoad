@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
@@ -28,6 +29,9 @@ public class DbSearchParser {
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN infos ON files.id = infos.file_id WHERE missing=0";
 	private static final String _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
+
+	private static final Set<SortColumn> INFO_SORTS = ImmutableSet.of(SortColumn.DURATION);
+	private static final Set<SortColumn> PLAYBACK_SORTS = ImmutableSet.of(SortColumn.LAST_PLAYED, SortColumn.START_COUNT, SortColumn.COMPLETE_COUNT);
 
 	private static final String _SQL_TAG_FREQUENCY_SELECT =
 			"SELECT DISTINCT tag, COUNT(DISTINCT file_id) AS freq"
@@ -101,9 +105,20 @@ public class DbSearchParser {
 			final List<SortOrder> sorts) {
 		if (sorts == null || sorts.size() < 1) throw new IllegalArgumentException("Sort must be specified");
 
-		final String base = sorts.stream().anyMatch(s -> s.column() == SortColumn.DURATION)
-				? _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE
-				: _SQL_MEDIAFILES_SELECT;
+		final boolean hasInfoSort = sorts.stream().anyMatch(s -> INFO_SORTS.contains(s.column()));
+		final boolean hasPlaybackSort = sorts.stream().anyMatch(s -> PLAYBACK_SORTS.contains(s.column()));
+		if (hasInfoSort && hasPlaybackSort) throw new IllegalArgumentException("Unsupported set of sort columns.");
+
+		final String base;
+		if (hasInfoSort) {
+			base = _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE;
+		}
+		else if (hasPlaybackSort) {
+			base = _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE;
+		}
+		else {
+			base = _SQL_MEDIAFILES_SELECT;
+		}
 
 		final StringBuilder sql = new StringBuilder(base);
 		if (!bypassAuthChecks) {
