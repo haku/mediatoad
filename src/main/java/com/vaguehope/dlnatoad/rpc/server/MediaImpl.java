@@ -63,7 +63,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			SortField.LAST_PLAYED, SortField.PLAYBACK_STARTED, SortField.PLAYBACK_COMPLETED);
 	// to match methods implemented in DbSearchParser.
 	private static final Set<ChooseMethod> SUPPORTED_CHOOSE_METHODS = ImmutableSet.of(
-			ChooseMethod.UNSPECIFIED_METHOD, ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT);
+			ChooseMethod.UNSPECIFIED_METHOD, ChooseMethod.RANDOM, ChooseMethod.LESS_RECENT, ChooseMethod.LESS_PLAYED);
 
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;

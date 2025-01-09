@@ -139,6 +139,10 @@ enum ChooseMethod {
   // prefer to choose media that has not been played recently,
   // but still some amount of randomness.
   LESS_RECENT = 2;
+
+  // prefer to choose media that has not been played as many times,
+  // but still some amount of randomness.
+  LESS_PLAYED = 3;
 }
 message ChooseMediaRequest {
   // scope from which media is chosen.  if omitted then scope is all media.

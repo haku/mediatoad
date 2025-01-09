@@ -658,6 +658,26 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itChoosesMediaByStartCount() throws Exception {
+		final List<String> expectedIds = new ArrayList<>();
+		for (int i = 0; i < 3; i++) {
+			expectedIds.add(this.mockMediaMetadataStore.addFileWithTags("thing"));
+		}
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			for (int i = 0; i < 3; i++) {
+				w.recordPlayback(expectedIds.get(i), 0, false);
+			}
+		}
+		for (int i = 0; i < 20; i++) {
+			this.mockMediaMetadataStore.addFileWithTags("other");
+		}
+
+		final List<String> actual = DbSearchParser.parseSearchForChoose("t=thing", null, ChooseMethod.LESS_PLAYED).execute(this.mediaDb, 1, 0);
+		assertThat(actual, hasSize(1));
+		assertThat(expectedIds, hasItem(actual.get(0)));
+	}
+
+	@Test
 	public void itDoesATopTagsSearch() throws Exception {
 		mockMediaFileWithTags("desu", "foobar", "thing", "other");
 		mockMediaFileWithTags("foobar", "desu");

@@ -29,6 +29,8 @@ public class DbSearchParser {
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN infos ON files.id = infos.file_id WHERE missing=0";
 	private static final String _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
+	private static final String _SQL_MEDIAFILES_SELECT_MAX_START_COUNT =
+			"SELECT MAX(start_count) FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
 
 	private static final Set<SortColumn> INFO_SORTS = ImmutableSet.of(SortColumn.DURATION);
 	private static final Set<SortColumn> PLAYBACK_SORTS = ImmutableSet.of(SortColumn.LAST_PLAYED, SortColumn.START_COUNT, SortColumn.COMPLETE_COUNT);
@@ -148,6 +150,7 @@ public class DbSearchParser {
 			sql.append(_SQL_MEDIAFILES_SELECT);
 			break;
 		case LESS_RECENT:
+		case LESS_PLAYED:
 			sql.append(_SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE);
 			break;
 		default:
@@ -170,6 +173,13 @@ public class DbSearchParser {
 			sql.append(" ORDER BY ABS(RANDOM() % COALESCE("
 					+ "UNIXEPOCH()/86400 - last_played/86400000"
 					+ ", 100)) DESC, RANDOM()");
+			break;
+		case LESS_PLAYED:
+			final StringBuilder maxSql = new StringBuilder(_SQL_MEDIAFILES_SELECT_MAX_START_COUNT);
+			maxSql.append(_SQL_AND);
+			SqlFragments.appendWhereAuth(maxSql, authIds);
+			appendWhereTerms(maxSql, terms, authIds);
+			sql.append(" ORDER BY ABS(RANDOM() % ((" + maxSql + ") + 1 - COALESCE(start_count, 0))) DESC, RANDOM()");
 			break;
 		default:
 			throw new IllegalArgumentException("Method not supported: " + method);
