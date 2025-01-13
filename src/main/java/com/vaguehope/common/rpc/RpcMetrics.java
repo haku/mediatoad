@@ -10,7 +10,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+
+import com.vaguehope.common.util.TotalOverTime;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -164,20 +166,44 @@ public class RpcMetrics {
 	}
 
 	public static class MethodMetrics {
-		private final ConcurrentMap<Status.Code, AtomicInteger> statusMetrics = new ConcurrentHashMap<>();
+		private final ConcurrentMap<Status.Code, TimeSet> statusMetrics = new ConcurrentHashMap<>();
 
 		public void recordStatus(final Status.Code status) {
-			AtomicInteger ai = this.statusMetrics.get(status);
-			if (ai == null) {
-				ai = new AtomicInteger(0);
-				final AtomicInteger prev = this.statusMetrics.putIfAbsent(status, ai);
-				if (prev != null) ai = prev;
+			TimeSet ts = this.statusMetrics.get(status);
+			if (ts == null) {
+				ts = new TimeSet();
+				final TimeSet prev = this.statusMetrics.putIfAbsent(status, ts);
+				if (prev != null) ts = prev;
 			}
-			ai.incrementAndGet();
+			ts.increment();
 		}
 
-		public Set<Entry<Status.Code, AtomicInteger>> statusAndCount() {
+		public Set<Entry<Status.Code, TimeSet>> statusAndCount() {
 			return this.statusMetrics.entrySet();
+		}
+	}
+
+	public static class TimeSet {
+		private final TotalOverTime fiveMin = new TotalOverTime(5, TimeUnit.MINUTES, 20);
+		private final TotalOverTime oneHour = new TotalOverTime(1, TimeUnit.HOURS, 20);
+		private final TotalOverTime oneDay = new TotalOverTime(1, TimeUnit.DAYS, 24);
+
+		public void increment() {
+			this.fiveMin.increment(1);
+			this.oneHour.increment(1);
+			this.oneDay.increment(1);
+		}
+
+		public long getFiveMin() {
+			return this.fiveMin.get();
+		}
+
+		public long getOneHour() {
+			return this.oneHour.get();
+		}
+
+		public long getOneDay() {
+			return this.oneDay.get();
 		}
 	}
 

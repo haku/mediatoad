@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -18,6 +17,7 @@ import com.google.common.collect.Table;
 import com.vaguehope.common.rpc.RpcMetrics.ChannelState;
 import com.vaguehope.common.rpc.RpcMetrics.EndpointRecorder;
 import com.vaguehope.common.rpc.RpcMetrics.MethodMetrics;
+import com.vaguehope.common.rpc.RpcMetrics.TimeSet;
 
 import io.grpc.Status;
 
@@ -37,6 +37,7 @@ public class RpcStatusServlet extends HttpServlet {
 				+ "  border: 1px solid black;"
 				+ "  border-collapse: collapse;"
 				+ "  padding: 0.5em;"
+				+ "  text-align: center;"
 				+ "}"
 				+ "</style></head>"
 				+ "<body>");
@@ -46,7 +47,7 @@ public class RpcStatusServlet extends HttpServlet {
 			w.println("<h2>server requests</h2>");
 			final Builder<String, Status.Code, String> srTable = ImmutableTable.builder();
 			for (final Entry<String, MethodMetrics> mm : RpcMetrics.serverMethodAndMetrics()) {
-				for (final Entry<Status.Code, AtomicInteger> sc : mm.getValue().statusAndCount()) {
+				for (final Entry<Status.Code, TimeSet> sc : mm.getValue().statusAndCount()) {
 					srTable.put(mm.getKey(), sc.getKey(), sc.getValue().toString());
 				}
 			}
@@ -65,8 +66,10 @@ public class RpcStatusServlet extends HttpServlet {
 		for (final Entry<String, EndpointRecorder> cm : RpcMetrics.clientMetrics()) {
 			for (final Entry<String, MethodMetrics> mm : cm.getValue().methodAndMetrics()) {
 				final String rowKey = cm.getKey() + mm.getKey();
-				for (final Entry<Status.Code, AtomicInteger> sc : mm.getValue().statusAndCount()) {
-					crTable.put(rowKey, sc.getKey(), sc.getValue().toString());
+				for (final Entry<Status.Code, TimeSet> sc : mm.getValue().statusAndCount()) {
+					final TimeSet ts = sc.getValue();
+					final String html = ts.getFiveMin() + "<br>" + ts.getOneHour() + "<br>" + ts.getOneDay();
+					crTable.put(rowKey, sc.getKey(), html);
 				}
 			}
 		}
