@@ -54,7 +54,7 @@ public class RpcStatusServlet extends HttpServlet {
 		}
 
 		w.println("<h2>client channels</h2>");
-		w.println("<table><tr><th>connection</th><th>status</th></tr>");
+		w.println("<table><tr><th>connection</th><th>state</th></tr>");
 		for (final ChannelState c : RpcMetrics.channelStates()) {
 			w.println(String.format("<tr><td>%s</td><td>%s</td></tr>", c.getName(), c.getState()));
 		}

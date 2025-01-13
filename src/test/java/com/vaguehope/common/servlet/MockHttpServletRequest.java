@@ -106,6 +106,11 @@ public class MockHttpServletRequest implements HttpServletRequest {
 	}
 
 	@Override
+	public long getDateHeader (final String name) {
+		return -1;
+	}
+
+	@Override
 	public String getParameter (final String name) {
 		return this.params.get(name);
 	}
@@ -304,11 +309,6 @@ public class MockHttpServletRequest implements HttpServletRequest {
 
 	@Override
 	public String getContextPath () {
-		throw new UnsupportedOperationException("Not implemented.");
-	}
-
-	@Override
-	public long getDateHeader (final String arg0) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
