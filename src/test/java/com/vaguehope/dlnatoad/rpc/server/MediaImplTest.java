@@ -24,6 +24,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.vaguehope.dlnatoad.MetricAssert;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -36,7 +37,9 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import io.prometheus.metrics.model.snapshots.Labels;
 
 public class MediaImplTest {
 
@@ -47,6 +50,7 @@ public class MediaImplTest {
 	private MediaDb mediaDb;
 	private WritableMediaDb writableMediaDb;
 	private MediaImpl undertest;
+	private MetricAssert metricAssert;
 
 	@SuppressWarnings("resource")
 	@Before
@@ -56,6 +60,7 @@ public class MediaImplTest {
 		this.writableMediaDb = mock(WritableMediaDb.class);
 		when(this.mediaDb.getWritable()).thenReturn(this.writableMediaDb);
 		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
+		this.metricAssert = new MetricAssert();
 	}
 
 	// TODO test other methods!
@@ -65,7 +70,8 @@ public class MediaImplTest {
 		final ReadMediaRequest req = ReadMediaRequest.newBuilder().setId("someid").build();
 		final byte[] data = mockItemFileData("someid", "parentid", 1000 * 1024);
 
-		final StreamObserver<ReadMediaReply> respObs = mock(StreamObserver.class);
+		final ServerCallStreamObserver<ReadMediaReply> respObs = mock(ServerCallStreamObserver.class);
+		when(respObs.isReady()).thenReturn(true);
 		this.undertest.readMedia(req, respObs);
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
@@ -74,6 +80,8 @@ public class MediaImplTest {
 		assertEquals("image/jpeg", msgs.get(0).getMimeType());
 		assertFalse(msgs.get(0).hasRangeIndex());
 		assertArrayEquals(data, joinContent(msgs).toByteArray());
+
+		this.metricAssert.assertCounter("rpc_chunks_sent", Labels.of(), 4);
 	}
 
 	@Test
@@ -113,7 +121,8 @@ public class MediaImplTest {
 				.build();
 		final byte[] data = mockItemFileData("someid", "parentid", fileLength);
 
-		final StreamObserver<ReadMediaReply> respObs = mock(StreamObserver.class);
+		final ServerCallStreamObserver<ReadMediaReply> respObs = mock(ServerCallStreamObserver.class);
+		when(respObs.isReady()).thenReturn(true);
 		this.undertest.readMedia(req, respObs);
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));

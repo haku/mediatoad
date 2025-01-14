@@ -50,12 +50,19 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortDirection;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortField;
 
 import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import io.prometheus.metrics.core.metrics.Counter;
 
 public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	private static final int MAX_SEARCH_RESULTS = 500;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
+
+	private static final Counter CHUNKS_SENT_METRIC = Counter.builder()
+			.name("rpc_chunks_sent")
+			.help("count of chunks of media file that have been written to the grpc output buffer.")
+			.register();
 
 	// to match search().
 	private static final Set<SortField> SUPPORTED_SORT_FIELDS = ImmutableSet.of(
@@ -155,6 +162,10 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final Range range = ranges.size() == 1 ? ranges.get(0) : null;
 		final long rangeLength = range != null ? range.getLast() - range.getFirst() + 1 : 0L;
 
+		final ServerCallStreamObserver<ReadMediaReply> serverCallStreamObserver = (ServerCallStreamObserver<ReadMediaReply>) responseObserver;
+		serverCallStreamObserver.setMessageCompression(false);  // no point trying to compress media files.
+		serverCallStreamObserver.setOnReadyThreshold(4 * MESSAGE_SIZE_BYTES); // default is 32kib io.grpc.internal.AbstractStream.TransportState.DEFAULT_ONREADY_THRESHOLD
+
 		try (final BufferedInputStream is = new BufferedInputStream(new FileInputStream(file))) {
 			final byte[] buffer = new byte[MESSAGE_SIZE_BYTES];
 			boolean first = true;
@@ -167,7 +178,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 					? (int) Math.min(rangeLength, MESSAGE_SIZE_BYTES)
 					: MESSAGE_SIZE_BYTES;
 
+			// ideally this would be implemented async, but given expected server load is very low this simpler blocking impl will do for now.
 			while ((wasReadLength = is.read(buffer, 0, toReadLength)) != -1) {
+				while (!serverCallStreamObserver.isReady()) Thread.sleep(100L);
+				if (serverCallStreamObserver.isCancelled()) break;
+
 				final ReadMediaReply.Builder builder = ReadMediaReply.newBuilder().setContent(ByteString.copyFrom(buffer, 0, wasReadLength));
 				if (first) {
 					builder.setTotalFileLength(file.length());
@@ -176,6 +191,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				}
 				if (range != null) builder.setRangeIndex(0);
 				responseObserver.onNext(builder.build());
+				CHUNKS_SENT_METRIC.inc();
 
 				if (range != null) {
 					totalRead += wasReadLength;
@@ -192,6 +208,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		catch (final IOException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription("File error.").asRuntimeException());
 			return;
+		}
+		catch (final InterruptedException e) {
+			// ignore.
 		}
 	}
 
