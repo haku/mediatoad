@@ -45,10 +45,11 @@ public class RpcStatusServlet extends HttpServlet {
 
 		if (RpcMetrics.serverMethodAndMetrics().size() > 0) {
 			w.println("<h2>server requests</h2>");
-			final Builder<String, Status.Code, String> srTable = ImmutableTable.builder();
+			final Builder<String, String, String> srTable = ImmutableTable.builder();
 			for (final Entry<String, MethodMetrics> mm : RpcMetrics.serverMethodAndMetrics()) {
+				srTable.put(mm.getKey(), "active", String.valueOf(mm.getValue().activeRequests()));
 				for (final Entry<Status.Code, TimeSet> sc : mm.getValue().statusAndCount()) {
-					srTable.put(mm.getKey(), sc.getKey(), timeSetHtml(sc.getValue()));
+					srTable.put(mm.getKey(), String.valueOf(sc.getKey()), timeSetHtml(sc.getValue()));
 				}
 			}
 			tableToHtml(w, srTable.build());
@@ -62,12 +63,13 @@ public class RpcStatusServlet extends HttpServlet {
 		w.println("</table>");
 
 		w.println("<h2>client requests</h2>");
-		final Builder<String, Status.Code, String> crTable = ImmutableTable.builder();
+		final Builder<String, String, String> crTable = ImmutableTable.builder();
 		for (final Entry<String, EndpointRecorder> cm : RpcMetrics.clientMetrics()) {
 			for (final Entry<String, MethodMetrics> mm : cm.getValue().methodAndMetrics()) {
 				final String rowKey = cm.getKey() + mm.getKey();
+				crTable.put(rowKey, "active", String.valueOf(mm.getValue().activeRequests()));
 				for (final Entry<Status.Code, TimeSet> sc : mm.getValue().statusAndCount()) {
-					crTable.put(rowKey, sc.getKey(), timeSetHtml(sc.getValue()));
+					crTable.put(rowKey, String.valueOf(sc.getKey()), timeSetHtml(sc.getValue()));
 				}
 			}
 		}

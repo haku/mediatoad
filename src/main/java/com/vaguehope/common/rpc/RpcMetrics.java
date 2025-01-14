@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.vaguehope.common.util.TotalOverTime;
 
@@ -94,8 +96,8 @@ public class RpcMetrics {
 		}
 
 		@Override
-		public <ReqT, RespT> io.grpc.ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-			MetricServerCall<ReqT, RespT> newCall = new MetricServerCall<>(this.recorder, call.getMethodDescriptor().getFullMethodName(), call);
+		public <ReqT, RespT> io.grpc.ServerCall.Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> call, final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
+			final MetricServerCall<ReqT, RespT> newCall = new MetricServerCall<>(this.recorder, call.getMethodDescriptor().getFullMethodName(), call);
 			return next.startCall(newCall, headers);
 		}
 	}
@@ -112,6 +114,7 @@ public class RpcMetrics {
 
 		@Override
 		public void start(final Listener<RespT> responseListener, final Metadata headers) {
+			this.recorder.recordRequestStart(this.methodName);
 			super.start(new MetricListener(responseListener), headers);
 		}
 
@@ -130,6 +133,7 @@ public class RpcMetrics {
 	}
 
 	private static class MetricServerCall<ReqT, RespT> extends SimpleForwardingServerCall<ReqT, RespT> {
+		private final AtomicBoolean started = new AtomicBoolean(false);
 		private final EndpointRecorder recorder;
 		private final String methodName;
 
@@ -140,7 +144,13 @@ public class RpcMetrics {
 		}
 
 		@Override
-		public void close(Status status, Metadata trailers) {
+		public void request(final int numMessages) {
+			if (this.started.compareAndSet(false, true)) this.recorder.recordRequestStart(this.methodName);
+			super.request(numMessages);
+		}
+
+		@Override
+		public void close(final Status status, final Metadata trailers) {
 			this.recorder.recordRequestResult(this.methodName, status.getCode());
 			super.close(status, trailers);
 		}
@@ -150,14 +160,22 @@ public class RpcMetrics {
 
 		private final ConcurrentMap<String, MethodMetrics> methodMetrics = new ConcurrentHashMap<>();
 
+		public void recordRequestStart(final String methodName) {
+			getMethodMetrics(methodName).recordRequestStart();
+		}
+
 		public void recordRequestResult(final String methodName, final Status.Code status) {
+			getMethodMetrics(methodName).recordStatus(status);
+		}
+
+		private MethodMetrics getMethodMetrics(final String methodName) {
 			MethodMetrics mm = this.methodMetrics.get(methodName);
 			if (mm == null) {
 				mm = new MethodMetrics();
 				final MethodMetrics prev = this.methodMetrics.putIfAbsent(methodName, mm);
 				if (prev != null) mm = prev;
 			}
-			mm.recordStatus(status);
+			return mm;
 		}
 
 		public Set<Entry<String, MethodMetrics>> methodAndMetrics() {
@@ -166,9 +184,16 @@ public class RpcMetrics {
 	}
 
 	public static class MethodMetrics {
+		private final AtomicInteger activeRequests = new AtomicInteger();
 		private final ConcurrentMap<Status.Code, TimeSet> statusMetrics = new ConcurrentHashMap<>();
 
+		public void recordRequestStart() {
+			this.activeRequests.incrementAndGet();
+		}
+
 		public void recordStatus(final Status.Code status) {
+			this.activeRequests.decrementAndGet();
+
 			TimeSet ts = this.statusMetrics.get(status);
 			if (ts == null) {
 				ts = new TimeSet();
@@ -176,6 +201,10 @@ public class RpcMetrics {
 				if (prev != null) ts = prev;
 			}
 			ts.increment();
+		}
+
+		public int activeRequests() {
+			return this.activeRequests.get();
 		}
 
 		public Set<Entry<Status.Code, TimeSet>> statusAndCount() {
