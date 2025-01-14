@@ -181,15 +181,15 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 			// ideally this would be implemented async, but given expected server load is very low this simpler blocking impl will do for now.
 			while ((wasReadLength = is.read(buffer, 0, toReadLength)) != -1) {
-				if (serverCallStreamObserver.isCancelled()) {
-					responseObserver.onError(Status.CANCELLED.asRuntimeException());
-					return;
-				}
 				// fae suspects this blocking impl is preventing the async deadline set in io.grpc.servlet.ServletAdapter
 				// from working, so add our own deadline tracking for safety.
-				if (!serverCallStreamObserver.isReady()) {
+				if (!serverCallStreamObserver.isReady() || serverCallStreamObserver.isCancelled()) {
 					final Deadline deadline = Deadline.after(5, TimeUnit.MINUTES);
-					while (!serverCallStreamObserver.isReady() && !deadline.isExpired()) Thread.sleep(100L);
+					while (!serverCallStreamObserver.isReady() && !serverCallStreamObserver.isCancelled() && !deadline.isExpired()) Thread.sleep(100L);
+					if (serverCallStreamObserver.isCancelled()) {
+						responseObserver.onError(Status.CANCELLED.asRuntimeException());
+						return;
+					}
 					if (deadline.isExpired()) {
 						responseObserver.onError(Status.DEADLINE_EXCEEDED.asRuntimeException());
 						return;
