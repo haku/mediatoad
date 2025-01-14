@@ -82,6 +82,7 @@ import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.Watcher;
 
+import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import io.prometheus.metrics.instrumentation.jvm.JvmMemoryMetrics;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 
@@ -270,6 +271,13 @@ public final class Main {
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
+			GaugeWithCallback.builder().name("jetty_all_threads")
+					.callback((cb) -> cb.call(server.getThreadPool().getThreads()))
+					.register();
+			GaugeWithCallback.builder().name("jetty_idle_threads")
+					.callback((cb) -> cb.call(server.getThreadPool().getIdleThreads()))
+					.register();
+
 			server.setHandler(wrapWithRewrites(handler));
 
 			if (bindAddresses != null) {
