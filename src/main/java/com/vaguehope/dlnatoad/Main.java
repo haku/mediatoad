@@ -215,6 +215,13 @@ public final class Main {
 		final Server server = startContentServer(
 				contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, bindAddresses, hostName);
 
+		GaugeWithCallback.builder().name("jetty_all_threads")
+				.callback((cb) -> cb.call(server.getThreadPool().getThreads()))
+				.register();
+		GaugeWithCallback.builder().name("jetty_idle_threads")
+				.callback((cb) -> cb.call(server.getThreadPool().getIdleThreads()))
+				.register();
+
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) server.getConnectors()[0]).getPort());
 		LOG.info("Self: {}", externalUrls.getSelfUri());
 
@@ -271,13 +278,6 @@ public final class Main {
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
-			GaugeWithCallback.builder().name("jetty_all_threads")
-					.callback((cb) -> cb.call(server.getThreadPool().getThreads()))
-					.register();
-			GaugeWithCallback.builder().name("jetty_idle_threads")
-					.callback((cb) -> cb.call(server.getThreadPool().getIdleThreads()))
-					.register();
-
 			server.setHandler(wrapWithRewrites(handler));
 
 			if (bindAddresses != null) {
