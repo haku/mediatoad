@@ -51,6 +51,7 @@ public class TotalOverTime {
 	}
 
 	public long get() {
+		increment(0L);
 		return this.total.get();
 	}
 
