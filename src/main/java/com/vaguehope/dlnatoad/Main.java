@@ -82,6 +82,7 @@ import com.vaguehope.dlnatoad.util.NetHelper;
 import com.vaguehope.dlnatoad.util.ProgressLogFileListener;
 import com.vaguehope.dlnatoad.util.Watcher;
 
+import io.prometheus.metrics.instrumentation.jvm.JvmMemoryMetrics;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 
 public final class Main {
@@ -137,6 +138,8 @@ public final class Main {
 			if (status != 0) System.exit(status);
 			return;
 		}
+
+		JvmMemoryMetrics.builder().register();
 
 		final String hostName = InetAddress.getLocalHost().getHostName();
 		LOG.info("hostName: {}", hostName);
