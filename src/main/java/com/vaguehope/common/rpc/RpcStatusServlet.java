@@ -33,11 +33,17 @@ public class RpcStatusServlet extends HttpServlet {
 		final PrintWriter w = resp.getWriter();
 		w.println("<!DOCTYPE html><html>"
 				+ "<head><style>"
+				+ "body {"
+				+ "  font-family: monospace;"
+				+ "  background: #000;"
+				+ "  color: #fff;"
+				+ "}"
 				+ "table, th, td {"
 				+ "  border: 1px solid black;"
 				+ "  border-collapse: collapse;"
 				+ "  padding: 0.5em;"
 				+ "  text-align: center;"
+				+ "  border: #777 1px solid;"
 				+ "}"
 				+ "</style></head>"
 				+ "<body>");
