@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
+import com.vaguehope.common.rpc.RpcPrometheusMetrics;
 import com.vaguehope.common.rpc.RpcStatusServlet;
 import com.vaguehope.common.servlet.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.Args.ArgsException;
@@ -369,6 +370,8 @@ public final class Main {
 	}
 
 	private static Handler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+		RpcPrometheusMetrics.setup();
+
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
