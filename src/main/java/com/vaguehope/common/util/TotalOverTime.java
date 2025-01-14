@@ -37,7 +37,7 @@ public class TotalOverTime {
 		final int expiredBucketCount = (int) ((now - lastIncrement) / this.bucketDurationNanos);
 		if (expiredBucketCount > 0) {
 			final int lastIncrementedBucket = (int) ((lastIncrement % this.totalDurationNanos) / this.bucketDurationNanos);
-			for (int x = 1; x <= expiredBucketCount; x++) {
+			for (int x = 1; x <= Math.min(expiredBucketCount, this.ringBuffer.length()); x++) {
 				int i = lastIncrementedBucket + x;
 				if (i > this.ringBuffer.length() - 1) i -= this.ringBuffer.length();
 				final long removed = this.ringBuffer.getAndSet(i, 0);
