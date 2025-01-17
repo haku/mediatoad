@@ -4,6 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mockito;
 
 import com.vaguehope.dlnatoad.MetricAssert;
@@ -149,9 +151,14 @@ public class MediaImplTest {
 		final StreamObserver<RecordPlaybackReply> respObs = mock(StreamObserver.class);
 		this.undertest.recordPlayback(req, respObs);
 
-		verify(this.writableMediaDb).recordPlayback("someid", time, true);
+		final InOrder ord = inOrder(this.writableMediaDb);
+		ord.verify(this.writableMediaDb).recordPlayback("someid", time, true);
+		ord.verify(this.writableMediaDb).close();
 		verify(respObs).onNext(RecordPlaybackReply.newBuilder().build());
 		verify(respObs).onCompleted();
+
+		this.undertest.recordPlayback(req, respObs);
+		ord.verifyNoMoreInteractions();
 	}
 
 	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {

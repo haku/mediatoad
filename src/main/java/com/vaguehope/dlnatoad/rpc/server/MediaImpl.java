@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.C;
@@ -75,6 +77,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	private final ContentTree contentTree;
 	private final MediaDb mediaDb;
+
+	private final Cache<String, Boolean> recentlyReportedPlaybacks = CacheBuilder.newBuilder()
+			.expireAfterWrite(15, TimeUnit.MINUTES).build();
 
 	public MediaImpl(final ContentTree contentTree, final MediaDb mediaDb) {
 		this.contentTree = contentTree;
@@ -316,6 +321,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void recordPlayback(final RecordPlaybackRequest request, final StreamObserver<RecordPlaybackReply> responseObserver) {
+		if (this.recentlyReportedPlaybacks.getIfPresent(request.getId()) != null) {
+			responseObserver.onError(Status.ALREADY_EXISTS.withDescription("playback already reported recently.").asRuntimeException());
+			return;
+		}
+
 		final long millisAgo = System.currentTimeMillis() - request.getStartTimeMillis();
 		if (millisAgo > TimeUnit.HOURS.toMillis(24)) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("start_time_millis more than 24h ago.").asRuntimeException());
@@ -342,6 +352,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		responseObserver.onNext(RecordPlaybackReply.newBuilder().build());
 		responseObserver.onCompleted();
+
+		this.recentlyReportedPlaybacks.put(request.getId(), Boolean.TRUE);
 	}
 
 	private ContentItem getItemCheckingAuth(final String id, final StreamObserver<?> responseObserver) {
