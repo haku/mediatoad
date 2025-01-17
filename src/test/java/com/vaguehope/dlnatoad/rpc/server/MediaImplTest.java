@@ -150,6 +150,8 @@ public class MediaImplTest {
 		this.undertest.recordPlayback(req, respObs);
 
 		verify(this.writableMediaDb).recordPlayback("someid", time, true);
+		verify(respObs).onNext(RecordPlaybackReply.newBuilder().build());
+		verify(respObs).onCompleted();
 	}
 
 	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {

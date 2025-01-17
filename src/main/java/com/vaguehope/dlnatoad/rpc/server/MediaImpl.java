@@ -327,7 +327,10 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
-		if (item == null) return;
+		if (item == null) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("item not found.").asRuntimeException());
+			return;
+		}
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.recordPlayback(request.getId(), request.getStartTimeMillis(), request.getCompleted());
@@ -336,6 +339,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
 			return;
 		}
+
+		responseObserver.onNext(RecordPlaybackReply.newBuilder().build());
+		responseObserver.onCompleted();
 	}
 
 	private ContentItem getItemCheckingAuth(final String id, final StreamObserver<?> responseObserver) {
