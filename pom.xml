@@ -15,13 +15,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<antlr.version>4.13.2</antlr.version>
-		<grpc.version>1.66.0</grpc.version>
-		<jetty.version>10.0.22</jetty.version>
-		<jupnp.version>3.0.2</jupnp.version>
+		<grpc.version>1.69.1</grpc.version>
+		<jetty.version>10.0.24</jetty.version>
+		<jupnp.version>3.0.3</jupnp.version>
 		<opentelemetry.version>1.46.0</opentelemetry.version>
-		<prometheus.version>1.3.1</prometheus.version>
+		<prometheus.version>1.3.5</prometheus.version>
 		<slf4j.version>2.0.16</slf4j.version>
-		<twelvemonkeys-imageio.version>3.11.0</twelvemonkeys-imageio.version>
+		<twelvemonkeys-imageio.version>3.12.0</twelvemonkeys-imageio.version>
 
 		<junit.version>4.13.2</junit.version>
 	</properties>
@@ -314,7 +314,7 @@
 		<dependency>
 			<groupId>org.xerial</groupId>
 			<artifactId>sqlite-jdbc</artifactId>
-			<version>3.46.1.0</version>
+			<version>3.48.0.0</version>
 		</dependency>
 
 		<!-- File Decoding -->
@@ -351,19 +351,19 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.16.1</version>
+			<version>2.18.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
-			<version>1.12.0</version>
+			<version>1.13.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>33.3.0-jre</version>
+			<version>33.4.0-jre</version>
 		</dependency>
 
 		<!-- Prometheus -->
@@ -437,7 +437,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.12.0</version>
+			<version>5.15.2</version>
 			<scope>test</scope>
 		</dependency>
 
