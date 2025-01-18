@@ -174,23 +174,6 @@
 		</extensions>
 	</build>
 
-	<repositories>
-
-		<repository>
-			<id>repo.jenkins-ci.org</id>
-			<url>https://repo.jenkins-ci.org/public/</url>
-			<layout>default</layout>
-			<releases>
-				<enabled>true</enabled>
-				<checksumPolicy>fail</checksumPolicy>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-
-	</repositories>
-
 	<dependencies>
 
 		<!-- CLI -->
