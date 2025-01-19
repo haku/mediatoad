@@ -126,7 +126,7 @@ public class RpcMetrics {
 
 			@Override
 			public void onClose(final Status status, final Metadata trailers) {
-				MetricClientCall.this.recorder.recordRequestResult(MetricClientCall.this.methodName, status.getCode());
+				MetricClientCall.this.recorder.recordRequestResult(MetricClientCall.this.methodName, status.getCode(), true);
 				super.onClose(status, trailers);
 			}
 		}
@@ -151,7 +151,7 @@ public class RpcMetrics {
 
 		@Override
 		public void close(final Status status, final Metadata trailers) {
-			this.recorder.recordRequestResult(this.methodName, status.getCode());
+			this.recorder.recordRequestResult(this.methodName, status.getCode(), this.started.get());
 			super.close(status, trailers);
 		}
 	}
@@ -164,8 +164,8 @@ public class RpcMetrics {
 			getMethodMetrics(methodName).recordRequestStart();
 		}
 
-		public void recordRequestResult(final String methodName, final Status.Code status) {
-			getMethodMetrics(methodName).recordStatus(status);
+		public void recordRequestResult(final String methodName, final Status.Code status, final boolean wasStarted) {
+			getMethodMetrics(methodName).recordStatus(status, wasStarted);
 		}
 
 		private MethodMetrics getMethodMetrics(final String methodName) {
@@ -191,8 +191,8 @@ public class RpcMetrics {
 			this.activeRequests.incrementAndGet();
 		}
 
-		public void recordStatus(final Status.Code status) {
-			this.activeRequests.decrementAndGet();
+		public void recordStatus(final Status.Code status, final boolean wasStarted) {
+			if (wasStarted) this.activeRequests.decrementAndGet();
 
 			TimeSet ts = this.statusMetrics.get(status);
 			if (ts == null) {
