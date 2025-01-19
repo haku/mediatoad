@@ -5,4 +5,5 @@ bin
 .settings
 tree.txt
 userfile
+rpcauth
 db.db

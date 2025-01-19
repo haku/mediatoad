@@ -153,6 +153,9 @@ public class AuthFilter implements Filter {
 			if (user.hasPermission(Permission.EDITDIRPREFS)) {
 				ReqAttr.ALLOW_EDIT_DIR_PREFS.set(req, Boolean.TRUE);
 			}
+			if (user.hasPermission(Permission.MANAGERPC)) {
+				ReqAttr.ALLOW_MANAGE_RPC.set(req, Boolean.TRUE);
+			}
 		}
 
 //		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);

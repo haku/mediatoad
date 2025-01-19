@@ -30,7 +30,12 @@ public class RpcDivertingHandler extends AbstractHandler {
 	public void handle(final String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response)
 			throws IOException, ServletException {
 		if (ServletAdapter.isGrpc(request)) {
-			this.rpcHandler.handle(target, baseRequest, request, response);
+			if (this.rpcHandler != null) {
+				this.rpcHandler.handle(target, baseRequest, request, response);
+			}
+			else {
+				response.setStatus(HttpServletResponse.SC_NOT_IMPLEMENTED);
+			}
 		}
 		else {
 			this.otherHandler.handle(target, baseRequest, request, response);
@@ -45,13 +50,13 @@ public class RpcDivertingHandler extends AbstractHandler {
 			throw new IllegalStateException(getState());
 
 		super.setServer(server);
-		this.rpcHandler.setServer(server);
+		if (this.rpcHandler != null) this.rpcHandler.setServer(server);
 		this.otherHandler.setServer(server);
 	}
 
 	@Override
 	public void destroy() {
-		this.rpcHandler.destroy();
+		if (this.rpcHandler != null) this.rpcHandler.destroy();
 		this.otherHandler.destroy();
 		super.destroy();
 	}

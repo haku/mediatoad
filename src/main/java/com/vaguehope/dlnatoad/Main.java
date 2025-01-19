@@ -59,7 +59,10 @@ import com.vaguehope.dlnatoad.media.MediaInfo;
 import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.rpc.client.RemoteContentServlet;
 import com.vaguehope.dlnatoad.rpc.client.RpcClient;
+import com.vaguehope.dlnatoad.rpc.server.JwtInterceptor;
+import com.vaguehope.dlnatoad.rpc.server.JwtLoader;
 import com.vaguehope.dlnatoad.rpc.server.MediaImpl;
+import com.vaguehope.dlnatoad.rpc.server.RpcAuthServlet;
 import com.vaguehope.dlnatoad.rpc.server.RpcDivertingHandler;
 import com.vaguehope.dlnatoad.rpc.server.RpcServlet;
 import com.vaguehope.dlnatoad.tagdeterminer.TagDeterminerController;
@@ -271,10 +274,13 @@ public final class Main {
 			defaultPort = false;
 		}
 
+		final File rpcAuthFile = args.getRpcAuthFile();
+		final JwtLoader rpcJwtLoader = rpcAuthFile != null ? new JwtLoader(rpcAuthFile) : null;
+
 		while (true) {
-			final Handler rpcHandler = makeRpcHandler(contentTree, mediaDb, args);
+			final Handler rpcHandler = makeRpcHandler(rpcJwtLoader, contentTree, mediaDb, args);
 			final Handler mainHandler = makeContentHandler(
-					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, hostName);
+					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcJwtLoader, rpcClient, thumbnailGenerator, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -313,6 +319,7 @@ public final class Main {
 			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
+			final JwtLoader rpcJwtLoader,
 			final RpcClient rpcClient,
 			final ThumbnailGenerator thumbnailGenerator,
 			final Args args,
@@ -339,11 +346,16 @@ public final class Main {
 		final AuthFilter authFilter = new AuthFilter(users, authTokens, args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
+		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
+		if (rpcJwtLoader != null) {
+			servletHandler.addServlet(new ServletHolder(new RpcAuthServlet(rpcJwtLoader)), RpcAuthServlet.CONTEXTPATH);
+			servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);  // TODO require permission like /upnp
+		}
+		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
+
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
 		final ContentServlet contentServlet = new ContentServlet(contentTree, contentServingHistory);
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
-
-		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
 
 		final ServletCommon servletCommon = new ServletCommon(contentTree, hostName, contentServingHistory, mediaDb != null, args.getTemplateRoot());
 
@@ -351,8 +363,6 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, contentTree, contentServlet, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
-		servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);  // TODO require permission like /upnp
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(contentTree, thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, contentTree, mediaDb, tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
@@ -380,7 +390,8 @@ public final class Main {
 		return handler;
 	}
 
-	private static Handler makeRpcHandler(final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+	private static Handler makeRpcHandler(final JwtLoader rpcJwtLoader, final ContentTree contentTree, final MediaDb mediaDb, final Args args) throws IOException {
+		if (rpcJwtLoader == null) return null;
 		RpcPrometheusMetrics.setup();
 
 		final ServletContextHandler handler = new ServletContextHandler();
@@ -390,8 +401,9 @@ public final class Main {
 			RequestLoggingFilter.addTo(handler);
 		}
 
+		final JwtInterceptor jwtInterceptor = new JwtInterceptor(rpcJwtLoader);
 		final MediaImpl mediaImpl = new MediaImpl(contentTree, mediaDb);
-		handler.addServlet(new ServletHolder(new RpcServlet(mediaImpl)), "/*");
+		handler.addServlet(new ServletHolder(new RpcServlet(jwtInterceptor, mediaImpl)), "/*");
 		return handler;
 	}
 

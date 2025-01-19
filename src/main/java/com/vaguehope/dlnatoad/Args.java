@@ -30,6 +30,7 @@ public class Args {
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
+	@Option(name = "--rpcauth", usage = "Path for RPC auth file.") private String rpcAuthFile;
 	@Option(name = "--remote", usage = "HTTP(S) address of remote instance.", metaVar = "https://example.com/") private List<String> remotes;
 	@Option(name = "--tagdeterminer", usage = "HTTP(S) address of remote a TagDeterminer and query for which items it should be offered.", metaVar = "https://example.com/|f~mydir/path") private List<String> tagDeterminers;
 	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
@@ -140,6 +141,10 @@ public class Args {
 	public File getDropDir() throws ArgsException {
 		if (this.dropDir != null && this.db == null) throw new ArgsException("--dropdir requires --db to be set.");
 		return checkIsDirOrNull(this.dropDir);
+	}
+
+	public File getRpcAuthFile() {
+		return this.rpcAuthFile != null ? new File(this.rpcAuthFile) : null;
 	}
 
 	public List<String> getRemotes() {

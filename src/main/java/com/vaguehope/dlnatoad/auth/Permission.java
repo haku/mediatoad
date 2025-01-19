@@ -7,7 +7,8 @@ import com.google.common.collect.ImmutableMap.Builder;
 
 public enum Permission {
 	EDITTAGS("+edittags"),
-	EDITDIRPREFS("+editdirprefs");
+	EDITDIRPREFS("+editdirprefs"),
+	MANAGERPC("+managerpc");
 
 	private static final Map<String, Permission> KEY_TO_PERMISSION;
 	static {

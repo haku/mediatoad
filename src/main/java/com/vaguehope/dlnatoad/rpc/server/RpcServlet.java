@@ -19,9 +19,10 @@ public class RpcServlet extends HttpServlet {
 
 	private final ServletAdapter servletAdapter;
 
-	public RpcServlet(final MediaImpl mediaImpl) {
+	public RpcServlet(final JwtInterceptor jwtInterceptor, final MediaImpl mediaImpl) {
 		this.servletAdapter = new ServletServerBuilder()
 				.addService(mediaImpl)
+				.intercept(jwtInterceptor)
 				.intercept(RpcMetrics.serverInterceptor())
 				.buildServletAdapter();
 	}
