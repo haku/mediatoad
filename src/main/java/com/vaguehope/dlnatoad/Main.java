@@ -60,7 +60,7 @@ import com.vaguehope.dlnatoad.media.ThumbnailGenerator;
 import com.vaguehope.dlnatoad.rpc.client.RemoteContentServlet;
 import com.vaguehope.dlnatoad.rpc.client.RpcClient;
 import com.vaguehope.dlnatoad.rpc.server.JwtInterceptor;
-import com.vaguehope.dlnatoad.rpc.server.JwtLoader;
+import com.vaguehope.dlnatoad.rpc.server.JwkLoader;
 import com.vaguehope.dlnatoad.rpc.server.MediaImpl;
 import com.vaguehope.dlnatoad.rpc.server.RpcAuthServlet;
 import com.vaguehope.dlnatoad.rpc.server.RpcDivertingHandler;
@@ -275,7 +275,7 @@ public final class Main {
 		}
 
 		final File rpcAuthFile = args.getRpcAuthFile();
-		final JwtLoader rpcJwtLoader = rpcAuthFile != null ? new JwtLoader(rpcAuthFile) : null;
+		final JwkLoader rpcJwtLoader = rpcAuthFile != null ? new JwkLoader(rpcAuthFile) : null;
 
 		while (true) {
 			final Handler rpcHandler = makeRpcHandler(rpcJwtLoader, contentTree, mediaDb, args);
@@ -319,7 +319,7 @@ public final class Main {
 			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
-			final JwtLoader rpcJwtLoader,
+			final JwkLoader rpcJwtLoader,
 			final RpcClient rpcClient,
 			final ThumbnailGenerator thumbnailGenerator,
 			final Args args,
@@ -390,7 +390,7 @@ public final class Main {
 		return handler;
 	}
 
-	private static Handler makeRpcHandler(final JwtLoader rpcJwtLoader, final ContentTree contentTree, final MediaDb mediaDb, final Args args) throws IOException {
+	private static Handler makeRpcHandler(final JwkLoader rpcJwtLoader, final ContentTree contentTree, final MediaDb mediaDb, final Args args) throws IOException {
 		if (rpcJwtLoader == null) return null;
 		RpcPrometheusMetrics.setup();
 

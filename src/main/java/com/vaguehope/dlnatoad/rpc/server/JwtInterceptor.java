@@ -32,11 +32,11 @@ public class JwtInterceptor implements ServerInterceptor {
 	private static final String BEARER_TYPE = "Bearer";
 	private static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
-	private final JwtLoader loader;
+	private final JwkLoader loader;
 	private final JwtParser secureParser;
 	private final JwtParser insecureParser;
 
-	public JwtInterceptor(final JwtLoader loader) {
+	public JwtInterceptor(final JwkLoader loader) {
 		this.loader = loader;
 		this.secureParser = Jwts.parser()
 				.keyLocator(loader)

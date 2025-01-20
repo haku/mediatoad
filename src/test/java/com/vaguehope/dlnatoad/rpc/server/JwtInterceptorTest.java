@@ -33,7 +33,7 @@ public class JwtInterceptorTest {
 
 	private static final String USERNAME = "user@hostname";
 
-	private JwtLoader loader;
+	private JwkLoader loader;
 	private JwtInterceptor undertest;
 
 	private ServerCall serverCall;
@@ -41,7 +41,7 @@ public class JwtInterceptorTest {
 
 	@Before
 	public void before() throws Exception {
-		this.loader = mock(JwtLoader.class);
+		this.loader = mock(JwkLoader.class);
 		this.undertest = new JwtInterceptor(this.loader);
 
 		this.serverCall = mock(ServerCall.class);

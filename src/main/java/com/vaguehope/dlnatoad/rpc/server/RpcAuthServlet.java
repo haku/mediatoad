@@ -21,9 +21,9 @@ public class RpcAuthServlet extends HttpServlet {
 	public static final String CONTEXTPATH = "/rpcauth";
 	private static final long serialVersionUID = 436332146470305421L;
 
-	private final JwtLoader jwtLoader;
+	private final JwkLoader jwtLoader;
 
-	public RpcAuthServlet(final JwtLoader jwtLoader) {
+	public RpcAuthServlet(final JwkLoader jwtLoader) {
 		this.jwtLoader = jwtLoader;
 	}
 

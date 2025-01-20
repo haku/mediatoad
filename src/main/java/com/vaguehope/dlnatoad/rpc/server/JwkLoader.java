@@ -28,13 +28,13 @@ import io.jsonwebtoken.security.JwkSetBuilder;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
 
-public class JwtLoader extends LocatorAdapter<Key> {
+public class JwkLoader extends LocatorAdapter<Key> {
 
 	static final Gson GSON = new GsonBuilder()
 			.registerTypeHierarchyAdapter(io.jsonwebtoken.lang.Supplier.class, GsonSupplierSerializer.INSTANCE)
 			.setFormattingStyle(FormattingStyle.PRETTY)
 			.create();
-	private static final Logger LOG = LoggerFactory.getLogger(JwtLoader.class);
+	private static final Logger LOG = LoggerFactory.getLogger(JwkLoader.class);
 
 	private final File rpcAuthFile;
 	private final Map<String, PublicJwk<?>> publicKeys = new ConcurrentHashMap<>();
@@ -42,7 +42,7 @@ public class JwtLoader extends LocatorAdapter<Key> {
 			.maximumSize(10)
 			.build();
 
-	public JwtLoader(final File rpcAuthFile) throws IOException {
+	public JwkLoader(final File rpcAuthFile) throws IOException {
 		this.rpcAuthFile = rpcAuthFile;
 		ensureFileExists(rpcAuthFile);
 		loadJwkSetFile();

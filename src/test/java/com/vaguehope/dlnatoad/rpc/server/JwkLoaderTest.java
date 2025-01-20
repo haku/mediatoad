@@ -24,7 +24,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
 
-public class JwtLoaderTest {
+public class JwkLoaderTest {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
@@ -34,7 +34,7 @@ public class JwtLoaderTest {
 		final KeyPair pair = Jwts.SIG.ES512.keyPair().build();
 		final File f = writeSet(pair);
 
-		final JwtLoader undertest = new JwtLoader(f);
+		final JwkLoader undertest = new JwkLoader(f);
 
 		final String rawJws = Jwts.builder()
 				.expiration(Date.from(Instant.now().plusSeconds(30)))
@@ -62,14 +62,14 @@ public class JwtLoaderTest {
 				.id("bob")
 				.build();
 
-		final JwtLoader undertest = new JwtLoader(f);
+		final JwkLoader undertest = new JwkLoader(f);
 		undertest.authorisePublicKey("admin-user", "bob", newJwk);
 
 		final Map<String, PublicJwk<?>> actual1 = undertest.getAllowedPublicKeys();
 		assertThat(actual1, hasKey("alice"));
 		assertThat(actual1, hasKey("bob"));
 
-		final Map<String, PublicJwk<?>> actual2 = new JwtLoader(f).getAllowedPublicKeys();
+		final Map<String, PublicJwk<?>> actual2 = new JwkLoader(f).getAllowedPublicKeys();
 		assertThat(actual2, hasKey("alice"));
 		assertThat(actual2, hasKey("bob"));
 	}
@@ -79,7 +79,7 @@ public class JwtLoaderTest {
 				.key(pair.getPublic())
 				.id("alice")
 				.build();
-		final String json = JwtLoader.GSON.toJson(Jwks.set().add(jwk).build());
+		final String json = JwkLoader.GSON.toJson(Jwks.set().add(jwk).build());
 		final File f = this.tmp.newFile();
 		FileUtils.write(f, json, StandardCharsets.UTF_8);
 		return f;
