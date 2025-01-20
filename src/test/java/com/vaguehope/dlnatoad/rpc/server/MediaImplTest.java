@@ -4,10 +4,13 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
@@ -39,6 +42,9 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 
+import io.grpc.Context;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.prometheus.metrics.model.snapshots.Labels;
@@ -116,7 +122,7 @@ public class MediaImplTest {
 		testRangeRequest((int) (1.5 * 256 * 1024), (1024 * 1024) - 1, 1024 * 1024, 3);
 	}
 
-	private void testRangeRequest(int first, int last, int fileLength, int expectedChunkCount) throws IOException {
+	private void testRangeRequest(final int first, final int last, final int fileLength, final int expectedChunkCount) throws IOException {
 		final ReadMediaRequest req = ReadMediaRequest.newBuilder()
 				.setId("someid")
 				.addRange(Range.newBuilder().setFirst(first).setLast(last).build())
@@ -128,7 +134,7 @@ public class MediaImplTest {
 		this.undertest.readMedia(req, respObs);
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
-		byte[] expected = new byte[last - first + 1];
+		final byte[] expected = new byte[last - first + 1];
 		System.arraycopy(data, first, expected, 0, expected.length);
 		final List<ReadMediaReply> msgs = getRespMsgs(expectedChunkCount, respObs);
 		assertEquals(fileLength, msgs.get(0).getTotalFileLength());
@@ -161,18 +167,59 @@ public class MediaImplTest {
 		ord.verifyNoMoreInteractions();
 	}
 
-	private byte[] mockItemFileData(String id, String parentId, int length) throws IOException {
+	@SuppressWarnings({ "resource", "unchecked" })
+	@Test
+	public void itChecksAuthWhenRecordingPlayback() throws Exception {
+		final ContentNode node = mockNode("parent");
+		mockItem("someid", "parent");
+
+		final long time = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30);
+		final RecordPlaybackRequest req = RecordPlaybackRequest.newBuilder()
+				.setId("someid")
+				.setStartTimeMillis(time)
+				.setCompleted(true)
+				.build();
+
+		final StreamObserver<RecordPlaybackReply> respObs = mock(StreamObserver.class);
+
+		when(node.isUserAuth(nullable(String.class))).thenReturn(false);
+		this.undertest.recordPlayback(req, respObs);
+		verifyErrorStatus(respObs, Code.NOT_FOUND);
+		verifyNoInteractions(this.writableMediaDb);
+
+		reset(respObs);
+		final Context ctx = Context.current().withValue(JwtInterceptor.USERNAME_CONTEXT_KEY, "someone");
+		ctx.run(() -> this.undertest.recordPlayback(req, respObs));
+		verifyErrorStatus(respObs, Code.NOT_FOUND);
+		verifyNoInteractions(this.writableMediaDb);
+
+		when(node.isUserAuth("someone")).thenReturn(true);
+		ctx.run(() -> this.undertest.recordPlayback(req, respObs));
+		verify(this.writableMediaDb).recordPlayback("someid", time, true);
+	}
+
+	private static void verifyErrorStatus(final StreamObserver<?> observer, final Code code) {
+		final ArgumentCaptor<StatusRuntimeException> cap = ArgumentCaptor.forClass(StatusRuntimeException.class);
+		final InOrder ord = inOrder(observer);
+		ord.verify(observer).onError(cap.capture());
+		assertEquals(code, cap.getValue().getStatus().getCode());
+		ord.verifyNoMoreInteractions();
+	}
+
+	private byte[] mockItemFileData(final String id, final String parentId, final int length) throws IOException {
 		final ContentItem item = mockItem(id, parentId);
 		mockNode(parentId);
 		return makeFile(item, length);
 	}
 
-	private void mockNode(String id) {
+	private ContentNode mockNode(final String id) {
 		final ContentNode node = mock(ContentNode.class);
+		when(node.isUserAuth(nullable(String.class))).thenReturn(true);
 		when(this.contentTree.getNode(id)).thenReturn(node);
+		return node;
 	}
 
-	private ContentItem mockItem(String id, String parentId) {
+	private ContentItem mockItem(final String id, final String parentId) {
 		final ContentItem item = mock(ContentItem.class);
 		when(item.getId()).thenReturn(id);
 		when(item.getParentId()).thenReturn(parentId);
@@ -181,7 +228,7 @@ public class MediaImplTest {
 		return item;
 	}
 
-	private byte[] makeFile(final ContentItem item, int length) throws IOException {
+	private byte[] makeFile(final ContentItem item, final int length) throws IOException {
 		final File file = this.tmp.newFile();
 		final byte[] data = new byte[length];
 		fillArray(data);
@@ -197,7 +244,7 @@ public class MediaImplTest {
 		}
 	}
 
-	private static List<ReadMediaReply> getRespMsgs(int expectedChunks, final StreamObserver<ReadMediaReply> respObs) {
+	private static List<ReadMediaReply> getRespMsgs(final int expectedChunks, final StreamObserver<ReadMediaReply> respObs) {
 		final ArgumentCaptor<ReadMediaReply> cap = ArgumentCaptor.forClass(ReadMediaReply.class);
 		verify(respObs, times(expectedChunks)).onNext(cap.capture());
 		return cap.getAllValues();
@@ -210,6 +257,5 @@ public class MediaImplTest {
 		}
 		return actual;
 	}
-
 
 }

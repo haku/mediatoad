@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -99,11 +100,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void hasMedia(final HasMediaRequest request, final StreamObserver<HasMediaReply> responseObserver) {
-		final ContentItem item = getItemCheckingAuth(request.getId(), () -> {
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+
+		final ContentItem item = getItemCheckingAuth(username, request.getId(), () -> {
 			responseObserver.onNext(HasMediaReply.newBuilder().setExistence(FileExistance.UNKNOWN).build());
 			responseObserver.onCompleted();
 		});
-
 
 		if (item == null) return;
 
@@ -132,16 +134,17 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void listNode(final ListNodeRequest request, final StreamObserver<ListNodeReply> responseObserver) {
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+
 		final ContentNode node = this.contentTree.getNode(request.getNodeId());
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-		if (node == null || node.hasAuthList()) {
+		if (node == null || !node.isUserAuth(username)) {
 			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
 			return;
 		}
 
 		final ListNodeReply.Builder reply = ListNodeReply.newBuilder();
 		reply.setNode(nodeToRpcNode(node));
-		for (final ContentNode n : node.nodesUserHasAuth(null)) {
+		for (final ContentNode n : node.nodesUserHasAuth(username)) {
 			reply.addChild(nodeToRpcNode(n));
 		}
 		node.withEachItem((i) -> reply.addItem(itemToRpcItem(i)));
@@ -152,7 +155,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void readMedia(final ReadMediaRequest request, final StreamObserver<ReadMediaReply> responseObserver) {
-		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+
+		final ContentItem item = getItemCheckingAuth(username, request.getId(), responseObserver);
 		if (item == null) return;
 
 		final File file = item.getFile();
@@ -234,8 +239,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void search(final SearchRequest request, final StreamObserver<SearchReply> responseObserver) {
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-
 		final int maxResults = request.getMaxResults() == 0 ? MAX_SEARCH_RESULTS : request.getMaxResults();
 		if (maxResults < 1) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Invalid max_results.").asRuntimeException());
@@ -275,15 +278,18 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 		if (sorts.size() < 1) sorts.add(SortColumn.FILE_PATH.asc());
 
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearch(request.getQuery(), null, sorts).execute(this.mediaDb, maxResults, 0);
+			ids = DbSearchParser.parseSearch(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
 			return;
 		}
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, null);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
 
 		final SearchReply.Builder ret = SearchReply.newBuilder();
 		for (final ContentItem i : results) {
@@ -300,16 +306,19 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+
 		final List<String> ids;
 		try {
-			ids = DbSearchParser.parseSearchForChoose(request.getQuery(), null, request.getMethod()).execute(this.mediaDb, request.getCount(), 0);
+			ids = DbSearchParser.parseSearchForChoose(request.getQuery(), authIds, request.getMethod()).execute(this.mediaDb, request.getCount(), 0);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
 			return;
 		}
 
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, null);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
 		for (final ContentItem i : results) {
@@ -336,11 +345,10 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
-		final ContentItem item = getItemCheckingAuth(request.getId(), responseObserver);
-		if (item == null) {
-			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("item not found.").asRuntimeException());
-			return;
-		}
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+
+		final ContentItem item = getItemCheckingAuth(username, request.getId(), responseObserver);
+		if (item == null) return;
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.recordPlayback(request.getId(), request.getStartTimeMillis(), request.getCompleted());
@@ -356,8 +364,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		this.recentlyReportedPlaybacks.put(request.getId(), Boolean.TRUE);
 	}
 
-	private ContentItem getItemCheckingAuth(final String id, final StreamObserver<?> responseObserver) {
-		return getItemCheckingAuth(id, () -> {
+	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver) {
+		return getItemCheckingAuth(username, id, () -> {
 			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
 		});
 	}
@@ -365,7 +373,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	/**
 	 * if response is null then error has already been returned to caller.
 	 */
-	private ContentItem getItemCheckingAuth(final String itemId, final Runnable onNotFound) {
+	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound) {
 		final ContentItem item = this.contentTree.getItem(itemId);
 		if (item == null) {
 			onNotFound.run();
@@ -373,8 +381,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		// TODO once user auth is a thing, check that here to allow access to protected items.
-		if (node == null || node.hasAuthList()) {
+		if (node == null || !node.isUserAuth(username)) {
 			onNotFound.run();
 			return null;
 		}
