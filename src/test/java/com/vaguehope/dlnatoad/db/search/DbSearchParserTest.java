@@ -11,6 +11,7 @@ import static org.junit.Assert.assertNotEquals;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,9 +23,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.db.FileIdAndTags;
 import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
@@ -570,6 +573,19 @@ public class DbSearchParserTest {
 		runQuery("t=tag h>1080", t2, t3);
 
 		runQuery("t=tag w>=2000 w<3000", t2);
+	}
+
+	@Test
+	public void itIncludesTags() throws Exception {
+		final long time = this.mockMediaMetadataStore.getNowMillis();
+		final String t1 = this.mockMediaMetadataStore.addFileWithNameAndTags("f1", "foo", "bar");
+		final String t2 = this.mockMediaMetadataStore.addFileWithNameAndTags("f2", "bar");
+
+		final List<FileIdAndTags> actual = DbSearchParser.parseSearchWithTags("t=bar", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb);
+		assertEquals(Arrays.asList(
+				new FileIdAndTags(t1, Arrays.asList(new Tag("bar", time, false), new Tag("foo", time, false))),
+				new FileIdAndTags(t2, Arrays.asList(new Tag("bar", time, false)))
+				), actual);
 	}
 
 	@Test

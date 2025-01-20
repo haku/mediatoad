@@ -38,6 +38,8 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 	private final TemporaryFolder tmp;
 	private final ScheduledExecutorService exSvc;
 
+	private volatile long nowMillis = System.currentTimeMillis();
+
 	public static MockMediaMetadataStore withRealExSvc(final TemporaryFolder tmp) throws SQLException {
 		return new MockMediaMetadataStore(tmp, makeRealExSvc());
 	}
@@ -54,6 +56,14 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 
 	private static ScheduledExecutorService makeRealExSvc() {
 		return new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("mmms", Thread.MIN_PRIORITY));
+	}
+
+	public void setNowMillis(final long nowMillis) {
+		this.nowMillis = nowMillis;
+	}
+
+	public long getNowMillis() {
+		return this.nowMillis;
 	}
 
 	public void waitForEmptyQueue() throws InterruptedException {
@@ -137,7 +147,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 
 		try (final WritableMediaDb w = getMediaDb().getWritable()) {
 			for (final String tag : tags) {
-				w.addTag(fileId, tag, System.currentTimeMillis());
+				w.addTag(fileId, tag, this.nowMillis);
 			}
 			w.setFileMissing(mediaFile.getAbsolutePath(), missing);
 			if (info != null) w.storeInfos(Arrays.asList(new FileIdAndInfo(fileId, mediaFile, info)));
@@ -210,7 +220,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				public void onResult(final String mediaId) throws IOException {
 					Batch.this.dbWrites.add((w) -> {
 						for (final String tag : tags) {
-							w.addTag(mediaId, tag, System.currentTimeMillis());
+							w.addTag(mediaId, tag, getNowMillis());
 						}
 						w.setFileMissing(mediaFile.getAbsolutePath(), missing);
 					});

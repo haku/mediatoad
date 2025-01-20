@@ -6,13 +6,22 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.db.FileIdAndTags;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
+import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMethod;
@@ -25,10 +34,22 @@ public class DbSearchParser {
 	// as non canonical IDs will be dropped by ContentTree.getItemsForIds() anyway.
 	private static final String _SQL_MEDIAFILES_SELECT =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) WHERE missing=0";
-	private static final String _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE =
-			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN infos ON files.id = infos.file_id WHERE missing=0";
 	private static final String _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE =
 			"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
+
+	private static final String _SQL_MEDIAFILES_SELECT_WITH_TAGS =
+			"SELECT DISTINCT idEXTRACOLUMNS"
+					+ " FROM files"
+					+ " INNER JOIN hashes USING (id)"
+					+ "EXTRAJOINS"
+					+ " WHERE missing=0EXTRAWHERES";
+	private static final String _SQL_MEDIAFILES_JOIN_WITH_TAGS_TABLE =
+			" LEFT JOIN tags ON files.id = tags.file_id";
+	private static final String _SQL_MEDIAFILES_JOIN_WITH_INFO_TABLE =
+			" LEFT JOIN infos ON files.id = infos.file_id";
+	private static final String _SQL_MEDIAFILES_JOIN_WITH_PLAYBACK_TABLE =
+			" LEFT JOIN playback ON files.id = playback.file_id";
+
 	private static final String _SQL_MEDIAFILES_SELECT_MAX_START_COUNT =
 			"SELECT MAX(start_count) FROM files INNER JOIN hashes USING (id) LEFT JOIN playback ON files.id = playback.file_id WHERE missing=0";
 
@@ -105,22 +126,51 @@ public class DbSearchParser {
 			final Set<BigInteger> authIds,
 			final boolean bypassAuthChecks,
 			final List<SortOrder> sorts) {
+		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, bypassAuthChecks, sorts, false);
+		return new DbSearch(s.getLeft(), s.getRight());
+	}
+
+	public static DbSearchWithTags parseSearchWithTags(
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final SortOrder sort) {
+		return parseSearchWithTags(allTerms, authIds, Collections.singletonList(sort));
+	}
+
+	public static DbSearchWithTags parseSearchWithTags(
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final List<SortOrder> sorts) {
+		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, false, sorts, true);
+		return new DbSearchWithTags(s.getLeft(), s.getRight());
+	}
+
+	private static Pair<String, List<String>> makeSearch(
+			final String allTerms,
+			final Set<BigInteger> authIds,
+			final boolean bypassAuthChecks,
+			final List<SortOrder> sorts,
+			final boolean includeTags) {
 		if (sorts == null || sorts.size() < 1) throw new IllegalArgumentException("Sort must be specified");
 
 		final boolean hasInfoSort = sorts.stream().anyMatch(s -> INFO_SORTS.contains(s.column()));
 		final boolean hasPlaybackSort = sorts.stream().anyMatch(s -> PLAYBACK_SORTS.contains(s.column()));
 		if (hasInfoSort && hasPlaybackSort) throw new IllegalArgumentException("Unsupported set of sort columns.");
 
-		final String base;
-		if (hasInfoSort) {
-			base = _SQL_MEDIAFILES_SELECT_WITH_INFO_TABLE;
+		String extraColumns = "";
+		String extraJoins = "";
+		String extraWheres = "";
+		if (includeTags) {
+			extraColumns += ", tags.tag, tags.modified";
+			extraJoins += _SQL_MEDIAFILES_JOIN_WITH_TAGS_TABLE;
+			extraWheres += " AND deleted=0 AND cls NOT LIKE '.%'";
 		}
-		else if (hasPlaybackSort) {
-			base = _SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE;
-		}
-		else {
-			base = _SQL_MEDIAFILES_SELECT;
-		}
+		if (hasInfoSort) extraJoins += _SQL_MEDIAFILES_JOIN_WITH_INFO_TABLE;
+		if (hasPlaybackSort) extraJoins += _SQL_MEDIAFILES_JOIN_WITH_PLAYBACK_TABLE;
+		final String base = _SQL_MEDIAFILES_SELECT_WITH_TAGS
+				.replace("EXTRACOLUMNS", extraColumns)
+				.replace("EXTRAJOINS", extraJoins)
+				.replace("EXTRAWHERES", extraWheres);
 
 		final StringBuilder sql = new StringBuilder(base);
 		if (!bypassAuthChecks) {
@@ -139,7 +189,9 @@ public class DbSearchParser {
 			first = false;
 		}
 
-		return new DbSearch(sql.toString(), terms);
+		if (includeTags) sql.append(", id ASC");  // ensure rows for same file are together.
+
+		return ImmutablePair.of(sql.toString(), terms);
 	}
 
 	public static DbSearch parseSearchForChoose(final String allTerms, final Set<BigInteger> authIds, final ChooseMethod method) {
@@ -188,7 +240,7 @@ public class DbSearchParser {
 		return new DbSearch(sql.toString(), terms);
 	}
 
-	public static TagFrequencySearch parseSearchForTags( final String allTerms, final Set<BigInteger> authIds) {
+	public static TagFrequencySearch parseSearchForTags(final String allTerms, final Set<BigInteger> authIds) {
 		final StringBuilder fileQuery = new StringBuilder(_SQL_MEDIAFILES_SELECT);
 		fileQuery.append(_SQL_AND);
 		SqlFragments.appendWhereAuth(fileQuery, authIds);
@@ -320,6 +372,46 @@ public class DbSearchParser {
 		}
 	}
 
+	public static class DbSearchWithTags extends Search<FileIdAndTags> {
+		public DbSearchWithTags (final String sql, final List<String> terms) {
+			super(sql, terms);
+		}
+
+		@Override
+		protected List<FileIdAndTags> parseRecordSet(final ResultSet rs) throws SQLException {
+			final Map<String, List<Tag>> tmp = new LinkedHashMap<>();
+
+			// since results are expected to be ordered by id.
+			String prevId = null;
+			List<Tag> prevList = null;
+
+			while (rs.next()) {
+				final String id = rs.getString(1);
+				List<Tag> list;
+				if (id.equals(prevId)) {
+					list = prevList;
+				}
+				else {
+					list = tmp.get(id);
+					if (list == null) {
+						list = new ArrayList<>();
+						tmp.put(id, list);
+					}
+					prevId = id;
+					prevList = list;
+				}
+
+				list.add(new Tag(rs.getString(2), rs.getLong(3), false));
+			}
+
+			final List<FileIdAndTags> ret = new ArrayList<>();
+			for (final Entry<String, List<Tag>> e : tmp.entrySet()) {
+				ret.add(new FileIdAndTags(e.getKey(), e.getValue()));
+			}
+			return ret;
+		}
+	}
+
 	public static class TagFrequencySearch extends Search<TagFrequency> {
 		public TagFrequencySearch (final String sql, final List<String> terms) {
 			super(sql, terms);
@@ -401,7 +493,7 @@ public class DbSearchParser {
 			return String.format("%s LIMIT %d OFFSET %d", sql, maxResults, offset);
 		}
 
-		private List<T> parseRecordSet(final ResultSet rs) throws SQLException {
+		protected List<T> parseRecordSet(final ResultSet rs) throws SQLException {
 			final List<T> ret = new ArrayList<>();
 			while (rs.next()) {
 				ret.add(parseRecord(rs));
@@ -409,7 +501,9 @@ public class DbSearchParser {
 			return ret;
 		}
 
-		protected abstract T parseRecord(final ResultSet rs) throws SQLException;
+		protected T parseRecord(final ResultSet rs) throws SQLException {
+			throw new NotImplementedException();
+		}
 
 		@Override
 		public String toString () {
