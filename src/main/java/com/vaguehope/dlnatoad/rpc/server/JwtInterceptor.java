@@ -1,7 +1,9 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
 import java.security.Key;
+import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -52,10 +54,10 @@ public class JwtInterceptor implements ServerInterceptor {
 
 		final String value = metadata.get(AUTHORIZATION_METADATA_KEY);
 		if (value == null) {
-			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Authorization token is missing"));
+			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Authorization token is missing."));
 		}
 		if (!value.startsWith(BEARER_TYPE)) {
-			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Unknown authorization type"));
+			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Unknown authorization type."));
 		}
 		final String rawJwt = value.substring(BEARER_TYPE.length()).trim();
 
@@ -65,7 +67,12 @@ public class JwtInterceptor implements ServerInterceptor {
 		}
 		catch (final JwtException e) {
 			recordRejectedPublicKey(rawJwt);
-			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription(e.getMessage()).withCause(e));
+			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription(e.getMessage()));
+		}
+
+		final Date expiration = claims.getPayload().getExpiration();
+		if (expiration == null || expiration.getTime() > System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5)) {
+			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Invalid expiration."));
 		}
 
 		// verify username used to look up key matches signed username to avoid impersonation.
