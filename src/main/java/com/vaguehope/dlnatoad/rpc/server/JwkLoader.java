@@ -124,7 +124,7 @@ public class JwkLoader extends LocatorAdapter<Key> {
 	}
 
 	public void recordRejectedPublicKey(final String username, final PublicJwk<?> publicJwk) {
-		this.recentRejectedPublicKeys.put(username, publicJwk);
+		this.recentRejectedPublicKeys.asMap().putIfAbsent(username, publicJwk);
 	}
 
 }
