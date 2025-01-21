@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +40,7 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem.Builder;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaNode;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaTag;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
@@ -109,8 +111,6 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		if (item == null) return;
 
-		final MediaItem rpcItem = itemToRpcItem(item);
-
 		final Collection<Tag> tags;
 		try {
 			tags = this.mediaDb.getTags(item.getId(), false, false);
@@ -119,14 +119,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			responseObserver.onError(Status.INTERNAL.withDescription("Failed to read tags from DB.").asRuntimeException());
 			return;
 		}
+		final MediaItem rpcItem = itemToRpcItem(item, tags);
 
 		final HasMediaReply.Builder reply = HasMediaReply.newBuilder()
 				.setExistence(FileExistance.EXISTS)
 				.setItem(rpcItem);
-
-		for (final Tag t : tags) {
-			reply.addTag(MediaTag.newBuilder().setTag(t.getTag()).setCls(t.getCls()).setModifiedMillis(t.getModified()).build());
-		}
 
 		responseObserver.onNext(reply.build());
 		responseObserver.onCompleted();
@@ -147,7 +144,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		for (final ContentNode n : node.nodesUserHasAuth(username)) {
 			reply.addChild(nodeToRpcNode(n));
 		}
-		node.withEachItem((i) -> reply.addItem(itemToRpcItem(i)));
+		node.withEachItem((i) -> reply.addItem(itemToRpcItem(i, null)));  // TODO add tags
 
 		responseObserver.onNext(reply.build());
 		responseObserver.onCompleted();
@@ -281,19 +278,19 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 
-		final List<String> ids;
+		final Map<String, List<Tag>> ids;
 		try {
-			ids = DbSearchParser.parseSearch(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
+			ids = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
 			return;
 		}
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids.keySet(), username);
 
 		final SearchReply.Builder ret = SearchReply.newBuilder();
 		for (final ContentItem i : results) {
-			ret.addResult(itemToRpcItem(i));
+			ret.addResult(itemToRpcItem(i, ids.get(i.getId())));
 		}
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
@@ -322,7 +319,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
 		for (final ContentItem i : results) {
-			ret.addItem(itemToRpcItem(i));
+			ret.addItem(itemToRpcItem(i, null));
 		}
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
@@ -409,14 +406,25 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.build();
 	}
 
-	private static MediaItem itemToRpcItem(final ContentItem item) {
-		return MediaItem.newBuilder()
+	private static MediaItem itemToRpcItem(final ContentItem item, final Collection<Tag> tags) {
+		final Builder builder = MediaItem.newBuilder()
 				.setId(item.getId())
 				.setTitle(item.getTitle())
 				.setMimeType(item.getFormat().getMime())
 				.setFileLength(item.getFileLength())
-				.setDurationMillis(item.getDurationMillis())
-				.build();
+				.setDurationMillis(item.getDurationMillis());
+
+		if (tags != null) {
+			for (final Tag t : tags) {
+				builder.addTag(MediaTag.newBuilder()
+						.setTag(t.getTag())
+						.setCls(t.getCls())
+						.setModifiedMillis(t.getModified())
+						.build());
+			}
+		}
+
+		return builder.build();
 	}
 
 }

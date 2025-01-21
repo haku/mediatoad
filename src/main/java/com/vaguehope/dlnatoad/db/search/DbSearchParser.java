@@ -9,15 +9,12 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableSet;
-import com.vaguehope.dlnatoad.db.FileIdAndTags;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.SqlFragments;
 import com.vaguehope.dlnatoad.db.Sqlite;
@@ -361,25 +358,29 @@ public class DbSearchParser {
 		return ret;
 	}
 
-	public static class DbSearch extends Search<String> {
+	public static class DbSearch extends Search<List<String>> {
 		public DbSearch (final String sql, final List<String> terms) {
 			super(sql, terms);
 		}
 
 		@Override
-		protected String parseRecord(final ResultSet rs) throws SQLException {
-			return rs.getString(1);
+		protected List<String> parseRecordSet(final ResultSet rs) throws SQLException {
+			final List<String> ret = new ArrayList<>();
+			while (rs.next()) {
+				ret.add(rs.getString(1));
+			}
+			return ret;
 		}
 	}
 
-	public static class DbSearchWithTags extends Search<FileIdAndTags> {
+	public static class DbSearchWithTags extends Search<Map<String, List<Tag>>> {
 		public DbSearchWithTags (final String sql, final List<String> terms) {
 			super(sql, terms);
 		}
 
 		@Override
-		protected List<FileIdAndTags> parseRecordSet(final ResultSet rs) throws SQLException {
-			final Map<String, List<Tag>> tmp = new LinkedHashMap<>();
+		protected Map<String, List<Tag>> parseRecordSet(final ResultSet rs) throws SQLException {
+			final Map<String, List<Tag>> ret = new LinkedHashMap<>();
 
 			// since results are expected to be ordered by id.
 			String prevId = null;
@@ -392,10 +393,10 @@ public class DbSearchParser {
 					list = prevList;
 				}
 				else {
-					list = tmp.get(id);
+					list = ret.get(id);
 					if (list == null) {
 						list = new ArrayList<>();
-						tmp.put(id, list);
+						ret.put(id, list);
 					}
 					prevId = id;
 					prevList = list;
@@ -403,23 +404,22 @@ public class DbSearchParser {
 
 				list.add(new Tag(rs.getString(2), rs.getLong(3), false));
 			}
-
-			final List<FileIdAndTags> ret = new ArrayList<>();
-			for (final Entry<String, List<Tag>> e : tmp.entrySet()) {
-				ret.add(new FileIdAndTags(e.getKey(), e.getValue()));
-			}
 			return ret;
 		}
 	}
 
-	public static class TagFrequencySearch extends Search<TagFrequency> {
+	public static class TagFrequencySearch extends Search<List<TagFrequency>> {
 		public TagFrequencySearch (final String sql, final List<String> terms) {
 			super(sql, terms);
 		}
 
 		@Override
-		protected TagFrequency parseRecord(final ResultSet rs) throws SQLException {
-			return new TagFrequency(rs.getString(1), rs.getInt(2));
+		protected List<TagFrequency> parseRecordSet(final ResultSet rs) throws SQLException {
+			final List<TagFrequency> ret = new ArrayList<>();
+			while (rs.next()) {
+				ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
+			}
+			return ret;
 		}
 	}
 
@@ -441,11 +441,11 @@ public class DbSearchParser {
 			return this.terms;
 		}
 
-		public List<T> execute (final MediaDb db) throws SQLException {
+		public T execute (final MediaDb db) throws SQLException {
 			return execute(db, -1, 0);
 		}
 
-		public List<T> execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
+		public T execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
 			try (final PreparedStatement ps = db.prepare(maybeAddLimit(this.sql, maxResults, offset))) {
 				int parmIn = 1;
 				for (final String term : this.terms) {
@@ -493,17 +493,7 @@ public class DbSearchParser {
 			return String.format("%s LIMIT %d OFFSET %d", sql, maxResults, offset);
 		}
 
-		protected List<T> parseRecordSet(final ResultSet rs) throws SQLException {
-			final List<T> ret = new ArrayList<>();
-			while (rs.next()) {
-				ret.add(parseRecord(rs));
-			}
-			return ret;
-		}
-
-		protected T parseRecord(final ResultSet rs) throws SQLException {
-			throw new NotImplementedException();
-		}
+		abstract protected T parseRecordSet(final ResultSet rs) throws SQLException;
 
 		@Override
 		public String toString () {

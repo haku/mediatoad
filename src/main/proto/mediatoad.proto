@@ -19,6 +19,7 @@ message MediaItem {
   string mime_type = 3;
   int64 file_length = 4;
   int64 duration_millis = 5;
+  repeated MediaTag tag = 6;
 }
 
 message MediaTag {
@@ -74,7 +75,6 @@ message HasMediaRequest {
 message HasMediaReply {
   FileExistance existence = 1;
   MediaItem item = 2;
-  repeated MediaTag tag = 3;
 }
 
 message ReadMediaRequest {

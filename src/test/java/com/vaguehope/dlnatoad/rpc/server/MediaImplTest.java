@@ -31,16 +31,21 @@ import org.mockito.Mockito;
 
 import com.vaguehope.dlnatoad.MetricAssert;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaTag;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 
 import io.grpc.Context;
 import io.grpc.Status.Code;
@@ -72,6 +77,38 @@ public class MediaImplTest {
 	}
 
 	// TODO test other methods!
+
+	@Test
+	public void itSearches() throws Exception {
+		final MockMediaMetadataStore mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
+		this.mediaDb = mockMediaMetadataStore.getMediaDb();
+		this.contentTree = new ContentTree();
+		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
+
+		final String name = "thing 0";
+		final String tag = "foo";
+		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".mp3", tag);
+		final File file = new File(this.mediaDb.getFilePathForId(id));
+		this.contentTree.addItem(new ContentItem(id, "0", name, file, MediaFormat.MP3));
+
+
+		final StreamObserver<SearchReply> respObs = mock(ServerCallStreamObserver.class);
+		this.undertest.search(SearchRequest.newBuilder().setQuery("t=foo").build(), respObs);
+
+		verify(respObs).onNext(SearchReply.newBuilder()
+				.addResult(MediaItem.newBuilder()
+						.setId(id)
+						.setTitle(name)
+						.setMimeType("audio/mpeg")
+						.setFileLength(file.length())
+						.addTag(MediaTag.newBuilder()
+								.setTag("foo")
+								.setModifiedMillis(mockMediaMetadataStore.getNowMillis())
+								.build())
+						.build())
+				.build());
+		verify(respObs).onCompleted();
+	}
 
 	@Test
 	public void itServesContent() throws Exception {
