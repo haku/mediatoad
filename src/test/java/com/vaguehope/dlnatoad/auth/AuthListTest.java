@@ -40,6 +40,7 @@ public class AuthListTest {
 		assertEquals(0, writeListAndReadDir("foobar(").size());
 		assertEquals(0, writeListAndReadDir("valid\nfoobar(").size());
 		assertEquals(0, writeListAndReadDir("foo +bar").size());
+		assertEquals(0, writeListAndReadDir("foo@@bar").size());
 	}
 
 	@Test
@@ -53,9 +54,10 @@ public class AuthListTest {
 				+ "ausername\n"
 				+ "\n"
 				+ "#some other comment\n"
-				+ "anothername\n";
+				+ "anothername\n"
+				+ "remoteuser@client\n";
 		final AuthList actual = writeListAndReadDir(list);
-		assertThat(actual.usernames(), containsInAnyOrder("ausername", "anothername"));
+		assertThat(actual.usernames(), containsInAnyOrder("ausername", "anothername", "remoteuser@client"));
 	}
 
 	@Test

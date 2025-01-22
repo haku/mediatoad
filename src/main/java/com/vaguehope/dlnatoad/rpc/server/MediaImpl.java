@@ -14,11 +14,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
@@ -40,7 +43,6 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
-import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem.Builder;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaNode;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaTag;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
@@ -53,6 +55,10 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortBy;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortDirection;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortField;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagAction;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagChange;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsRequest;
 
 import io.grpc.Deadline;
 import io.grpc.Status;
@@ -367,16 +373,100 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		this.recentlyReportedPlaybacks.put(request.getId(), Boolean.TRUE);
 	}
 
+	@Override
+	public void updateTags(final UpdateTagsRequest request, final StreamObserver<UpdateTagsReply> responseObserver) {
+		final Set<Permission> permissions = JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get();
+		if (permissions == null || !permissions.contains(Permission.EDITTAGS)) {
+			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
+			return;
+		}
+
+		if (request.getChangeCount() > 100) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("too many changes in one request.").asRuntimeException());
+			return;
+		}
+		for (final TagChange change : request.getChangeList()) {
+			if (StringUtils.isBlank(change.getId())) {
+				responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("missing id.").asRuntimeException());
+				return;
+			}
+			if (change.getAction() != TagAction.ADD && change.getAction() != TagAction.REMOVE) {
+				responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("unsupported action.").asRuntimeException());
+				return;
+			}
+			if (change.getTagCount() < 1) {
+				responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("empty tag list.").asRuntimeException());
+				return;
+			}
+			for (final MediaTag tag : change.getTagList()) {
+				if (StringUtils.isBlank(tag.getTag())) {
+					responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("missing tag.").asRuntimeException());
+					return;
+				}
+				if (StringUtils.containsWhitespace(tag.getCls())) {
+					responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("cls must not contain whitespace.").asRuntimeException());
+					return;
+				}
+			}
+		}
+
+		// check items exist and user had access.
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		for (final TagChange change : request.getChangeList()) {
+			final ContentItem item = getItemCheckingAuth(username, change.getId(), responseObserver, Permission.EDITTAGS);
+			if (item == null) return;
+		}
+
+		final long now = System.currentTimeMillis();
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			for (final TagChange change : request.getChangeList()) {
+				switch (change.getAction()) {
+				case ADD:
+					for (final MediaTag t : change.getTagList()) {
+						w.addTag(change.getId(), t.getTag(), t.getCls(), now);
+					}
+					break;
+				case REMOVE:
+					for (final MediaTag t : change.getTagList()) {
+						w.setTagModifiedAndDeleted(change.getId(), t.getTag(), t.getCls(), true, now);
+					}
+					break;
+				default:
+					throw new IllegalStateException();
+				}
+			}
+		}
+		catch (final IOException | SQLException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+			return;
+		}
+
+		responseObserver.onNext(UpdateTagsReply.newBuilder().build());
+		responseObserver.onCompleted();
+
+		// TODO update autocomplete
+	}
+
 	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver) {
+		return getItemCheckingAuth(username, id, responseObserver, null);
+	}
+
+	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver,  final Permission permission) {
 		return getItemCheckingAuth(username, id, () -> {
 			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
+		}, permission, () -> {
+			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
 		});
+	}
+
+	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound) {
+		return getItemCheckingAuth(username, itemId, onNotFound, null, null);
 	}
 
 	/**
 	 * if response is null then error has already been returned to caller.
 	 */
-	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound) {
+	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound, final Permission permission, final Runnable onNotPermission) {
 		final ContentItem item = this.contentTree.getItem(itemId);
 		if (item == null) {
 			onNotFound.run();
@@ -386,6 +476,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
 		if (node == null || !node.isUserAuth(username)) {
 			onNotFound.run();
+			return null;
+		}
+
+		if (permission != null && node.hasAuthList() && !node.isUserAuthWithPermission(username, permission)) {
+			onNotPermission.run();
 			return null;
 		}
 
@@ -413,7 +508,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	}
 
 	private static MediaItem itemToRpcItem(final ContentItem item, final Collection<Tag> tags) {
-		final Builder builder = MediaItem.newBuilder()
+		final MediaItem.Builder builder = MediaItem.newBuilder()
 				.setId(item.getId())
 				.setTitle(item.getTitle())
 				.setMimeType(item.getFormat().getMime())

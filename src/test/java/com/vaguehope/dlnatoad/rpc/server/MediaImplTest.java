@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +32,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.MetricAssert;
+import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.db.Tag;
@@ -40,6 +44,7 @@ import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.media.MockContent;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
@@ -52,6 +57,10 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagAction;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagChange;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsRequest;
 import com.vaguehope.dlnatoad.util.ExConsumer;
 
 import io.grpc.Context;
@@ -75,12 +84,23 @@ public class MediaImplTest {
 	@SuppressWarnings("resource")
 	@Before
 	public void before() throws Exception {
-		this.contentTree = mock(ContentTree.class);
+		this.contentTree = new ContentTree(false);
 		this.mediaDb = mock(MediaDb.class);
 		this.writableMediaDb = mock(WritableMediaDb.class);
 		when(this.mediaDb.getWritable()).thenReturn(this.writableMediaDb);
 		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
 		this.metricAssert = new MetricAssert();
+	}
+
+	private MockContent setupFakeContent() {
+		return new MockContent(this.contentTree, this.tmp);
+	}
+
+	private MockMediaMetadataStore setupFakeDb() throws SQLException {
+		final MockMediaMetadataStore mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
+		this.mediaDb = mockMediaMetadataStore.getMediaDb();
+		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
+		return mockMediaMetadataStore;
 	}
 
 	// TODO test other methods!
@@ -118,17 +138,13 @@ public class MediaImplTest {
 
 	@Test
 	public void itSearches() throws Exception {
-		final MockMediaMetadataStore mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
-		this.mediaDb = mockMediaMetadataStore.getMediaDb();
-		this.contentTree = new ContentTree();
-		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
+		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 
 		final String name = "thing 0";
 		final String tag = "foo";
 		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".mp3", tag);
 		final File file = new File(this.mediaDb.getFilePathForId(id));
 		this.contentTree.addItem(new ContentItem(id, "0", name, file, MediaFormat.MP3));
-
 
 		final StreamObserver<SearchReply> respObs = mock(ServerCallStreamObserver.class);
 		this.undertest.search(SearchRequest.newBuilder().setQuery("t=foo").build(), respObs);
@@ -271,6 +287,41 @@ public class MediaImplTest {
 		when(node.isUserAuth("someone")).thenReturn(true);
 		ctx.run(() -> this.undertest.recordPlayback(req, respObs));
 		verify(this.writableMediaDb).recordPlayback("someid", time, true);
+
+		verify(respObs).onNext(RecordPlaybackReply.newBuilder().build());
+		verify(respObs).onCompleted();
+	}
+
+	@Test
+	public void itUpdatesTags() throws Exception {
+		final MockContent mockContent = setupFakeContent();
+		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
+
+		final Context ctx = Context.current().withValues(
+				JwtInterceptor.USERNAME_CONTEXT_KEY, "testuser@client",
+				JwtInterceptor.PERMISSIONS_CONTEXT_KEY, ImmutableSet.of(Permission.EDITTAGS));
+		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
+		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
+
+		final String id = mockMediaMetadataStore.addFileWithName("thing 0", ".mp3");
+		mockContent.addMockItem(MediaFormat.MP3, id, node, null);
+
+		final UpdateTagsRequest req = UpdateTagsRequest.newBuilder()
+				.addChange(TagChange.newBuilder()
+						.setId(id)
+						.setAction(TagAction.ADD)
+						.addTag(MediaTag.newBuilder().setTag("foo00").setCls("bar00").build())
+						.build())
+				.build();
+
+		final StreamObserver<UpdateTagsReply> respObs = mock(StreamObserver.class);
+		ctx.run(() -> this.undertest.updateTags(req, respObs));
+		verify(respObs).onNext(UpdateTagsReply.newBuilder().build());
+		verify(respObs).onCompleted();
+
+		final Tag actualTag = this.mediaDb.getTags(id, false, false).iterator().next();
+		assertEquals("foo00", actualTag.getTag());
+		assertEquals("bar00", actualTag.getCls());
 	}
 
 	private static void verifyErrorStatus(final StreamObserver<?> observer, final Code code) {
@@ -293,7 +344,7 @@ public class MediaImplTest {
 		when(node.getTitle()).thenReturn("title for " + id);
 		when(node.getParentId()).thenReturn("parent-for-" + id);
 		when(node.isUserAuth(nullable(String.class))).thenReturn(true);
-		when(this.contentTree.getNode(id)).thenReturn(node);
+		this.contentTree.addNode(node);
 		return node;
 	}
 
@@ -303,7 +354,7 @@ public class MediaImplTest {
 		when(item.getParentId()).thenReturn(parentId);
 		when(item.getTitle()).thenReturn("title for " + id);
 		when(item.getFormat()).thenReturn(MediaFormat.JPEG);
-		when(this.contentTree.getItem(id)).thenReturn(item);
+		this.contentTree.addItem(item);
 		return item;
 	}
 

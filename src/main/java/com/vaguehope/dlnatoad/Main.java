@@ -274,13 +274,15 @@ public final class Main {
 			defaultPort = false;
 		}
 
+		final File userfile = args.getUserfile();
+		final Users users = userfile != null ? new Users(userfile) : null;
 		final File rpcAuthFile = args.getRpcAuthFile();
 		final JwkLoader rpcJwtLoader = rpcAuthFile != null ? new JwkLoader(rpcAuthFile) : null;
 
 		while (true) {
-			final Handler rpcHandler = makeRpcHandler(rpcJwtLoader, contentTree, mediaDb, args);
+			final Handler rpcHandler = makeRpcHandler(users, rpcJwtLoader, contentTree, mediaDb, args);
 			final Handler mainHandler = makeContentHandler(
-					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, rpcJwtLoader, rpcClient, thumbnailGenerator, args, hostName);
+					contentTree, mediaId, mediaDb, dbCache, tagAutocompleter, upnpService, users, rpcJwtLoader, rpcClient, thumbnailGenerator, args, hostName);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -319,6 +321,7 @@ public final class Main {
 			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
+			final Users users,
 			final JwkLoader rpcJwtLoader,
 			final RpcClient rpcClient,
 			final ThumbnailGenerator thumbnailGenerator,
@@ -340,8 +343,6 @@ public final class Main {
 			RequestLoggingFilter.addTo(servletHandler);
 		}
 
-		final File userfile = args.getUserfile();
-		final Users users = userfile != null ? new Users(userfile) : null;
 		final AuthTokens authTokens = new AuthTokens(args.getSessionDir());
 		final AuthFilter authFilter = new AuthFilter(users, authTokens, args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
@@ -390,7 +391,12 @@ public final class Main {
 		return handler;
 	}
 
-	private static Handler makeRpcHandler(final JwkLoader rpcJwtLoader, final ContentTree contentTree, final MediaDb mediaDb, final Args args) throws IOException {
+	private static Handler makeRpcHandler(
+			final Users users,
+			final JwkLoader rpcJwtLoader,
+			final ContentTree contentTree,
+			final MediaDb mediaDb,
+			final Args args) throws IOException {
 		if (rpcJwtLoader == null) return null;
 		RpcPrometheusMetrics.setup();
 
@@ -401,7 +407,7 @@ public final class Main {
 			RequestLoggingFilter.addTo(handler);
 		}
 
-		final JwtInterceptor jwtInterceptor = new JwtInterceptor(rpcJwtLoader);
+		final JwtInterceptor jwtInterceptor = new JwtInterceptor(rpcJwtLoader, users);
 		final MediaImpl mediaImpl = new MediaImpl(contentTree, mediaDb);
 		handler.addServlet(new ServletHolder(new RpcServlet(jwtInterceptor, mediaImpl)), "/*");
 		return handler;

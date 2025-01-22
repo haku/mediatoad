@@ -3,7 +3,13 @@ package com.vaguehope.dlnatoad.rpc.server;
 import java.security.Key;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.auth.Permission;
+import com.vaguehope.dlnatoad.auth.Users;
+import com.vaguehope.dlnatoad.auth.Users.User;
 
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -28,16 +34,19 @@ public class JwtInterceptor implements ServerInterceptor {
 	private static final String HEADER_JWK = "jwk";
 
 	static final Context.Key<String> USERNAME_CONTEXT_KEY = Context.key(HEADER_USERNAME);
+	static final Context.Key<Set<Permission>> PERMISSIONS_CONTEXT_KEY = Context.key("PERMISSIONS");
 
 	private static final String BEARER_TYPE = "Bearer";
 	private static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
 	private final JwkLoader loader;
+	private final Users users;
 	private final JwtParser secureParser;
 	private final JwtParser insecureParser;
 
-	public JwtInterceptor(final JwkLoader loader) {
+	public JwtInterceptor(final JwkLoader loader, final Users users) {
 		this.loader = loader;
+		this.users = users;
 		this.secureParser = Jwts.parser()
 				.keyLocator(loader)
 				.build();
@@ -81,7 +90,17 @@ public class JwtInterceptor implements ServerInterceptor {
 			return returnStatus(serverCall, Status.UNAUTHENTICATED.withDescription("Mismatched subject."));
 		}
 
-		final Context ctx = Context.current().withValue(USERNAME_CONTEXT_KEY, claims.getPayload().getSubject());
+		final String username = (String) claims.getHeader().get(HEADER_USERNAME);
+		final ImmutableSet.Builder<Permission> permissions = ImmutableSet.builder();
+
+		final User user = this.users.getUser(username);
+		if (user != null) {
+			if (user.hasPermission(Permission.EDITTAGS)) permissions.add(Permission.EDITTAGS);
+		}
+
+		final Context ctx = Context.current().withValues(
+				USERNAME_CONTEXT_KEY, username,
+				PERMISSIONS_CONTEXT_KEY, permissions.build());
 		return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler);
 	}
 

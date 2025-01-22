@@ -38,6 +38,6 @@ public interface C {
 
 	long DEVICE_SEARCH_INTERVAL_MINUTES = 15;
 
-	Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
+	Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9]+@?[a-zA-Z0-9]*$");
 
 }

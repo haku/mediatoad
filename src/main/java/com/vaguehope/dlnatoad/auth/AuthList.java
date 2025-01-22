@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.util.HashHelper;
 
@@ -56,6 +58,13 @@ public class AuthList {
 	 */
 	public static AuthList ofNames(final String... names) {
 		return new AuthList(new HashSet<>(Arrays.asList(names)));
+	}
+
+	/**
+	 * Only for testing.
+	 */
+	public static AuthList ofNameAndPermission(final String name, final Permission permission) {
+		return new AuthList(ImmutableMap.of(name, ImmutableSet.of(permission)));
 	}
 
 	private static final Cache<String, Optional<AuthList>> AUTH_FILE_CACHE = CacheBuilder.newBuilder()

@@ -57,6 +57,7 @@ service Media {
   rpc Search (SearchRequest) returns (SearchReply) {}
   rpc ChooseMedia (ChooseMediaRequest) returns (ChooseMediaReply) {}
   rpc RecordPlayback (RecordPlaybackRequest) returns (RecordPlaybackReply) {}
+  rpc UpdateTags (UpdateTagsRequest) returns (UpdateTagsReply) {}
 }
 
 message AboutRequest {}
@@ -171,3 +172,23 @@ message RecordPlaybackRequest {
   int64 start_time_millis = 3;
 }
 message RecordPlaybackReply {}
+
+enum TagAction {
+  UNSPECIFIED_TAG_ACTION = 0;
+
+  // adds tags if not present, ignores modified on tags.
+  ADD = 1;
+
+  // removes tags if present, ignores modified on tags.
+  REMOVE = 2;
+}
+message TagChange {
+  // id of media to update tag for.
+  string id = 1;
+  TagAction action = 2;
+  repeated MediaTag tag = 3;
+}
+message UpdateTagsRequest {
+  repeated TagChange change = 1;
+}
+message UpdateTagsReply {}

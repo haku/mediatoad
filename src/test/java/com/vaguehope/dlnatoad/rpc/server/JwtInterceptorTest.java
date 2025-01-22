@@ -1,5 +1,7 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
@@ -11,11 +13,17 @@ import static org.mockito.Mockito.when;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import com.google.common.collect.ImmutableSet;
+import com.vaguehope.dlnatoad.auth.Permission;
+import com.vaguehope.dlnatoad.auth.Users;
+import com.vaguehope.dlnatoad.auth.Users.User;
 
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -34,6 +42,7 @@ public class JwtInterceptorTest {
 	private static final String USERNAME = "user@hostname";
 
 	private JwkLoader loader;
+	private Users users;
 	private JwtInterceptor undertest;
 
 	private ServerCall serverCall;
@@ -42,7 +51,8 @@ public class JwtInterceptorTest {
 	@Before
 	public void before() throws Exception {
 		this.loader = mock(JwkLoader.class);
-		this.undertest = new JwtInterceptor(this.loader);
+		this.users = mock(Users.class);
+		this.undertest = new JwtInterceptor(this.loader, this.users);
 
 		this.serverCall = mock(ServerCall.class);
 		this.serverCallHandler = mock(ServerCallHandler.class);
@@ -56,8 +66,10 @@ public class JwtInterceptorTest {
 		final Metadata metadata = makeMetadataWithJws(makeJws(pair, false));
 
 		final AtomicReference<String> nameInContext = new AtomicReference<>();
+		final AtomicReference<Set<Permission>> permissionsInContext = new AtomicReference<>();
 		when(this.serverCallHandler.startCall(this.serverCall, metadata)).thenAnswer((a) -> {
 			nameInContext.set(JwtInterceptor.USERNAME_CONTEXT_KEY.get());
+			permissionsInContext.set(JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get());
 			return null;
 		});
 
@@ -70,6 +82,11 @@ public class JwtInterceptorTest {
 		final ArgumentCaptor<Header> cap = ArgumentCaptor.forClass(Header.class);
 		verify(this.loader).locate(cap.capture());
 		assertEquals(USERNAME, cap.getValue().get("username"));
+
+		assertThat(permissionsInContext.get(), hasSize(0));
+		when(this.users.getUser(USERNAME)).thenReturn(new User(null, null, ImmutableSet.of(Permission.EDITTAGS)));
+		this.undertest.interceptCall(this.serverCall, metadata, this.serverCallHandler);
+		assertEquals(ImmutableSet.of(Permission.EDITTAGS), permissionsInContext.get());
 	}
 
 	@Test
