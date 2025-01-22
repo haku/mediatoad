@@ -144,7 +144,13 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		for (final ContentNode n : node.nodesUserHasAuth(username)) {
 			reply.addChild(nodeToRpcNode(n));
 		}
-		node.withEachItem((i) -> reply.addItem(itemToRpcItem(i, null)));  // TODO add tags
+
+		try {
+			node.withEachItem((i) -> reply.addItem(itemToRpcItem(i, this.mediaDb.getTags(i.getId(), false, false))));
+		}
+		catch (final SQLException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+		}
 
 		responseObserver.onNext(reply.build());
 		responseObserver.onCompleted();

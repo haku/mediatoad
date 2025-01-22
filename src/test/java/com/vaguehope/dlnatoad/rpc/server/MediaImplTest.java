@@ -1,10 +1,12 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -32,12 +34,16 @@ import org.mockito.Mockito;
 import com.vaguehope.dlnatoad.MetricAssert;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaNode;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaTag;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.Range;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
@@ -46,6 +52,7 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.RecordPlaybackRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
+import com.vaguehope.dlnatoad.util.ExConsumer;
 
 import io.grpc.Context;
 import io.grpc.Status.Code;
@@ -77,6 +84,37 @@ public class MediaImplTest {
 	}
 
 	// TODO test other methods!
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void itListsNode() throws Exception {
+		final ContentItem item = mockItem("itemid", "parent");
+		when(this.mediaDb.getTags("itemid", false, false)).thenReturn(asList(new Tag("foo", "cls", 1234567890L, false)));
+
+		final ContentNode node = mockNode("nodeid");
+		doAnswer(a -> {
+			((ExConsumer<ContentItem, ?>) a.getArguments()[0]).accept(item);
+			return null;
+		}).when(node).withEachItem(any(ExConsumer.class));
+
+		final StreamObserver<ListNodeReply> respObs = mock(ServerCallStreamObserver.class);
+		this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs);
+
+		verify(respObs).onNext(ListNodeReply.newBuilder()
+				.setNode(MediaNode.newBuilder()
+						.setId("nodeid")
+						.setTitle("title for nodeid")
+						.setParentId("parent-for-nodeid")
+						.build())
+				.addItem(MediaItem.newBuilder()
+						.setId("itemid")
+						.setTitle("title for itemid")
+						.setMimeType("image/jpeg")
+						.addTag(MediaTag.newBuilder().setTag("foo").setCls("cls").setModifiedMillis(1234567890L).build())
+						.build())
+				.build());
+		verify(respObs).onCompleted();
+	}
 
 	@Test
 	public void itSearches() throws Exception {
@@ -251,6 +289,9 @@ public class MediaImplTest {
 
 	private ContentNode mockNode(final String id) {
 		final ContentNode node = mock(ContentNode.class);
+		when(node.getId()).thenReturn(id);
+		when(node.getTitle()).thenReturn("title for " + id);
+		when(node.getParentId()).thenReturn("parent-for-" + id);
 		when(node.isUserAuth(nullable(String.class))).thenReturn(true);
 		when(this.contentTree.getNode(id)).thenReturn(node);
 		return node;
@@ -260,6 +301,7 @@ public class MediaImplTest {
 		final ContentItem item = mock(ContentItem.class);
 		when(item.getId()).thenReturn(id);
 		when(item.getParentId()).thenReturn(parentId);
+		when(item.getTitle()).thenReturn("title for " + id);
 		when(item.getFormat()).thenReturn(MediaFormat.JPEG);
 		when(this.contentTree.getItem(id)).thenReturn(item);
 		return item;
