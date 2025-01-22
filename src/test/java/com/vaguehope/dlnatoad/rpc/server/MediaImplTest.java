@@ -139,10 +139,14 @@ public class MediaImplTest {
 	@Test
 	public void itSearches() throws Exception {
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
+		final long time = mockMediaMetadataStore.getNowMillis();
 
 		final String name = "thing 0";
 		final String tag = "foo";
 		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".mp3", tag);
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.addTag(id, "other", "class1", time);
+		}
 		final File file = new File(this.mediaDb.getFilePathForId(id));
 		this.contentTree.addItem(new ContentItem(id, "0", name, file, MediaFormat.MP3));
 
@@ -157,7 +161,12 @@ public class MediaImplTest {
 						.setFileLength(file.length())
 						.addTag(MediaTag.newBuilder()
 								.setTag("foo")
-								.setModifiedMillis(mockMediaMetadataStore.getNowMillis())
+								.setModifiedMillis(time)
+								.build())
+						.addTag(MediaTag.newBuilder()
+								.setTag("other")
+								.setCls("class1")
+								.setModifiedMillis(time)
 								.build())
 						.build())
 				.build());

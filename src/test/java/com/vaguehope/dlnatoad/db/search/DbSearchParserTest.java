@@ -579,13 +579,18 @@ public class DbSearchParserTest {
 	@Test
 	public void itIncludesTags() throws Exception {
 		final long time = this.mockMediaMetadataStore.getNowMillis();
-		final String t1 = this.mockMediaMetadataStore.addFileWithNameAndTags("f1", "foo", "bar");
-		final String t2 = this.mockMediaMetadataStore.addFileWithNameAndTags("f2", "bar");
+		final String t0 = this.mockMediaMetadataStore.addFileWithName("thing0");  // no tags to check sql NULL handling.
+		final String t1 = this.mockMediaMetadataStore.addFileWithNameAndTags("thing1", "foo", "bar");
+		final String t2 = this.mockMediaMetadataStore.addFileWithNameAndTags("thing2", "bar");
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.addTag(t2, "other", "class1", time);
+		}
 
-		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("t=bar", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb);
+		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb);
 		assertEquals(ImmutableMap.of(
+				t0, Arrays.asList(),
 				t1, Arrays.asList(new Tag("bar", time, false), new Tag("foo", time, false)),
-				t2, Arrays.asList(new Tag("bar", time, false))
+				t2, Arrays.asList(new Tag("bar", time, false), new Tag("other", "class1", time, false))
 				), actual);
 	}
 

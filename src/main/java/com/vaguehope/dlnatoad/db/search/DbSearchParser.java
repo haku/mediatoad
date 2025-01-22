@@ -158,9 +158,9 @@ public class DbSearchParser {
 		String extraJoins = "";
 		String extraWheres = "";
 		if (includeTags) {
-			extraColumns += ", tags.tag, tags.modified";
+			extraColumns += ", tags.tag, tags.cls, tags.modified";
 			extraJoins += _SQL_MEDIAFILES_JOIN_WITH_TAGS_TABLE;
-			extraWheres += " AND deleted=0 AND cls NOT LIKE '.%'";
+			extraWheres += " AND (deleted IS NULL OR deleted=0) AND (cls IS NULL OR cls NOT LIKE '.%')";
 		}
 		if (hasInfoSort) extraJoins += _SQL_MEDIAFILES_JOIN_WITH_INFO_TABLE;
 		if (hasPlaybackSort) extraJoins += _SQL_MEDIAFILES_JOIN_WITH_PLAYBACK_TABLE;
@@ -402,7 +402,8 @@ public class DbSearchParser {
 					prevList = list;
 				}
 
-				list.add(new Tag(rs.getString(2), rs.getLong(3), false));
+				final String tag = rs.getString(2);
+				if (tag != null) list.add(new Tag(tag, rs.getString(3), rs.getLong(4), false));
 			}
 			return ret;
 		}
