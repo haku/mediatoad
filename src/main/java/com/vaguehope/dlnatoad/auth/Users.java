@@ -94,6 +94,7 @@ public class Users {
 		}
 
 		public boolean validPass(final String pass) {
+			if (this.encPass.length() < 10) return false;
 			return BCrypt.checkpw(pass, this.encPass);
 		}
 
