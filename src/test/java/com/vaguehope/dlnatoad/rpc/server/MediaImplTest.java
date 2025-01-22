@@ -1,6 +1,8 @@
 package com.vaguehope.dlnatoad.rpc.server;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -19,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -312,7 +315,7 @@ public class MediaImplTest {
 		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
 		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
 
-		final String id = mockMediaMetadataStore.addFileWithName("thing 0", ".mp3");
+		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags("thing 0", ".mp3", "existing");
 		mockContent.addMockItem(MediaFormat.MP3, id, node, null);
 
 		final UpdateTagsRequest req = UpdateTagsRequest.newBuilder()
@@ -321,6 +324,11 @@ public class MediaImplTest {
 						.setAction(TagAction.ADD)
 						.addTag(MediaTag.newBuilder().setTag("foo00").setCls("bar00").build())
 						.build())
+				.addChange(TagChange.newBuilder()
+						.setId(id)
+						.setAction(TagAction.REMOVE)
+						.addTag(MediaTag.newBuilder().setTag("existing").setCls("").build())
+						.build())
 				.build();
 
 		final StreamObserver<UpdateTagsReply> respObs = mock(StreamObserver.class);
@@ -328,7 +336,9 @@ public class MediaImplTest {
 		verify(respObs).onNext(UpdateTagsReply.newBuilder().build());
 		verify(respObs).onCompleted();
 
-		final Tag actualTag = this.mediaDb.getTags(id, false, false).iterator().next();
+		final Collection<Tag> actualAll = this.mediaDb.getTags(id, false, false);
+		assertThat(actualAll, hasSize(1));
+		final Tag actualTag = actualAll.iterator().next();
 		assertEquals("foo00", actualTag.getTag());
 		assertEquals("bar00", actualTag.getCls());
 	}
