@@ -35,6 +35,8 @@ import com.vaguehope.common.servlet.RequestLoggingFilter;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.auth.AuthFilter;
 import com.vaguehope.dlnatoad.auth.AuthTokens;
+import com.vaguehope.dlnatoad.auth.PermissionFilter;
+import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.DbCache;
@@ -350,7 +352,8 @@ public final class Main {
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(upnpService)), "/upnp");
 		if (rpcJwtLoader != null) {
 			servletHandler.addServlet(new ServletHolder(new RpcAuthServlet(rpcJwtLoader)), RpcAuthServlet.CONTEXTPATH);
-			servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);  // TODO require permission like /upnp
+			servletHandler.addFilter(new FilterHolder(new PermissionFilter(ReqAttr.ALLOW_MANAGE_RPC)), RpcStatusServlet.CONTEXTPATH + "/*", null);
+			servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);
 		}
 		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
 

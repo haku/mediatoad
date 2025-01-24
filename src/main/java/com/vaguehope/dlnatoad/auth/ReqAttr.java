@@ -1,6 +1,6 @@
 package com.vaguehope.dlnatoad.auth;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequest;
 
 public class ReqAttr<T> {
 
@@ -25,11 +25,11 @@ public class ReqAttr<T> {
 		this.defVal = defVal;
 	}
 
-	public void set(final HttpServletRequest req, final T val) {
+	public void set(final ServletRequest req, final T val) {
 		req.setAttribute(this.attrName, val);
 	}
 
-	public T get(final HttpServletRequest req) {
+	public T get(final ServletRequest req) {
 		final Object attr = req.getAttribute(this.attrName);
 		if (attr == null) return this.defVal;
 		return this.cls.cast(attr);
