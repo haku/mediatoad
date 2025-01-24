@@ -42,14 +42,23 @@ public class RpcAuthServlet extends StatusPageServlet {
 		w.println("<h1>rpc auth</h1>");
 
 		w.println("<h2>allowed</h2>");
-		w.println("<table><tr><th>username</th><th>public key thumbprint</th></tr>");
+		w.println("<table><tr><th>username</th><th>public key thumbprint</th><th>action</th></tr>");
 		for (final Entry<String, PublicJwk<?>> e : this.jwtLoader.getAllowedPublicKeys().entrySet()) {
-			w.println(String.format("<tr><td>%s</td><td>%s</td></tr>", e.getKey(), e.getValue().thumbprint()));
+			w.println(String.format(
+					"<tr><td>%s</td><td>%s</td>"
+					+ "<td><form action=\"\" method=\"POST\">"
+					+ "<input type=\"hidden\" name=\"action\" value=\"authrm\">"
+					+ "<input type=\"hidden\" name=\"username\" value=\"%s\">"
+					+ "<input type=\"hidden\" name=\"thumbprint\" value=\"%s\">"
+					+ "<input type=\"submit\" value=\"Revoke\">"
+					+ "</form></td>"
+					+ "</tr>",
+					e.getKey(), e.getValue().thumbprint(), e.getKey(), e.getValue().thumbprint()));
 		}
 		w.println("</table>");
 
 		w.println("<h2>recently rejected</h2>");
-		w.println("<table><tr><th>username</th><th>public key</th><th></th></tr>");
+		w.println("<table><tr><th>username</th><th>public key</th><th>action</th></tr>");
 		for (final Entry<String, PublicJwk<?>> e : this.jwtLoader.getRecentlyRejectPublicKeys().entrySet()) {
 			w.println(String.format(
 					"<tr><td>%s</td><td>%s</td>"
@@ -76,17 +85,33 @@ public class RpcAuthServlet extends StatusPageServlet {
 			return;
 		}
 
-		final PublicJwk<?> pubKey = this.jwtLoader.getRecentlyRejectPublicKeys().get(keyUsername);
-		if (pubKey == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unkown.");
-			return;
+		final String action = req.getParameter("action");
+		if ("authadd".equalsIgnoreCase(action)) {
+			final PublicJwk<?> pubKey = this.jwtLoader.getRecentlyRejectPublicKeys().get(keyUsername);
+			if (pubKey == null) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unkown username.");
+				return;
+			}
+			if (!thumbprint.equals(pubKey.thumbprint().toString())) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid thumbprint.");
+				return;
+			}
+			this.jwtLoader.authorisePublicKey(callingUsername, keyUsername, pubKey);
 		}
-		if (!thumbprint.equals(pubKey.thumbprint().toString())) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid thumbprint.");
+		else if ("authrm".equalsIgnoreCase(action)) {
+			final PublicJwk<?> pubKey = this.jwtLoader.getAllowedPublicKeys().get(keyUsername);
+			if (pubKey == null) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unkown username.");
+				return;
+			}
+			this.jwtLoader.revokePublicKey(callingUsername, keyUsername);
+		}
+		else {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");
 			return;
 		}
 
-		this.jwtLoader.authorisePublicKey(callingUsername, keyUsername, pubKey);
+
 		doGet(req, resp);
 	}
 

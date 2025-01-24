@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +27,6 @@ import io.jsonwebtoken.gson.io.GsonSupplierSerializer;
 import io.jsonwebtoken.lang.Collections;
 import io.jsonwebtoken.security.Jwk;
 import io.jsonwebtoken.security.JwkSet;
-import io.jsonwebtoken.security.JwkSetBuilder;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
 
@@ -68,6 +70,8 @@ public class JwkLoader extends LocatorAdapter<Key> {
 
 	private void loadJwkSetFile() throws IOException {
 		final JwkSet set = readJwkSetFile();
+		// TODO do this in a way that does not create a moment where no keys are loaded?
+		this.publicKeys.clear();
 		if (set == null) return;
 		for (final Jwk<?> k : set.getKeys()) {
 			if (!(k instanceof PublicJwk<?>)) continue;
@@ -88,22 +92,46 @@ public class JwkLoader extends LocatorAdapter<Key> {
 		if (this.publicKeys.containsKey(keyUsername))
 			throw new IllegalArgumentException("username already in RPC auth file: " + keyUsername);
 
+		LOG.warn("{} adding JWT to auth file: {} {}", callingUsername, keyUsername, publicJwk);
+		updateAuthFile(callingUsername, keyUsername, s -> s.add(publicJwk));
 
+		this.recentRejectedPublicKeys.invalidate(keyUsername);
+	}
+
+	public void revokePublicKey(final String callingUsername, final String keyUsername) throws IOException {
+		if (StringUtils.isBlank(keyUsername)) throw new IllegalArgumentException("Missing username.");
+
+		final PublicJwk<?> revokedKey = this.publicKeys.get(keyUsername);
+
+		updateAuthFile(callingUsername, keyUsername, s -> s.removeIf(k -> k.getId().equals(keyUsername)));
+		LOG.warn("{} removed user from auth file: {}", callingUsername, keyUsername);
+
+		this.recentRejectedPublicKeys.asMap().putIfAbsent(keyUsername, revokedKey);
+	}
+
+	private void updateAuthFile(final String callingUsername, final String keyUsername, final Consumer<Set<Jwk<?>>> updater) throws IOException {
+		final Set<Jwk<?>> beforeUpdate = new HashSet<>();
 		final JwkSet existingKeys = readJwkSetFile();
+		if (existingKeys != null) beforeUpdate.addAll(readJwkSetFile().getKeys());
 
-		final JwkSetBuilder setBuilder = Jwks.set();
-		if (existingKeys != null) setBuilder.add(readJwkSetFile().getKeys());
-		final JwkSet newSet = setBuilder.add(publicJwk).build();
-		final String json = GSON.toJson(newSet);
+		final Set<Jwk<?>> afterUpdate = new HashSet<>(beforeUpdate);
+		updater.accept(afterUpdate);
+		if (afterUpdate.equals(beforeUpdate)) throw new IOException("Updater did not change the keyset.");
 
-		LOG.warn("{} added JWT to auth file: {} {}", callingUsername, keyUsername, publicJwk);
+		final String json;
+		if (afterUpdate.size() > 0) {
+			final JwkSet newSet = Jwks.set().add(afterUpdate).build();
+			json = GSON.toJson(newSet);
+		}
+		else {
+			json = "";
+		}
 
 		// TODO FIXME write this via a tmp file then move over.
 		FileUtils.writeStringToFile(this.rpcAuthFile, json, StandardCharsets.UTF_8);
 		setPrivateKeyFilePermissions(this.rpcAuthFile);
 
 		loadJwkSetFile();
-		this.recentRejectedPublicKeys.invalidate(keyUsername);
 	}
 
 	@Override

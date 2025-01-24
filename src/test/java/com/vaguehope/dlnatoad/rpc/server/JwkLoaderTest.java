@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
@@ -72,6 +73,21 @@ public class JwkLoaderTest {
 		final Map<String, PublicJwk<?>> actual2 = new JwkLoader(f).getAllowedPublicKeys();
 		assertThat(actual2, hasKey("alice"));
 		assertThat(actual2, hasKey("bob"));
+	}
+
+	@Test
+	public void itRevokesUsername() throws Exception {
+		final KeyPair existingPair = Jwts.SIG.ES512.keyPair().build();
+		final File f = writeSet(existingPair);
+
+		final JwkLoader undertest = new JwkLoader(f);
+		undertest.revokePublicKey("admin-user", "alice");
+
+		final Map<String, PublicJwk<?>> actual1 = undertest.getAllowedPublicKeys();
+		assertEquals(Collections.emptyMap(), actual1);
+
+		final Map<String, PublicJwk<?>> actual2 = new JwkLoader(f).getAllowedPublicKeys();
+		assertEquals(Collections.emptyMap(), actual2);
 	}
 
 	private File writeSet(final KeyPair pair) throws IOException {
