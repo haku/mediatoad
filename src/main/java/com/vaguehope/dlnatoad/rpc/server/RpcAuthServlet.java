@@ -5,18 +5,18 @@ import java.io.PrintWriter;
 import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.vaguehope.common.servlet.StatusPageServlet;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.ui.ServletCommon;
 
 import io.jsonwebtoken.security.PublicJwk;
 
-public class RpcAuthServlet extends HttpServlet {
+public class RpcAuthServlet extends StatusPageServlet {
 
 	public static final String CONTEXTPATH = "/rpcauth";
 	private static final long serialVersionUID = 436332146470305421L;
@@ -37,14 +37,8 @@ public class RpcAuthServlet extends HttpServlet {
 		super.service(req, resp);
 	}
 
-	@SuppressWarnings("resource")
 	@Override
-	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		resp.setContentType("text/html");
-		final PrintWriter w = resp.getWriter();
-		w.println("<!DOCTYPE html><html>"
-				+ "<head></head>"
-				+ "<body>");
+	protected void generatePageBodyHtml(final HttpServletRequest req, final HttpServletResponse resp, final PrintWriter w) {
 		w.println("<h1>rpc auth</h1>");
 
 		w.println("<h2>allowed</h2>");
@@ -69,8 +63,6 @@ public class RpcAuthServlet extends HttpServlet {
 					e.getKey(), e.getValue().thumbprint(), e.getKey(), e.getValue().thumbprint()));
 		}
 		w.println("</table>");
-
-		w.println("</body></html>");
 	}
 
 	@Override
@@ -84,7 +76,7 @@ public class RpcAuthServlet extends HttpServlet {
 			return;
 		}
 
-		PublicJwk<?> pubKey = this.jwtLoader.getRecentlyRejectPublicKeys().get(keyUsername);
+		final PublicJwk<?> pubKey = this.jwtLoader.getRecentlyRejectPublicKeys().get(keyUsername);
 		if (pubKey == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unkown.");
 			return;
