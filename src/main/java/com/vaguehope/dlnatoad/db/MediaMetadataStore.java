@@ -146,7 +146,7 @@ public class MediaMetadataStore {
 				scheduleFileIdBatchIfNeeded();
 			}
 		}
-		LOG.info("Batch file metadata write for {} files.", count);
+		LOG.info("Batch file metadata write for {} files in {}ms.", count, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
 		if (genericCallback != null) {
 			genericCallback.run();
@@ -251,7 +251,7 @@ public class MediaMetadataStore {
 	private void generateFileDataAsync(final File file, final FileTask task) {
 		this.fsEx.execute(() -> {
 			try {
-				final FileData fileData = FileData.forFile(file);  // Slow.
+				final FileData fileData = calculateFileData(file);  // Slow.
 				this.fileQueue.put(task.withNewFileData(fileData));
 				scheduleFileIdBatchIfNeeded();
 			}
@@ -262,6 +262,10 @@ public class MediaMetadataStore {
 				task.getCallback().onError(new IOException(e));
 			}
 		});
+	}
+
+	protected FileData calculateFileData(final File file) throws IOException {
+		return FileData.forFile(file);
 	}
 
 	// returns null if work is being processed async.
