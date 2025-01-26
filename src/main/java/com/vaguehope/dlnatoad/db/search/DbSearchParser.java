@@ -360,11 +360,11 @@ public class DbSearchParser {
 
 	public static class DbSearch extends Search<List<String>> {
 		public DbSearch (final String sql, final List<String> terms) {
-			super(sql, terms);
+			super(sql, terms, true);
 		}
 
 		@Override
-		protected List<String> parseRecordSet(final ResultSet rs) throws SQLException {
+		protected List<String> parseRecordSet(final ResultSet rs, final int maxResults) throws SQLException {
 			final List<String> ret = new ArrayList<>();
 			while (rs.next()) {
 				ret.add(rs.getString(1));
@@ -375,29 +375,33 @@ public class DbSearchParser {
 
 	public static class DbSearchWithTags extends Search<Map<String, List<Tag>>> {
 		public DbSearchWithTags (final String sql, final List<String> terms) {
-			super(sql, terms);
+			super(sql, terms, false);
 		}
 
+		/**
+		 * this is totally assuming that the results are sorted by files.id.
+		 */
 		@Override
-		protected Map<String, List<Tag>> parseRecordSet(final ResultSet rs) throws SQLException {
+		protected Map<String, List<Tag>> parseRecordSet(final ResultSet rs, final int maxResults) throws SQLException {
 			final Map<String, List<Tag>> ret = new LinkedHashMap<>();
 
-			// since results are expected to be ordered by id.
 			String prevId = null;
 			List<Tag> prevList = null;
 
 			while (rs.next()) {
 				final String id = rs.getString(1);
-				List<Tag> list;
+
+				final List<Tag> list;
 				if (id.equals(prevId)) {
 					list = prevList;
 				}
 				else {
-					list = ret.get(id);
-					if (list == null) {
-						list = new ArrayList<>();
-						ret.put(id, list);
-					}
+					// can only limit result count like this because joining with tags returns in indeterminate
+					// number of rows depending on how many tags each file has.
+					if (ret.size() >= maxResults) break;
+
+					list = new ArrayList<>();
+					ret.put(id, list);
 					prevId = id;
 					prevList = list;
 				}
@@ -411,11 +415,11 @@ public class DbSearchParser {
 
 	public static class TagFrequencySearch extends Search<List<TagFrequency>> {
 		public TagFrequencySearch (final String sql, final List<String> terms) {
-			super(sql, terms);
+			super(sql, terms, true);
 		}
 
 		@Override
-		protected List<TagFrequency> parseRecordSet(final ResultSet rs) throws SQLException {
+		protected List<TagFrequency> parseRecordSet(final ResultSet rs, final int maxResults) throws SQLException {
 			final List<TagFrequency> ret = new ArrayList<>();
 			while (rs.next()) {
 				ret.add(new TagFrequency(rs.getString(1), rs.getInt(2)));
@@ -428,10 +432,12 @@ public class DbSearchParser {
 
 		private final String sql;
 		private final List<String> terms;
+		private final boolean limitQueryRowCount;
 
-		public Search (final String sql, final List<String> terms) {
+		public Search(final String sql, final List<String> terms, final boolean limitQueryRowCount) {
 			this.sql = sql;
 			this.terms = terms;
+			this.limitQueryRowCount = limitQueryRowCount;
 		}
 
 		String getSql() {
@@ -442,12 +448,18 @@ public class DbSearchParser {
 			return this.terms;
 		}
 
-		public T execute (final MediaDb db) throws SQLException {
-			return execute(db, -1, 0);
+		public T execute(final MediaDb db, final int maxResults) throws SQLException {
+			return execute(db, maxResults, 0);
 		}
 
-		public T execute (final MediaDb db, final int maxResults, final int offset) throws SQLException {
-			try (final PreparedStatement ps = db.prepare(maybeAddLimit(this.sql, maxResults, offset))) {
+		public T execute(final MediaDb db, final int maxResults, final int offset) throws SQLException {
+			if (!this.limitQueryRowCount && offset != 0) throw new IllegalStateException("Can not use offset without limitQueryRowCount.");
+
+			final String modifiedSql = this.limitQueryRowCount
+					? maybeAddLimit(this.sql, maxResults, offset)
+					: this.sql;
+
+			try (final PreparedStatement ps = db.prepare(modifiedSql)) {
 				int parmIn = 1;
 				for (final String term : this.terms) {
 					if ("OR".equals(term)) continue;
@@ -482,9 +494,10 @@ public class DbSearchParser {
 						ps.setString(parmIn++, Sqlite.SEARCH_ESC);
 					}
 				}
-				if (maxResults > 0) ps.setMaxRows(maxResults);
+
+				if (this.limitQueryRowCount && maxResults > 0) ps.setMaxRows(maxResults);
 				try (final ResultSet rs = ps.executeQuery()) {
-					return parseRecordSet(rs);
+					return parseRecordSet(rs, maxResults);
 				}
 			}
 		}
@@ -494,7 +507,7 @@ public class DbSearchParser {
 			return String.format("%s LIMIT %d OFFSET %d", sql, maxResults, offset);
 		}
 
-		abstract protected T parseRecordSet(final ResultSet rs) throws SQLException;
+		abstract protected T parseRecordSet(final ResultSet rs, final int maxResults) throws SQLException;
 
 		@Override
 		public String toString () {

@@ -18,7 +18,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -28,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.db.FileInfo;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.MockMediaMetadataStore.Batch;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
@@ -47,6 +50,11 @@ public class DbSearchParserTest {
 		this.mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
 		this.mediaDb = this.mockMediaMetadataStore.getMediaDb();
 		this.mockMediaMetadataStore.addNoiseToDb();
+	}
+
+	@After
+	public void after() {
+		this.mockMediaMetadataStore.shutdown();
 	}
 
 	@Test
@@ -586,12 +594,45 @@ public class DbSearchParserTest {
 			w.addTag(t2, "other", "class1", time);
 		}
 
-		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb);
+		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10);
 		assertEquals(ImmutableMap.of(
 				t0, Arrays.asList(),
 				t1, Arrays.asList(new Tag("bar", time, false), new Tag("foo", time, false)),
 				t2, Arrays.asList(new Tag("bar", time, false), new Tag("other", "class1", time, false))
 				), actual);
+	}
+
+	@Test
+	public void itCountsLimitCorrectlyWhenIncludingTags() throws Exception {
+		try (Batch b = this.mockMediaMetadataStore.batch()) {
+			for (int i = 0; i < 10; i++) {
+				b.fileWithTags("thing", "foo", "bar");
+			}
+		}
+
+		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("t=thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10, 0);
+		assertThat(actual.keySet(), hasSize(10));
+	}
+
+	@Ignore
+	@Test
+	public void benchmarkForIncludingTags() throws Exception {
+		this.mockMediaMetadataStore = MockMediaMetadataStore.withRealExSvc(this.tmp);
+		this.mediaDb = this.mockMediaMetadataStore.getMediaDb();
+
+		try (Batch b = this.mockMediaMetadataStore.batch()) {
+			for (int i = 0; i < 100000; i++) {
+				b.fileWithTags("thing", "foo", "bar");
+			}
+		}
+
+		long total = 0;
+		for (int i = 0; i < 10; i++) {
+			final long start = System.nanoTime();
+			DbSearchParser.parseSearchWithTags("t=thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 500, 0);
+			total += (System.nanoTime() - start);
+		}
+		System.out.println("d=" + TimeUnit.NANOSECONDS.toMillis(total / 10) + "ms");
 	}
 
 	@Test
@@ -602,11 +643,11 @@ public class DbSearchParserTest {
 		final String id3 = mockMediaTrackWithNameContaining("thing 3");
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10),
 				contains(id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.desc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1));
 	}
 
@@ -619,11 +660,11 @@ public class DbSearchParserTest {
 		final String idNoD = mockMediaFileWithTags("thing");
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.asc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.asc()).execute(this.mediaDb, 10),
 				contains(idNoD, id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.desc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1, idNoD));
 	}
 
@@ -636,11 +677,11 @@ public class DbSearchParserTest {
 		final String idNoL = mockMediaFileWithTags("thing");
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.asc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.asc()).execute(this.mediaDb, 10),
 				contains(idNoL, id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.desc()).execute(this.mediaDb),
+				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1, idNoL));
 	}
 
@@ -723,7 +764,7 @@ public class DbSearchParserTest {
 
 	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
 		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortColumn.FILE_PATH.asc());
-		final List<String> results = parsed.execute(this.mediaDb);
+		final List<String> results = parsed.execute(this.mediaDb, 10);
 		assertThat(results, containsInAnyOrder(expectedResults));
 	}
 
