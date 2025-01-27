@@ -330,9 +330,16 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
-		for (final ContentItem i : results) {
-			ret.addItem(itemToRpcItem(i, null));
+		try {
+			for (final ContentItem i : results) {
+				ret.addItem(itemToRpcItem(i, this.mediaDb.getTags(i.getId(), false, false)));
+			}
 		}
+		catch (final SQLException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+			return;
+		}
+
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
 	}
