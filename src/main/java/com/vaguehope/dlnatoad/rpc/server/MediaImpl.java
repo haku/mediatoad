@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.db.MediaDb;
+import com.vaguehope.dlnatoad.db.Playback;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
@@ -37,6 +39,7 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.AboutRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMediaRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ChooseMethod;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ExcludedChange;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.FileExistance;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.HasMediaRequest;
@@ -57,6 +60,8 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortDirection;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SortField;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagAction;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagChange;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateExcludedReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateExcludedRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsRequest;
 
@@ -117,15 +122,17 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		if (item == null) return;
 
+		final Playback playback;
 		final Collection<Tag> tags;
 		try {
+			playback = this.mediaDb.getPlayback(item.getId());
 			tags = this.mediaDb.getTags(item.getId(), false, false);
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription("Failed to read tags from DB.").asRuntimeException());
 			return;
 		}
-		final MediaItem rpcItem = itemToRpcItem(item, tags);
+		final MediaItem rpcItem = itemToRpcItem(item, playback, tags);
 
 		final HasMediaReply.Builder reply = HasMediaReply.newBuilder()
 				.setExistence(FileExistance.EXISTS)
@@ -151,8 +158,16 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			reply.addChild(nodeToRpcNode(n));
 		}
 
+		final List<ContentItem> items = node.getCopyOfItems();
+		final List<String> ids = items.stream().map(i -> i.getId()).collect(Collectors.toList());
 		try {
-			node.withEachItem((i) -> reply.addItem(itemToRpcItem(i, this.mediaDb.getTags(i.getId(), false, false))));
+			final Map<String, Playback> playbacks = this.mediaDb.getPlayback(ids);
+			for (final ContentItem i : items) {
+				reply.addItem(itemToRpcItem(
+						i,
+						playbacks.get(i.getId()),
+						this.mediaDb.getTags(i.getId(), false, false)));  // TODO batch read tags.
+			}
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
@@ -290,19 +305,24 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 
-		final Map<String, List<Tag>> ids;
+		final Map<String, List<Tag>> idsToTags;
+		final Map<String, Playback> playbacks;
 		try {
-			ids = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
+			idsToTags = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
+			playbacks = this.mediaDb.getPlayback(idsToTags.keySet());
 		}
 		catch (final SQLException e) {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
 			return;
 		}
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids.keySet(), username);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(idsToTags.keySet(), username);
 
 		final SearchReply.Builder ret = SearchReply.newBuilder();
 		for (final ContentItem i : results) {
-			ret.addResult(itemToRpcItem(i, ids.get(i.getId())));
+			ret.addResult(itemToRpcItem(
+					i,
+					playbacks.get(i.getId()),
+					idsToTags.get(i.getId())));
 		}
 		responseObserver.onNext(ret.build());
 		responseObserver.onCompleted();
@@ -331,8 +351,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
 		try {
+			final Map<String, Playback> playbacks = this.mediaDb.getPlayback(ids);
 			for (final ContentItem i : results) {
-				ret.addItem(itemToRpcItem(i, this.mediaDb.getTags(i.getId(), false, false)));
+				ret.addItem(itemToRpcItem(
+						i,
+						playbacks.get(i.getId()),
+						this.mediaDb.getTags(i.getId(), false, false)));
 			}
 		}
 		catch (final SQLException e) {
@@ -454,6 +478,47 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		// TODO update autocomplete
 	}
 
+	@Override
+	public void updateExcluded(final UpdateExcludedRequest request, final StreamObserver<UpdateExcludedReply> responseObserver) {
+		// TODO make updating excluded its own permission?
+		final Set<Permission> permissions = JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get();
+		if (permissions == null || !permissions.contains(Permission.EDITTAGS)) {
+			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
+			return;
+		}
+
+		if (request.getChangeCount() > 100) {
+			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("too many changes in one request.").asRuntimeException());
+			return;
+		}
+		for (final ExcludedChange change : request.getChangeList()) {
+			if (StringUtils.isBlank(change.getId())) {
+				responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("missing id.").asRuntimeException());
+				return;
+			}
+		}
+
+		// check items exist and user had access.
+		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		for (final ExcludedChange change : request.getChangeList()) {
+			final ContentItem item = getItemCheckingAuth(username, change.getId(), responseObserver, Permission.EDITTAGS);
+			if (item == null) return;
+		}
+
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			for (final ExcludedChange change : request.getChangeList()) {
+				w.setFileExcluded(change.getId(), change.getExcluded(), false);
+			}
+		}
+		catch (final IOException | SQLException e) {
+			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
+			return;
+		}
+
+		responseObserver.onNext(UpdateExcludedReply.newBuilder().build());
+		responseObserver.onCompleted();
+	}
+
 	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver) {
 		return getItemCheckingAuth(username, id, responseObserver, null);
 	}
@@ -514,13 +579,14 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.build();
 	}
 
-	private static MediaItem itemToRpcItem(final ContentItem item, final Collection<Tag> tags) {
+	private static MediaItem itemToRpcItem(final ContentItem item, final Playback playback, final Collection<Tag> tags) {
 		final MediaItem.Builder builder = MediaItem.newBuilder()
 				.setId(item.getId())
 				.setTitle(item.getTitle())
 				.setMimeType(item.getFormat().getMime())
 				.setFileLength(item.getFileLength())
-				.setDurationMillis(item.getDurationMillis());
+				.setDurationMillis(item.getDurationMillis())
+				.setExcluded(playback != null ? playback.isExcluded() : false);
 
 		if (tags != null) {
 			for (final Tag t : tags) {

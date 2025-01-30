@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,10 +91,12 @@ public class MediaDb {
 
 		executeSql("CREATE TABLE IF NOT EXISTS playback ("
 				+ "file_id STRING NOT NULL PRIMARY KEY, "
-				+ "last_played INT NOT NULL, "
+				+ "last_played INT NOT NULL DEFAULT 0, "
 				+ "start_count INT NOT NULL DEFAULT 0, "
-				+ "complete_count INT NOT NULL DEFAULT 0"
+				+ "complete_count INT NOT NULL DEFAULT 0, "
+				+ "excluded INT(1) NOT NULL DEFAULT 0"
 				+ ");");
+		Sqlite.addColumnIfMissing(this.dbConn, "playback", "excluded", "INT(1) NOT NULL DEFAULT 0");
 
 		executeSql("CREATE TABLE IF NOT EXISTS nodeprefs ("
 				+ "id STRING NOT NULL, "
@@ -361,15 +365,22 @@ public class MediaDb {
 	// playback:
 
 	public Playback getPlayback(final String id) throws SQLException {
-		try (final PreparedStatement st = this.dbConn.prepareStatement("SELECT last_played, start_count, complete_count FROM playback WHERE file_id=?")) {
-			st.setString(1, id);
-			try (final ResultSet rs = st.executeQuery()) {
-				if (!rs.next()) return null;
-				final Playback ret = new Playback(rs.getLong(1), rs.getInt(2), rs.getInt(3));
-				if (rs.next()) throw new SQLException("Query for '" + id + "' playback retured more than one result.");
-				return ret;
+		return getPlayback(Collections.singleton(id)).get(id);
+	}
+
+	public Map<String, Playback> getPlayback(final Collection<String> ids) throws SQLException {
+		final Map<String, Playback> ret = new LinkedHashMap<>();
+		try (final PreparedStatement st = this.dbConn
+				.prepareStatement("SELECT last_played, start_count, complete_count, excluded FROM playback WHERE file_id=?")) {
+			for (final String id : ids) {
+				st.setString(1, id);
+				try (final ResultSet rs = st.executeQuery()) {
+					if (!rs.next()) continue;
+					ret.put(id, new Playback(rs.getLong(1), rs.getInt(2), rs.getInt(3), rs.getInt(4) != 0));
+				}
 			}
 		}
+		return ret;
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

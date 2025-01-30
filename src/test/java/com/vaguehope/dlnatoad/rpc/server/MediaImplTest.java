@@ -8,7 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -22,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -35,12 +35,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.MetricAssert;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
+import com.vaguehope.dlnatoad.db.Playback;
 import com.vaguehope.dlnatoad.db.Tag;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -48,6 +50,7 @@ import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
 import com.vaguehope.dlnatoad.media.MockContent;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.ExcludedChange;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ListNodeRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.MediaItem;
@@ -62,9 +65,10 @@ import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.SearchRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagAction;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.TagChange;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateExcludedReply;
+import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateExcludedRequest;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.UpdateTagsRequest;
-import com.vaguehope.dlnatoad.util.ExConsumer;
 
 import io.grpc.Context;
 import io.grpc.Status.Code;
@@ -108,17 +112,14 @@ public class MediaImplTest {
 
 	// TODO test other methods!
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void itListsNode() throws Exception {
 		final ContentItem item = mockItem("itemid", "parent");
 		when(this.mediaDb.getTags("itemid", false, false)).thenReturn(asList(new Tag("foo", "cls", 1234567890L, false)));
+		when(this.mediaDb.getPlayback(Collections.singletonList("itemid"))).thenReturn(ImmutableMap.of("itemid", new Playback(0, 0, 0, true)));
 
 		final ContentNode node = mockNode("nodeid");
-		doAnswer(a -> {
-			((ExConsumer<ContentItem, ?>) a.getArguments()[0]).accept(item);
-			return null;
-		}).when(node).withEachItem(any(ExConsumer.class));
+		when(node.getCopyOfItems()).thenReturn(Collections.singletonList(item));
 
 		final StreamObserver<ListNodeReply> respObs = mock(ServerCallStreamObserver.class);
 		this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs);
@@ -133,6 +134,7 @@ public class MediaImplTest {
 						.setId("itemid")
 						.setTitle("title for itemid")
 						.setMimeType("image/jpeg")
+						.setExcluded(true)
 						.addTag(MediaTag.newBuilder().setTag("foo").setCls("cls").setModifiedMillis(1234567890L).build())
 						.build())
 				.build());
@@ -148,6 +150,7 @@ public class MediaImplTest {
 		final String tag = "foo";
 		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".mp3", tag);
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.setFileExcluded(id, true, true);
 			w.addTag(id, "other", "class1", time);
 		}
 		final File file = new File(this.mediaDb.getFilePathForId(id));
@@ -162,6 +165,7 @@ public class MediaImplTest {
 						.setTitle(name)
 						.setMimeType("audio/mpeg")
 						.setFileLength(file.length())
+						.setExcluded(true)
 						.addTag(MediaTag.newBuilder()
 								.setTag("foo")
 								.setModifiedMillis(time)
@@ -341,6 +345,46 @@ public class MediaImplTest {
 		final Tag actualTag = actualAll.iterator().next();
 		assertEquals("foo00", actualTag.getTag());
 		assertEquals("bar00", actualTag.getCls());
+	}
+
+	@Test
+	public void itUpdatesExcluded() throws Exception {
+		final MockContent mockContent = setupFakeContent();
+		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
+
+		final Context ctx = Context.current().withValues(
+				JwtInterceptor.USERNAME_CONTEXT_KEY, "testuser@client",
+				JwtInterceptor.PERMISSIONS_CONTEXT_KEY, ImmutableSet.of(Permission.EDITTAGS));
+		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
+		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
+
+		final String id1 = mockMediaMetadataStore.addFileWithName("thing 1");
+		final String id2 = mockMediaMetadataStore.addFileWithName("thing 2");
+		mockContent.addMockItem(id1, node);
+		mockContent.addMockItem(id2, node);
+
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			w.setFileExcluded(id2, true, true);
+		}
+
+		final UpdateExcludedRequest req = UpdateExcludedRequest.newBuilder()
+				.addChange(ExcludedChange.newBuilder()
+						.setId(id1)
+						.setExcluded(true)
+						.build())
+				.addChange(ExcludedChange.newBuilder()
+						.setId(id2)
+						.setExcluded(false)
+						.build())
+				.build();
+
+		final StreamObserver<UpdateExcludedReply> respObs = mock(StreamObserver.class);
+		ctx.run(() -> this.undertest.updateExcluded(req, respObs));
+		verify(respObs).onNext(UpdateExcludedReply.newBuilder().build());
+		verify(respObs).onCompleted();
+
+		assertEquals(true, this.mediaDb.getPlayback(id1).isExcluded());
+		assertEquals(false, this.mediaDb.getPlayback(id2).isExcluded());
 	}
 
 	private static void verifyErrorStatus(final StreamObserver<?> observer, final Code code) {

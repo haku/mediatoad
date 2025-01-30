@@ -5,16 +5,21 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -362,6 +367,45 @@ public class MediaDbTest {
 		assertEquals(2534567890L, complete2.getDateLastPlayed());
 		assertEquals(2, complete2.getStartCount());
 		assertEquals(2, complete2.getCompleteCount());
+	}
+
+	@Test
+	public void itMarkesFileAsExcluded() throws Exception {
+		assertNull(this.undertest.getPlayback("myid"));
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setFileExcluded("myid", false, true);
+		}
+		assertFalse(this.undertest.getPlayback("myid").isExcluded());
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.setFileExcluded("myid", true, true);
+		}
+		assertTrue(this.undertest.getPlayback("myid").isExcluded());
+	}
+
+	@Ignore
+	@Test
+	public void benchmarkPlaybackRead() throws Exception {
+		final List<String> ids = new ArrayList<>();
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			for (int i = 0; i < 100000; i++) {
+				final String id = RandomStringUtils.insecure().nextAlphabetic(15);
+				ids.add(id);
+				w.recordPlayback(id, 1234567890L, false);
+			}
+		}
+		System.out.println("item count: " + ids.size());
+
+		final int itterations = 10;
+		long totalTime = 0;
+		for (int i = 0; i < itterations; i++) {
+			final long start = System.nanoTime();
+			final int fromIndex = (int) (ids.size() * 0.25);
+			this.undertest.getPlayback(ids.subList(fromIndex, fromIndex + 500));
+			totalTime += System.nanoTime() - start;
+		}
+		System.out.println("benchmark playback read: " + TimeUnit.NANOSECONDS.toMillis(totalTime / itterations) + " ms");
 	}
 
 	@Test

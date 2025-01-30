@@ -193,19 +193,8 @@ public class DbSearchParser {
 
 	public static DbSearch parseSearchForChoose(final String allTerms, final Set<BigInteger> authIds, final ChooseMethod method) {
 		final StringBuilder sql = new StringBuilder();
-		switch (method) {
-		case UNSPECIFIED_METHOD:
-		case RANDOM:
-			sql.append(_SQL_MEDIAFILES_SELECT);
-			break;
-		case LESS_RECENT:
-		case LESS_PLAYED:
-			sql.append(_SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE);
-			break;
-		default:
-			throw new IllegalArgumentException("Method not supported: " + method);
-		}
-
+		sql.append(_SQL_MEDIAFILES_SELECT_WITH_PLAYBACK_TABLE);
+		sql.append(" AND (excluded IS NULL OR excluded=0)");
 		sql.append(_SQL_AND);
 		SqlFragments.appendWhereAuth(sql, authIds);
 

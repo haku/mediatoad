@@ -20,6 +20,7 @@ message MediaItem {
   int64 file_length = 4;
   int64 duration_millis = 5;
   repeated MediaTag tag = 6;
+  bool excluded = 7;
 }
 
 message MediaTag {
@@ -58,6 +59,7 @@ service Media {
   rpc ChooseMedia (ChooseMediaRequest) returns (ChooseMediaReply) {}
   rpc RecordPlayback (RecordPlaybackRequest) returns (RecordPlaybackReply) {}
   rpc UpdateTags (UpdateTagsRequest) returns (UpdateTagsReply) {}
+  rpc UpdateExcluded (UpdateExcludedRequest) returns (UpdateExcludedReply) {}
 }
 
 message AboutRequest {}
@@ -192,3 +194,13 @@ message UpdateTagsRequest {
   repeated TagChange change = 1;
 }
 message UpdateTagsReply {}
+
+message ExcludedChange {
+  // id of media to update tag for.
+  string id = 1;
+  bool excluded = 2;
+}
+message UpdateExcludedRequest {
+  repeated ExcludedChange change = 1;
+}
+message UpdateExcludedReply {}

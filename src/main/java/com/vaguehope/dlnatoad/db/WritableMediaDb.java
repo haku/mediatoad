@@ -433,6 +433,22 @@ public class WritableMediaDb implements Closeable {
 		}
 	}
 
+	public void setFileExcluded(final String id, final boolean excluded, final boolean dbMustChange) throws SQLException {
+		try (final PreparedStatement st = this.conn.prepareStatement(
+				"INSERT INTO playback(file_id, excluded) VALUES(?,?)"
+				+ "ON CONFLICT(file_id) DO UPDATE SET excluded=?"
+				)) {
+			st.setString(1, id);
+			st.setInt(2, excluded ? 1 : 0);
+			st.setInt(3, excluded ? 1 : 0);
+			final int n = st.executeUpdate();
+			if (dbMustChange && n < 1) throw new SQLException(String.format("No update occured setting excluded=%s for file \"%s\".", excluded, id));
+		}
+		catch (final SQLException e) {
+			throw new SQLException(String.format("Failed to set excluded=%s for file \"%s\".", excluded, id), e);
+		}
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// prefs:
 

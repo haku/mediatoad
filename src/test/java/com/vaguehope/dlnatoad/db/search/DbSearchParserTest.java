@@ -695,6 +695,16 @@ public class DbSearchParserTest {
 			this.mockMediaMetadataStore.addFileWithTags("other");
 		}
 
+		final List<String> excluded = new ArrayList<>();
+		for (int i = 0; i < 20; i++) {
+			excluded.add(this.mockMediaMetadataStore.addFileWithTags("thing"));
+		}
+		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
+			for (String id : excluded) {
+				w.setFileExcluded(id, true, true);
+			}
+		}
+
 		final List<String> actual = DbSearchParser.parseSearchForChoose("t=thing", null, ChooseMethod.RANDOM).execute(this.mediaDb, 1, 0);
 		assertThat(actual, hasSize(1));
 		assertThat(expectedIds, hasItem(actual.get(0)));
