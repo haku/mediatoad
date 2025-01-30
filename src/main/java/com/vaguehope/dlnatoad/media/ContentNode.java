@@ -150,11 +150,15 @@ public class ContentNode extends AbstractContent {
 	}
 
 	public List<ContentNode> getCopyOfNodes() {
-		return new ArrayList<>(this.nodes);
+		synchronized (this.nodes) {
+			return new ArrayList<>(this.nodes);
+		}
 	}
 
 	public List<ContentItem> getCopyOfItems() {
-		return new ArrayList<>(this.items);
+		synchronized (this.items) {
+			return new ArrayList<>(this.items);
+		}
 	}
 
 	public boolean addNodeIfAbsent(final ContentNode node) {
