@@ -42,19 +42,17 @@ public class MediaDb {
 	}
 
 	private void makeSchema () throws SQLException {
-		if (!tableExists("files")) {
-			executeSql("CREATE TABLE files ("
-					+ COL_FILE + " STRING NOT NULL PRIMARY KEY, "
-					+ "size INT NOT NULL, "
-					+ "modified INT NOT NULL, "
-					+ "hash STRING NOT NULL, "
-					+ "id STRING NOT NULL, "
-					+ "auth STRING NOT NULL DEFAULT '0', "
-					+ "missing INT(1) NOT NULL DEFAULT 0, "
-					+ "md5 STRING, "
-					+ "mimetype STRING"
-					+ ");");
-		}
+		executeSql("CREATE TABLE IF NOT EXISTS files ("
+				+ COL_FILE + " STRING NOT NULL PRIMARY KEY, "
+				+ "size INT NOT NULL, "
+				+ "modified INT NOT NULL, "
+				+ "hash STRING NOT NULL, "
+				+ "id STRING NOT NULL, "
+				+ "auth STRING NOT NULL DEFAULT '0', "
+				+ "missing INT(1) NOT NULL DEFAULT 0, "
+				+ "md5 STRING, "
+				+ "mimetype STRING"
+				+ ");");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "auth", "STRING NOT NULL DEFAULT '0'");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "missing", "INT(1) NOT NULL DEFAULT 0");
 		Sqlite.addColumnIfMissing(this.dbConn, "files", "md5", "STRING");
@@ -62,32 +60,30 @@ public class MediaDb {
 		executeSql("CREATE INDEX IF NOT EXISTS files_id_auth_mimetype_missing_idx ON files (id,auth,mimetype,missing);");
 		executeSql("CREATE INDEX IF NOT EXISTS files_hash_idx ON files (hash);");
 
-		if (!tableExists("tags")) {
-			executeSql("CREATE TABLE tags ("
-					+ "file_id STRING NOT NULL, "
-					+ COL_TAG + " STRING NOT NULL COLLATE NOCASE, "
-					+ "cls STRING NOT NULL COLLATE NOCASE DEFAULT '', "
-					+ "modified INT NOT NULL, "
-					+ "deleted INT(1) NOT NULL DEFAULT 0, "
-					+ "UNIQUE(file_id, " + COL_TAG + ", cls)"  // TODO auto backfill adding cls here?
-					+ ");");
-		}
+		executeSql("CREATE TABLE IF NOT EXISTS tags ("
+				+ "file_id STRING NOT NULL, "
+				+ COL_TAG + " STRING NOT NULL COLLATE NOCASE, "
+				+ "cls STRING NOT NULL COLLATE NOCASE DEFAULT '', "
+				+ "modified INT NOT NULL, "
+				+ "deleted INT(1) NOT NULL DEFAULT 0, "
+				+ "UNIQUE(file_id, " + COL_TAG + ", cls)"  // TODO auto backfill adding cls here?
+				+ ");");
+		Sqlite.addColumnIfMissing(this.dbConn, "tags", "cls", "STRING NOT NULL COLLATE NOCASE DEFAULT ''");
 		executeSql("CREATE INDEX IF NOT EXISTS tags_id_tag_deleted_cls_idx ON tags (file_id,tag COLLATE NOCASE,deleted,cls);");
 
-		Sqlite.addColumnIfMissing(this.dbConn, "tags", "cls", "STRING NOT NULL COLLATE NOCASE DEFAULT ''");
-		if (!tableExists("hashes")) {
-			executeSql("CREATE TABLE hashes ("
-					+ "hash STRING NOT NULL PRIMARY KEY, id STRING NOT NULL);");
-			executeSql("CREATE INDEX hashes_idx ON hashes (id);");
-		}
-		if (!tableExists("infos")) {
-			executeSql("CREATE TABLE infos ("
-					+ "file_id STRING NOT NULL PRIMARY KEY, "
-					+ "size INT NOT NULL, "
-					+ "duration INT, "
-					+ "width INT, "
-					+ "height INT);");
-		}
+		executeSql("CREATE TABLE IF NOT EXISTS hashes ("
+				+ "hash STRING NOT NULL PRIMARY KEY, "
+				+ "id STRING NOT NULL"
+				+ ");");
+		executeSql("CREATE INDEX IF NOT EXISTS hashes_idx ON hashes (id);");
+
+		executeSql("CREATE TABLE IF NOT EXISTS infos ("
+				+ "file_id STRING NOT NULL PRIMARY KEY, "
+				+ "size INT NOT NULL, "
+				+ "duration INT, "
+				+ "width INT, "
+				+ "height INT"
+				+ ");");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_width_idx ON infos (width);");
 		executeSql("CREATE INDEX IF NOT EXISTS infos_height_idx ON infos (height);");
 
@@ -95,16 +91,15 @@ public class MediaDb {
 				+ "file_id STRING NOT NULL PRIMARY KEY, "
 				+ "last_played INT NOT NULL, "
 				+ "start_count INT NOT NULL DEFAULT 0, "
-				+ "complete_count INT NOT NULL DEFAULT 0);");
+				+ "complete_count INT NOT NULL DEFAULT 0"
+				+ ");");
 
-		if (!tableExists("nodeprefs")) {
-			executeSql("CREATE TABLE nodeprefs ("
-					+ "id STRING NOT NULL, "
-					+ "key STRING NOT NULL, "
-					+ "value STRING NOT NULL, "
-					+ "UNIQUE(id, key)"
-					+ ");");
-		}
+		executeSql("CREATE TABLE IF NOT EXISTS nodeprefs ("
+				+ "id STRING NOT NULL, "
+				+ "key STRING NOT NULL, "
+				+ "value STRING NOT NULL, "
+				+ "UNIQUE(id, key)"
+				+ ");");
 	}
 
 	@SuppressWarnings("resource")
@@ -421,22 +416,6 @@ public class MediaDb {
 
 	private static Connection makeDbConnection (final String dbPath) throws SQLException {
 		return DriverManager.getConnection(dbPath, makeDbConfig().toProperties());
-	}
-
-	private boolean tableExists (final String tableName) throws SQLException {
-		final Statement st = this.dbConn.createStatement();
-		try {
-			final ResultSet rs = st.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='" + tableName + "';");
-			try {
-				return rs.next();
-			}
-			finally {
-				rs.close();
-			}
-		}
-		finally {
-			st.close();
-		}
 	}
 
 	private boolean executeSql (final String sql) throws SQLException {
