@@ -13,18 +13,18 @@ ClickHelper = {};
       event.preventDefault();
     });
 
-    element.addEventListener('pointerup', (event) => {
-      x = -1;
+    const stopTimer = () => {
       clearTimeout(pressTimer);
-      return false;
-    });
+      x = -1;
+    };
+    element.addEventListener('pointerup', stopTimer);
+    element.addEventListener('pointercancel', stopTimer);
 
     element.addEventListener('pointermove', (event) => {
       if (x != -1) {
         if (Math.abs(event.screenX - x) > 5
           || Math.abs(event.screenY - y) > 5) {
-          clearTimeout(pressTimer);
-          x = -1;
+          stopTimer();
           return false;
         }
       }
