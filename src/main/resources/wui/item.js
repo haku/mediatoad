@@ -20,7 +20,7 @@
     tf_list.forEach((t) => makeTagItem(t));
   };
 
-  form.addEventListener('submit', (event) => {
+  if (form) form.addEventListener('submit', (event) => {
     event.preventDefault();
 
     const tag = newtag.value.trim();
