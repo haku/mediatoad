@@ -48,17 +48,18 @@ public class StaticFilesServletTest {
 	@Test
 	public void itServesFile() throws Exception {
 		startServer();
-		final URL url = new URL("http://" + this.hostAddress + ":"
-				+ ((ServerConnector) this.server.getConnectors()[0]).getLocalPort()
-				+ "/w/test.txt");
-		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		final HttpURLConnection conn = assertRequestResponseCode("test.txt", 0, 200);
 		assertEquals("desu\n", IOUtils.toString(conn.getInputStream(), StandardCharsets.UTF_8));
-		assertEquals(200, conn.getResponseCode());
-
 		final Map<String, List<String>> headers = conn.getHeaderFields();
 		final List<String> actualType = headers.get("Content-Type");
 		assertThat("Content-Type header present", actualType, not(nullValue()));
 		assertEquals("text/plain", actualType.get(0));
+	}
+
+	@Test
+	public void itServesFileWithDatedPath() throws Exception {
+		startServer();
+		assertRequestResponseCode("123456/test.txt", 0, 200);
 	}
 
 	@Test
@@ -82,13 +83,14 @@ public class StaticFilesServletTest {
 		assertRequestResponseCode(filename, oldTime, 200);
 	}
 
-	private void assertRequestResponseCode(final String filename, final long ifModifiedSince, final int code) throws MalformedURLException, IOException {
+	private HttpURLConnection assertRequestResponseCode(final String filename, final long ifModifiedSince, final int code) throws MalformedURLException, IOException {
 		final URL url = new URL("http://" + this.hostAddress + ":"
 				+ ((ServerConnector) this.server.getConnectors()[0]).getLocalPort()
 				+ "/w/" + filename);
 		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		if (ifModifiedSince > 0) conn.setIfModifiedSince(ifModifiedSince);
 		assertEquals(code, conn.getResponseCode());
+		return conn;
 	}
 
 	@SuppressWarnings("resource")

@@ -5,11 +5,11 @@
 	<title>{{page_title}}</title>
 	<meta name="viewport" content="width=device-width, minimum-scale=1.0">
 	{{#db_enabled}}
-	<link rel="stylesheet" href="{{path_prefix}}w/autocomplete.css">
-	<script src="{{path_prefix}}w/third_party/autoComplete.10.2.7.min.js"></script>
+	<link rel="stylesheet" href="{{path_prefix}}w/{{cache_bust_prefix}}/autocomplete.css">
+	<script src="{{path_prefix}}w/{{cache_bust_prefix}}/third_party/autoComplete.10.2.7.min.js"></script>
 	{{/db_enabled}}
-	<link rel="stylesheet" href="{{path_prefix}}w/layout.css">
-	<link rel="stylesheet" href="{{path_prefix}}w/colours.css">
+	<link rel="stylesheet" href="{{path_prefix}}w/{{cache_bust_prefix}}/layout.css">
+	<link rel="stylesheet" href="{{path_prefix}}w/{{cache_bust_prefix}}/colours.css">
 </head>
 <body>
 	<div class="topbar">
@@ -40,12 +40,12 @@
 						<input type="submit" name="remote" value="Search Remote">
 					</div>
 				</div>
-				<script src="{{path_prefix}}w/menu.js"></script>
+				<script src="{{path_prefix}}w/{{cache_bust_prefix}}/menu.js"></script>
 				{{/allow_remote_search}}
 			</span>
 		</form>
 		{{#db_enabled}}
-		<script src="{{path_prefix}}w/autocomplete-search.js"></script>
+		<script src="{{path_prefix}}w/{{cache_bust_prefix}}/autocomplete-search.js"></script>
 		{{/db_enabled}}
 	</div>
 

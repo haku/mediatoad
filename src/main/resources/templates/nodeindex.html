@@ -26,7 +26,7 @@
 		<span class="thumbnail {{classes}}" item_id="{{item_id}}"><a href="{{{item_path}}}"{{#autofocus}} autofocus{{/autofocus}}><img src="{{thumb_path}}" title="{{title}}"></a></span>
 		{{/results.thumbs}}
 		{{>multiselect}}
-		{{#db_enabled}}<script src="{{path_prefix}}w/multiselect.js"></script>{{/db_enabled}}
+		{{#db_enabled}}<script src="{{path_prefix}}w/{{cache_bust_prefix}}/multiselect.js"></script>{{/db_enabled}}
 	</div>
 
 	{{#results.next_page_path}}<a class="nextpage" href="{{{results.next_page_path}}}">Next Page</a>{{/results.next_page_path}}

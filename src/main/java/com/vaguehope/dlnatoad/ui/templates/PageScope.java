@@ -1,7 +1,10 @@
 package com.vaguehope.dlnatoad.ui.templates;
 
+import com.vaguehope.dlnatoad.ui.StaticFilesServlet;
+
 public class PageScope {
 
+	public final String cache_bust_prefix = StaticFilesServlet.CACHE_BUST_PREFIX;
 	public final String page_title;
 	public final String path_prefix;
 	public final String username;

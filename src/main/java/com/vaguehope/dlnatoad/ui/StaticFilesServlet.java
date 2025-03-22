@@ -6,6 +6,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -16,6 +19,9 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.C;
 
 public class StaticFilesServlet extends DefaultServlet {
+
+	public static final String CACHE_BUST_PREFIX = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+	private static final Pattern CACHE_BUST_PATTERN = Pattern.compile("^\\d+/(.*)$");
 
 	private static final String KEY_FILE = "test.txt";  // Used to find /wui dir.
 	private static final Logger LOG = LoggerFactory.getLogger(StaticFilesServlet.class);
@@ -51,6 +57,10 @@ public class StaticFilesServlet extends DefaultServlet {
 	public Resource getResource(final String pathInContext) {
 		try {
 			final String path = StringUtils.removeStartIgnoreCase(pathInContext, "/" + C.STATIC_FILES_PATH_PREFIX);
+			final Matcher m = CACHE_BUST_PATTERN.matcher(path);
+			if (m.matches()) {
+				return this.rootRes.addPath(m.group(1));
+			}
 			return this.rootRes.addPath(path);
 		}
 		catch (final IOException e) {
