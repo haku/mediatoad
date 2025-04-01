@@ -52,6 +52,7 @@ public enum MediaFormat {
 	SRT("srt", "text/srt", ContentGroup.SUBTITLES),
 	SSA("ssa", "text/x-ssa", ContentGroup.SUBTITLES),
 	ASS("ass", "text/x-ass", ContentGroup.SUBTITLES),
+	VTT("vtt", "text/vtt", ContentGroup.SUBTITLES),
 
 	PDF("pdf", "application/pdf", ContentGroup.DOCUMENT),
 	;

@@ -19,6 +19,9 @@
 		<video controls>
 			<source src="{{item_path}}" type="{{type}}" />
 			<p>[ Browser does not suport playing this file ]</p>
+			{{#subtitles}}
+			<track label="{{label}}" kind="subtitles" src="{{path}}" />
+			{{/subtitles}}
 		</video>
 		{{/is_video}}
 

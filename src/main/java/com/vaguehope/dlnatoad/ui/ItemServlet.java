@@ -65,6 +65,8 @@ public class ItemServlet extends HttpServlet {
 			MediaFormat.MP4,
 			MediaFormat.OGV,
 			MediaFormat.WEBM);
+	private static final Set<MediaFormat> HTML_SUBTITLE_FORMATS = ImmutableSet.of(
+			MediaFormat.VTT);
 	private static final Set<MediaFormat> HTML_AUDIO_FORMATS = ImmutableSet.of(
 			MediaFormat.FLAC,
 			MediaFormat.M4A,
@@ -137,6 +139,12 @@ public class ItemServlet extends HttpServlet {
 		itemScope.dir_path = "../d/" + node.getId();
 		itemScope.dir_name = node.getTitle();
 
+		item.withEachAttachment(a -> {
+			if (!HTML_SUBTITLE_FORMATS.contains(a.getFormat())) return;
+			final String path = "../" + C.CONTENT_PATH_PREFIX + a.getId() + "." + a.getFormat().getExt();
+			itemScope.addSubtitles(path, a);
+		});
+
 		if (this.mediaDb != null) {
 			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req) && (!node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
 			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
@@ -156,28 +164,44 @@ public class ItemServlet extends HttpServlet {
 			}
 		}
 
+		final String absolutePath = item.getFile().getAbsolutePath();
+		itemScope.details = item.getTitle();
+		if (item.getWidth() > 0 && item.getHeight() > 0) {
+			itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
+		}
+
+		final FileData fileData;
 		if (this.mediaDb != null) {
 			try {
-				final FileData fileData = this.mediaDb.getFileData(item.getFile());
-				if (fileData != null) {
-					final String absolutePath = item.getFile().getAbsolutePath();
+				fileData = this.mediaDb.getFileData(item.getFile());
+			}
+			catch (final SQLException e) {
+				throw new IOException(e);
+			}
+		}
+		else {
+			fileData = null;
+		}
 
-					itemScope.details = item.getTitle();
-					if (item.getWidth() > 0 && item.getHeight() > 0) {
-						itemScope.details += "\n" + item.getWidth() + " × " + item.getHeight();
-					}
-					itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
-					itemScope.details += "\n" + "MD5: " + fileData.getMd5();
-					itemScope.details += "\n" + absolutePath;
-					itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getLastModified()));
+		if (fileData != null) {
+			itemScope.details += "\n" + FileHelper.readableFileSize(fileData.getSize());
+			itemScope.details += "\n" + "MD5: " + fileData.getMd5();
+		}
 
-					final Collection<String> duplicates = this.mediaDb.getFilesWithHash(authIds, fileData.getHash());
-					if (duplicates.size() > 1) {
-						itemScope.details += "\n\nduplicates:";
-						for (final String path : duplicates) {
-							if (path.equals(absolutePath)) continue;
-							itemScope.details += "\n" + path;
-						}
+		itemScope.details += "\n" + absolutePath;
+		itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getLastModified()));
+		item.withEachAttachment(a -> {
+			itemScope.details += "\n" + "attachment: " + a.getFile().getAbsolutePath() + " (" + a.getFormat().getMime() + ")";
+		});
+
+		if (this.mediaDb != null && fileData != null) {
+			try {
+				final Collection<String> duplicates = this.mediaDb.getFilesWithHash(authIds, fileData.getHash());
+				if (duplicates.size() > 1) {
+					itemScope.details += "\n\nduplicates:";
+					for (final String path : duplicates) {
+						if (path.equals(absolutePath)) continue;
+						itemScope.details += "\n" + path;
 					}
 				}
 			}

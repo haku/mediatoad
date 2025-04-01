@@ -71,13 +71,18 @@ public class ItemServletTest {
 
 	@Test
 	public void itRendersVideo() throws Exception {
-		givenReqForUnprotectedItem(MediaFormat.MP4);
+		final ContentItem vid = givenReqForUnprotectedItem(MediaFormat.MP4);
+		final ContentItem subs = this.mockContent.givenMockItems(MediaFormat.VTT, 1, this.contentTree.getNode(vid.getParentId())).get(0);
+		vid.addAttachmentIfNotPresent(subs);
 
 		this.undertest.doGet(this.req, this.resp);
 
 		assertEquals(200, this.resp.getStatus());
 		assertThat(this.resp.getOutputAsString(),  containsString("<video controls>"));
 		assertThat(this.resp.getOutputAsString(),  containsString("<source src=\"../c/id00.mp4\" type=\"video/mp4\" />"));
+		assertThat(this.resp.getOutputAsString(),
+				containsString("<track label=\"" + subs.getTitle() + "\" kind=\"subtitles\" src=\"../c/" + subs.getId() + ".vtt\" />"));
+		assertThat(this.resp.getOutputAsString(),  containsString("attachment: " + subs.getFile().getAbsolutePath() + " (text/vtt)"));
 	}
 
 	// TODO update this once there is proper viewer support.
