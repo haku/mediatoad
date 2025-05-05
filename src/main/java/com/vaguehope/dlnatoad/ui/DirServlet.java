@@ -42,6 +42,7 @@ import com.vaguehope.dlnatoad.ui.templates.NodeIndexScope;
 import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
+import com.vaguehope.dlnatoad.util.GenTimer;
 
 public class DirServlet extends HttpServlet {
 
@@ -110,6 +111,8 @@ public class DirServlet extends HttpServlet {
 
 	@SuppressWarnings("resource")
 	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
+		final GenTimer genTimer = new GenTimer();
+
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, PARAM_SORT, "");
 		if (sortRaw == null) return;
 		final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, SearchServlet.PARAM_PAGE_LIMIT, ITEMS_PER_PAGE, i -> i > 0);
@@ -128,6 +131,8 @@ public class DirServlet extends HttpServlet {
 		final boolean sortModified;
 		final boolean videoThumbs;
 		if (isRoot) {
+			genTimer.startSection("favs");
+
 			favouritesScope = new ResultGroupScope("Favourites", null, null, pageScope);
 			final List<ContentNode> favourites = readFavourites(username);
 			appendNodes(favouritesScope, favourites);
@@ -137,6 +142,8 @@ public class DirServlet extends HttpServlet {
 			videoThumbs = false;
 		}
 		else {
+			genTimer.startSection("prefs");
+
 			final Map<String, String> dirPrefs = readNodePrefs(node);
 			favourite = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_FAVOURITE));
 			sortModified = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_SORT_MODIFIED));
@@ -146,7 +153,10 @@ public class DirServlet extends HttpServlet {
 			pageScope.setUpLinkPath(node.getParentId());
 		}
 
+		genTimer.startSection("auth");
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
+
+		genTimer.startSection("node");
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
 		final long nodeTotalFileLength = node.getTotalFileLength();
 
@@ -171,6 +181,7 @@ public class DirServlet extends HttpServlet {
 			nextPagePath = null;
 		}
 
+		genTimer.startSection("scope");
 		final ResultGroupScope resultScope = new ResultGroupScope(listTitle, null, nextPagePath, pageScope);
 		final NodeIndexScope nodeIndexScope = new NodeIndexScope(
 				favouritesScope,
@@ -186,18 +197,21 @@ public class DirServlet extends HttpServlet {
 
 		appendNodes(resultScope, nodesUserHasAuth);
 
+		genTimer.startSection("thumbs");
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
 				+ (sort != null ? "&" + sortParam : "");
 		for (final ContentItem i : pageItems) {
 			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator, videoThumbs);
 		}
 
+		genTimer.startSection("tags");
 		maybeAppendTopTags(resultScope, node, username);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
 		if (isRoot) {
 			pageScope.setDebugfooter(this.servletCommon.debugFooter());
 		}
+		pageScope.appendToDebugFooter("gen: " + genTimer.summarise());
 
 		ServletCommon.setHtmlContentType(resp);
 		this.nodeIndexTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();

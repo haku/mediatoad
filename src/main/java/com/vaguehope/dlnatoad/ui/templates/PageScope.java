@@ -33,6 +33,16 @@ public class PageScope {
 		this.debugfooter = debugfooter;
 	}
 
+	public void appendToDebugFooter(final String msg) {
+		if (this.debugfooter == null) {
+			this.debugfooter = msg;
+		}
+		else {
+			if (!this.debugfooter.endsWith("\n")) this.debugfooter += "\n";
+			this.debugfooter += msg;
+		}
+	}
+
 	public void setExtraQuery(final String extraQuery) {
 		this.extra_query = extraQuery;
 	}

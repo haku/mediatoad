@@ -40,7 +40,6 @@ import org.jupnp.support.model.SortCriterion;
 import org.jupnp.support.model.item.Item;
 
 import com.github.mustachejava.Mustache;
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -50,8 +49,8 @@ import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser;
-import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.db.search.DbSearchParser.DbSearch;
+import com.vaguehope.dlnatoad.db.search.DbSearchSyntax;
 import com.vaguehope.dlnatoad.db.search.SortColumn;
 import com.vaguehope.dlnatoad.db.search.SortColumn.SortOrder;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
@@ -72,6 +71,7 @@ import com.vaguehope.dlnatoad.ui.templates.PageScope;
 import com.vaguehope.dlnatoad.ui.templates.ResultGroupScope;
 import com.vaguehope.dlnatoad.ui.templates.SearchResultsScope;
 import com.vaguehope.dlnatoad.util.FileHelper;
+import com.vaguehope.dlnatoad.util.GenTimer;
 
 public class SearchServlet extends HttpServlet {
 
@@ -119,17 +119,19 @@ public class SearchServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final GenTimer genTimer = new GenTimer();
+
 		final SearchPath searchPath = RequestPaths.parseSearchPath(req.getPathInfo());
 		if (searchPath.file.length() > 0) {
 			this.contentServlet.service(req, resp);
 			return;
 		}
 
+		genTimer.startSection("pre");
 		final String query = queryFromReq(req, searchPath);
 		final String pathPrefix = Strings.isNullOrEmpty(req.getPathInfo()) ? null : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), pathPrefix, query);
 		final StringBuilder debugFooter = new StringBuilder();
-		final Stopwatch stopwatch = Stopwatch.createUnstarted();
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
@@ -142,28 +144,30 @@ public class SearchServlet extends HttpServlet {
 				final int nextLimit;
 				final int nextOffset;
 				if (this.mediaDb != null) {
+					genTimer.startSection("auth");
 					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
 
+					genTimer.startSection("setup");
 					final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_LIMIT, MAX_RESULTS, i -> i > 0);
 					if (limit == null) return;
 					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
 					final DbSearch idsQuery = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER);
-					stopwatch.start();
+					genTimer.startSection("query");
 					final List<String> ids = idsQuery.execute(this.mediaDb, limit, offset);
-					debugFooter.append(String.format("file query: %s ms\n%s\n",
-							stopwatch.elapsed(TimeUnit.MILLISECONDS), idsQuery));
+					debugFooter.append(idsQuery).append("\n");
 
+					genTimer.startSection("ids");
 					results = this.contentTree.getItemsForIds(ids, username);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
-					stopwatch.reset().start();
+					genTimer.startSection("tags");
 					tagResults = this.dbCache.searchTopTags(authIds, query);
-					debugFooter.append(String.format("tags query: %s ms\n", stopwatch.elapsed(TimeUnit.MILLISECONDS)));
 				}
 				else {
+					genTimer.startSection("query");
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
 					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, username);
 					offset = null;
@@ -172,30 +176,31 @@ public class SearchServlet extends HttpServlet {
 					tagResults = Collections.emptyList();
 				}
 
-				final String linkQuery = "?" + PARAM_QUERY + "="
-						+ StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
-
-				final String nextPagePath;
-				if (nextOffset > 0) {
-					nextPagePath = linkQuery + "&" + PARAM_PAGE_LIMIT + "=" + nextLimit + "&" + PARAM_PAGE_OFFSET + "=" + nextOffset;
-				}
-				else {
-					nextPagePath = null;
-				}
-
+				genTimer.startSection("page");
 				final SearchResultsScope resultsScope = new SearchResultsScope(pageScope);
+				final String linkQuery = "?" + PARAM_QUERY + "=" + StringEscapeUtils.escapeHtml4(UrlEscapers.urlFormParameterEscaper().escape(query));
+				final String nextPagePath = nextOffset > 0
+						? linkQuery + "&" + PARAM_PAGE_LIMIT + "=" + nextLimit + "&" + PARAM_PAGE_OFFSET + "=" + nextOffset
+						: null;
 				final ResultGroupScope resultGroup = resultsScope.addResultGroup("Local items: " + results.size(), nextPagePath);
-				appendItems(resultGroup, results, linkQuery, offset);
 				DirServlet.addTagFrequenciesToScope(resultGroup, null, tagResults);
+
+				genTimer.startSection("thumbs");
+				appendItems(resultGroup, results, linkQuery, offset);
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
 				if (ReqAttr.ALLOW_REMOTE_SEARCH.get(req) && StringUtils.isNotBlank(remote)) {
+					genTimer.startSection("remote");
+
 					// TODO Do these all in parallel.
 					remoteSearch(upnpQuery, resultsScope);
 					rpcSearch(query, resultsScope);
+
+					genTimer.endSection();
 				}
 
+				debugFooter.append("gen: ").append(genTimer.summarise()).append("\n");
 				pageScope.setDebugfooter(debugFooter.toString());
 				ServletCommon.setHtmlContentType(resp);
 				this.resultsTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
