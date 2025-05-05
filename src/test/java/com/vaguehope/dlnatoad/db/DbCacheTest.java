@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.db;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,6 +63,11 @@ public class DbCacheTest {
 		this.ticker.addTime(10, TimeUnit.MINUTES);
 		assertEquals(ret2, this.undertest.dirTopTags(null, pathPrefix));
 		verify(this.db, times(2)).getTopTags(any(), any(), anyInt());
+	}
+
+	@Test
+	public void itDoesNotReturnNullNodePrefs() throws Exception {
+		assertNotNull(this.undertest.nodePrefs("foo"));
 	}
 
 	@Test

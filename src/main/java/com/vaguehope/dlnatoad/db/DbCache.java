@@ -76,8 +76,19 @@ public class DbCache {
 		return readCacheWithTimeout(this.searchTopTags, new CacheKey(authIds, query));
 	}
 
+	/**
+	 * always returns prefs, never defers loading.
+	 */
 	public Map<String, String> nodePrefs(final String nodeId) throws SQLException {
-		return readCacheWithTimeout(this.nodePrefs, new CacheKey(null, nodeId));
+		try {
+			return this.nodePrefs.get(new CacheKey(null, nodeId)).value;
+		}
+		catch (final ExecutionException e) {
+			if (e.getCause() instanceof SQLException) {
+				throw (SQLException) e.getCause();
+			}
+			throw new IllegalStateException(e);
+		}
 	}
 
 	public void invalidateNodePrefs(final String nodeId) {
