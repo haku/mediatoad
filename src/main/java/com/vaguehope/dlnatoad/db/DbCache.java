@@ -3,6 +3,7 @@ package com.vaguehope.dlnatoad.db;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ public class DbCache {
 
 	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> dirTopTags;
 	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> searchTopTags;
+	private final LoadingCache<CacheKey, ValueAndVersion<Map<String, String>>> nodePrefs;
 
 	public DbCache(final MediaDb db, final Executor executor, final boolean verboseLog) {
 		this(db, executor, verboseLog, Ticker.systemTicker());
@@ -53,6 +55,11 @@ public class DbCache {
 				.expireAfterWrite(5, TimeUnit.DAYS)
 				.ticker(ticker)
 				.build(new SearchTopTagLoader());
+		this.nodePrefs = CacheBuilder.newBuilder()
+				.maximumSize(1000L)
+				.refreshAfterWrite(1, TimeUnit.NANOSECONDS)  // always check DB version.
+				.ticker(ticker)
+				.build(new NodePrefLoader());
 	}
 
 	/**
@@ -67,6 +74,14 @@ public class DbCache {
 	 */
 	public List<TagFrequency> searchTopTags(final Set<BigInteger> authIds, final String query) throws SQLException {
 		return readCacheWithTimeout(this.searchTopTags, new CacheKey(authIds, query));
+	}
+
+	public Map<String, String> nodePrefs(final String nodeId) throws SQLException {
+		return readCacheWithTimeout(this.nodePrefs, new CacheKey(null, nodeId));
+	}
+
+	public void invalidateNodePrefs(final String nodeId) {
+		this.nodePrefs.invalidate(new CacheKey(null, nodeId));
 	}
 
 	private <T> T readCacheWithTimeout(final LoadingCache<CacheKey, ValueAndVersion<T>> cache, final CacheKey key) throws SQLException {
@@ -100,6 +115,15 @@ public class DbCache {
 			final long ver = DbCache.this.db.getWriteCount();
 			final List<TagFrequency> tags = DbSearchParser.parseSearchForTags(key.query, key.authIds).execute(DbCache.this.db, TOP_TAG_COUNT, 0);
 			return new ValueAndVersion<>(tags, ver);
+		}
+	}
+
+	private class NodePrefLoader extends DbLoader<Map<String, String>> {
+		@Override
+		public ValueAndVersion<Map<String, String>> load(final CacheKey key) throws Exception {
+			final long ver = DbCache.this.db.getWriteCount();
+			final Map<String, String> prefs = DbCache.this.db.getNodePrefs(key.query);
+			return new ValueAndVersion<>(prefs, ver);
 		}
 	}
 

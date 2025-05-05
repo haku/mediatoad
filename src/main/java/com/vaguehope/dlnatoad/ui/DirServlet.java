@@ -331,7 +331,7 @@ public class DirServlet extends HttpServlet {
 	private Map<String, String> readNodePrefs(final ContentNode node) throws IOException {
 		if (node.getFile() == null || this.db == null) return Collections.emptyMap();
 		try {
-			return this.db.getNodePrefs(node.getId());
+			return this.dbCache.nodePrefs(node.getId());
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);
@@ -356,6 +356,8 @@ public class DirServlet extends HttpServlet {
 		catch (final SQLException e) {
 			throw new IOException(e);
 		}
+
+		this.dbCache.invalidateNodePrefs(node.getId());
 
 		resp.addHeader("Location", node.getId());
 		ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Prefs saved.");
