@@ -264,8 +264,11 @@ input, button {
   max-width: 100%;
   max-height: 70vh;
 }
-.mainimage video, .mainimage audio {
+.mainimage video, .mainimage audio, .mainimage .document {
   width: 100%;
+}
+.mainimage .document {
+  height: 70vh;
 }
 .mainimage .nav {
   position: absolute;

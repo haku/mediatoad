@@ -57,7 +57,7 @@ public class ItemServlet extends HttpServlet {
 	private static final String PARAM_NEXT_ID = "nextid";
 	private static final String PARAM_NEXT_OFFSET = "nextoffset";
 
-	private static final Set<ContentGroup> VIEWABLE_FORMATS = ImmutableSet.of(ContentGroup.IMAGE, ContentGroup.VIDEO, ContentGroup.AUDIO);
+	private static final Set<ContentGroup> VIEWABLE_FORMATS = ImmutableSet.of(ContentGroup.IMAGE, ContentGroup.VIDEO, ContentGroup.AUDIO, ContentGroup.DOCUMENT);
 
 	// https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Containers
 	// a best-effort guess at what is worth trying to play in a <video> and <audio> tags.
@@ -132,7 +132,8 @@ public class ItemServlet extends HttpServlet {
 		itemScope.is_img = item.getFormat().getContentGroup() == ContentGroup.IMAGE;
 		itemScope.is_video = HTML_VIDEO_FORMATS.contains(item.getFormat());
 		itemScope.is_audio = HTML_AUDIO_FORMATS.contains(item.getFormat());
-		itemScope.is_other = !itemScope.is_img && !itemScope.is_video && !itemScope.is_audio;
+		itemScope.is_doc = item.getFormat().getContentGroup() == ContentGroup.DOCUMENT;
+		itemScope.is_other = !itemScope.is_img && !itemScope.is_video && !itemScope.is_audio && !itemScope.is_doc;
 
 		itemScope.item_path = "../" + C.CONTENT_PATH_PREFIX + item.getId() + "." + item.getFormat().getExt();
 		itemScope.item_file_name = item.getFile().getName();

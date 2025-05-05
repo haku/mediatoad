@@ -32,6 +32,10 @@
 		</video>
 		{{/is_audio}}
 
+		{{#is_doc}}
+			<embed class="document" src="{{item_path}}" type="{{type}}" />
+		{{/is_doc}}
+
 		{{#is_other}}
 		<p>{{item_file_name}}</p>
 		<p>[ Browser does not suport playing this file ]</p>
