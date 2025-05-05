@@ -1,13 +1,13 @@
 // Docs: https://tarekraafat.github.io/autoComplete.js/#/configuration
 function lastSearchTermStart(query, x) {
-  let e = ['t=', 't~', 'T=', 'T~'].map(p => query.lastIndexOf(p, x)).reduce((l, x) => x > l ? x : l);
-  if (e < 0 && /^[^ ]+$/.test(query.substring(0, x))) {
-    e = 0;
-  }
+  let e = -1;
+  // TODO support quotes.
+  const space = query.lastIndexOf(' ', x) + 1;
+  if (space === 0 || space < x) e = space;
   return e;
 }
 function isValidSearchTerm(term) {
-  // This will make make more sense once quotes etc work?
+  // TODO support quotes.
   return /^-?[tT][=~][^ ]+$/.test(term);
 }
 function removeMatchOpertor(term) {
