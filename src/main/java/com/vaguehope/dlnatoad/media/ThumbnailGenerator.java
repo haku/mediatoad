@@ -1,6 +1,7 @@
 package com.vaguehope.dlnatoad.media;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
@@ -37,7 +38,7 @@ public class ThumbnailGenerator {
 
 	public File generate(final ContentItem item) throws IOException {
 		final File inF = item.getFile();
-		if (!inF.exists()) throw new IllegalArgumentException("File does not exist: " + inF.getAbsolutePath());
+		if (!inF.exists()) throw new FileNotFoundException("File does not exist: " + inF.getAbsolutePath());
 
 		final File outF = chooseOutputFile(inF, THUMB_SIZE_PIXELS);
 		if (outF.exists() && outF.lastModified() > inF.lastModified()) return outF;
