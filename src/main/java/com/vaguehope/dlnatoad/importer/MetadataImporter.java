@@ -72,6 +72,11 @@ public class MetadataImporter {
 	// Visible for testing.
 	void processDropDir() throws SQLException, IOException {
 		final File[] files = this.dropDir.listFiles();
+		if (files == null) {
+			LOG.warn("Failed to read dropdir: {}", this.dropDir);
+			return;
+		}
+
 		if (this.verboseLog) LOG.info("Importing {} files for drop dir...", files.length);
 		Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);  // Make somewhat predictable.
 		for (final File file : files) {
