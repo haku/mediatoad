@@ -1,9 +1,8 @@
 // Docs: https://tarekraafat.github.io/autoComplete.js/#/configuration
 function lastSearchTermStart(query, x) {
-  let e = -1;
   // TODO support quotes.
-  const space = query.lastIndexOf(' ', x) + 1;
-  if (space === 0 || space < x) e = space;
+  let e = query.lastIndexOf(' ', x - 1) + 1;
+  if (e < 0) e = 0;
   return e;
 }
 function isValidSearchTerm(term) {
