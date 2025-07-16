@@ -19,16 +19,21 @@
 		<span class="item">[ {{username}} ]</span>
 		{{/username}}
 		{{^username}}
-		<form action="" method="GET">
-			<input type="hidden" name="action" value="login">
-			<input type="submit" value="Login">
-		</form>
-		{{#openid_enabled}}
-		<form action="" method="GET">
-			<input type="hidden" name="action" value="openidlogin">
-			<input type="submit" value="OpenID">
-		</form>
-		{{/openid_enabled}}
+		<div class="dropdown-holder" id="login_menu">
+			<button class="dropdown">Login</button>
+			<div class="dropdown-items">
+				<form action="" method="GET">
+					<input type="hidden" name="action" value="login">
+					<input type="submit" value="Basic">
+				</form>
+				{{#openid_enabled}}
+				<form action="" method="GET">
+					<input type="hidden" name="action" value="openidlogin">
+					<input type="submit" value="OpenID">
+				</form>
+				{{/openid_enabled}}
+			</div>
+		</div>
 		{{/username}}
 
 		<form class="expand" action="{{path_prefix}}search" method="GET">
@@ -41,12 +46,11 @@
 				<input type="submit" value="Search" style="display: none;">
 				{{#allow_remote_search}}
 				<div class="dropdown-holder" id="search_menu">
-					<button class=dropdown">...</button>
+					<button class="dropdown borderless">...</button>
 					<div class="dropdown-items">
 						<input type="submit" name="remote" value="Search Remote">
 					</div>
 				</div>
-				<script src="{{path_prefix}}w/{{cache_bust_prefix}}/menu.js"></script>
 				{{/allow_remote_search}}
 			</span>
 		</form>
@@ -54,6 +58,8 @@
 		<script src="{{path_prefix}}w/{{cache_bust_prefix}}/autocomplete-search.js"></script>
 		{{/db_enabled}}
 	</div>
+
+	<script src="{{path_prefix}}w/{{cache_bust_prefix}}/menu.js"></script>
 
 {{$body}}
 {{/body}}

@@ -39,7 +39,7 @@ input, button {
 .dropdown-holder {
   position: relative;
 }
-.dropdown-holder>button {
+.dropdown-holder>button.borderless {
   margin-left: 0;
   border: none;
 }
@@ -51,6 +51,7 @@ input, button {
   border-radius: 0.25em;
   padding: 1em;
   z-index: 1;
+  text-align: right;
 }
 
 .link_row {
