@@ -8,6 +8,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
@@ -34,17 +35,19 @@ public class MediaIndex implements FileListener {
 	private final HierarchyMode hierarchyMode;
 	private final MediaId mediaId;
 	private final MediaInfo mediaInfo;
+	private final boolean verboseLog;
 
 	private final ContentNode videoContainer;
 	private final ContentNode imageContainer;
 	private final ContentNode audioContainer;
 	private final ContentNode docContainer;
 
-	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo) throws IOException {
+	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo, final boolean verboseLog) throws IOException {
 		this.contentTree = contentTree;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
 		this.mediaInfo = mediaInfo;
+		this.verboseLog = verboseLog;
 
 		switch (hierarchyMode) {
 			case PRESERVE:
@@ -396,6 +399,7 @@ public class MediaIndex implements FileListener {
 				final ContentNode dirNode = MediaIndex.this.contentTree.getNode(dirNodeId);
 				if (dirNode == null) return;
 
+				final AtomicBoolean found = new AtomicBoolean(false);
 				dirNode.withEachItem(i -> {
 					final File itemFile = i.getFile();
 					if (new BasenameFilter(itemFile).accept(null, subtitlesFile.getName())) {
@@ -404,8 +408,10 @@ public class MediaIndex implements FileListener {
 									subtitlesFile.getAbsolutePath());
 							if (onComplete != null) onComplete.run();
 						});
+						found.set(true);
 					}
 				});
+				if (MediaIndex.this.verboseLog && !found.get()) LOG.info("No video file found for subtitles: {}", subtitlesFile.getAbsolutePath());
 			}
 
 			@Override
@@ -457,6 +463,7 @@ public class MediaIndex implements FileListener {
 				if (item.addAttachmentIfNotPresent(subtitlesItem)) {
 					if (onComplete != null) onComplete.run();
 				}
+				if (MediaIndex.this.verboseLog) LOG.info("Attached subtitles: {}", subtitlesFile.getAbsolutePath());
 			}
 
 			@Override

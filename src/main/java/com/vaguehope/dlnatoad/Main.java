@@ -235,7 +235,7 @@ public final class Main {
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
-		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo);
+		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, args.isVerboseLog());
 
 		final Thread watcherThread = new Thread(new RunWatcher(args, index, afterInitialScanFindsAllDirs));
 		watcherThread.setName("watcher");

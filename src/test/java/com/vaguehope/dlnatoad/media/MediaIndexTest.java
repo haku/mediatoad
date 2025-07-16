@@ -58,7 +58,7 @@ public class MediaIndexTest {
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
 		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
-		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo());
+		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), true);
 	}
 
 	@After
@@ -204,7 +204,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaMetadataStore), new MediaInfo());
+				new MediaId(this.mediaMetadataStore), new MediaInfo(), true);
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);
