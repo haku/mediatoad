@@ -65,7 +65,8 @@ public class OpenId {
 		final OpenIdLoginService loginService = new OpenIdLoginService(openIdConfig);
 		loginService.setIdentityService(new DefaultIdentityService());
 
-		final OpenIdAuthenticator authenticator = new OpenIdAuthenticator(openIdConfig); // TODO configure /j_security_check
+		final OpenIdAuthenticator authenticator = new OpenIdAuthenticator(openIdConfig);
+		authenticator.setRedirectPath("/mediatoad/security_check");
 
 		final ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
 		securityHandler.setLoginService(loginService);
