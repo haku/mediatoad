@@ -23,6 +23,12 @@
 			<input type="hidden" name="action" value="login">
 			<input type="submit" value="Login">
 		</form>
+		{{#openid_enabled}}
+		<form action="" method="GET">
+			<input type="hidden" name="action" value="openidlogin">
+			<input type="submit" value="OpenID">
+		</form>
+		{{/openid_enabled}}
 		{{/username}}
 
 		<form class="expand" action="{{path_prefix}}search" method="GET">

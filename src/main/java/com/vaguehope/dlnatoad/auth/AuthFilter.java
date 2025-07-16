@@ -34,6 +34,7 @@ public class AuthFilter implements Filter {
 	private static final String HEADER_AUTHORISATION = "Authorization"; // Incoming request has this.
 	private static final String HEADER_AUTHORISATION_PREFIX = "Basic "; // Incoming request starts with this.
 	private static final Logger LOG = LoggerFactory.getLogger(AuthFilter.class);
+	private static final User NULL_USER = new User(null, null, null);
 
 	private final static Set<String> READ_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 			"GET",
@@ -67,53 +68,14 @@ public class AuthFilter implements Filter {
 		final HttpServletRequest req = (HttpServletRequest) request;
 		final HttpServletResponse resp = (HttpServletResponse) response;
 
-		User user = null;
-		final Cookie tokenCookie = ServletCommon.findCookie(req, Auth.TOKEN_COOKIE_NAME);
-		if (tokenCookie != null) {
-			final String username = this.authTokens.usernameForToken(tokenCookie.getValue());
-			if (username != null) {
-				user = this.users.getUser(username);
-			}
-			else {
-				// Clean up invalid tokens.
-				clearTokenCookie(resp);
-			}
-
-			// Continue even if token is invalid as auth may be attached or may not be required.
-		}
-
-		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req))) || isForceUserParam(req, user))) {
-			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
-			if (authHeader64 != null
-					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
-					&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
-				authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
-				final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
-				final int x = authHeader.indexOf(":");
-				if (x <= 0) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
-					return;
-				}
-				final String username = authHeader.substring(0, x);
-				final String pass = authHeader.substring(x + 1);
-				if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected missing creds for user: {}", username);
-					return;
-				}
-				user = this.users.validUser(username, pass);
-				if (user == null || isForceUserParam(req, user)) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
-					return;
-				}
-				setTokenCookie(user.getUsername(), resp);
-				logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
-			}
-			else {
-				send401AndMaybePromptLogin(req, resp);
+		User user = ReqAttr.USER.get(req);
+		if (user == null) {
+			final User basicAuthUser = basicAuthUser(req, resp);
+			if (basicAuthUser == null) {
 				return;
+			}
+			else if (basicAuthUser != NULL_USER) {
+				user = basicAuthUser;
 			}
 		}
 
@@ -141,7 +103,79 @@ public class AuthFilter implements Filter {
 			return;
 		}
 
+		addUserDetailsToRequest(user, req);
 
+//		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
+//		ContentNode node = this.contentTree.getNode(id);
+//		if (node == null) {
+//			final ContentItem item = this.contentTree.getItem(id);
+//			if (item.getParentId() != null) {
+//				node = this.contentTree.getNode(item.getParentId());
+//			}
+//		}
+//		if (node != null) {
+//			// TODO auth?
+//		}
+
+		chain.doFilter(request, response);
+	}
+
+	private User basicAuthUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		User user = null;
+
+		final Cookie tokenCookie = ServletCommon.findCookie(req, Auth.TOKEN_COOKIE_NAME);
+		if (tokenCookie != null) {
+			final String username = this.authTokens.usernameForToken(tokenCookie.getValue());
+			if (username != null) {
+				user = this.users.getUser(username);
+			}
+			else {
+				// Clean up invalid tokens.
+				clearTokenCookie(resp);
+			}
+
+			// Continue even if token is invalid as auth may be attached or may not be required.
+		}
+
+		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req))) || isForceUserParam(req, user))) {
+			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
+			if (authHeader64 != null
+					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
+					&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
+				authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
+				final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
+				final int x = authHeader.indexOf(":");
+				if (x <= 0) {
+					send401AndMaybePromptLogin(req, resp);
+					logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
+					return null;
+				}
+				final String username = authHeader.substring(0, x);
+				final String pass = authHeader.substring(x + 1);
+				if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
+					send401AndMaybePromptLogin(req, resp);
+					logRequest(req, resp, "Rejected missing creds for user: {}", username);
+					return null;
+				}
+				user = this.users.validUser(username, pass);
+				if (user == null || isForceUserParam(req, user)) {
+					send401AndMaybePromptLogin(req, resp);
+					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
+					return null;
+				}
+				setTokenCookie(user.getUsername(), resp);
+				logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
+			}
+			else {
+				send401AndMaybePromptLogin(req, resp);
+				return null;
+			}
+		}
+
+		return user != null ? user : NULL_USER;
+	}
+
+	private static void addUserDetailsToRequest(final User user, final HttpServletRequest req) {
 		if (user != null) {
 			ReqAttr.USERNAME.set(req, user.getUsername());
 			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
@@ -157,20 +191,6 @@ public class AuthFilter implements Filter {
 				ReqAttr.ALLOW_MANAGE_RPC.set(req, Boolean.TRUE);
 			}
 		}
-
-//		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
-//		ContentNode node = this.contentTree.getNode(id);
-//		if (node == null) {
-//			final ContentItem item = this.contentTree.getItem(id);
-//			if (item.getParentId() != null) {
-//				node = this.contentTree.getNode(item.getParentId());
-//			}
-//		}
-//		if (node != null) {
-//			// TODO auth?
-//		}
-
-		chain.doFilter(request, response);
 	}
 
 	private void logRequest(final HttpServletRequest req, final HttpServletResponse resp, final String msg, final String... args) {

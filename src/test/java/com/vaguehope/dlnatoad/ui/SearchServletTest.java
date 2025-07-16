@@ -55,7 +55,7 @@ public class SearchServletTest {
 
 	@Before
 	public void before() throws Exception {
-		this.servletCommon = new ServletCommon(this.contentTree, "hostName", new ContentServingHistory(), true, null);
+		this.servletCommon = new ServletCommon(this.contentTree, "hostName", new ContentServingHistory(), false, true, null);
 
 		this.contentTree = new ContentTree();
 		this.contentServlet = mock(ContentServlet.class);

@@ -2,8 +2,11 @@ package com.vaguehope.dlnatoad.auth;
 
 import javax.servlet.ServletRequest;
 
+import com.vaguehope.dlnatoad.auth.Users.User;
+
 public class ReqAttr<T> {
 
+	public static final ReqAttr<User> USER = new ReqAttr<>("mediatoad.user", User.class);
 	public static final ReqAttr<String> USERNAME = new ReqAttr<>("mediatoad.username", String.class);
 	public static final ReqAttr<Boolean> ALLOW_REMOTE_SEARCH = new ReqAttr<>("mediatoad.remotesearch", Boolean.class, Boolean.FALSE);
 	public static final ReqAttr<Boolean> ALLOW_UPNP_INSPECTOR = new ReqAttr<>("mediatoad.upnpinspector", Boolean.class, Boolean.FALSE);

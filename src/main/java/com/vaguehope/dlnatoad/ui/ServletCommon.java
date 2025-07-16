@@ -36,6 +36,7 @@ public class ServletCommon {
 	private final ContentTree contentTree;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
+	private final boolean openidEnabled;
 	private final boolean mediaDbEnabled;
 	private final File templateRoot;
 
@@ -45,11 +46,13 @@ public class ServletCommon {
 			final ContentTree contentTree,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
+			final boolean openidEnabled,
 			final boolean mediaDbEnabled,
 			final File templateRoot) {
 		this.contentTree = contentTree;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
+		this.openidEnabled = openidEnabled;
 		this.mediaDbEnabled = mediaDbEnabled;
 		this.templateRoot = templateRoot;
 	}
@@ -101,6 +104,7 @@ public class ServletCommon {
 				pageTitle(title),
 				pathPrefix,
 				ReqAttr.USERNAME.get(req),
+				this.openidEnabled,
 				this.mediaDbEnabled,
 				StringUtils.trimToEmpty(query),
 				ReqAttr.ALLOW_REMOTE_SEARCH.get(req));

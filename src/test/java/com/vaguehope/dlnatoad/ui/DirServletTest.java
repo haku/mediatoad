@@ -71,7 +71,7 @@ public class DirServletTest {
 
 		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, true, null);
+		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, false, true, null);
 		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, null);
 
 		this.req = new MockHttpServletRequest();

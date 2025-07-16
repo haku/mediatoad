@@ -53,7 +53,7 @@ public class ItemServletTest {
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.mediaDb = spy(new InMemoryMediaDb());
 		this.tagAutocompleter = mock(TagAutocompleter.class);
-		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, true, null), this.contentTree, this.mediaDb, this.tagAutocompleter);
+		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, false, true, null), this.contentTree, this.mediaDb, this.tagAutocompleter);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

@@ -185,6 +185,9 @@ public class HttpServer {
 		}
 
 		final AuthTokens authTokens = new AuthTokens(this.args.getSessionDir());
+		if (this.args.isOpenIdFlagSet()) {
+			new OpenId(this.args, users).addToHandler(servletHandler);
+		}
 		final AuthFilter authFilter = new AuthFilter(users, authTokens, this.args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
@@ -200,7 +203,8 @@ public class HttpServer {
 		final ContentServlet contentServlet = new ContentServlet(this.contentTree, contentServingHistory);
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
 
-		final ServletCommon servletCommon = new ServletCommon(this.contentTree, this.hostName, contentServingHistory, this.mediaDb != null, this.args.getTemplateRoot());
+		final ServletCommon servletCommon = new ServletCommon(this.contentTree, this.hostName, contentServingHistory, this.args.isOpenIdFlagSet(),
+				this.mediaDb != null, this.args.getTemplateRoot());
 
 		final DirServlet dirServlet = new DirServlet(servletCommon, this.contentTree, this.thumbnailGenerator, this.mediaDb, this.dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");

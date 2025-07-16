@@ -40,6 +40,11 @@ public class Args {
 	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 
+	@Option(name = "--openid-issuer-uri", usage = "OpenID configurtion issuer URI, /.well-known/openid-configuration will be appended.") private String openIdIssuerUri;
+	@Option(name = "--openid-client-id", usage = "OpenID client ID.") private String openIdClientId;
+	@Option(name = "--openid-client-secret-file", usage = "Path to file containing secret on the first line.") private String openIdClientSecretFile;
+	@Option(name = "--openid-insecure", usage = "Do not mark auth cookie as secure.") private boolean openIdInsecure = false;
+
 	// RPC
 	@Option(name = "--rpcauth", usage = "Path for RPC auth file.") private String rpcAuthFile;
 	@Option(name = "--remote", usage = "HTTP(S) address of remote instance.", metaVar = "https://example.com/") private List<String> remotes;
@@ -142,6 +147,29 @@ public class Args {
 		return this.addUser;
 	}
 
+	public boolean isOpenIdFlagSet() {
+		return this.openIdIssuerUri != null || this.openIdClientId != null || this.openIdClientSecretFile != null;
+	}
+
+	public String getOpenIdIssuerUri() throws ArgsException {
+		if (this.openIdIssuerUri == null) throw new ArgsException("--openid-issuer-uri not specified.");
+		return this.openIdIssuerUri;
+	}
+
+	public String getOpenIdClientId() throws ArgsException {
+		if (this.openIdClientId == null) throw new ArgsException("--openid-client-id not specified.");
+		return this.openIdClientId;
+	}
+
+	public File getOpenIdClientSecretFile() throws ArgsException {
+		if (this.openIdClientSecretFile == null) throw new ArgsException("--openid-client-secret-file not specified.");
+		return checkIsFile(this.openIdClientSecretFile);
+	}
+
+	public boolean isOpenIdInsecure() {
+		return this.openIdInsecure;
+	}
+
 	public File getDb () {
 		return this.db != null ? new File(this.db) : null;
 	}
@@ -182,6 +210,13 @@ public class Args {
 		final File f = new File(path);
 		if (!f.exists()) throw new ArgsException("Not found: " + f.getAbsolutePath());
 		if (!f.isDirectory()) throw new ArgsException("Not directory: " + f.getAbsolutePath());
+		return f;
+	}
+
+	private static File checkIsFile(final String path) throws ArgsException {
+		final File f = new File(path);
+		if (!f.exists()) throw new ArgsException("Not found: " + f.getAbsolutePath());
+		if (!f.isFile()) throw new ArgsException("Not a file: " + f.getAbsolutePath());
 		return f;
 	}
 

@@ -263,6 +263,18 @@
 			<version>${jetty.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-security</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-openid</artifactId>
+			<version>${jetty.version}</version>
+		</dependency>
+
 		<!-- RPC -->
 
 		<dependency>
