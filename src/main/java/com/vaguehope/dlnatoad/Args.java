@@ -16,26 +16,38 @@ import org.kohsuke.args4j.Option;
 public class Args {
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "Print this help text.") private boolean help;
-	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "File root dirs to scan, one per line.") private String treePath;
-	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
-	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP addresses of interfaces to bind to.") private List<String> ifaces;
 	@Option(name = "-d", aliases = { "--daemon" }, usage = "Detach form terminal and run in bakground.") private boolean daemonise;
-	@Option(name = "-s", aliases = { "--simplify" }, usage = "Simplify directory structure.") private boolean simplifyHierarchy;
-	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
 	@Option(name = "-v", aliases = { "--verbose" }, usage = "Print log lines for various events.") private boolean verboseLog;
-	@Option(name = "--idfile", usage = "Path for system UUID persistance.") private String idfile;
-	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
-	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
-	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
+
+	// MEDIA
+	@Option(name = "-t", aliases = { "--tree" }, metaVar = "<file>", usage = "File root dirs to scan, one per line.") private String treePath;
+	@Option(name = "-s", aliases = { "--simplify" }, usage = "Simplify directory structure.") private boolean simplifyHierarchy;
 	@Option(name = "--db", usage = "Path for metadata DB.") private String db;
 	@Option(name = "--thumbs", usage = "Path for caching image thumbnails.") private String thumbsDir;
 	@Option(name = "--dropdir", usage = "Path for droping metadata import files into.") private String dropDir;
+	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
+
+	// HTTP
+	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
+	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP addresses of interfaces to bind to.") private List<String> ifaces;
+	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
+
+	// DLNA
+	@Option(name = "--idfile", usage = "Path for system UUID persistance.") private String idfile;
+
+	// USERS
+	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
+	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
+	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
+
+	// RPC
 	@Option(name = "--rpcauth", usage = "Path for RPC auth file.") private String rpcAuthFile;
 	@Option(name = "--remote", usage = "HTTP(S) address of remote instance.", metaVar = "https://example.com/") private List<String> remotes;
 	@Option(name = "--tagdeterminer", usage = "HTTP(S) address of remote a TagDeterminer and query for which items it should be offered.", metaVar = "https://example.com/|f~mydir/path") private List<String> tagDeterminers;
+
+	// DEV
 	@Option(name = "--webroot", usage = "Override static file location, useful for UI dev.") private String webRoot;
 	@Option(name = "--templateroot", usage = "Override mustache template location, useful for UI dev.") private String templateRoot;
-	@Argument(multiValued = true, metaVar = "DIR") private List<String> dirPaths;
 
 	public static class ArgsException extends Exception {
 		private static final long serialVersionUID = 4160594293982918286L;
