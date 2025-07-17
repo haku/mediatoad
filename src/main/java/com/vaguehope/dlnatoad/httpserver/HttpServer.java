@@ -11,6 +11,7 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -267,11 +268,18 @@ public class HttpServer {
 		return rewrites;
 	}
 
-	private static Connector createHttpConnector(final Server server, final InetAddress bindAddress, final int port) {
+	private Connector createHttpConnector(final Server server, final InetAddress bindAddress, final int port) {
+		ForwardedRequestCustomizer forwardedCustomizer = null;
+		if (this.args.isTrustForwardedHeader()) {
+			forwardedCustomizer = new ForwardedRequestCustomizer();
+			forwardedCustomizer.setForwardedOnly(true);
+		}
+
 		final HttpConfiguration http1Config = new HttpConfiguration();
+		if (forwardedCustomizer != null) http1Config.addCustomizer(forwardedCustomizer);
 		final HttpConnectionFactory http1 = new HttpConnectionFactory(http1Config);
 
-		final HttpConfiguration http2Config = new HttpConfiguration();
+		final HttpConfiguration http2Config = new HttpConfiguration(http1Config);
 		// increase from 30s default in org.eclipse.jetty.server.AbstractConnector._idleTimeout.
 		// work around for issue where kodi gets upset when the connection times out and complains:
 		// "Stream error in the HTTP/2 framing layer".

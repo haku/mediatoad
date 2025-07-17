@@ -31,6 +31,7 @@ public class Args {
 	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP addresses of interfaces to bind to.") private List<String> ifaces;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
+	@Option(name = "--trust-forwarded-header", usage = "Should HTTP server trust RFC7239 Forwarded header.") private boolean trustForwardedHeader = false;
 
 	// DLNA
 	@Option(name = "--idfile", usage = "Path for system UUID persistance.") private String idfile;
@@ -125,6 +126,10 @@ public class Args {
 
 	public boolean isPrintAccessLog() {
 		return this.printAccessLog;
+	}
+
+	public boolean isTrustForwardedHeader() {
+		return this.trustForwardedHeader;
 	}
 
 	public boolean isVerboseLog() {
