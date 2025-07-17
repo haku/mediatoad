@@ -21,11 +21,13 @@ public class ContentServlet extends MyFileServlet {
 
 	private final ContentTree contentTree; // NOSONAR
 	private final ContentServingHistory contentServingHistory;
+	private final ServletCommon servletCommon;
 
-	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory) {
+	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory, final ServletCommon servletCommon) {
 		super();
 		this.contentTree = contentTree;
 		this.contentServingHistory = contentServingHistory;
+		this.servletCommon = servletCommon;
 	}
 
 	@Override
@@ -47,7 +49,7 @@ public class ContentServlet extends MyFileServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = ServletCommon.idFromPath(id, null);
+			id = this.servletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				return Resource.newResource(item.getFile());

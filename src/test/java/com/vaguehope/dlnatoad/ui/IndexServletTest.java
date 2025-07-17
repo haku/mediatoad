@@ -12,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ContentServlet;
@@ -37,7 +38,7 @@ public class IndexServletTest {
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.contentServlet = mock(ContentServlet.class);
 		this.dirServlet = mock(DirServlet.class);
-		this.undertest = new IndexServlet(this.contentTree, this.contentServlet, this.dirServlet);
+		this.undertest = new IndexServlet(this.contentTree, this.contentServlet, this.dirServlet, FakeServletCommon.make());
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

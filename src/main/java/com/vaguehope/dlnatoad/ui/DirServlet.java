@@ -364,7 +364,7 @@ public class DirServlet extends HttpServlet {
 	}
 
 	private ContentNode getNodeFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
+		final String id = this.servletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 		if (id == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
 			return null;

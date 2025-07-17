@@ -21,6 +21,8 @@ import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.resolver.ClasspathResolver;
 import com.github.mustachejava.resolver.FileSystemResolver;
+import com.vaguehope.dlnatoad.Args;
+import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.C;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.media.ContentServingHistory;
@@ -36,25 +38,33 @@ public class ServletCommon {
 	private final ContentTree contentTree;
 	private final String hostName;
 	private final ContentServingHistory contentServingHistory;
+	private final String httpPathPrefix;
 	private final boolean openidEnabled;
 	private final boolean mediaDbEnabled;
 	private final File templateRoot;
 
 	private final MustacheFactory defaultMustacheFactory = new DefaultMustacheFactory(new ClasspathResolver("templates"));
+	private final Set<String> rootPaths;
 
 	public ServletCommon(
 			final ContentTree contentTree,
 			final String hostName,
 			final ContentServingHistory contentServingHistory,
-			final boolean openidEnabled,
 			final boolean mediaDbEnabled,
-			final File templateRoot) {
+			final Args args) throws ArgsException {
 		this.contentTree = contentTree;
 		this.hostName = hostName;
 		this.contentServingHistory = contentServingHistory;
-		this.openidEnabled = openidEnabled;
+		this.httpPathPrefix = args.getHttpPathPrefix();
+		this.openidEnabled = args.isOpenIdFlagSet();
 		this.mediaDbEnabled = mediaDbEnabled;
-		this.templateRoot = templateRoot;
+		this.templateRoot = args.getTemplateRoot();
+
+		this.rootPaths = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+				"/",
+				"/" + this.httpPathPrefix,
+				"/" + this.httpPathPrefix + "/"
+				)));
 	}
 
 	public static void returnStatus (final HttpServletResponse resp, final int status, final String msg) throws IOException {
@@ -152,14 +162,14 @@ public class ServletCommon {
 		return s.toString();
 	}
 
-	private static String removeReverseProxyPrefix(final String pathInfo) {
+	private String removeReverseProxyPrefix(final String pathInfo) {
 		if (pathInfo == null || pathInfo.length() < 1 || !pathInfo.startsWith("/")) {
 			return null;
 		}
-		return StringHelper.removeFirstMatchingPrefix(pathInfo, "/" + C.MAIN_REVERSE_PROXY_PATH, "/" + C.OLD_REVERSE_PROXY_PATH);
+		return StringHelper.removeFirstMatchingPrefix(pathInfo, "/" + this.httpPathPrefix);
 	}
 
-	public static String fileFromPath(final String pathInfo) {
+	public String fileFromPath(final String pathInfo) {
 		String p = removeReverseProxyPrefix(pathInfo);
 		if (p == null) return null;
 		if (p == "/") return null;
@@ -168,7 +178,7 @@ public class ServletCommon {
 		return p;
 	}
 
-	public static String firstDirFromPath(final String pathInfo) {
+	public String firstDirFromPath(final String pathInfo) {
 		final String p = removeReverseProxyPrefix(pathInfo);
 		if (p == null) return null;
 
@@ -178,16 +188,8 @@ public class ServletCommon {
 		return p.substring(1, x);
 	}
 
-	private final static Set<String> ROOT_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-			"/",
-			"/" + C.MAIN_REVERSE_PROXY_PATH,
-			"/" + C.MAIN_REVERSE_PROXY_PATH + "/",
-			"/" + C.OLD_REVERSE_PROXY_PATH,
-			"/" + C.OLD_REVERSE_PROXY_PATH + "/"
-			)));
-
-	public static String idFromPath(final String pathInfo, final String defVal) {
-		if (pathInfo == null || pathInfo.length() < 1 || ROOT_PATHS.contains(pathInfo)) {
+	public String idFromPath(final String pathInfo, final String defVal) {
+		if (pathInfo == null || pathInfo.length() < 1 || this.rootPaths.contains(pathInfo)) {
 			return defVal;
 		}
 

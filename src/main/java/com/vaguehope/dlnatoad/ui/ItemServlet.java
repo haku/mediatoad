@@ -482,7 +482,7 @@ public class ItemServlet extends HttpServlet {
 	}
 
 	private ContentItem getItemFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
+		final String id = this.servletCommon.idFromPath(req.getPathInfo(), null);
 		if (id == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
 			return null;

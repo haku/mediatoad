@@ -19,19 +19,22 @@ public class IndexServlet extends HttpServlet {
 	private final ContentTree contentTree;
 	private final ContentServlet contentServlet;
 	private final DirServlet dirServlet;
+	private final ServletCommon servletCommon;
 
 	public IndexServlet(
 			final ContentTree contentTree,
 			final ContentServlet contentServlet,
-			final DirServlet dirServlet) {
+			final DirServlet dirServlet,
+			final ServletCommon servletCommon) {
 		this.contentTree = contentTree;
 		this.contentServlet = contentServlet;
 		this.dirServlet = dirServlet;
+		this.servletCommon = servletCommon;
 	}
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
+		final String id = this.servletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 		final ContentNode contentNode = this.contentTree.getNode(id);
 		// ContentServlet does extra parsing and Index only handles directories anyway.
 		if (contentNode == null) {

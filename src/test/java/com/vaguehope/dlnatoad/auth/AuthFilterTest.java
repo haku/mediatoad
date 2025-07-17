@@ -42,7 +42,7 @@ public class AuthFilterTest {
 	public void before() throws Exception {
 		this.users = mock(Users.class);
 		this.authTokens = mock(AuthTokens.class);
-		this.undertest = new AuthFilter(this.users, this.authTokens, true);
+		this.undertest = new AuthFilter(this.users, this.authTokens, null, true);
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 		this.chain = mock(FilterChain.class);
@@ -64,7 +64,7 @@ public class AuthFilterTest {
 
 	@Test
 	public void itAllowsGetWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, true);
+		this.undertest = new AuthFilter(null, this.authTokens, null, true);
 		this.req.setMethod("GET");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
@@ -75,7 +75,7 @@ public class AuthFilterTest {
 
 	@Test
 	public void itBlocksPostWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, true);
+		this.undertest = new AuthFilter(null, this.authTokens, null, true);
 		this.req.setMethod("POST");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
@@ -216,6 +216,21 @@ public class AuthFilterTest {
 		assertEquals(SameSite.STRICT, HttpCookie.getSameSiteFromComment(cookie.getComment()));
 
 		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itSetsCookiePath() throws Exception {
+		this.undertest = new AuthFilter(this.users, this.authTokens, "thetoad", true);
+
+		this.req.setMethod("GET");
+		setLoginAction();
+		setValidCreds();
+		when(this.authTokens.newToken("h4cker")).thenReturn("the-secret-token");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		final Cookie cookie = getSingleCookie();
+		assertEquals("/thetoad", cookie.getPath());
 	}
 
 	@Test

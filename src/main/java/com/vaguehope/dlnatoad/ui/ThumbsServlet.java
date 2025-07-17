@@ -21,11 +21,13 @@ public class ThumbsServlet extends MyFileServlet {
 
 	private final ContentTree contentTree;
 	private final ThumbnailGenerator thumbnailGenerator;
+	private final ServletCommon servletCommon;
 
-	public ThumbsServlet(final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator) {
+	public ThumbsServlet(final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final ServletCommon servletCommon) {
 		super();
 		this.contentTree = contentTree;
 		this.thumbnailGenerator = thumbnailGenerator;
+		this.servletCommon = servletCommon;
 	}
 
 	@Override
@@ -34,7 +36,7 @@ public class ThumbsServlet extends MyFileServlet {
 
 		try {
 			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = ServletCommon.idFromPath(id, null);
+			id = this.servletCommon.idFromPath(id, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				// TODO read dir prefs for video_thumbs prefs.

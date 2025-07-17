@@ -40,11 +40,13 @@ import com.vaguehope.dlnatoad.auth.Users.User;
 
 public class OpenId {
 
+	private static final String CALLBACK_PATH = "/security_check";
 	private static final String OPENID_TOKEN_COOKIE_NAME = "MEDIATOADOPENIDTOKEN";
 
 	private final String issuerUri;
 	private final String clientId;
 	private final String clientSecret;
+	private final String httpPathPrefix;
 	private final boolean insecure;
 	private final Users users;
 
@@ -52,6 +54,7 @@ public class OpenId {
 		this.issuerUri = args.getOpenIdIssuerUri();
 		this.clientId = args.getOpenIdClientId();
 		this.clientSecret = FileUtils.readLines(args.getOpenIdClientSecretFile(), StandardCharsets.UTF_8).get(0);
+		this.httpPathPrefix = args.getHttpPathPrefix();
 		this.insecure = args.isOpenIdInsecure();
 		this.users = users;
 	}
@@ -66,7 +69,7 @@ public class OpenId {
 		loginService.setIdentityService(new DefaultIdentityService());
 
 		final OpenIdAuthenticator authenticator = new OpenIdAuthenticator(openIdConfig);
-		authenticator.setRedirectPath("/mediatoad/security_check");
+		authenticator.setRedirectPath((this.httpPathPrefix != null ? "/" + this.httpPathPrefix : "") + CALLBACK_PATH);
 
 		final ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
 		securityHandler.setLoginService(loginService);
@@ -76,6 +79,7 @@ public class OpenId {
 		final SessionHandler sessionHandler = new SessionHandler();
 		sessionHandler.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.COOKIE));
 		sessionHandler.getSessionCookieConfig().setName(OPENID_TOKEN_COOKIE_NAME);
+		sessionHandler.getSessionCookieConfig().setPath("/" + (this.httpPathPrefix != null ? this.httpPathPrefix : ""));
 		sessionHandler.getSessionCookieConfig().setHttpOnly(true);
 		sessionHandler.getSessionCookieConfig().setSecure(!this.insecure);
 		// why not STRICT: when redirecting back from openid provider the session cookie is not sent, so session is reset.

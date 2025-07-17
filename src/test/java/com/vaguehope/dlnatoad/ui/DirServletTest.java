@@ -35,6 +35,7 @@ import com.github.mustachejava.reflect.ReflectionObjectHandler;
 import com.google.common.collect.ImmutableMap;
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.DbCache;
@@ -71,7 +72,7 @@ public class DirServletTest {
 
 		this.thumbnailGenerator = new ThumbnailGenerator(this.tmp.getRoot());
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		this.servletCommon = new ServletCommon(this.contentTree, "hostName", contentServingHistory, false, true, null);
+		this.servletCommon = FakeServletCommon.make(this.contentTree, "hostName", contentServingHistory);
 		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, null);
 
 		this.req = new MockHttpServletRequest();

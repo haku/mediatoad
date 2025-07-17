@@ -21,6 +21,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.auth.AuthList;
 import com.vaguehope.dlnatoad.auth.Permission;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
@@ -53,7 +54,7 @@ public class ItemServletTest {
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
 		this.mediaDb = spy(new InMemoryMediaDb());
 		this.tagAutocompleter = mock(TagAutocompleter.class);
-		this.undertest = new ItemServlet(new ServletCommon(this.contentTree, null, null, false, true, null), this.contentTree, this.mediaDb, this.tagAutocompleter);
+		this.undertest = new ItemServlet(FakeServletCommon.makeWithDbEnabled(this.contentTree), this.contentTree, this.mediaDb, this.tagAutocompleter);
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

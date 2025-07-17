@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.media.ContentGroup;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentTree;
@@ -33,7 +34,7 @@ public class ThumbsServletTest {
 		this.contentTree = new ContentTree();
 		this.thumbnailGenerator = mock(ThumbnailGenerator.class);
 		this.mockContent = new MockContent(this.contentTree);
-		this.undertest = new ThumbsServlet(this.contentTree, this.thumbnailGenerator);
+		this.undertest = new ThumbsServlet(this.contentTree, this.thumbnailGenerator, FakeServletCommon.make());
 	}
 
 	@Test

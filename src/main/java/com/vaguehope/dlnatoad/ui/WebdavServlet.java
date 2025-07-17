@@ -32,10 +32,12 @@ public class WebdavServlet extends HttpServlet {
 
 	private final ContentTree contentTree;
 	private final MediaDb db;
+	private final ServletCommon servletCommon;
 
-	public WebdavServlet(final ContentTree contentTree, final MediaDb db) {
+	public WebdavServlet(final ContentTree contentTree, final MediaDb db, final ServletCommon servletCommon) {
 		this.contentTree = contentTree;
 		this.db = db;
+		this.servletCommon = servletCommon;
 	}
 
 	@Override
@@ -118,7 +120,7 @@ public class WebdavServlet extends HttpServlet {
 	}
 
 	private void dirOrFileReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
+		final String id = this.servletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 		final ContentNode node = this.contentTree.getNode(id);
 		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
 		if (node == null && item == null) {

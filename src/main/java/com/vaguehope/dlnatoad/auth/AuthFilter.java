@@ -47,11 +47,13 @@ public class AuthFilter implements Filter {
 
 	private final Users users;
 	private final AuthTokens authTokens;
+	private final String httpPathPrefix;
 	private final boolean printAccessLog;
 
-	public AuthFilter(final Users users, final AuthTokens authTokens, final boolean printAccessLog) {
+	public AuthFilter(final Users users, final AuthTokens authTokens, final String httpPathPrefix, final boolean printAccessLog) {
 		this.users = users;
 		this.authTokens = authTokens;
+		this.httpPathPrefix = httpPathPrefix;
 		this.printAccessLog = printAccessLog;
 	}
 
@@ -237,15 +239,15 @@ public class AuthFilter implements Filter {
 		resp.addCookie(cookie);
 	}
 
-	private static void clearTokenCookie(final HttpServletResponse resp) throws IOException {
+	private void clearTokenCookie(final HttpServletResponse resp) throws IOException {
 		final Cookie cookie = makeAuthCookie("");
 		cookie.setMaxAge(0);
 		resp.addCookie(cookie);
 	}
 
-	private static Cookie makeAuthCookie(final String token) {
+	private Cookie makeAuthCookie(final String token) {
 		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
-		cookie.setPath("/");
+		cookie.setPath("/" + (this.httpPathPrefix != null ? this.httpPathPrefix : ""));
 		cookie.setHttpOnly(true);
 		cookie.setComment(HttpCookie.getCommentWithAttributes("", false, SameSite.STRICT));
 		return cookie;

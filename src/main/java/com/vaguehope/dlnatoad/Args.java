@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
@@ -31,6 +32,7 @@ public class Args {
 	@Option(name = "-p", aliases = { "--port" }, usage = "Local port to bind to.") private int port;
 	@Option(name = "-i", aliases = { "--interface" }, usage = "Hostname or IP addresses of interfaces to bind to.") private List<String> ifaces;
 	@Option(name = "-a", aliases = { "--accesslog" }, usage = "Print access log line at end of each request.") private boolean printAccessLog;
+	@Option(name = "--http-path-prefix", metaVar = "mediatoad", usage = "Path behind a reverse proxy.") private String httpPathPrefix;
 	@Option(name = "--trust-forwarded-header", usage = "Should HTTP server trust RFC7239 Forwarded header.") private boolean trustForwardedHeader = false;
 
 	// DLNA
@@ -126,6 +128,16 @@ public class Args {
 
 	public boolean isPrintAccessLog() {
 		return this.printAccessLog;
+	}
+
+	/**
+	 * This will MOT have leading or trailing /.
+	 */
+	public String getHttpPathPrefix() throws ArgsException {
+		if (this.httpPathPrefix != null && StringUtils.isBlank(this.httpPathPrefix)) {
+			throw new ArgsException("--http-path-prefix is blank.");
+		}
+		return StringUtils.removeEnd(StringUtils.removeStart(this.httpPathPrefix, "/"), "/");
 	}
 
 	public boolean isTrustForwardedHeader() {

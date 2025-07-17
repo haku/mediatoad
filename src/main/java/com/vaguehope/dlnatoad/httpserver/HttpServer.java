@@ -141,7 +141,7 @@ public class HttpServer {
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
-			server.setHandler(wrapWithRewrites(handler));
+			server.setHandler(maybeWrapWithRewrites(handler));
 
 			if (this.bindAddresses != null) {
 				for (final InetAddress address : this.bindAddresses) {
@@ -189,8 +189,11 @@ public class HttpServer {
 		if (this.args.isOpenIdFlagSet()) {
 			new OpenId(this.args, users).addToHandler(servletHandler);
 		}
-		final AuthFilter authFilter = new AuthFilter(users, authTokens, this.args.isPrintAccessLog());
+		final AuthFilter authFilter = new AuthFilter(users, authTokens, this.args.getHttpPathPrefix(), this.args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
+
+		final ContentServingHistory contentServingHistory = new ContentServingHistory();
+		final ServletCommon servletCommon = new ServletCommon(this.contentTree, this.hostName, contentServingHistory, this.mediaDb != null, this.args);
 
 		servletHandler.addServlet(new ServletHolder(new UpnpServlet(this.upnpService)), "/upnp");
 		if (rpcJwtLoader != null) {
@@ -198,34 +201,35 @@ public class HttpServer {
 			servletHandler.addFilter(new FilterHolder(new PermissionFilter(ReqAttr.ALLOW_MANAGE_RPC)), RpcStatusServlet.CONTEXTPATH + "/*", null);
 			servletHandler.addServlet(new ServletHolder(new RpcStatusServlet()), RpcStatusServlet.CONTEXTPATH);
 		}
-		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(this.rpcClient)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new RemoteContentServlet(this.rpcClient, servletCommon)), "/" + C.REMOTE_CONTENT_PATH_PREFIX + "*");
 
-		final ContentServingHistory contentServingHistory = new ContentServingHistory();
-		final ContentServlet contentServlet = new ContentServlet(this.contentTree, contentServingHistory);
+		final ContentServlet contentServlet = new ContentServlet(this.contentTree, contentServingHistory, servletCommon);
 		servletHandler.addServlet(new ServletHolder(contentServlet), "/" + C.CONTENT_PATH_PREFIX + "*");
-
-		final ServletCommon servletCommon = new ServletCommon(this.contentTree, this.hostName, contentServingHistory, this.args.isOpenIdFlagSet(),
-				this.mediaDb != null, this.args.getTemplateRoot());
 
 		final DirServlet dirServlet = new DirServlet(servletCommon, this.contentTree, this.thumbnailGenerator, this.mediaDb, this.dbCache);
 		servletHandler.addServlet(new ServletHolder(dirServlet), "/" + C.DIR_PATH_PREFIX + "*");
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, this.contentTree, contentServlet, this.mediaDb, this.dbCache, this.upnpService, this.rpcClient, this.thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(this.contentTree, this.thumbnailGenerator)), "/" + C.THUMBS_PATH_PREFIX + "*");
+		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(this.contentTree, this.thumbnailGenerator, servletCommon)), "/" + C.THUMBS_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(this.tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, this.contentTree, this.mediaDb, this.tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new TagsServlet(this.contentTree, this.mediaDb, this.tagAutocompleter)), "/" + C.TAGS_PATH);
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(this.args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new IndexServlet(this.contentTree, contentServlet, dirServlet)), "/*");
+		servletHandler.addServlet(new ServletHolder(new IndexServlet(this.contentTree, contentServlet, dirServlet, servletCommon)), "/*");
 
 		servletHandler.addServlet(new ServletHolder(new JettyPrometheusServlet()), "/metrics");
 
-		final ServletContextHandler webavHandler = makeWebdavHandler(authFilter, this.contentTree, this.mediaDb, this.args);
+		final ServletContextHandler webavHandler = makeWebdavHandler(authFilter, this.contentTree, this.mediaDb, servletCommon, this.args);
 
 		return new WebdavDivertingHandler(webavHandler, servletHandler);
 	}
 
-	private static ServletContextHandler makeWebdavHandler(final AuthFilter authFilter, final ContentTree contentTree, final MediaDb mediaDb, final Args args) {
+	private static ServletContextHandler makeWebdavHandler(
+			final AuthFilter authFilter,
+			final ContentTree contentTree,
+			final MediaDb mediaDb,
+			final ServletCommon servletCommon,
+			final Args args) {
 		final ServletContextHandler handler = new ServletContextHandler();
 		handler.setContextPath("/");
 
@@ -234,7 +238,7 @@ public class HttpServer {
 		}
 
 		handler.addFilter(new FilterHolder(authFilter), "/*", null);
-		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree, mediaDb)), "/*");
+		handler.addServlet(new ServletHolder(new WebdavServlet(contentTree, mediaDb, servletCommon)), "/*");
 		return handler;
 	}
 
@@ -255,15 +259,17 @@ public class HttpServer {
 		return handler;
 	}
 
-	protected RewriteHandler wrapWithRewrites(final Handler wrapped) {
+	protected Handler maybeWrapWithRewrites(final Handler wrapped) throws ArgsException {
+		final String prefix = this.args.getHttpPathPrefix();
+		if (prefix == null) return wrapped;
+
 		final RewriteHandler rewrites = new RewriteHandler();
 		// Do not modify the request object because:
 		// - RuleContainer.apply() messes up the encoding.
 		// - ServletHelper.getReqPath() knows how to remove the prefix.
 		rewrites.setRewriteRequestURI(false);
 		rewrites.setRewritePathInfo(false);
-		rewrites.addRule(new RewritePatternRule("/" + C.MAIN_REVERSE_PROXY_PATH + "/*", "/"));
-		rewrites.addRule(new RewritePatternRule("/" + C.OLD_REVERSE_PROXY_PATH + "/*", "/"));
+		rewrites.addRule(new RewritePatternRule("/" + prefix + "/*", "/"));
 		rewrites.setHandler(wrapped);
 		return rewrites;
 	}

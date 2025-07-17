@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.common.servlet.RequestLoggingFilter;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 
 public class ContentServletTest {
 
@@ -42,7 +43,7 @@ public class ContentServletTest {
 	public void before() throws Exception {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
-		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory());
+		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory(), FakeServletCommon.make());
 	}
 
 	@Test

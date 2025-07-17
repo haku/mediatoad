@@ -18,6 +18,7 @@ import org.junit.Test;
 import com.google.protobuf.ByteString;
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.rpc.MediaGrpc.MediaBlockingStub;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaReply;
 import com.vaguehope.dlnatoad.rpc.MediaToadProto.ReadMediaRequest;
@@ -33,7 +34,7 @@ public class RemoteContentServletTest {
 	@Before
 	public void before() throws Exception {
 		this.rpcClient = mock(RpcClient.class);
-		this.undertest = new RemoteContentServlet(this.rpcClient);
+		this.undertest = new RemoteContentServlet(this.rpcClient, FakeServletCommon.make());
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

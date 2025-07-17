@@ -15,6 +15,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.media.ContentItem;
@@ -63,7 +64,7 @@ public class WebdavServletTest {
 		this.mockMediaMetadataStore = MockMediaMetadataStore.withMockExSvc(this.tmp);
 		this.db = this.mockMediaMetadataStore.getMediaDb();
 
-		this.undertest = new WebdavServlet(this.contentTree, this.db);
+		this.undertest = new WebdavServlet(this.contentTree, this.db, FakeServletCommon.make());
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();

@@ -21,12 +21,12 @@ import org.jupnp.UpnpService;
 
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.FakeServletCommon;
 import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.MockMediaMetadataStore;
 import com.vaguehope.dlnatoad.dlnaserver.SearchEngine;
 import com.vaguehope.dlnatoad.media.ContentItem;
-import com.vaguehope.dlnatoad.media.ContentServingHistory;
 import com.vaguehope.dlnatoad.media.ContentServlet;
 import com.vaguehope.dlnatoad.media.ContentTree;
 import com.vaguehope.dlnatoad.media.MediaFormat;
@@ -55,7 +55,7 @@ public class SearchServletTest {
 
 	@Before
 	public void before() throws Exception {
-		this.servletCommon = new ServletCommon(this.contentTree, "hostName", new ContentServingHistory(), false, true, null);
+		this.servletCommon = FakeServletCommon.make(this.contentTree);
 
 		this.contentTree = new ContentTree();
 		this.contentServlet = mock(ContentServlet.class);

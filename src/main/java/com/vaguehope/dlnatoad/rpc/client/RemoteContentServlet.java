@@ -18,9 +18,11 @@ public class RemoteContentServlet extends HttpServlet {
 
 	private static final long serialVersionUID = 752811101673893518L;
 	private final RpcClient rpcClient;
+	private final ServletCommon servletCommon;
 
-	public RemoteContentServlet(final RpcClient rpcClient) {
+	public RemoteContentServlet(final RpcClient rpcClient, final ServletCommon servletCommon) {
 		this.rpcClient = rpcClient;
+		this.servletCommon = servletCommon;
 	}
 
 	@SuppressWarnings("resource")
@@ -57,8 +59,8 @@ public class RemoteContentServlet extends HttpServlet {
 		}
 	}
 
-	private static String getRemoteInstanceId(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = ServletCommon.firstDirFromPath(req.getPathInfo());
+	private String getRemoteInstanceId(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		final String id = this.servletCommon.firstDirFromPath(req.getPathInfo());
 		if (id == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid path.");
 			return null;
@@ -66,8 +68,8 @@ public class RemoteContentServlet extends HttpServlet {
 		return id;
 	}
 
-	private static String getIdFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = ServletCommon.idFromPath(req.getPathInfo(), null);
+	private String getIdFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		final String id = this.servletCommon.idFromPath(req.getPathInfo(), null);
 		if (id == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
 			return null;
