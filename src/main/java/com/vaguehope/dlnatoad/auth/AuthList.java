@@ -91,6 +91,7 @@ public class AuthList {
 
 	public boolean hasUser(final String username) {
 		if (username == null) return false;
+		if (this.accessType == AccessType.DEFAULT_DENY && this.usernamesAndPermissions.size() == 0) return true;
 		return this.usernamesAndPermissions.containsKey(username);
 	}
 

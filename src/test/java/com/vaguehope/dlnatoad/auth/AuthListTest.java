@@ -36,6 +36,7 @@ public class AuthListTest {
 		final AuthList actual = new Authoriser(DefaultAccess.DENY).forDir(dir);
 		assertEquals(0, actual.size());
 		assertEquals(AccessType.DEFAULT_DENY, actual.getAccessType());
+		assertTrue(actual.hasUser("anyuser"));
 	}
 
 	@Test
@@ -43,6 +44,7 @@ public class AuthListTest {
 		final AuthList actual = writeListAndReadDir("");
 		assertEquals(0, actual.size());
 		assertEquals(AccessType.USER_LIST, actual.getAccessType());
+		assertFalse(actual.hasUser("anyuser"));
 	}
 
 	@Test

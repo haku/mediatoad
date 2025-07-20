@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.AuthList.AccessType;
 import com.vaguehope.dlnatoad.auth.Authoriser;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.AsyncCallback;
@@ -285,7 +286,7 @@ public class MediaIndex implements FileListener {
 		if (existingNode != null) return existingNode;
 
 		final AuthList authList = file != null ? this.authoriser.forDir(file) : null;
-		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList())
+		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList()) && authList.getAccessType() != AccessType.DEFAULT_DENY
 				? title + " (restricted)"
 				: title;
 
