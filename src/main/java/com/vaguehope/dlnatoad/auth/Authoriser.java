@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.vaguehope.dlnatoad.C;
+import com.vaguehope.dlnatoad.auth.AuthList.AccessType;
 
 public class Authoriser {
 
@@ -27,9 +28,11 @@ public class Authoriser {
 	private static final Logger LOG = LoggerFactory.getLogger(Authoriser.class);
 
 	private final DefaultAccess defaultAccess;
+	private final AuthList allUsersAuthList;
 
-	public Authoriser(final DefaultAccess defaultAccess) {
+	public Authoriser(final DefaultAccess defaultAccess, final Users users) {
 		this.defaultAccess = defaultAccess;
+		this.allUsersAuthList = new AuthList(users.allUsernames(), AccessType.DEFAULT_ALL_USERS);
 	}
 
 	/**
@@ -48,7 +51,7 @@ public class Authoriser {
 			case ALLOW:
 				return null;
 			case DENY:
-				return AuthList.DEFAULT_DENY_AUTH_LIST;
+				return this.allUsersAuthList;
 			default:
 				throw new IllegalArgumentException();
 			}

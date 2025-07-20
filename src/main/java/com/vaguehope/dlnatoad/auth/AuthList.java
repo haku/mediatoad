@@ -23,7 +23,7 @@ public class AuthList {
 		/**
 		 * Require auth for HTTP access but not local DLNA access.
 		 */
-		DEFAULT_DENY,
+		DEFAULT_ALL_USERS,
 
 		/**
 		 * Require auth for from both HTTP and DLNA.
@@ -31,14 +31,13 @@ public class AuthList {
 		USER_LIST
 	}
 
-	protected static final AuthList DEFAULT_DENY_AUTH_LIST = new AuthList(AccessType.DEFAULT_DENY);
-	protected static final AuthList EMPTY_AUTH_LIST = new AuthList(AccessType.USER_LIST);
+	protected static final AuthList EMPTY_AUTH_LIST = new AuthList(Collections.emptyMap(), AccessType.USER_LIST);
 
 	/**
 	 * Only for testing.
 	 */
 	public static AuthList ofNames(final String... names) {
-		return new AuthList(new HashSet<>(Arrays.asList(names)));
+		return new AuthList(new HashSet<>(Arrays.asList(names)), AccessType.USER_LIST);
 	}
 
 	/**
@@ -52,10 +51,6 @@ public class AuthList {
 	private final Map<String, Set<Permission>> usernamesAndPermissions;
 	private final AccessType accessType;
 
-	protected AuthList(AccessType accessType) {
-		this(Collections.emptyMap(), accessType);
-	}
-
 	protected AuthList(final Map<String, Set<Permission>> usernamesAndPermissions) {
 		this(usernamesAndPermissions, AccessType.USER_LIST);
 	}
@@ -63,8 +58,8 @@ public class AuthList {
 	/**
 	 * usernames can not be null but it can be empty, which means no one is allowed.
 	 */
-	private AuthList(final Set<String> usernames) {
-		this(usernames.stream().collect(Collectors.toMap(Function.identity(), u -> Collections.emptySet())));
+	protected AuthList(final Set<String> usernames, final AccessType accessType) {
+		this(usernames.stream().collect(Collectors.toMap(Function.identity(), u -> Collections.emptySet())), accessType);
 	}
 
 	private AuthList(final Map<String, Set<Permission>> usernamesAndPermissions, final AccessType accessType) {
@@ -91,7 +86,6 @@ public class AuthList {
 
 	public boolean hasUser(final String username) {
 		if (username == null) return false;
-		if (this.accessType == AccessType.DEFAULT_DENY && this.usernamesAndPermissions.size() == 0) return true;
 		return this.usernamesAndPermissions.containsKey(username);
 	}
 

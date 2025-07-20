@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.Args.ArgsException;
 import com.vaguehope.dlnatoad.auth.Authoriser;
+import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.DbCleaner;
@@ -166,6 +167,10 @@ public final class Main {
 			mediaId.putCallbackInQueue(afterInitialScanIdsAllFiles);
 		};
 
+		final File userfile = args.getUserfile();
+		final Users users = userfile != null ? new Users(userfile) : null;
+		final Authoriser authoriser = new Authoriser(args.getDefaultOpenHttp(), users);
+
 		final RpcClient rpcClient = new RpcClient(args);
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -177,7 +182,7 @@ public final class Main {
 
 		final UpnpService upnpService = new DlnaService(bindAddresses).start();
 		final Server httpServer = new HttpServer(
-				contentTree, mediaDb, dbCache, tagAutocompleter, upnpService, rpcClient, thumbnailGenerator, args, bindAddresses, hostName)
+				contentTree, mediaDb, dbCache, tagAutocompleter, upnpService, users, rpcClient, thumbnailGenerator, args, bindAddresses, hostName)
 						.start();
 
 		final ExternalUrls externalUrls = new ExternalUrls(selfAddress, ((ServerConnector) httpServer.getConnectors()[0]).getPort());
@@ -187,8 +192,6 @@ public final class Main {
 
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
-
-		final Authoriser authoriser = new Authoriser(args.getDefaultOpenHttp());
 
 		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, authoriser, args.isVerboseLog());
 

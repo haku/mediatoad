@@ -286,7 +286,7 @@ public class MediaIndex implements FileListener {
 		if (existingNode != null) return existingNode;
 
 		final AuthList authList = file != null ? this.authoriser.forDir(file) : null;
-		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList()) && authList.getAccessType() != AccessType.DEFAULT_DENY
+		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList()) && authList.getAccessType() != AccessType.DEFAULT_ALL_USERS
 				? title + " (restricted)"
 				: title;
 

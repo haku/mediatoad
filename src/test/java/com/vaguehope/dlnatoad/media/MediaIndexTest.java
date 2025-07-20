@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -30,6 +31,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.dlnatoad.auth.Authoriser;
 import com.vaguehope.dlnatoad.auth.DefaultAccess;
+import com.vaguehope.dlnatoad.auth.Users;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
@@ -47,20 +49,26 @@ public class MediaIndexTest {
 	private ContentTree contentTree;
 	private MediaMetadataStore mediaMetadataStore;
 	private MediaId mediaId;
+	private Users users;
+	private Authoriser authoriser;
 	private ScheduledThreadPoolExecutor schEx;
 	private MediaIndex undertest;
+
 
 	@Before
 	public void before() throws Exception {
 		this.schEx = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("fs"));
 		this.schEx.setMaximumPoolSize(1);  // ensuring at most 1 thread makes it easier to
 
+		this.users = mock(Users.class);
+		this.authoriser = new Authoriser(DefaultAccess.ALLOW, this.users);
+
 		this.contentTree = new ContentTree();
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
 		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
-		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), new Authoriser(DefaultAccess.ALLOW), true);
+		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), this.authoriser, true);
 	}
 
 	@After
@@ -206,7 +214,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaMetadataStore), new MediaInfo(), new Authoriser(DefaultAccess.ALLOW), true);
+				new MediaId(this.mediaMetadataStore), new MediaInfo(), this.authoriser, true);
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);

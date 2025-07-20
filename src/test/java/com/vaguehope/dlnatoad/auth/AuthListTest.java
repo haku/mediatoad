@@ -6,37 +6,48 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableSet;
 import com.vaguehope.dlnatoad.auth.AuthList.AccessType;
 
 public class AuthListTest {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
+	private Users users;
+
+	@Before
+	public void before() throws Exception {
+		this.users = mock(Users.class);
+		when(this.users.allUsernames()).thenReturn(ImmutableSet.of("user1", "user2"));
+	}
 
 	@Test
 	public void itReturnsNullForNoAuthFileAndDefaultAllow() throws Exception {
 		final File dir = this.tmp.newFolder();
-		final AuthList actual = new Authoriser(DefaultAccess.ALLOW).forDir(dir);
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW, this.users).forDir(dir);
 		assertEquals(null, actual);
 	}
 
 	@Test
 	public void itReturnsEmptyForNoAuthFileAndDefaultDeny() throws Exception {
 		final File dir = this.tmp.newFolder();
-		final AuthList actual = new Authoriser(DefaultAccess.DENY).forDir(dir);
-		assertEquals(0, actual.size());
-		assertEquals(AccessType.DEFAULT_DENY, actual.getAccessType());
-		assertTrue(actual.hasUser("anyuser"));
+		final AuthList actual = new Authoriser(DefaultAccess.DENY, this.users).forDir(dir);
+		assertEquals(this.users.allUsernames().size(), actual.size());
+		assertEquals(AccessType.DEFAULT_ALL_USERS, actual.getAccessType());
+		assertTrue(actual.hasUser("user1"));
 	}
 
 	@Test
@@ -91,7 +102,7 @@ public class AuthListTest {
 		final File dir2 = mkDir(dir1, "dir2");
 
 		writeListAndReadDir(dir0, "usera\nuser1");
-		final AuthList actual = new Authoriser(DefaultAccess.ALLOW).forDir(dir2);
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW, this.users).forDir(dir2);
 		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
 	}
 
@@ -104,6 +115,15 @@ public class AuthListTest {
 		writeListAndReadDir(dir0, "usera\nuser1");
 		writeListAndReadDir(dir1, "usera\nuserb\nuser1\nuser2");
 		final AuthList actual = writeListAndReadDir(dir2, "usera\nuserb\nuserc\nuser1\nuser2\nuser3");
+		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
+	}
+
+	@Test
+	public void itUsesTheIntersectionOfAuthFilesInParentDirsUnlessDefaultDeny() throws Exception {
+		final File dir0 = this.tmp.newFolder();
+		final File dir1 = mkDir(dir0, "dir1");
+
+		final AuthList actual = writeListAndReadDir(dir1, "usera\nuser1", DefaultAccess.DENY);
 		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
 	}
 
@@ -149,10 +169,14 @@ public class AuthListTest {
 		return writeListAndReadDir(this.tmp.newFolder(), list);
 	}
 
-	private static AuthList writeListAndReadDir(final File dir, final String list) throws IOException {
+	private AuthList writeListAndReadDir(final File dir, final String list) throws IOException {
+		return writeListAndReadDir(dir, list, DefaultAccess.ALLOW);
+	}
+
+	private AuthList writeListAndReadDir(final File dir, final String list, final DefaultAccess defaultAccess) throws IOException {
 		final File file = new File(dir, "AUTH");
 		FileUtils.writeStringToFile(file, list, "UTF-8");
-		return new Authoriser(DefaultAccess.ALLOW).forDir(dir);
+		return new Authoriser(defaultAccess, this.users).forDir(dir);
 	}
 
 	private static File mkDir(final File parentDir, String name) throws IOException {

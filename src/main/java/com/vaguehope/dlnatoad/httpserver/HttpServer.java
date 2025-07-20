@@ -77,6 +77,7 @@ public class HttpServer {
 	private final DbCache dbCache;
 	private final TagAutocompleter tagAutocompleter;
 	private final UpnpService upnpService;
+	private final Users users;
 	private final RpcClient rpcClient;
 	private final ThumbnailGenerator thumbnailGenerator;
 	private final Args args;
@@ -89,6 +90,7 @@ public class HttpServer {
 			final DbCache dbCache,
 			final TagAutocompleter tagAutocompleter,
 			final UpnpService upnpService,
+			final Users users,
 			final RpcClient rpcClient,
 			final ThumbnailGenerator thumbnailGenerator,
 			final Args args,
@@ -99,6 +101,7 @@ public class HttpServer {
 		this.dbCache = dbCache;
 		this.tagAutocompleter = tagAutocompleter;
 		this.upnpService = upnpService;
+		this.users = users;
 		this.rpcClient = rpcClient;
 		this.thumbnailGenerator = thumbnailGenerator;
 		this.args = args;
@@ -130,14 +133,12 @@ public class HttpServer {
 			defaultPort = false;
 		}
 
-		final File userfile = this.args.getUserfile();
-		final Users users = userfile != null ? new Users(userfile) : null;
 		final File rpcAuthFile = this.args.getRpcAuthFile();
 		final JwkLoader rpcJwtLoader = rpcAuthFile != null ? new JwkLoader(rpcAuthFile) : null;
 
 		while (true) {
-			final Handler rpcHandler = makeRpcHandler(users, rpcJwtLoader);
-			final Handler mainHandler = makeContentHandler(users, rpcJwtLoader);
+			final Handler rpcHandler = makeRpcHandler(rpcJwtLoader);
+			final Handler mainHandler = makeContentHandler(rpcJwtLoader);
 			final Handler handler = new RpcDivertingHandler(rpcHandler, mainHandler);
 
 			final Server server = new Server();
@@ -169,7 +170,7 @@ public class HttpServer {
 		}
 	}
 
-	private Handler makeContentHandler(final Users users, final JwkLoader rpcJwtLoader) throws ArgsException, IOException {
+	private Handler makeContentHandler(final JwkLoader rpcJwtLoader) throws ArgsException, IOException {
 		final ServletContextHandler servletHandler = new ServletContextHandler();
 		MediaFormat.addTo(servletHandler.getMimeTypes());
 		servletHandler.setContextPath("/");
@@ -187,9 +188,9 @@ public class HttpServer {
 
 		final AuthTokens authTokens = new AuthTokens(this.args.getSessionDir());
 		if (this.args.isOpenIdFlagSet()) {
-			new OpenId(this.args, users).addToHandler(servletHandler);
+			new OpenId(this.args, this.users).addToHandler(servletHandler);
 		}
-		final AuthFilter authFilter = new AuthFilter(users, authTokens, this.args.getHttpPathPrefix(), this.args.isPrintAccessLog());
+		final AuthFilter authFilter = new AuthFilter(this.users, authTokens, this.args.getHttpPathPrefix(), this.args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();
@@ -242,7 +243,7 @@ public class HttpServer {
 		return handler;
 	}
 
-	private Handler makeRpcHandler(final Users users, final JwkLoader rpcJwtLoader) throws IOException {
+	private Handler makeRpcHandler(final JwkLoader rpcJwtLoader) throws IOException {
 		if (rpcJwtLoader == null) return null;
 		RpcPrometheusMetrics.setup();
 
@@ -253,7 +254,7 @@ public class HttpServer {
 			RequestLoggingFilter.addTo(handler);
 		}
 
-		final JwtInterceptor jwtInterceptor = new JwtInterceptor(rpcJwtLoader, users);
+		final JwtInterceptor jwtInterceptor = new JwtInterceptor(rpcJwtLoader, this.users);
 		final MediaImpl mediaImpl = new MediaImpl(this.contentTree, this.mediaDb);
 		handler.addServlet(new ServletHolder(new RpcServlet(jwtInterceptor, mediaImpl)), "/*");
 		return handler;
