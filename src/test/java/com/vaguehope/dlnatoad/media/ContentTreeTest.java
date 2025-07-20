@@ -206,19 +206,19 @@ public class ContentTreeTest {
 		final List<ContentItem> expected = mockItems.subList(mockItems.size() - 200, mockItems.size());
 		Collections.reverse(expected);
 
-		final Collection<ContentItem> actual = this.undertest.getRecent();
+		final Collection<ContentItem> actual = this.undertest.getRecent().getCopyOfItems();
 		assertEquals(expected, new ArrayList<>(actual));
 	}
 
 	@Test
 	public void itRemovesGoneItemsFromRecent() throws Exception {
 		final List<ContentItem> items = this.mockContent.givenMockItems(1);
-		assertThat(this.undertest.getRecent(), hasSize(1));
+		assertThat(this.undertest.getRecent().getCopyOfItems(), hasSize(1));
 
 		final File file = items.get(0).getFile();
 		assertEquals(1, this.undertest.removeFile(file));
 
-		assertThat(this.undertest.getRecent(), hasSize(0));
+		assertThat(this.undertest.getRecent().getCopyOfItems(), hasSize(0));
 	}
 
 	private static Consumer<File> sequentialTimeStamps() {

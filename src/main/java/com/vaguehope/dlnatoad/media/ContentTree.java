@@ -7,10 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +46,9 @@ public class ContentTree {
 	private final ContentNode rootNode;
 	private final Map<String, ContentItem> contentItems = new ConcurrentHashMap<>();
 
-	private static final int MAX_RECENT_ITEMS = 200;
-	private final ContentNode recentNode;
-	private final NavigableSet<ContentItem> recent = new ConcurrentSkipListSet<>(ContentItem.Order.MODIFIED_DESC);
-	private final Object[] recentLock = new Object[] {};
-	private volatile long oldestRecentItem = 0L;
+	private final RecentContentNode recentNode;
 
-	public ContentTree () {
+	public ContentTree() {
 		this(true);
 	}
 
@@ -63,7 +57,7 @@ public class ContentTree {
 		addNode(this.rootNode);
 
 		if (trackRecent) {
-			this.recentNode = new ContentNode(ContentGroup.RECENT.getId(), this.rootNode.getId(), ContentGroup.RECENT.getHumanName(), null, null, null, null, this.recent);
+			this.recentNode = new RecentContentNode();
 			// TODO mark recent as not searchable.
 			addNode(this.recentNode);
 			this.rootNode.addNodeIfAbsent(this.recentNode);
@@ -140,7 +134,18 @@ public class ContentTree {
 
 	public void addItem(final ContentItem item) {
 		this.contentItems.put(item.getId(), item);
-		maybeAddToRecent(item);
+
+		if (this.recentNode != null) {
+			// Do not add items in collections that require auth.
+			// For safety missing content nodes are assumed to have an auth list.
+			final ContentNode node = getNode(item.getParentId());
+			if (node != null) {
+				this.recentNode.maybeAddToRecent(item, node);
+			}
+			else {
+				LOG.warn("Item {} has parent {} which is not in the content tree.", item.getId(), item.getParentId());
+			}
+		}
 	}
 
 	public List<ContentItem> getItemsForIds(final Collection<String> ids, final String username) {
@@ -185,7 +190,7 @@ public class ContentTree {
 			if (file.equals(e.getValue().getFile())) {
 				itemIttr.remove();
 				removeItemFromParent(e.getValue());
-				removeFromRecent(e.getValue());
+				if (this.recentNode != null) this.recentNode.removeFromRecent(e.getValue());
 				removeCount += 1;
 			}
 		}
@@ -245,43 +250,8 @@ public class ContentTree {
 		}
 	}
 
-	public Collection<ContentItem> getRecent () {
-		return this.recent;
-	}
-
-	private void maybeAddToRecent(final ContentItem item) {
-		if (this.recentNode == null) return;
-		if (item.getParentId() == null) return;  // Things like subtitles and thumbnails.
-
-		// Do not add items in collections that require auth.
-		// For safety missing content nodes are assumed to have an auth list.
-		final ContentNode node = getNode(item.getParentId());
-		if (node == null) {
-			LOG.warn("Item {} has parent {} which is not in the content tree.", item.getId(), item.getParentId());
-			return;
-		}
-		if (node.hasAuthList()) return;
-
-		if (item.getLastModified() < this.oldestRecentItem) return;
-
-		synchronized (this.recentLock) {
-			this.recent.add(item);
-			if (this.recent.size() > MAX_RECENT_ITEMS) {
-				this.recent.pollLast();
-				this.oldestRecentItem = this.recent.last().getLastModified();
-			}
-			else {
-				this.oldestRecentItem = 0L;
-			}
-		}
-	}
-
-	private void removeFromRecent(final ContentItem item) {
-		if (this.recentNode == null) return;
-
-		synchronized (this.recentLock) {
-			this.recent.remove(item);
-		}
+	public RecentContentNode getRecent () {
+		return this.recentNode;
 	}
 
 }

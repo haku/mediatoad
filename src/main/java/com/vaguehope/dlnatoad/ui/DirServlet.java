@@ -87,7 +87,7 @@ public class DirServlet extends HttpServlet {
 		}
 
 		if (req.getPathInfo().endsWith(".zip")) {
-			returnNodeAsZipFile(node, resp);
+			returnNodeAsZipFile(node, username, resp);
 			return;
 		}
 
@@ -156,21 +156,21 @@ public class DirServlet extends HttpServlet {
 
 		genTimer.startSection("auth");
 		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
+		final List<ContentItem> itemsUserHasAuth = node.itemsUserHasAuth(username);
 
 		genTimer.startSection("node");
-		final String listTitle = makeIndexTitle(node, nodesUserHasAuth);
-		final long nodeTotalFileLength = node.getTotalFileLength();
+		final String listTitle = makeIndexTitle(node, nodesUserHasAuth, itemsUserHasAuth);
+		final long nodeTotalFileLength = itemsUserHasAuth.stream().mapToLong(i -> i.getFileLength()).sum();
 
-		final List<ContentItem> allItems = node.getCopyOfItems();
 		final Order sort = sortModified ? ContentItem.Order.MODIFIED_DESC : parseSort(sortRaw);
 		final String sortParam = paramForSort(sort);
 		if (sort != null) {
-			allItems.sort(sort);
+			itemsUserHasAuth.sort(sort);
 		}
-		final List<ContentItem> pageItems = allItems.subList(offset, Math.min(allItems.size(), offset + limit));
+		final List<ContentItem> pageItems = itemsUserHasAuth.subList(offset, Math.min(itemsUserHasAuth.size(), offset + limit));
 
 		final String nextPagePath;
-		if (offset + limit < allItems.size()) {
+		if (offset + limit < itemsUserHasAuth.size()) {
 			final StringBuilder s = new StringBuilder("?");
 			s.append(sortParam);
 			if (s.length() > 1) s.append("&");
@@ -220,9 +220,10 @@ public class DirServlet extends HttpServlet {
 		this.nodeIndexTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();
 	}
 
-	private static String makeIndexTitle(final ContentNode node, final List<ContentNode> nodesUserHasAuth) {
+	private static String makeIndexTitle(final ContentNode node, final List<ContentNode> nodesUserHasAuth, final List<ContentItem> itemsUserHasAuth) {
 		final int nodeCount = nodesUserHasAuth.size();
-		final int itemCount = node.getItemCount();
+		final int itemCount = itemsUserHasAuth.size();
+
 		String listTitle = node.getTitle() + " (";
 		if (nodeCount > 0) {
 			listTitle += nodeCount + " dirs";
@@ -290,19 +291,20 @@ public class DirServlet extends HttpServlet {
 		}
 	}
 
-	private static void returnNodeAsZipFile(final ContentNode node, final HttpServletResponse resp) throws IOException {
+	private static void returnNodeAsZipFile(final ContentNode node, final String username, final HttpServletResponse resp) throws IOException {
 		resp.setContentType("application/zip");
 		final ZipOutputStream zo = new ZipOutputStream(resp.getOutputStream());
 		zo.setLevel(Deflater.NO_COMPRESSION);  // No point try to compress media files.
 
-		node.withEachItem(i -> {
+		final List<ContentItem> items = node.itemsUserHasAuth(username);
+		for (final ContentItem i : items) {
 			final ZipEntry e = new ZipEntry(i.getFile().getName());
 			e.setSize(i.getFileLength());
 			e.setTime(i.getLastModified());
 			zo.putNextEntry(e);
 			FileUtils.copyFile(i.getFile(), zo);
 			zo.closeEntry();
-		});
+		}
 
 		zo.flush();
 		zo.close();

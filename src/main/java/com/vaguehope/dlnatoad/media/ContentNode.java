@@ -26,7 +26,7 @@ public class ContentNode extends AbstractContent {
 	private final AuthList authList;
 
 	private final List<ContentNode> nodes = new ArrayList<>();
-	private final Collection<ContentItem> items;
+	protected final Collection<ContentItem> items;
 
 	private volatile ContentItem art;
 	private volatile long lastModified = 0L;
@@ -39,7 +39,7 @@ public class ContentNode extends AbstractContent {
 		this(id, parentId, title, dir, path, authList, sortKey, new ArrayList<>());
 	}
 
-	public ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
+	protected ContentNode (final String id, final String parentId, final String title, final File dir, final String path, final AuthList authList, final String sortKey, final Collection<ContentItem> itemsCollection) {
 		super(id, parentId, title);
 		if (parentId == null)  throw new IllegalArgumentException("parentId must not be null.");
 		this.file = dir;
@@ -85,6 +85,13 @@ public class ContentNode extends AbstractContent {
 			}
 			return ret;
 		}
+	}
+
+	/**
+	 * Assumes access to node has already been checked.
+	 */
+	public List<ContentItem> itemsUserHasAuth(final String username) {
+		return getCopyOfItems();
 	}
 
 	public <E extends Exception> void withEachNode (final ExConsumer<ContentNode, E> consumer) throws E {
@@ -137,16 +144,6 @@ public class ContentNode extends AbstractContent {
 		synchronized (this.items) {
 			return this.items.size();
 		}
-	}
-
-	public long getTotalFileLength() {
-		long total = 0L;
-		synchronized (this.items) {
-			for (final ContentItem i : this.items) {
-				total += i.getFileLength();
-			}
-		}
-		return total;
 	}
 
 	public List<ContentNode> getCopyOfNodes() {
