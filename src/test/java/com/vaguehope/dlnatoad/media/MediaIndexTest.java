@@ -28,6 +28,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.auth.Authoriser;
+import com.vaguehope.dlnatoad.auth.DefaultAccess;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaMetadataStore;
 import com.vaguehope.dlnatoad.media.MediaIndex.HierarchyMode;
@@ -58,7 +60,7 @@ public class MediaIndexTest {
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
 		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
-		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), true);
+		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), new Authoriser(DefaultAccess.ALLOW), true);
 	}
 
 	@After
@@ -204,7 +206,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaMetadataStore), new MediaInfo(), true);
+				new MediaId(this.mediaMetadataStore), new MediaInfo(), new Authoriser(DefaultAccess.ALLOW), true);
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);

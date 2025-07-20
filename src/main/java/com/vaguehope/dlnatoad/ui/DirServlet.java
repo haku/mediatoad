@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.github.mustachejava.Mustache;
@@ -208,10 +209,12 @@ public class DirServlet extends HttpServlet {
 		maybeAppendTopTags(resultScope, node, username);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
-		if (isRoot) {
-			pageScope.setDebugfooter(this.servletCommon.debugFooter());
+		if (StringUtils.isNotBlank(username)) {
+			if (isRoot) {
+				pageScope.setDebugfooter(this.servletCommon.debugFooter());
+			}
+			pageScope.appendToDebugFooter("gen: " + genTimer.summarise());
 		}
-		pageScope.appendToDebugFooter("gen: " + genTimer.summarise());
 
 		ServletCommon.setHtmlContentType(resp);
 		this.nodeIndexTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, nodeIndexScope }).flush();

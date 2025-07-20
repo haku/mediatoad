@@ -14,6 +14,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
+import com.vaguehope.dlnatoad.auth.DefaultAccess;
+
 public class Args {
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "Print this help text.") private boolean help;
@@ -42,6 +44,7 @@ public class Args {
 	@Option(name = "--userfile", usage = "Path for to file of users and passwords.") private String userfile;
 	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
+	@Option(name = "--default-open-http", usage = "Allow open access to any dir without an AUTH file.") private boolean defaultOpenHttp = false;
 
 	@Option(name = "--openid-issuer-uri", usage = "OpenID configurtion issuer URI, /.well-known/openid-configuration will be appended.") private String openIdIssuerUri;
 	@Option(name = "--openid-client-id", usage = "OpenID client ID.") private String openIdClientId;
@@ -162,6 +165,11 @@ public class Args {
 
 	public boolean isAddUser() {
 		return this.addUser;
+	}
+
+	public DefaultAccess getDefaultOpenHttp() {
+		if (this.userfile == null) return DefaultAccess.ALLOW;
+		return this.defaultOpenHttp ? DefaultAccess.ALLOW : DefaultAccess.DENY;
 	}
 
 	public boolean isOpenIdFlagSet() {

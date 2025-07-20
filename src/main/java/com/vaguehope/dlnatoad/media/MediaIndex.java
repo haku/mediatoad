@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaguehope.dlnatoad.auth.AuthList;
+import com.vaguehope.dlnatoad.auth.Authoriser;
 import com.vaguehope.dlnatoad.media.MetadataReader.Metadata;
 import com.vaguehope.dlnatoad.util.AsyncCallback;
 import com.vaguehope.dlnatoad.util.FileHelper;
@@ -35,6 +36,7 @@ public class MediaIndex implements FileListener {
 	private final HierarchyMode hierarchyMode;
 	private final MediaId mediaId;
 	private final MediaInfo mediaInfo;
+	private final Authoriser authoriser;
 	private final boolean verboseLog;
 
 	private final ContentNode videoContainer;
@@ -42,11 +44,12 @@ public class MediaIndex implements FileListener {
 	private final ContentNode audioContainer;
 	private final ContentNode docContainer;
 
-	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo, final boolean verboseLog) throws IOException {
+	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo, final Authoriser authoriser, final boolean verboseLog) throws IOException {
 		this.contentTree = contentTree;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
 		this.mediaInfo = mediaInfo;
+		this.authoriser = authoriser;
 		this.verboseLog = verboseLog;
 
 		switch (hierarchyMode) {
@@ -281,7 +284,7 @@ public class MediaIndex implements FileListener {
 		final ContentNode existingNode = this.contentTree.getNode(id);
 		if (existingNode != null) return existingNode;
 
-		final AuthList authList = file != null ? AuthList.forDir(file) : null;
+		final AuthList authList = file != null ? this.authoriser.forDir(file) : null;
 		final String modTitle = authList != null && !authList.equals(parentNode.getAuthList())
 				? title + " (restricted)"
 				: title;

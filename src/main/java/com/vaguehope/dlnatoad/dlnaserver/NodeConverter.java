@@ -35,6 +35,7 @@ import org.jupnp.support.model.item.Item;
 import org.jupnp.support.model.item.VideoItem;
 import org.jupnp.util.MimeType;
 
+import com.vaguehope.dlnatoad.auth.AuthList.AccessType;
 import com.vaguehope.dlnatoad.media.ContentItem;
 import com.vaguehope.dlnatoad.media.ContentNode;
 import com.vaguehope.dlnatoad.media.ExternalUrls;
@@ -54,7 +55,7 @@ public class NodeConverter {
 	public List<Container> makeSubContainersWithoutTheirSubContainers(final ContentNode n) {
 		final List<Container> ret = new ArrayList<>();
 		n.withEachNode(i -> {
-			if (i.hasAuthList()) return;
+			if (i.hasAuthList() && i.getAuthList().getAccessType() != AccessType.DEFAULT_DENY) return;
 			ret.add(makeContainerWithoutSubContainers(i));
 		});
 		return ret;

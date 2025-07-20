@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 import com.vaguehope.dlnatoad.Args.ArgsException;
+import com.vaguehope.dlnatoad.auth.Authoriser;
 import com.vaguehope.dlnatoad.auth.UsersCli;
 import com.vaguehope.dlnatoad.db.DbCache;
 import com.vaguehope.dlnatoad.db.DbCleaner;
@@ -187,7 +188,9 @@ public final class Main {
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
-		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, args.isVerboseLog());
+		final Authoriser authoriser = new Authoriser(args.getDefaultOpenHttp());
+
+		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, authoriser, args.isVerboseLog());
 
 		final Thread watcherThread = new Thread(new RunWatcher(args, index, afterInitialScanFindsAllDirs));
 		watcherThread.setName("watcher");

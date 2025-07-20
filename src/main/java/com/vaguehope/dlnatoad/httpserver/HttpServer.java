@@ -211,7 +211,7 @@ public class HttpServer {
 
 		servletHandler.addServlet(new ServletHolder(new SearchServlet(servletCommon, this.contentTree, contentServlet, this.mediaDb, this.dbCache, this.upnpService, this.rpcClient, this.thumbnailGenerator)), "/" + C.SEARCH_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new ThumbsServlet(this.contentTree, this.thumbnailGenerator, servletCommon)), "/" + C.THUMBS_PATH_PREFIX + "*");
-		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(this.tagAutocompleter)), "/" + C.AUTOCOMPLETE_PATH);
+		servletHandler.addServlet(new ServletHolder(new AutocompleteServlet(this.tagAutocompleter, this.args.getDefaultOpenHttp())), "/" + C.AUTOCOMPLETE_PATH);
 		servletHandler.addServlet(new ServletHolder(new ItemServlet(servletCommon, this.contentTree, this.mediaDb, this.tagAutocompleter)), "/" + C.ITEM_PATH_PREFIX + "*");
 		servletHandler.addServlet(new ServletHolder(new TagsServlet(this.contentTree, this.mediaDb, this.tagAutocompleter)), "/" + C.TAGS_PATH);
 		servletHandler.addServlet(new ServletHolder(new StaticFilesServlet(this.args.getWebRoot())), "/" + C.STATIC_FILES_PATH_PREFIX + "*");

@@ -12,8 +12,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.vaguehope.dlnatoad.auth.DefaultAccess;
 import com.vaguehope.dlnatoad.auth.ReqAttr;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
@@ -24,16 +27,25 @@ public class AutocompleteServlet extends HttpServlet {
 	private static final long serialVersionUID = 7357804711012837077L;
 
 	private final TagAutocompleter tagAutocompleter;
+	private final DefaultAccess defaultAccess;
 	private final Gson gson;
 
-	public AutocompleteServlet(final TagAutocompleter tagAutocompleter) {
+	public AutocompleteServlet(final TagAutocompleter tagAutocompleter, final DefaultAccess defaultAccess) {
 		this.tagAutocompleter = tagAutocompleter;
+		this.defaultAccess = defaultAccess;
 		this.gson = new GsonBuilder().create();
 	}
 
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final String username = ReqAttr.USERNAME.get(req);
+		if (this.defaultAccess != DefaultAccess.ALLOW && StringUtils.isBlank(username)) {
+			resp.setContentType(ServletCommon.CONTENT_TYPE_JSON);
+			resp.getWriter().write("[]");
+			return;
+		}
+
 		if (this.tagAutocompleter == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "DB is not enabled.");
 			return;

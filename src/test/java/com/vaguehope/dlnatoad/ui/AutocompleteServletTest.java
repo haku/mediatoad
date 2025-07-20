@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
+import com.vaguehope.dlnatoad.auth.DefaultAccess;
 import com.vaguehope.dlnatoad.db.TagAutocompleter;
 import com.vaguehope.dlnatoad.db.TagFrequency;
 
@@ -30,9 +31,19 @@ public class AutocompleteServletTest {
 	@Before
 	public void before() throws Exception {
 		this.tagAutocompleter = mock(TagAutocompleter.class);
-		this.undertest = new AutocompleteServlet(this.tagAutocompleter);
+		this.undertest = new AutocompleteServlet(this.tagAutocompleter, DefaultAccess.ALLOW);
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
+	}
+
+	@Test
+	public void itDeniesIfDefaultClosed() throws Exception {
+		this.undertest = new AutocompleteServlet(this.tagAutocompleter, DefaultAccess.DENY);
+		setSearchParams("t=bar");
+		when(this.tagAutocompleter.suggestTags("bar")).thenReturn(listOfTagFrequency("barfoo", 3));
+
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals("[]", this.resp.getOutputAsString());
 	}
 
 	@Test

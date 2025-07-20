@@ -16,22 +16,33 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.vaguehope.dlnatoad.auth.AuthList.AccessType;
+
 public class AuthListTest {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
 
 	@Test
-	public void itReturnsNullForNoAuthFile() throws Exception {
+	public void itReturnsNullForNoAuthFileAndDefaultAllow() throws Exception {
 		final File dir = this.tmp.newFolder();
-		final AuthList actual = AuthList.forDir(dir);
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW).forDir(dir);
 		assertEquals(null, actual);
+	}
+
+	@Test
+	public void itReturnsEmptyForNoAuthFileAndDefaultDeny() throws Exception {
+		final File dir = this.tmp.newFolder();
+		final AuthList actual = new Authoriser(DefaultAccess.DENY).forDir(dir);
+		assertEquals(0, actual.size());
+		assertEquals(AccessType.DEFAULT_DENY, actual.getAccessType());
 	}
 
 	@Test
 	public void itReturnsEmptyListForEmptyAuthFile() throws Exception {
 		final AuthList actual = writeListAndReadDir("");
 		assertEquals(0, actual.size());
+		assertEquals(AccessType.USER_LIST, actual.getAccessType());
 	}
 
 	@Test
@@ -78,7 +89,7 @@ public class AuthListTest {
 		final File dir2 = mkDir(dir1, "dir2");
 
 		writeListAndReadDir(dir0, "usera\nuser1");
-		final AuthList actual = AuthList.forDir(dir2);
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW).forDir(dir2);
 		assertThat(actual.usernames(), containsInAnyOrder("usera", "user1"));
 	}
 
@@ -139,7 +150,7 @@ public class AuthListTest {
 	private static AuthList writeListAndReadDir(final File dir, final String list) throws IOException {
 		final File file = new File(dir, "AUTH");
 		FileUtils.writeStringToFile(file, list, "UTF-8");
-		return AuthList.forDir(dir);
+		return new Authoriser(DefaultAccess.ALLOW).forDir(dir);
 	}
 
 	private static File mkDir(final File parentDir, String name) throws IOException {
