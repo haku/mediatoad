@@ -56,11 +56,11 @@ public class StaticFilesServlet extends DefaultServlet {
 	@Override
 	public Resource getResource(final String pathInContext) {
 		try {
-			final String path = StringUtils.removeStartIgnoreCase(pathInContext, "/" + C.STATIC_FILES_PATH_PREFIX);
+			String path = StringUtils.removeStartIgnoreCase(pathInContext, "/" + C.STATIC_FILES_PATH_PREFIX);
 			final Matcher m = CACHE_BUST_PATTERN.matcher(path);
-			if (m.matches()) {
-				return this.rootRes.addPath(m.group(1));
-			}
+			if (m.matches()) path = m.group(1);
+
+			if (path.contains("..")) return null;
 			return this.rootRes.addPath(path);
 		}
 		catch (final IOException e) {
