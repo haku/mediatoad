@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,11 +23,14 @@ import org.slf4j.LoggerFactory;
 import com.vaguehope.dlnatoad.db.MediaDb;
 import com.vaguehope.dlnatoad.db.WritableMediaDb;
 import com.vaguehope.dlnatoad.importer.HashAndTags.ImportedTag;
+import com.vaguehope.dlnatoad.util.ExceptionHelper;
+import com.vaguehope.dlnatoad.util.ThreadSafeDateFormatter;
 import com.vaguehope.dlnatoad.util.Time;
 
 public class MetadataImporter {
 
 	private static final long DROPDIR_SCAN_INTERVAL_SECONDS = TimeUnit.HOURS.toSeconds(1);
+	private static final ThreadSafeDateFormatter DATE_FORMAT = new ThreadSafeDateFormatter("yyyyMMdd-HHmmss", Locale.ENGLISH);
 	private static final Logger LOG = LoggerFactory.getLogger(MetadataImporter.class);
 
 	private final File dropDir;
@@ -90,11 +95,11 @@ public class MetadataImporter {
 				final MetadataDump md = MetadataDump.readFile(file);
 				final long changeCount = importMetadataDump(md);
 				this.countOfImportedTags.addAndGet(changeCount);
-				renameDropFile(file, MetadataDump.PROCESSED_FILE_EXTENSION);
+				renameDropFile(file, MetadataDump.PROCESSED_FILE_EXTENSION + "." + DATE_FORMAT.get().format(new Date()));
 				LOG.info("Successfully imported {} changes from drop file: {}", changeCount, file);
 			}
 			catch (final Exception e) {
-				LOG.warn("Failed to process drop file {}: {}", file.getAbsolutePath(), e);
+				LOG.warn("Failed to process drop file {}: {}", file.getAbsolutePath(), ExceptionHelper.causeTrace(e));
 				renameDropFile(file, MetadataDump.FAILED_FILE_EXTENSION);
 			}
 		}

@@ -2,6 +2,7 @@ package com.vaguehope.dlnatoad.importer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -9,8 +10,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -20,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.io.PatternFilenameFilter;
 import com.vaguehope.dlnatoad.FakeScheduledExecutorService;
 import com.vaguehope.dlnatoad.db.InMemoryMediaDb;
 import com.vaguehope.dlnatoad.db.MediaDb;
@@ -114,7 +118,9 @@ public class MetadataImporterTest {
 
 		this.undertest.processDropDir();
 		assertFalse(dropFile.exists());
-		assertTrue(new File(this.dropDir, "my drop file.json.imported").exists());
+
+		final List<String> files = Arrays.asList(this.dropDir.list(new PatternFilenameFilter("my drop file\\.json\\.imported\\..*")));
+		assertThat(files, hasSize(1));
 
 		assertThat(this.mediaDb.getTags(fileIdA, true, true), containsInAnyOrder(
 				new Tag("foo", 123, false),
