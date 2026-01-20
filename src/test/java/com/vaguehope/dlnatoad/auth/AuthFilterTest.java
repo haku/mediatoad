@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -42,7 +43,7 @@ public class AuthFilterTest {
 	public void before() throws Exception {
 		this.users = mock(Users.class);
 		this.authTokens = mock(AuthTokens.class);
-		this.undertest = new AuthFilter(this.users, this.authTokens, null, true);
+		this.undertest = new AuthFilter(this.users, this.authTokens, null, false, true);
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 		this.chain = mock(FilterChain.class);
@@ -64,7 +65,7 @@ public class AuthFilterTest {
 
 	@Test
 	public void itAllowsGetWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, null, true);
+		this.undertest = new AuthFilter(null, this.authTokens, null, false, true);
 		this.req.setMethod("GET");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
@@ -75,7 +76,7 @@ public class AuthFilterTest {
 
 	@Test
 	public void itBlocksPostWhenNoUsers() throws Exception {
-		this.undertest = new AuthFilter(null, this.authTokens, null, true);
+		this.undertest = new AuthFilter(null, this.authTokens, null, false, true);
 		this.req.setMethod("POST");
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
@@ -138,6 +139,7 @@ public class AuthFilterTest {
 		assertEquals("/", cookie.getPath());
 		assertEquals(0, cookie.getMaxAge());
 		assertEquals("", cookie.getValue());
+		assertTrue(cookie.getSecure());
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -220,7 +222,7 @@ public class AuthFilterTest {
 
 	@Test
 	public void itSetsCookiePath() throws Exception {
-		this.undertest = new AuthFilter(this.users, this.authTokens, "thetoad", true);
+		this.undertest = new AuthFilter(this.users, this.authTokens, "thetoad", false, true);
 
 		this.req.setMethod("GET");
 		setLoginAction();

@@ -55,7 +55,7 @@ public class OpenId {
 		this.clientId = args.getOpenIdClientId();
 		this.clientSecret = FileUtils.readLines(args.getOpenIdClientSecretFile(), StandardCharsets.UTF_8).get(0);
 		this.httpPathPrefix = args.getHttpPathPrefix();
-		this.insecure = args.isOpenIdInsecure();
+		this.insecure = args.isInsecureCookies();
 		this.users = users;
 	}
 

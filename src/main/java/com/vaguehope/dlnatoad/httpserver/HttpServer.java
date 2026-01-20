@@ -190,7 +190,7 @@ public class HttpServer {
 		if (this.args.isOpenIdFlagSet()) {
 			new OpenId(this.args, this.users).addToHandler(servletHandler);
 		}
-		final AuthFilter authFilter = new AuthFilter(this.users, authTokens, this.args.getHttpPathPrefix(), this.args.isPrintAccessLog());
+		final AuthFilter authFilter = new AuthFilter(this.users, authTokens, this.args.getHttpPathPrefix(), this.args.isInsecureCookies(), this.args.isPrintAccessLog());
 		servletHandler.addFilter(new FilterHolder(authFilter), "/*", null);
 
 		final ContentServingHistory contentServingHistory = new ContentServingHistory();

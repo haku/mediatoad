@@ -45,11 +45,11 @@ public class Args {
 	@Option(name = "--sessiondir", usage = "Path for droping metadata import files into.") private String sessionDir;
 	@Option(name = "--adduser", usage = "Interactivly add user to userfile.") private boolean addUser;
 	@Option(name = "--default-open-http", usage = "Allow open access to any dir without an AUTH file.") private boolean defaultOpenHttp = false;
+	@Option(name = "--insecure-cookies", usage = "Do not mark auth cookie as secure.") private boolean insecureCookies = false;
 
 	@Option(name = "--openid-issuer-uri", usage = "OpenID configurtion issuer URI, /.well-known/openid-configuration will be appended.") private String openIdIssuerUri;
 	@Option(name = "--openid-client-id", usage = "OpenID client ID.") private String openIdClientId;
 	@Option(name = "--openid-client-secret-file", usage = "Path to file containing secret on the first line.") private String openIdClientSecretFile;
-	@Option(name = "--openid-insecure", usage = "Do not mark auth cookie as secure.") private boolean openIdInsecure = false;
 
 	// RPC
 	@Option(name = "--rpcauth", usage = "Path for RPC auth file.") private String rpcAuthFile;
@@ -191,8 +191,8 @@ public class Args {
 		return checkIsFile(this.openIdClientSecretFile);
 	}
 
-	public boolean isOpenIdInsecure() {
-		return this.openIdInsecure;
+	public boolean isInsecureCookies() {
+		return this.insecureCookies;
 	}
 
 	public File getDb () {

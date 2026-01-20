@@ -48,12 +48,14 @@ public class AuthFilter implements Filter {
 	private final Users users;
 	private final AuthTokens authTokens;
 	private final String httpPathPrefix;
+	private final boolean insecureCookies;
 	private final boolean printAccessLog;
 
-	public AuthFilter(final Users users, final AuthTokens authTokens, final String httpPathPrefix, final boolean printAccessLog) {
+	public AuthFilter(final Users users, final AuthTokens authTokens, final String httpPathPrefix, final boolean insecureCookies, final boolean printAccessLog) {
 		this.users = users;
 		this.authTokens = authTokens;
 		this.httpPathPrefix = httpPathPrefix;
+		this.insecureCookies = insecureCookies;
 		this.printAccessLog = printAccessLog;
 	}
 
@@ -249,6 +251,7 @@ public class AuthFilter implements Filter {
 		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
 		cookie.setPath("/" + (this.httpPathPrefix != null ? this.httpPathPrefix : ""));
 		cookie.setHttpOnly(true);
+		cookie.setSecure(!this.insecureCookies);
 		cookie.setComment(HttpCookie.getCommentWithAttributes("", false, SameSite.STRICT));
 		return cookie;
 	}
