@@ -206,8 +206,7 @@ public class SearchServlet extends HttpServlet {
 				this.resultsTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
 			}
 			catch (final Exception e) {
-				ServletCommon.returnStatus(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to run query.");
-				e.printStackTrace(resp.getWriter());  // TODO maybe do something better here...
+				throw new ServletException("Failed to run query: " + query, e);
 			}
 		}
 	}

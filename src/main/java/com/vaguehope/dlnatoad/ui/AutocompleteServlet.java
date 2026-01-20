@@ -58,9 +58,7 @@ public class AutocompleteServlet extends HttpServlet {
 				return;
 			}
 			catch (final SQLException e) {
-				resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-				e.printStackTrace(resp.getWriter());
-				return;
+				throw new ServletException("Failed to reload autocomplete.", e);
 			}
 		}
 		else if (req.getParameter("dump") != null && ReqAttr.USERNAME.get(req) != null) {
