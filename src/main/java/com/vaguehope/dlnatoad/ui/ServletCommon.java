@@ -293,9 +293,8 @@ public class ServletCommon {
 
 	public static String queryWithParam(final HttpServletRequest req, final String nameAndValue) {
 		final String q = req.getQueryString();
-		if (q == null) {
-			return "?" + nameAndValue;
-		}
+		if (q == null) return "?" + nameAndValue;
+		if (StringUtils.containsWhitespace(q)) throw new IllegalArgumentException("Query string must not conain whitespace.");
 		return "?" + q + "&" + nameAndValue;
 	}
 
