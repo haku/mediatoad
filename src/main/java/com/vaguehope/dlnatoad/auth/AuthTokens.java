@@ -56,6 +56,12 @@ public class AuthTokens {
 	private void persistToken(final String token, final String username) throws IOException {
 		if (this.sessionDir == null) return;
 
+		// this check could be argued to be redundant, but here to make the static analysis happier.
+		if (!UUID_PATTERN.matcher(token).matches()) {
+			LOG.error("Not persisting invalid token: {}", token);
+			throw new IllegalArgumentException("Invalid token: " + token);
+		}
+
 		final File file = new File(this.sessionDir, token);
 		FileUtils.writeStringToFile(file, username, StandardCharsets.UTF_8);
 	}
