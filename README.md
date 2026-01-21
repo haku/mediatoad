@@ -18,7 +18,7 @@ How do I use it?
 It compiles to a runnable jar. Run it in the top directory you want to share.
 Your DLNA device should magically detect it on your LAN. DLNA is magical like
 that. Media files are identified purely on file extension. Known extensions are
-in the `src/main/java/com/vaguehope/dlnatoad/media/MediaFormat.java` file.
+in the `src/main/java/mediatoad/media/MediaFormat.java` file.
 
 How can I compile it?
 ---------------------

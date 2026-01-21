@@ -12,7 +12,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="com.vaguehope.dlnatoad" level="INFO" />
+	<logger name="dlnatoad" level="INFO" />
 
 	<logger name="org.eclipse.jetty.util.thread.QueuedThreadPool" level="ERROR" />
 

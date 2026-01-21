@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-option java_package = "com.vaguehope.dlnatoad.rpc";
+option java_package = "mediatoad.rpc";
 option java_outer_classname = "MediaToadProto";
 
 package mediatoad;

@@ -1,7 +1,7 @@
 // https://protobuf.dev/programming-guides/proto3/
 syntax = "proto3";
 
-option java_package = "com.vaguehope.dlnatoad.tagdeterminer";
+option java_package = "mediatoad.tagdeterminer";
 option java_outer_classname = "TagDeterminerProto";
 
 package tagdeterminer;
