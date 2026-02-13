@@ -32,8 +32,6 @@ public class AuthList {
 		USER_LIST
 	}
 
-	protected static final AuthList EMPTY_AUTH_LIST = new AuthList(Collections.emptyMap(), AccessType.USER_LIST);
-
 	/**
 	 * Only for testing.
 	 */

@@ -33,7 +33,7 @@ public class Authoriser {
 
 	public Authoriser(final DefaultAccess defaultAccess, final Users users) {
 		this.defaultAccess = defaultAccess;
-		this.allUsersAuthList = new AuthList(users.allUsernames(), AccessType.DEFAULT_ALL_USERS);
+		this.allUsersAuthList = users != null ? new AuthList(users.allUsernames(), AccessType.DEFAULT_ALL_USERS) : null;
 	}
 
 	/**
@@ -58,7 +58,6 @@ public class Authoriser {
 			}
 		}
 
-		if (list.size() == 0) return AuthList.EMPTY_AUTH_LIST;
 		return list;
 	}
 

@@ -21,11 +21,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.ImmutableSet;
 
-import mediatoad.auth.AuthList;
-import mediatoad.auth.Authoriser;
-import mediatoad.auth.DefaultAccess;
-import mediatoad.auth.Permission;
-import mediatoad.auth.Users;
 import mediatoad.auth.AuthList.AccessType;
 
 public class AuthListTest {
@@ -38,6 +33,23 @@ public class AuthListTest {
 	public void before() throws Exception {
 		this.users = mock(Users.class);
 		when(this.users.allUsernames()).thenReturn(ImmutableSet.of("user1", "user2"));
+	}
+
+	@Test
+	public void itAllowsAllWhenNoUsersFile() throws Exception {
+		final File dir = this.tmp.newFolder();
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW, null).forDir(dir);
+		assertEquals(null, actual);
+	}
+
+	@Test
+	public void itDeniesAllWhenNoUsersFileButAuthFileExists() throws Exception {
+		final File dir = this.tmp.newFolder();
+		writeAuthFile(dir, "");
+		final AuthList actual = new Authoriser(DefaultAccess.ALLOW, null).forDir(dir);
+		assertEquals(0, actual.size());
+		assertEquals(AccessType.USER_LIST, actual.getAccessType());
+		assertFalse(actual.hasUser("anyuser"));
 	}
 
 	@Test
@@ -180,9 +192,13 @@ public class AuthListTest {
 	}
 
 	private AuthList writeListAndReadDir(final File dir, final String list, final DefaultAccess defaultAccess) throws IOException {
+		writeAuthFile(dir, list);
+		return new Authoriser(defaultAccess, this.users).forDir(dir);
+	}
+
+	private static void writeAuthFile(final File dir, final String list) throws IOException {
 		final File file = new File(dir, "AUTH");
 		FileUtils.writeStringToFile(file, list, "UTF-8");
-		return new Authoriser(defaultAccess, this.users).forDir(dir);
 	}
 
 	private static File mkDir(final File parentDir, String name) throws IOException {
