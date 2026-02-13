@@ -1,0 +1,23 @@
+{{#result_groups}}
+{{group_title}}
+{{#msg}}{{msg}}{{/msg}}
+
+{{#list_items}}
+{{title}}
+{{/list_items}}
+
+{{#next_page_path}}Next Page:
+{{{next_page_path}}}{{/next_page_path}}
+
+Tags
+{{^tags}}{{no_tags_msg}}{{/tags}}
+{{#tags}}
+{{tag}} ({{count}})
+{{/tags}}
+
+{{/result_groups}}
+
+{{#debugfooter}}{{{debugfooter}}}{{/debugfooter}}
+
+{{! vim: noexpandtab softtabstop=0
+}}

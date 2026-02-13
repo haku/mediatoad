@@ -81,11 +81,15 @@ public class SearchServlet extends HttpServlet {
 	static final String PARAM_PAGE_LIMIT = "limit";
 	static final String PARAM_PAGE_OFFSET = "offset";
 	static final String PARAM_REMOTE = "remote";
+	static final String PARAM_FORMAT = "format";
 	static final SortOrder RESULT_SORT_ORDER = SortColumn.MODIFIED.desc();
 
 	static final int MAX_RESULTS = 500;
 	private static final String ROOT_CONTENT_ID = "0"; // Root id of '0' is in the spec.
 	private static final ServiceType CONTENT_DIRECTORY_TYPE = ServiceType.valueOf("urn:schemas-upnp-org:service:ContentDirectory:1");
+
+	private static final String FORMAT_HTML = "html";
+	private static final String FORMAT_TXT = "txt";
 
 	private static final long serialVersionUID = -3882119061427383748L;
 
@@ -98,7 +102,8 @@ public class SearchServlet extends HttpServlet {
 	private final RpcClient rpcClient;
 	private final ThumbnailGenerator thumbnailGenerator;
 	private final SearchEngine searchEngine;
-	private final Supplier<Mustache> resultsTemplate;
+	private final Supplier<Mustache> resultsTemplateHtml;
+	private final Supplier<Mustache> resultsTemplateTxt;
 
 	public SearchServlet(final ServletCommon servletCommon, final ContentTree contentTree, ContentServlet contentServlet, final MediaDb mediaDb, final DbCache dbCache, final UpnpService upnpService, final RpcClient rpcClient, final ThumbnailGenerator thumbnailGenerator) {
 		this(servletCommon, contentTree, contentServlet, mediaDb, dbCache, upnpService, rpcClient, thumbnailGenerator, new SearchEngine());
@@ -114,7 +119,8 @@ public class SearchServlet extends HttpServlet {
 		this.upnpService = upnpService;
 		this.thumbnailGenerator = thumbnailGenerator;
 		this.searchEngine = searchEngine;
-		this.resultsTemplate = servletCommon.mustacheTemplate("searchresults.html");
+		this.resultsTemplateHtml = servletCommon.mustacheTemplate("searchresults.html");
+		this.resultsTemplateTxt = servletCommon.mustacheTemplate("searchresults-txt.html");
 	}
 
 	@SuppressWarnings("resource")
@@ -133,6 +139,19 @@ public class SearchServlet extends HttpServlet {
 		final String pathPrefix = Strings.isNullOrEmpty(req.getPathInfo()) ? null : "../";
 		final PageScope pageScope = this.servletCommon.pageScope(req, Objects.toString(query, "Search"), pathPrefix, query);
 		final StringBuilder debugFooter = new StringBuilder();
+
+		final boolean useTxtFormat;
+		final String format = StringUtils.trimToNull(req.getParameter(PARAM_FORMAT));
+		if (format == null || FORMAT_HTML.equals(format)) {
+			useTxtFormat = false;
+		}
+		else if (FORMAT_TXT.equals(format)) {
+			useTxtFormat = true;
+		}
+		else {
+			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid format.");
+			return;
+		}
 
 		if (!StringUtils.isBlank(query)) {
 			final String username = ReqAttr.USERNAME.get(req);
@@ -187,7 +206,7 @@ public class SearchServlet extends HttpServlet {
 				DirServlet.addTagFrequenciesToScope(resultGroup, null, tagResults);
 
 				genTimer.startSection("thumbs");
-				appendItems(resultGroup, results, linkQuery, offset);
+				appendItems(resultGroup, results, linkQuery, offset, !useTxtFormat);
 
 				// Only do remote search if local does not error.
 				final String remote = StringUtils.trimToEmpty(req.getParameter(PARAM_REMOTE));
@@ -203,8 +222,15 @@ public class SearchServlet extends HttpServlet {
 
 				debugFooter.append("gen: ").append(genTimer.summarise()).append("\n");
 				pageScope.setDebugfooter(debugFooter.toString());
-				ServletCommon.setHtmlContentType(resp);
-				this.resultsTemplate.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
+
+				if (useTxtFormat) {
+					ServletCommon.setTxtContentType(resp);
+					this.resultsTemplateTxt.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
+				}
+				else {
+					ServletCommon.setHtmlContentType(resp);
+					this.resultsTemplateHtml.get().execute(resp.getWriter(), new Object[] { pageScope, resultsScope }).flush();
+				}
 			}
 			catch (final Exception e) {
 				throw new ServletException("Failed to run query: " + query, e);
@@ -228,12 +254,13 @@ public class SearchServlet extends HttpServlet {
 			final ResultGroupScope resultGroup,
 			final List<ContentItem> items,
 			final String linkQuery,
-			final Integer offset) throws IOException {
+			final Integer offset,
+			final boolean useThumbnails) throws IOException {
 
 		int x = 0;
 		for (final ContentItem i : items) {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
-			resultGroup.addContentItem(i, q, this.thumbnailGenerator, false);
+			resultGroup.addContentItem(i, q, useThumbnails ? this.thumbnailGenerator : null, false);
 			x += 1;
 		}
 	}

@@ -134,6 +134,10 @@ public class ServletCommon {
 		resp.setContentType("text/html; charset=utf-8");
 	}
 
+	public static void setTxtContentType(final HttpServletResponse resp) {
+		resp.setContentType("text/plain; charset=utf-8");
+	}
+
 	public String debugFooter() {
 		final StringBuilder s = new StringBuilder();
 
