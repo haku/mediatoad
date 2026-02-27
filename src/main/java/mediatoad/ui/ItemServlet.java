@@ -272,7 +272,7 @@ public class ItemServlet extends HttpServlet {
 				return printPrevNextLinksHtml(pageScope, itemScope, null, sortParam, node, prevIdParam, nextIdParam, null, null);
 			}
 
-			results = node.getCopyOfItems();
+			results = node.itemsUserHasAuth(username);
 			if (sort != null) {
 				results.sort(sort);
 			}
