@@ -52,8 +52,6 @@ import mediatoad.media.ContentTree;
 import mediatoad.media.MediaFormat;
 import mediatoad.media.MockContent;
 import mediatoad.media.ThumbnailGenerator;
-import mediatoad.ui.DirServlet;
-import mediatoad.ui.ServletCommon;
 
 public class DirServletTest {
 
@@ -269,6 +267,10 @@ public class DirServletTest {
 
 	@Test
 	public void itScopesSearchesToCurrentDir() throws Exception {
+		final MediaDb db = new InMemoryMediaDb();
+		final DbCache dbCache = mock(DbCache.class);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, db, dbCache);
+
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
 		final ContentNode mockDir = mockDirs.get(0);
 
