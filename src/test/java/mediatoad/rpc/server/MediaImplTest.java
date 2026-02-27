@@ -119,10 +119,11 @@ public class MediaImplTest {
 		when(this.mediaDb.getPlayback(Collections.singletonList("itemid"))).thenReturn(ImmutableMap.of("itemid", new Playback(0, 0, 0, true)));
 
 		final ContentNode node = mockNode("nodeid");
-		when(node.getCopyOfItems()).thenReturn(Collections.singletonList(item));
+		when(node.itemsUserHasAuth("somegirlthing")).thenReturn(Collections.singletonList(item));
 
 		final StreamObserver<ListNodeReply> respObs = mock(ServerCallStreamObserver.class);
-		this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs);
+		final Context ctx = Context.current().withValue(JwtInterceptor.USERNAME_CONTEXT_KEY, "somegirlthing");
+		ctx.run(() -> this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs));
 
 		verify(respObs).onNext(ListNodeReply.newBuilder()
 				.setNode(MediaNode.newBuilder()

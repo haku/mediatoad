@@ -158,7 +158,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			reply.addChild(nodeToRpcNode(n));
 		}
 
-		final List<ContentItem> items = node.getCopyOfItems();
+		final List<ContentItem> items = node.itemsUserHasAuth(username);
 		final List<String> ids = items.stream().map(i -> i.getId()).collect(Collectors.toList());
 		try {
 			final Map<String, Playback> playbacks = this.mediaDb.getPlayback(ids);
