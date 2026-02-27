@@ -20,7 +20,6 @@ import com.vaguehope.common.servlet.MockHttpServletResponse;
 import mediatoad.auth.DefaultAccess;
 import mediatoad.db.TagAutocompleter;
 import mediatoad.db.TagFrequency;
-import mediatoad.ui.AutocompleteServlet;
 
 public class AutocompleteServletTest {
 

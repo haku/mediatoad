@@ -8,10 +8,6 @@ import java.io.File;
 import org.junit.Before;
 import org.junit.Test;
 
-import mediatoad.media.ContentGroup;
-import mediatoad.media.MediaId;
-import mediatoad.media.StoringMediaIdCallback;
-
 public class MediaIdTest {
 
 	private MediaId undertest;

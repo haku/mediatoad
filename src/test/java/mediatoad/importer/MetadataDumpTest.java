@@ -8,8 +8,6 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
-import mediatoad.importer.HashAndTags;
-import mediatoad.importer.MetadataDump;
 import mediatoad.importer.HashAndTags.ImportedTag;
 
 public class MetadataDumpTest {

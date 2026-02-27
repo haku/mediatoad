@@ -5,8 +5,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 
-import mediatoad.media.ContentServingHistory;
-
 public class ContentServingHistoryTest {
 
 	 private ContentServingHistory undertest;

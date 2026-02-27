@@ -34,17 +34,10 @@ import mediatoad.auth.DefaultAccess;
 import mediatoad.auth.Users;
 import mediatoad.db.InMemoryMediaDb;
 import mediatoad.db.MediaMetadataStore;
-import mediatoad.media.ContentGroup;
-import mediatoad.media.ContentItem;
-import mediatoad.media.ContentNode;
-import mediatoad.media.ContentTree;
-import mediatoad.media.MediaId;
-import mediatoad.media.MediaIndex;
-import mediatoad.media.MediaInfo;
 import mediatoad.media.MediaIndex.HierarchyMode;
 import mediatoad.util.CollectionHelper;
-import mediatoad.util.DaemonThreadFactory;
 import mediatoad.util.CollectionHelper.Function;
+import mediatoad.util.DaemonThreadFactory;
 
 public class MediaIndexTest {
 

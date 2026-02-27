@@ -33,8 +33,6 @@ import mediatoad.media.ContentTree;
 import mediatoad.media.MediaFormat;
 import mediatoad.media.ThumbnailGenerator;
 import mediatoad.rpc.client.RpcClient;
-import mediatoad.ui.SearchServlet;
-import mediatoad.ui.ServletCommon;
 
 public class SearchServletTest {
 

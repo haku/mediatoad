@@ -28,15 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import mediatoad.db.FileData;
-import mediatoad.db.FileIdAndInfo;
-import mediatoad.db.FileInfo;
-import mediatoad.db.MediaDb;
-import mediatoad.db.Playback;
-import mediatoad.db.Tag;
-import mediatoad.db.TagFrequency;
-import mediatoad.db.WritableMediaDb;
-
 public class MediaDbTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();

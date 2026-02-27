@@ -12,8 +12,6 @@ import org.junit.Test;
 import com.vaguehope.common.rpc.RpcTarget;
 
 import mediatoad.Args;
-import mediatoad.rpc.client.RemoteInstance;
-import mediatoad.rpc.client.RpcClient;
 
 public class RpcClientTest {
 

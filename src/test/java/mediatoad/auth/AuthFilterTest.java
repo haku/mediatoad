@@ -28,10 +28,6 @@ import org.junit.Test;
 import com.vaguehope.common.servlet.MockHttpServletRequest;
 import com.vaguehope.common.servlet.MockHttpServletResponse;
 
-import mediatoad.auth.AuthFilter;
-import mediatoad.auth.AuthTokens;
-import mediatoad.auth.ReqAttr;
-import mediatoad.auth.Users;
 import mediatoad.auth.Users.User;
 
 public class AuthFilterTest {

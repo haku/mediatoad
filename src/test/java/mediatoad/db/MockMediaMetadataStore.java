@@ -24,11 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mediatoad.FakeScheduledExecutorService;
-import mediatoad.db.FileData;
-import mediatoad.db.FileIdAndInfo;
-import mediatoad.db.FileInfo;
-import mediatoad.db.MediaMetadataStore;
-import mediatoad.db.WritableMediaDb;
 import mediatoad.media.MediaFormat;
 import mediatoad.media.MediaIdCallback;
 import mediatoad.media.StoringMediaIdCallback;

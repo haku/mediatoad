@@ -23,7 +23,6 @@ import org.jupnp.support.model.item.AudioItem;
 import org.jupnp.support.model.item.Item;
 
 import mediatoad.auth.AuthList;
-import mediatoad.dlnaserver.NodeConverter;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;

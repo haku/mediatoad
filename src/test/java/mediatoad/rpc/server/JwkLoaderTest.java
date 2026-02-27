@@ -24,7 +24,6 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
-import mediatoad.rpc.server.JwkLoader;
 
 public class JwkLoaderTest {
 

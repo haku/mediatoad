@@ -24,7 +24,6 @@ import mediatoad.media.ContentNode;
 import mediatoad.media.ContentTree;
 import mediatoad.media.MediaFormat;
 import mediatoad.media.MockContent;
-import mediatoad.ui.WebdavServlet;
 
 public class WebdavServletTest {
 

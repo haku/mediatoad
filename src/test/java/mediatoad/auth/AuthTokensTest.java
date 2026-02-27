@@ -17,8 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.auth.AuthTokens;
-
 public class AuthTokensTest {
 
 	@Rule

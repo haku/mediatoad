@@ -3,8 +3,6 @@ package mediatoad.db;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import mediatoad.db.MediaDb;
-
 public class InMemoryMediaDb extends MediaDb {
 
 	public InMemoryMediaDb() throws SQLException {

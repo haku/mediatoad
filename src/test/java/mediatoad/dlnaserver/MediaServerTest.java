@@ -5,9 +5,6 @@ import java.net.URI;
 import org.junit.Test;
 
 import mediatoad.Args;
-import mediatoad.dlnaserver.MediaServer;
-import mediatoad.dlnaserver.NodeConverter;
-import mediatoad.dlnaserver.SystemId;
 import mediatoad.media.ContentTree;
 import mediatoad.media.ExternalUrls;
 

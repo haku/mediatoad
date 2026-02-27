@@ -10,8 +10,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.media.CoverArtHelper;
-
 public class CoverArtHelperTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();

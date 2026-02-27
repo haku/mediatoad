@@ -14,8 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.util.ImageResizer;
-
 public class ImageResizerTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();

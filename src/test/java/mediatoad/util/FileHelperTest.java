@@ -6,8 +6,6 @@ import java.io.File;
 
 import org.junit.Test;
 
-import mediatoad.util.FileHelper;
-
 public class FileHelperTest {
 
 	@Test

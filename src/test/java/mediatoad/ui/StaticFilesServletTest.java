@@ -31,8 +31,6 @@ import org.junit.rules.TemporaryFolder;
 
 import com.vaguehope.common.servlet.RequestLoggingFilter;
 
-import mediatoad.ui.StaticFilesServlet;
-
 public class StaticFilesServletTest {
 
 	@Rule public TemporaryFolder tmp = new TemporaryFolder();

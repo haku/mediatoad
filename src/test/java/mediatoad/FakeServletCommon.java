@@ -3,7 +3,6 @@ package mediatoad;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import mediatoad.Args;
 import mediatoad.Args.ArgsException;
 import mediatoad.media.ContentServingHistory;
 import mediatoad.media.ContentTree;

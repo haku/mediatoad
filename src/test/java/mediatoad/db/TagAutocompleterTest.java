@@ -22,9 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.db.MediaDb;
-import mediatoad.db.TagAutocompleter;
-import mediatoad.db.TagFrequency;
 import mediatoad.db.MockMediaMetadataStore.Batch;
 import mediatoad.db.TagAutocompleter.FragmentAndTag;
 

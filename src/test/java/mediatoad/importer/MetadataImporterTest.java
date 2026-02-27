@@ -31,7 +31,6 @@ import mediatoad.db.MediaDb;
 import mediatoad.db.MediaMetadataStore;
 import mediatoad.db.Tag;
 import mediatoad.db.WritableMediaDb;
-import mediatoad.importer.MetadataImporter;
 import mediatoad.media.StoringMediaIdCallback;
 import mediatoad.util.HashHelper;
 import mediatoad.util.Time;

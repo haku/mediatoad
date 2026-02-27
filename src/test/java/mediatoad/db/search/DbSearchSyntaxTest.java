@@ -8,8 +8,6 @@ import org.junit.Test;
 
 import com.google.common.net.UrlEscapers;
 
-import mediatoad.db.search.DbSearchSyntax;
-
 public class DbSearchSyntaxTest {
 
 	@Test

@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import mediatoad.ui.RequestPaths;
 import mediatoad.ui.RequestPaths.SearchPath;
 
 public class RequestPathsTest {

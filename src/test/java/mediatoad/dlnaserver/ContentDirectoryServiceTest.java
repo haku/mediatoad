@@ -24,9 +24,6 @@ import org.jupnp.support.model.item.Item;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-import mediatoad.dlnaserver.ContentDirectoryService;
-import mediatoad.dlnaserver.NodeConverter;
-import mediatoad.dlnaserver.SearchEngine;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ContentTree;

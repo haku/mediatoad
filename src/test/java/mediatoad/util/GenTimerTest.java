@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mediatoad.FakeTicker;
-import mediatoad.util.GenTimer;
 
 public class GenTimerTest {
 

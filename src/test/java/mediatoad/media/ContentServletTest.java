@@ -26,12 +26,6 @@ import org.junit.rules.TemporaryFolder;
 import com.vaguehope.common.servlet.RequestLoggingFilter;
 
 import mediatoad.FakeServletCommon;
-import mediatoad.media.ContentItem;
-import mediatoad.media.ContentNode;
-import mediatoad.media.ContentServingHistory;
-import mediatoad.media.ContentServlet;
-import mediatoad.media.ContentTree;
-import mediatoad.media.MediaFormat;
 
 public class ContentServletTest {
 

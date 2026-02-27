@@ -23,9 +23,6 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableMap;
 
 import mediatoad.FakeTicker;
-import mediatoad.db.DbCache;
-import mediatoad.db.MediaDb;
-import mediatoad.db.TagFrequency;
 
 public class DbCacheTest {
 

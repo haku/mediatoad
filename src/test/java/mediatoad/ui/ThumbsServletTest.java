@@ -18,7 +18,6 @@ import mediatoad.media.ContentItem;
 import mediatoad.media.ContentTree;
 import mediatoad.media.MockContent;
 import mediatoad.media.ThumbnailGenerator;
-import mediatoad.ui.ThumbsServlet;
 
 public class ThumbsServletTest {
 

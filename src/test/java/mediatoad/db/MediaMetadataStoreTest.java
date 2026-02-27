@@ -33,11 +33,6 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 
 import mediatoad.FakeScheduledExecutorService;
-import mediatoad.db.FileData;
-import mediatoad.db.FileInfo;
-import mediatoad.db.MediaDb;
-import mediatoad.db.MediaMetadataStore;
-import mediatoad.db.WritableMediaDb;
 import mediatoad.media.StoringMediaIdCallback;
 
 public class MediaMetadataStoreTest {

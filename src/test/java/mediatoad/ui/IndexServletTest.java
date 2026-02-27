@@ -19,8 +19,6 @@ import mediatoad.media.ContentNode;
 import mediatoad.media.ContentServlet;
 import mediatoad.media.ContentTree;
 import mediatoad.media.MockContent;
-import mediatoad.ui.DirServlet;
-import mediatoad.ui.IndexServlet;
 
 public class IndexServletTest {
 

@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import mediatoad.db.search.QuoteRemover;
-
 public class QuoteRemoverTest {
 
 	@Test

@@ -14,9 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.db.DbCleaner;
-import mediatoad.db.FileData;
-import mediatoad.db.WritableMediaDb;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentTree;
 import mediatoad.media.MockContent;

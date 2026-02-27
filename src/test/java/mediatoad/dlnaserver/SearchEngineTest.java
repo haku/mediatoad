@@ -2,7 +2,7 @@ package mediatoad.dlnaserver;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,7 +14,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mediatoad.auth.AuthList;
-import mediatoad.dlnaserver.SearchEngine;
 import mediatoad.dlnaserver.SearchEngine.Predicate;
 import mediatoad.dlnaserver.SearchEngine.Where;
 import mediatoad.media.ContentItem;

@@ -15,8 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import mediatoad.auth.AuthList;
-import mediatoad.auth.Authoriser;
 import mediatoad.auth.AuthList.AccessType;
+import mediatoad.auth.Authoriser;
 import mediatoad.media.MetadataReader.Metadata;
 import mediatoad.util.AsyncCallback;
 import mediatoad.util.FileHelper;

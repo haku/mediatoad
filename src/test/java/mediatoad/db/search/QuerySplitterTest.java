@@ -7,8 +7,6 @@ import java.util.Collections;
 
 import org.junit.Test;
 
-import mediatoad.db.search.QuerySplitter;
-
 public class QuerySplitterTest {
 
 	@Test

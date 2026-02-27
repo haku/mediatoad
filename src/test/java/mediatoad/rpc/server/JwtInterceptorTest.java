@@ -35,8 +35,6 @@ import io.jsonwebtoken.security.PublicJwk;
 import mediatoad.auth.Permission;
 import mediatoad.auth.Users;
 import mediatoad.auth.Users.User;
-import mediatoad.rpc.server.JwkLoader;
-import mediatoad.rpc.server.JwtInterceptor;
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class JwtInterceptorTest {

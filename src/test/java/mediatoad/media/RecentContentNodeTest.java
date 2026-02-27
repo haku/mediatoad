@@ -12,10 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mediatoad.auth.AuthList;
-import mediatoad.media.ContentItem;
-import mediatoad.media.ContentNode;
-import mediatoad.media.ContentTree;
-import mediatoad.media.RecentContentNode;
 
 public class RecentContentNodeTest {
 

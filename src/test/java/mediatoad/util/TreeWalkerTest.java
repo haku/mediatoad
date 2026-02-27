@@ -1,6 +1,6 @@
 package mediatoad.util;
 
-import static org.mockito.Mockito.isA;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,7 +16,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.InOrder;
 
-import mediatoad.util.TreeWalker;
 import mediatoad.util.TreeWalker.Hiker;
 
 public class TreeWalkerTest {

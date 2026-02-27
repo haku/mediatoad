@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import mediatoad.FakeServletCommon;
-import mediatoad.ui.ServletCommon;
 
 public class ServletCommonTest {
 

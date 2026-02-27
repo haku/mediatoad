@@ -16,7 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.util.HashHelper;
 import mediatoad.util.HashHelper.Md5AndSha1;
 
 public class HashHelperTest {

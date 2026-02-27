@@ -7,7 +7,6 @@ import java.io.File;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import mediatoad.media.MetadataReader;
 import mediatoad.media.MetadataReader.Metadata;
 
 

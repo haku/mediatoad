@@ -15,8 +15,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import mediatoad.auth.Permission;
-import mediatoad.auth.Users;
 import mediatoad.auth.Users.User;
 
 public class UsersTest {

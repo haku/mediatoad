@@ -16,11 +16,6 @@ import java.util.function.Consumer;
 import org.junit.rules.TemporaryFolder;
 
 import mediatoad.auth.AuthList;
-import mediatoad.media.AbstractContent;
-import mediatoad.media.ContentItem;
-import mediatoad.media.ContentNode;
-import mediatoad.media.ContentTree;
-import mediatoad.media.MediaFormat;
 import mediatoad.util.FileHelper;
 
 public class MockContent {
