@@ -1,12 +1,15 @@
 package mediatoad.dlnaserver;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jupnp.model.types.UDN;
 import org.slf4j.Logger;
@@ -47,7 +50,9 @@ public class SystemId {
 		final UUID i = UUID.fromString(udn.getIdentifierString());
 
 		if (f != null) {
-			FileUtils.write(f, i.toString(), StandardCharsets.UTF_8);
+			try (final OutputStream os = new FileOutputStream(f)) {
+				IOUtils.write(i.toString(), os, StandardCharsets.UTF_8);
+			}
 		}
 
 		return i;
