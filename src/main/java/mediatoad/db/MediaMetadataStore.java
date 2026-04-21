@@ -29,7 +29,7 @@ import mediatoad.util.HashHelper;
 
 public class MediaMetadataStore {
 
-	private static final long FILE_BATCH_START_DELAY_MILLIS = 100;  // Yield to other activities / DB writers.
+	private static final long FILE_BATCH_START_DELAY_MILLIS = 1000;  // Yield to other activities / DB writers.
 	private static final long FILE_BATCH_MAX_DURATION_NANOS = TimeUnit.SECONDS.toNanos(10);
 	private static final int INFO_WRITE_INTERVAL_SECONDS = 30;
 	private static final Logger LOG = LoggerFactory.getLogger(MediaMetadataStore.class);
