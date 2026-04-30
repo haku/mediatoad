@@ -9,12 +9,7 @@
       pname = "mediatoad";
       version = "0-unstable-2026-04-21";
 
-      src = pkgs.fetchFromGitHub {
-        owner = "haku";
-        repo = pname;
-        rev = "01e9a364e7ea861a9bea6eb974c332f8a71b961f";
-        hash = "sha256-SC9GX9Jy3qsv/DaQV2cLdr4pVNQv2T6wyUa5aA0iIew=";
-      };
+      src = ./..;
       mvnHash = "sha256-1kz/UeANwqMcVJYkCh9cJfXt1GN3ZX1vKcm0umGiknI=";
 
       mvnJdk = my_jdk;
