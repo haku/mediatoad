@@ -1,7 +1,13 @@
-{ withSystem, inputs, ... }:
 {
-  perSystem = { pkgs, lib, ... }:
-  let
+  inputs,
+  ...
+}: {
+  perSystem = {
+    pkgs,
+    lib,
+    system,
+    ...
+  }: let
     my_jdk = pkgs.jdk21_headless;
     plugin = pkgs.callPackage (import ./protoc-gen-grpc-java.nix) {};
 
@@ -42,10 +48,23 @@
         mainProgram = pname;
       };
     };
-  in
-  {
+
+    nix2containerPkgs = inputs.nix2container.packages.${system};
+  in {
     packages = {
       mediatoad = package;
+      mediatoad-docker = nix2containerPkgs.nix2container.buildImage {
+        name = "mediatoad";
+        config = {
+          entrypoint = ["${package}/bin/mediatoad"];
+          exposedPorts = {
+            "8192/tcp" = {};
+          };
+        };
+        layers = [
+          (nix2containerPkgs.nix2container.buildLayer {deps = [my_jdk plugin];})
+        ];
+      };
     };
     make-shells.default = {
       packages = [
