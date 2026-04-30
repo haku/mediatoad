@@ -1,0 +1,62 @@
+{ withSystem, inputs, ... }:
+{
+  perSystem = { pkgs, lib, ... }:
+  let
+    my_jdk = pkgs.jdk21_headless;
+    plugin = pkgs.callPackage (import ./protoc-gen-grpc-java.nix) {};
+
+    package = pkgs.maven.buildMavenPackage rec {
+      pname = "mediatoad";
+      version = "0-unstable-2026-04-21";
+
+      src = pkgs.fetchFromGitHub {
+        owner = "haku";
+        repo = pname;
+        rev = "01e9a364e7ea861a9bea6eb974c332f8a71b961f";
+        hash = "sha256-SC9GX9Jy3qsv/DaQV2cLdr4pVNQv2T6wyUa5aA0iIew=";
+      };
+      mvnHash = "sha256-1kz/UeANwqMcVJYkCh9cJfXt1GN3ZX1vKcm0umGiknI=";
+
+      mvnJdk = my_jdk;
+      mvnParameters = "-P offline";
+      buildOffline = true;
+      doCheck = false;
+
+      nativeBuildInputs = [ pkgs.makeWrapper pkgs.protobuf plugin ];
+
+      installPhase = ''
+        mkdir -p $out/bin $out/share/${pname}
+        install -Tm644 \
+          target/${pname}-1-SNAPSHOT-jar-with-dependencies.jar \
+          $out/share/${pname}/${pname}.jar
+
+        makeWrapper ${lib.getExe my_jdk} $out/bin/${pname} \
+          --add-flags "\
+            -XX:+PerfDisableSharedMem \
+            -XX:-UsePerfData \
+            -Xmx1024m \
+            -Djava.net.preferIPv4Stack=true \
+            -jar $out/share/${pname}/${pname}.jar \
+          "
+      '';
+
+      meta = with lib; {
+        description = "mediatoad media server";
+        homepage = "https://github.com/haku/mediatoad";
+        license = licenses.asl20;
+        mainProgram = pname;
+      };
+    };
+  in
+  {
+    packages = {
+      mediatoad = package;
+    };
+    make-shells.default = {
+      packages = [
+        my_jdk
+        plugin
+      ];
+    };
+  };
+}
