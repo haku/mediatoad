@@ -7,9 +7,10 @@
       url = "github:nicknovitski/make-shell";
       inputs.flake-compat.follows = "flake-compat";
     };
+    nix2container.url = "github:nlewo/nix2container";
   };
-  outputs = inputs@{ flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } ({ self, withSystem, moduleWithSystem, ... }: {
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} ({...}: {
       #debug = true;
       imports = [
         inputs.make-shell.flakeModules.default
