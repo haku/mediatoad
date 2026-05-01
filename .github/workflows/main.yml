@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
-
 # default to nothing so permissions are explicit.
 # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
 permissions: {}
@@ -69,6 +65,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
