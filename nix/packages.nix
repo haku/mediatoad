@@ -1,13 +1,7 @@
+{ inputs, ... }:
 {
-  inputs,
-  ...
-}: {
-  perSystem = {
-    pkgs,
-    lib,
-    system,
-    ...
-  }: let
+  perSystem = { pkgs, lib, system, ... }:
+  let
     my_jdk = pkgs.jdk21_headless;
     plugin = pkgs.callPackage (import ./protoc-gen-grpc-java.nix) {};
 
