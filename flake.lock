@@ -123,8 +123,7 @@
         "flake-parts": "flake-parts",
         "make-shell": "make-shell",
         "nix2container": "nix2container",
-        "nixpkgs": "nixpkgs_2",
-        "treefmt-nix": "treefmt-nix"
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },
