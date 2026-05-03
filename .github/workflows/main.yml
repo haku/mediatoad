@@ -27,6 +27,11 @@ jobs:
           architecture: x64
           cache: maven
 
+      - name: Restore Maven cache
+        uses: skjolber/maven-cache-github-action@v3.1.1
+        with:
+          step: restore
+
       - name: Maven Validate
         run: mvn -B --settings .mvn/custom-settings.xml validate
       - name: Maven Compile
@@ -56,6 +61,11 @@ jobs:
         with:
           name: jar-file
           path: target/mediatoad-1-SNAPSHOT-jar-with-dependencies.jar
+
+      - name: Save Maven cache
+        uses: skjolber/maven-cache-github-action@v3.1.1
+        with:
+          step: save
 
 
   build-image:
