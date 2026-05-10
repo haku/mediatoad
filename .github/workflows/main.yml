@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# default to nothing so permissions are explicit.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#permissions
+permissions: {}
+
 jobs:
   build:
 
