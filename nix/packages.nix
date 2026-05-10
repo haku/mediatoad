@@ -7,7 +7,7 @@
 
     package = pkgs.maven.buildMavenPackage rec {
       pname = "mediatoad";
-      version = "0-unstable-2026-04-21";
+      version = "1";
 
       src = ./..;
       mvnHash = "sha256-1kz/UeANwqMcVJYkCh9cJfXt1GN3ZX1vKcm0umGiknI=";
