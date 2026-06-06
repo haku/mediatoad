@@ -10,7 +10,7 @@
       version = "1";
 
       src = ./..;
-      mvnHash = "sha256-1kz/UeANwqMcVJYkCh9cJfXt1GN3ZX1vKcm0umGiknI=";
+      mvnHash = "sha256-PdpeODe77992Zl1vNGSIxwRF4oWuwOC3GhvrABWEvfM=";
 
       mvnJdk = my_jdk;
       mvnParameters = "-P offline";
