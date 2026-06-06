@@ -32,6 +32,7 @@ public enum MediaFormat {
 	JPG("jpg", "image/jpeg", ContentGroup.IMAGE),
 	NEF("nef", "image/x-nikon-nef", ContentGroup.IMAGE),
 	PNG("png", "image/png", ContentGroup.IMAGE),
+	SVG("svg", "image/svg+xml", ContentGroup.IMAGE),
 	TIF("tif", "image/tiff", ContentGroup.IMAGE),
 	TIFF("tiff", "image/tiff", ContentGroup.IMAGE),
 	WEBP("webp", "image/webp", ContentGroup.IMAGE),

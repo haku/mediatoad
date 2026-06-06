@@ -393,6 +393,16 @@
 			<artifactId>contrib</artifactId>
 			<version>${twelvemonkeys-imageio.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-batik</artifactId>
+			<version>${twelvemonkeys-imageio.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.xmlgraphics</groupId>
+			<artifactId>batik-all</artifactId>
+			<version>1.19</version>
+		</dependency>
 
 		<!-- Util -->
 
