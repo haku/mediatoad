@@ -15,7 +15,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<antlr.version>4.13.2</antlr.version>
-		<grpc.version>1.78.0</grpc.version>
+		<grpc.version>1.82.0</grpc.version>
 		<jetty.version>10.0.26</jetty.version>
 		<jjwt.version>0.13.0</jjwt.version>
 		<jupnp.version>3.0.4</jupnp.version>
