@@ -62,6 +62,7 @@
     };
     make-shells.default = {
       packages = [
+        pkgs.maven
         my_jdk
         plugin
       ];
