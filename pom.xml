@@ -21,7 +21,7 @@
 		<jupnp.version>3.0.4</jupnp.version>
 		<opentelemetry.version>1.58.0</opentelemetry.version>
 		<prometheus.version>1.4.3</prometheus.version>
-		<protobuf-java.version>4.33.4</protobuf-java.version>
+		<protobuf-java.version>4.35.1</protobuf-java.version>
 		<slf4j.version>2.0.17</slf4j.version>
 		<twelvemonkeys-imageio.version>3.13.0</twelvemonkeys-imageio.version>
 
