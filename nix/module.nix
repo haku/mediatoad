@@ -60,7 +60,6 @@
               "--rpcauth"    "\${STATE_DIRECTORY}/rpcauthfile"
               "--db"         "\${STATE_DIRECTORY}/db"
               "--thumbs"     "\${STATE_DIRECTORY}/thumbs"
-              "--http-path-prefix" "mediatoad"
               "--trust-forwarded-header"
           ] ++ cfg.extraArgs);
 

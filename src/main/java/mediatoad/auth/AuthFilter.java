@@ -141,7 +141,7 @@ public class AuthFilter implements Filter {
 			// Continue even if token is invalid as auth may be attached or may not be required.
 		}
 
-		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req))) || isForceUserParam(req, user))) {
+		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req)) || isWebdav(req)) || isForceUserParam(req, user))) {
 			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
 			if (authHeader64 != null
 					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
@@ -220,6 +220,11 @@ public class AuthFilter implements Filter {
 		return "login".equalsIgnoreCase(req.getParameter("action"));
 	}
 
+	// require auth as webdav clients are rubbish at sending credentials to servers that support anon browsing.
+	private static boolean isWebdav(final HttpServletRequest req) {
+		return "PROPFIND".equals(req.getMethod());
+	}
+
 	private static boolean isForceUserParam(final HttpServletRequest req, User user) {
 		final String param = req.getParameter("user");
 		if (param == null) return false;
@@ -228,7 +233,7 @@ public class AuthFilter implements Filter {
 	}
 
 	private static void send401AndMaybePromptLogin(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		if (isGet(req) || isLoginRequest(req)) {
+		if (isGet(req) || isLoginRequest(req) | isWebdav(req)) {
 			resp.setHeader(WWW_AUTHENTICATE, BASIC_REALM);
 		}
 		resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);

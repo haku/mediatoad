@@ -3,7 +3,10 @@ package mediatoad.util;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.TexturePaint;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -119,16 +122,40 @@ public class ImageResizer {
 		final BufferedImage outImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		final Graphics2D g = outImg.createGraphics();
 		try {
-			g.setComposite(AlphaComposite.Src);
 			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g.drawImage(inImg, 0, 0, width, height, Color.BLACK, null);
+
+			// TODO only do this if mime type says it is needed?
+			g.setPaint(createCheckerboardPaint(16));
+			g.fillRect(0, 0, width, height);
+
+			g.setComposite(AlphaComposite.SrcOver);
+			g.drawImage(inImg, 0, 0, width, height, null);
 		}
 		finally {
 			g.dispose();
 		}
 		return outImg;
+	}
+
+	private static Paint createCheckerboardPaint(final int size) {
+		final BufferedImage pattern = new BufferedImage(size * 2, size * 2, BufferedImage.TYPE_INT_RGB);
+		final Graphics2D g = pattern.createGraphics();
+		try {
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, size * 2, size * 2);
+
+			g.setColor(new Color(192, 192, 192));
+			g.fillRect(0, 0, size, size);
+			g.fillRect(size, size, size, size);
+		}
+		finally {
+			g.dispose();
+		}
+		return new TexturePaint(
+				pattern,
+				new Rectangle(0, 0, pattern.getWidth(), pattern.getHeight()));
 	}
 
 	private static void writeImageViaTmpFile (final BufferedImage outImg, final float quality, final File f) throws IOException {

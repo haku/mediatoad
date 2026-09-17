@@ -7,10 +7,10 @@
 
     package = pkgs.maven.buildMavenPackage rec {
       pname = "mediatoad";
-      version = "0-unstable-2026-04-21";
+      version = "1";
 
       src = ./..;
-      mvnHash = "sha256-1kz/UeANwqMcVJYkCh9cJfXt1GN3ZX1vKcm0umGiknI=";
+      mvnHash = "sha256-ZcOAVxcLn25S+mn6rK7ApMd4bkfLwU5NAGlP9DoSLBQ=";
 
       mvnJdk = my_jdk;
       mvnParameters = "-P offline";
@@ -62,6 +62,7 @@
     };
     make-shells.default = {
       packages = [
+        pkgs.maven
         my_jdk
         plugin
       ];
