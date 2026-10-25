@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -26,6 +27,8 @@ import mediatoad.Args;
 import mediatoad.Args.ArgsException;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
+import mediatoad.media.ContentItem;
+import mediatoad.media.ContentNode;
 import mediatoad.media.ContentServingHistory;
 import mediatoad.media.ContentTree;
 import mediatoad.ui.templates.PageScope;
@@ -211,6 +214,52 @@ public class ServletCommon {
 			id = id.substring(0, firstDot);
 		}
 		return id;
+	}
+
+	/**
+	 * If null is returned, then error message has been served and caller should stop processing request.
+	 */
+	public ContentItem itemFromPathWithPermissionOrError(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		return itemFromPathWithPermissionOrError(req, resp, null);
+	}
+
+	/**
+	 * If null is returned, then error message has been served and caller should stop processing request.
+	 * @param nodeCheck if not null, must return true for permission to be granted.
+	 */
+	public ContentItem itemFromPathWithPermissionOrError(
+			final HttpServletRequest req,
+			final HttpServletResponse resp,
+			final BiFunction<ContentNode, String, Boolean> nodeCheck) throws IOException {
+		final String id = idFromPath(req.getPathInfo(), null);
+		if (id == null) {
+			returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
+			return null;
+		}
+		final ContentItem item = this.contentTree.getItem(id);
+		if (item == null) {
+			returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found.");
+			return null;
+		}
+
+		final ContentNode node = this.contentTree.getNode(item.getParentId());
+		if (node == null) {
+			returnStatus(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Parent ID is invalid.");
+			return null;
+		}
+
+		final String username = ReqAttr.USERNAME.get(req);
+		if (!node.isUserAuth(username)) {
+			returnDenied(resp, username);
+			return null;
+		}
+
+		if (nodeCheck != null && !nodeCheck.apply(node, username)) {
+			returnDenied(resp, username);
+			return null;
+		}
+
+		return item;
 	}
 
 	public static Cookie findCookie(final HttpServletRequest req, final String name) {

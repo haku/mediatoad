@@ -1,15 +1,12 @@
 package mediatoad.media;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.resource.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import mediatoad.ui.ServletCommon;
 import mediatoad.util.MyFileServlet;
@@ -17,7 +14,6 @@ import mediatoad.util.MyFileServlet;
 public class ContentServlet extends MyFileServlet {
 
 	private static final long serialVersionUID = -4819786280597656455L;
-	private static final Logger LOG = LoggerFactory.getLogger(ContentServlet.class);
 
 	private final ContentTree contentTree; // NOSONAR
 	private final ContentServingHistory contentServingHistory;
@@ -32,6 +28,9 @@ public class ContentServlet extends MyFileServlet {
 
 	@Override
 	protected void doGet (final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+		final ContentItem item = this.servletCommon.itemFromPathWithPermissionOrError(req, resp);
+		if (item == null) return;
+
 		final String remoteAddr = req.getRemoteAddr();
 		final String requestURI = req.getRequestURI();
 		try {
@@ -47,16 +46,10 @@ public class ContentServlet extends MyFileServlet {
 	public Resource getResource (final String pathInContext) {
 		if (pathInContext.endsWith(".gz")) return null;
 
-		try {
-			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = this.servletCommon.idFromPath(id, null);
-			final ContentItem item = this.contentTree.getItem(id);
-			if (item != null) {
-				return Resource.newResource(item.getFile());
-			}
-		}
-		catch (final IOException e) {
-			LOG.warn("Failed to serve resource '{}': {}", pathInContext, e.getMessage());
+		final String id = this.servletCommon.idFromPath(pathInContext, null);
+		final ContentItem item = this.contentTree.getItem(id);
+		if (item != null) {
+			return Resource.newResource(item.getFile());
 		}
 		return null;
 	}

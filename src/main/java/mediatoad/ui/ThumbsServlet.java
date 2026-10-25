@@ -3,7 +3,10 @@ package mediatoad.ui;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URLDecoder;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -31,12 +34,19 @@ public class ThumbsServlet extends MyFileServlet {
 	}
 
 	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		final ContentItem item = this.servletCommon.itemFromPathWithPermissionOrError(req, resp);
+		if (item == null) return;
+
+		super.doGet(req, resp);
+	}
+
+	@Override
 	public Resource getResource(final String pathInContext) {
 		if (pathInContext.endsWith(".gz")) return null;
 
 		try {
-			String id = URLDecoder.decode(pathInContext, "UTF-8");
-			id = this.servletCommon.idFromPath(id, null);
+			final String id = this.servletCommon.idFromPath(pathInContext, null);
 			final ContentItem item = this.contentTree.getItem(id);
 			if (item != null) {
 				// TODO read dir prefs for video_thumbs prefs.

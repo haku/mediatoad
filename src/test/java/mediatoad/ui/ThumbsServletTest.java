@@ -13,13 +13,17 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import mediatoad.FakeServletCommon;
+import mediatoad.TestsWithHttpServer;
+import mediatoad.auth.AuthList;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentItem;
+import mediatoad.media.ContentNode;
 import mediatoad.media.ContentTree;
+import mediatoad.media.MediaFormat;
 import mediatoad.media.MockContent;
 import mediatoad.media.ThumbnailGenerator;
 
-public class ThumbsServletTest {
+public class ThumbsServletTest extends TestsWithHttpServer {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
@@ -34,7 +38,7 @@ public class ThumbsServletTest {
 		this.contentTree = new ContentTree();
 		this.thumbnailGenerator = mock(ThumbnailGenerator.class);
 		this.mockContent = new MockContent(this.contentTree);
-		this.undertest = new ThumbsServlet(this.contentTree, this.thumbnailGenerator, FakeServletCommon.make());
+		this.undertest = new ThumbsServlet(this.contentTree, this.thumbnailGenerator, FakeServletCommon.make(this.contentTree));
 	}
 
 	@Test
@@ -47,6 +51,26 @@ public class ThumbsServletTest {
 		@SuppressWarnings("resource")
 		final Resource res = this.undertest.getResource("/" + item.getId());
 		assertEquals(thumbFile, res.getFile());
+	}
+
+	@Test
+	public void itChecksPermissions() throws Exception {
+		startServer(this.undertest, "/t/*");
+
+		final AuthList allowAuthlist = mock(AuthList.class);
+		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+
+		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
+		final ContentItem item = this.mockContent.addMockItem(MediaFormat.JPEG, "item1", dir1);
+
+		when(this.thumbnailGenerator.supported(ContentGroup.IMAGE, true)).thenReturn(true);
+		final String fileName = item.getFile().getName();
+		when(this.thumbnailGenerator.generate(item)).thenReturn(this.tmp.newFile(fileName));  // needs proper filename with ext for detecting mime type when serving.
+
+		assertRequestResponseCode("/t/" + item.getId(), 401);
+
+		setAuthUsername("shork");
+		assertRequestResponseCode("/t/" + item.getId(), 200);
 	}
 
 }

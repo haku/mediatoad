@@ -97,11 +97,8 @@ public class ItemServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final ContentItem item = getItemFromPath(req, resp);
-		if (item == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
-			return;
-		}
+		final ContentItem item = this.servletCommon.itemFromPathWithPermissionOrError(req, resp);
+		if (item == null) return;
 
 		final ContentNode node;
 		final String nodeIdParam = ServletCommon.readParamWithDefault(req, resp, PARAM_NODE_ID, null);
@@ -414,18 +411,11 @@ public class ItemServlet extends HttpServlet {
 			return;
 		}
 
-		final ContentItem item = getItemFromPath(req, resp);
-		if (item == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
-			return;
-		}
+		final ContentItem item = this.servletCommon.itemFromPathWithPermissionOrError(req, resp,
+				(node, username) -> !node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
+		if (item == null) return;
 
-		final ContentNode node = this.contentTree.getNode(item.getParentId());
 		final String username = ReqAttr.USERNAME.get(req);
-		if (node == null || !node.isUserAuth(username) || (node.hasAuthList() && !node.isUserAuthWithPermission(username, Permission.EDITTAGS))) {
-			ServletCommon.returnDenied(resp, username);
-			return;
-		}
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
 			final String tag = ServletCommon.readRequiredParam(req, resp, "addTag", 1);
@@ -480,20 +470,6 @@ public class ItemServlet extends HttpServlet {
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");
 		}
-	}
-
-	private ContentItem getItemFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		final String id = this.servletCommon.idFromPath(req.getPathInfo(), null);
-		if (id == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
-			return null;
-		}
-		final ContentItem item = this.contentTree.getItem(id);
-		if (item == null) {
-			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid ID.");
-			return null;
-		}
-		return item;
 	}
 
 }

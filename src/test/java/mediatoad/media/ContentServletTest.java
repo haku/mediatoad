@@ -5,29 +5,25 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.common.servlet.RequestLoggingFilter;
-
 import mediatoad.FakeServletCommon;
+import mediatoad.TestsWithHttpServer;
+import mediatoad.auth.AuthList;
 
-public class ContentServletTest {
+@SuppressWarnings("resource")
+public class ContentServletTest extends TestsWithHttpServer {
 
 	@Rule
 	public TemporaryFolder tmp = new TemporaryFolder();
@@ -37,14 +33,11 @@ public class ContentServletTest {
 
 	private MockContent mockContent;
 
-	private Server server;
-	private String hostAddress;
-
 	@Before
 	public void before() throws Exception {
 		this.contentTree = new ContentTree();
 		this.mockContent = new MockContent(this.contentTree, this.tmp);
-		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory(), FakeServletCommon.make());
+		this.undertest = new ContentServlet(this.contentTree, new ContentServingHistory(), FakeServletCommon.make(this.contentTree));
 	}
 
 	@Test
@@ -73,44 +66,31 @@ public class ContentServletTest {
 		assertNull(this.undertest.getResource("/some_id"));
 	}
 
-	@SuppressWarnings("resource")
-	private void startServer() throws Exception {
-		this.server = new Server();
+	@Test
+	public void itChecksPermissions() throws Exception {
+		startServer(this.undertest, "/c/*");
 
-		final ServerConnector connector = new ServerConnector(this.server);
-		this.hostAddress = InetAddress.getLocalHost().getHostAddress();
-		connector.setHost(this.hostAddress);
-		connector.setPort(0); // auto-bind to available port
-		this.server.addConnector(connector);
+		final AuthList allowAuthlist = mock(AuthList.class);
+		when(allowAuthlist.hasUser("shork")).thenReturn(true);
 
-		final ServletContextHandler contextHandler = new ServletContextHandler();
-		MediaFormat.addTo(contextHandler.getMimeTypes());
-		contextHandler.setContextPath("/");
-		RequestLoggingFilter.addTo(contextHandler);
-		contextHandler.addServlet(new ServletHolder(this.undertest), "/");
-		this.server.setHandler(contextHandler);
-		this.server.start();
-	}
+		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
+		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
-	@After
-	public void stopServer() throws Exception {
-		if (this.server != null)
-			this.server.stop();
+		assertRequestResponseCode("/c/" + item1.getId(), 401);
+
+		setAuthUsername("shork");
+		assertRequestResponseCode("/c/" + item1.getId(), 200);
 	}
 
 	@Test
 	public void itSetsContetType() throws Exception {
-		startServer();
+		startServer(this.undertest, "/c/*");
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1");
 		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
-		final URL url = new URL("http://" + this.hostAddress + ":"
-				+ ((ServerConnector) this.server.getConnectors()[0]).getLocalPort()
-				+ "/" + item1.getId());
-		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		final HttpURLConnection conn = assertRequestResponseCode("/c/" + item1.getId(), 200);
 		try {
-			assertEquals(200, conn.getResponseCode());
 			final Map<String, List<String>> headers = conn.getHeaderFields();
 			final List<String> actualType = headers.get("Content-Type");
 			assertThat("Content-Type header present", actualType, not(nullValue()));

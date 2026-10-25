@@ -131,6 +131,10 @@ public class MockContent {
 		return addMockItem(MediaFormat.MP4, id, parent, null);
 	}
 
+	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent) throws IOException {
+		return addMockItem(format, id, parent, null);
+	}
+
 	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent, final Consumer<File> modifier) throws IOException {
 		final String fileName = id + "." + format.getExt();
 		final File file;
