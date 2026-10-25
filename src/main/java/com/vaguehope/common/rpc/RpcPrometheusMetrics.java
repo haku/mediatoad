@@ -10,7 +10,10 @@ public class RpcPrometheusMetrics {
 
 	@SuppressWarnings("resource")
 	public static void setup() {
-		PrometheusMetricReader prometheusMetricReader = new PrometheusMetricReader(false, null);
+		PrometheusMetricReader prometheusMetricReader = PrometheusMetricReader.builder()
+				.setOtelScopeLabelsEnabled(false)
+				.setTargetInfoMetricEnabled(false)
+				.build();
 		PrometheusRegistry.defaultRegistry.register(prometheusMetricReader);
 		SdkMeterProvider sdkMeterProvider = SdkMeterProvider.builder()
 				.registerMetricReader(prometheusMetricReader)

@@ -3,13 +3,13 @@ let
   system-data =
     if stdenv.hostPlatform.system == "x86_64-linux" then {
       suffix = "linux-x86_64.exe";
-      sha256 = "sha256-5WgHUGy0a7BAxMq30oCN0haBabJTRSUmJbAvxsR/MW0=";
+      sha256 = "sha256-4HAeekfMjkhsYqSr7ezezCrpqMrdZqaQ9aNfVrHUpUA=";
     }
     else throw ("Invalid system: " + stdenv.hostPlatform.system);
 in
 stdenv.mkDerivation rec {
   pname = "protoc-gen-grpc-java";
-  version = "1.82.0";
+  version = "1.85.1";
 
   filename = "${pname}-${version}-${system-data.suffix}";
   src = fetchurl {
