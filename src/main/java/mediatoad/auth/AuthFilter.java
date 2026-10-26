@@ -124,7 +124,9 @@ public class AuthFilter implements Filter {
 		chain.doFilter(request, response);
 	}
 
-	private User basicAuthUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+	private User basicAuthUser(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
+		if (this.users == null) return NULL_USER;
+
 		User user = null;
 
 		final Cookie tokenCookie = ServletCommon.findCookie(req, Auth.TOKEN_COOKIE_NAME);
@@ -140,40 +142,49 @@ public class AuthFilter implements Filter {
 
 			// Continue even if token is invalid as auth may be attached or may not be required.
 		}
+		final boolean forceUserParamNotEq = isForceUserParamNotEq(req, user);
+		if (user != null && !forceUserParamNotEq) return user;
 
-		if (this.users != null && ((user == null && (isPost(req) || isLoginRequest(req)) || isWebdav(req)) || isForceUserParam(req, user))) {
-			String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
-			if (authHeader64 != null
-					&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
-					&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
-				authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
-				final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
-				final int x = authHeader.indexOf(":");
-				if (x <= 0) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
-					return null;
-				}
-				final String username = authHeader.substring(0, x);
-				final String pass = authHeader.substring(x + 1);
-				if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected missing creds for user: {}", username);
-					return null;
-				}
-				user = this.users.validUser(username, pass);
-				if (user == null || isForceUserParam(req, user)) {
-					send401AndMaybePromptLogin(req, resp);
-					logRequest(req, resp, "Rejected invalid creds for user: {}", username);
-					return null;
-				}
-				setTokenCookie(user.getUsername(), resp);
-				logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
-			}
-			else {
+		final boolean required = ((user == null && (isPost(req) || isLoginRequest(req)) || isWebdav(req)) || forceUserParamNotEq);
+
+		String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
+		if (authHeader64 != null
+				&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
+				&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
+			authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
+			final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
+			final int x = authHeader.indexOf(":");
+			if (x <= 0) {
+				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
+				logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
 				return null;
 			}
+
+			final String username = authHeader.substring(0, x);
+			final String pass = authHeader.substring(x + 1);
+			if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
+				if (!required) return NULL_USER;
+				send401AndMaybePromptLogin(req, resp);
+				logRequest(req, resp, "Rejected missing creds for user: {}", username);
+				return null;
+			}
+
+			user = this.users.validUser(username, pass);
+			if (user == null || isForceUserParamNotEq(req, user)) {
+				if (!required) return NULL_USER;
+				send401AndMaybePromptLogin(req, resp);
+				logRequest(req, resp, "Rejected invalid creds for user: {}", username);
+				return null;
+			}
+
+			setTokenCookie(user.getUsername(), resp);
+			logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
+		}
+		else {
+			if (!required) return NULL_USER;
+			send401AndMaybePromptLogin(req, resp);
+			return null;
 		}
 
 		return user != null ? user : NULL_USER;
@@ -225,7 +236,7 @@ public class AuthFilter implements Filter {
 		return "PROPFIND".equals(req.getMethod());
 	}
 
-	private static boolean isForceUserParam(final HttpServletRequest req, User user) {
+	private static boolean isForceUserParamNotEq(final HttpServletRequest req, final User user) {
 		final String param = req.getParameter("user");
 		if (param == null) return false;
 		if (user != null && user.getUsername().equals(param)) return false;

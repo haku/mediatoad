@@ -66,9 +66,13 @@ public class ContentServletTest extends TestsWithHttpServer {
 		assertNull(this.undertest.getResource("/some_id"));
 	}
 
+	private void startServer() throws Exception {
+		startServer(this.undertest, "/c/*");
+	}
+
 	@Test
 	public void itChecksPermissions() throws Exception {
-		startServer(this.undertest, "/c/*");
+		startServer();
 
 		final AuthList allowAuthlist = mock(AuthList.class);
 		when(allowAuthlist.hasUser("shork")).thenReturn(true);
@@ -84,7 +88,7 @@ public class ContentServletTest extends TestsWithHttpServer {
 
 	@Test
 	public void itSetsContetType() throws Exception {
-		startServer(this.undertest, "/c/*");
+		startServer();
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1");
 		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
@@ -99,6 +103,20 @@ public class ContentServletTest extends TestsWithHttpServer {
 		finally {
 			conn.getInputStream().close();
 		}
+	}
+
+	@Test
+	public void itWorksWithWebdavSearchResults() throws Exception {
+		startServer(this.undertest, "/search/*");
+
+		final AuthList allowAuthlist = mock(AuthList.class);
+		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+
+		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
+		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
+
+		setAuthUsername("shork");
+		assertRequestResponseCode("/search/t=foo/" + item1.getId(), 200);
 	}
 
 }

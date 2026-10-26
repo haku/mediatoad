@@ -194,6 +194,8 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
+		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
 
@@ -244,6 +246,19 @@ public class AuthFilterTest {
 		setInvalidSessionToken();
 
 		when(this.authTokens.newToken("h4cker")).thenReturn("new-token");
+
+		this.undertest.doFilter(this.req, this.resp, this.chain);
+
+		assertEquals(200, this.resp.getStatus());
+		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+
+		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itAcceptsBasicAuthLoginForAnyGetRequest() throws Exception {
+		this.req.setMethod("GET");
+		setValidCreds();
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
