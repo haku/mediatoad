@@ -115,16 +115,6 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.14</version>
-				<configuration>
-					<excludes>
-						<!-- exclude generated code. -->
-						<exclude>cdsc/*.class</exclude>
-						<exclude>mediatoad/rpc/MediaGrpc*.class</exclude>
-						<exclude>mediatoad/rpc/MediaToadProto*.class</exclude>
-						<exclude>mediatoad/tagdeterminer/TagDeterminerGrpc*.class</exclude>
-						<exclude>mediatoad/tagdeterminer/TagDeterminerProto*.class</exclude>
-					</excludes>
-				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -137,6 +127,16 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<!-- exclude generated code. -->
+								<exclude>cdsc/*.class</exclude>
+								<exclude>mediatoad/rpc/MediaGrpc*.class</exclude>
+								<exclude>mediatoad/rpc/MediaToadProto*.class</exclude>
+								<exclude>mediatoad/tagdeterminer/TagDeterminerGrpc*.class</exclude>
+								<exclude>mediatoad/tagdeterminer/TagDeterminerProto*.class</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
