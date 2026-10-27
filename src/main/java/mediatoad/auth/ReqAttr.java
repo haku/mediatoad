@@ -38,4 +38,9 @@ public class ReqAttr<T> {
 		return this.cls.cast(attr);
 	}
 
+	@Override
+	public String toString() {
+		return String.format("ReqAttr{%s}", this.attrName);
+	}
+
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class Users {
@@ -40,22 +41,24 @@ public class Users {
 		final Map<String, User> ret = new HashMap<>();
 
 		final List<String> lines = FileUtils.readLines(userfile, Charset.forName("UTF-8"));
-		for (String line : lines) {
-			line = line.trim();
+		for (int lineN = 0; lineN < lines.size(); lineN++) {
+			final String line = lines.get(lineN).trim();
 			if (line.length() < 1 || line.startsWith("#") || line.startsWith("//")) continue;
 
 			final String[] parts = line.split(" ");
 			if (parts.length < 1) continue;
 			if (parts.length < 2) {
-				throw new IOException("Invalid userfile: " + userfile.getAbsolutePath());
+				rejectInvalidFile(userfile, lineN, "not enough parts");
 			}
 
 			final String username = parts[0];
 			final String encPass = parts[1];
 
-			if (encPass.contains(" ")) {
-				throw new IOException("Invalid userfile: " + userfile.getAbsolutePath());
-			}
+			if (StringUtils.containsWhitespace(encPass))
+				rejectInvalidFile(userfile, lineN, "whitespace in encoded password");
+
+			if (!"0".equals(encPass) && encPass.length() < 10)
+				rejectInvalidFile(userfile, lineN, "encoded password not long enough");
 
 			Set<Permission> permissions = null;
 			if (parts.length > 2) {
@@ -67,7 +70,7 @@ public class Users {
 						permissions.add(permission);
 					}
 					else {
-						throw new IOException("Invalid permission in userfile " + userfile.getAbsolutePath() + ": " + part);
+						rejectInvalidFile(userfile, lineN, "invalid permission");
 					}
 				}
 			}
@@ -75,6 +78,10 @@ public class Users {
 			ret.put(username, new User(username, encPass, permissions));
 		}
 		return ret;
+	}
+
+	private static void rejectInvalidFile(final File userfile, final int lineN, final String reason) throws IOException {
+		throw new IOException("Invalid userfile line " + (lineN + 1) + ", " + reason + ": " + userfile.getAbsolutePath());
 	}
 
 	public static class User {

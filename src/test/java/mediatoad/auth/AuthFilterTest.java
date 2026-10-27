@@ -14,12 +14,18 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.Cookie;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.junit.Before;
@@ -45,6 +51,10 @@ public class AuthFilterTest {
 		this.users = mock(Users.class);
 		this.authTokens = mock(AuthTokens.class);
 		this.undertest = new AuthFilter(this.users, this.authTokens, null, false, true);
+		resetRequest();
+	}
+
+	private void resetRequest() {
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 		this.chain = mock(FilterChain.class);
@@ -268,7 +278,7 @@ public class AuthFilterTest {
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
 
-// Auth Enabled, Logged In:
+// Auth Enabled, Active Session:
 
 	@Test
 	public void itAcceptsValidToken() throws Exception {
@@ -282,6 +292,35 @@ public class AuthFilterTest {
 		assertThat(this.resp.getCookies(), hasSize(0));
 
 		verify(this.chain).doFilter(this.req, this.resp);
+	}
+
+	@Test
+	public void itSetsEachPermission() throws Exception {
+		final List<Pair<Permission, ReqAttr<Boolean>>> params = Arrays.asList(
+				Pair.of(null, ReqAttr.ALLOW_REMOTE_SEARCH),
+				Pair.of(null, ReqAttr.ALLOW_UPNP_INSPECTOR),
+				Pair.of(Permission.EDITTAGS, ReqAttr.ALLOW_EDIT_TAGS),
+				Pair.of(Permission.EDITDIRPREFS, ReqAttr.ALLOW_EDIT_DIR_PREFS),
+				Pair.of(Permission.MANAGERPC, ReqAttr.ALLOW_MANAGE_RPC)
+				);
+
+		for (final Pair<Permission, ReqAttr<Boolean>> param : params) {
+			resetRequest();
+			this.req.setMethod("GET");
+			setValidSessionToken(param.getLeft());
+
+			this.undertest.doFilter(this.req, this.resp, this.chain);
+
+			assertEquals("Did not set permission: " + param.getRight(),
+					Boolean.TRUE, param.getRight().get(this.req));
+
+			for (final Pair<Permission, ReqAttr<Boolean>> otherParam : params) {
+				if (otherParam.getLeft() == null || otherParam.getLeft() == param.getLeft()) continue;
+				assertEquals("Set incorrect permission: " + otherParam.getRight(),
+						Boolean.FALSE, otherParam.getRight().get(this.req));
+			}
+		}
+
 	}
 
 	@Test
@@ -354,10 +393,7 @@ public class AuthFilterTest {
 		setInvalidCreds();
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
-
-		assertEquals(401, this.resp.getStatus());
-		assertThat((Collection<?>) this.resp.getHeaderNames(), hasSize(0));
-		verifyNoInteractions(this.chain);
+		assertNoAuth(401, false);
 	}
 
 	@Test
@@ -366,10 +402,53 @@ public class AuthFilterTest {
 		setInvalidSessionToken();
 
 		this.undertest.doFilter(this.req, this.resp, this.chain);
+		assertNoAuth(401, false);
+	}
 
-		assertEquals(401, this.resp.getStatus());
+	@Test
+	public void itHandlesVariousMalformedAuthHeaders() throws Exception {
+		final Function<byte[], String> encb = (b) -> Base64.getEncoder().encodeToString(b);
+		final Function<String, String> encs = (s) -> encb.apply(s.getBytes(StandardCharsets.UTF_8));
+		final String[] headers = new String[] {
+				"Basic " + encs.apply(""),
+				"Basic " + encs.apply(" "),
+				"Basic " + encs.apply(" : "),
+				"Basic " + encs.apply(" :"),
+				"Basic " + encs.apply(": "),
+				"Basic",
+				"Basic ",
+				"Basic -",
+				"Basic 🦝",
+				"Basic " + encb.apply(new byte[] { 0x00, ':', 0x00 }),
+				"Basic " + encb.apply(new byte[] { 'a', ':', 0x00 }),
+		};
+
+		for (final String header : headers) {
+			resetRequest();
+			this.req.setMethod("POST");
+			this.req.addHeader("Authorization", header);
+			this.undertest.doFilter(this.req, this.resp, this.chain);
+			assertNoAuth(401, false);
+
+			resetRequest();
+			this.req.setMethod("GET");
+			this.req.addHeader("Authorization", header);
+			this.undertest.doFilter(this.req, this.resp, this.chain);
+			assertNoAuth(200, true);
+		}
+	}
+
+	private void assertNoAuth(final int code, final boolean callChain) throws Exception {
+		assertEquals(code, this.resp.getStatus());
 		assertThat((Collection<?>) this.resp.getHeaderNames(), hasSize(0));
-		verifyNoInteractions(this.chain);
+		assertEquals(0, this.req.attributeCount());
+
+		if (callChain) {
+			verify(this.chain).doFilter(this.req, this.resp);
+		}
+		else {
+			verifyNoInteractions(this.chain);
+		}
 	}
 
 // Helpers:
@@ -390,9 +469,16 @@ public class AuthFilterTest {
 	}
 
 	private void setValidSessionToken() throws IOException {
+		setValidSessionToken((Permission[]) null);
+	}
+
+	private void setValidSessionToken(final Permission... permissions) throws IOException {
 		setSessionTokenCookie("my-session-token");
 		when(this.authTokens.usernameForToken("my-session-token")).thenReturn("h4cker");
-		final User user = new User("h4cker", null, null);
+
+		final HashSet<Permission> permSet = permissions != null ? new HashSet<>(Arrays.asList(permissions)) : null;
+		final User user = new User("h4cker", null, permSet);
+
 		when(this.users.getUser("h4cker")).thenReturn(user);
 	}
 
@@ -400,8 +486,8 @@ public class AuthFilterTest {
 		setSessionTokenCookie("my-invalid-token");
 	}
 
-	private void setSessionTokenCookie(String token) {
-		Cookie cookie = new Cookie("MEDIATOADTOKEN", token);
+	private void setSessionTokenCookie(final String token) {
+		final Cookie cookie = new Cookie("MEDIATOADTOKEN", token);
 		this.req.addCookie(cookie);
 	}
 

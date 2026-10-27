@@ -147,26 +147,26 @@ public class AuthFilter implements Filter {
 
 		final boolean required = ((user == null && (isPost(req) || isLoginRequest(req)) || isWebdav(req)) || forceUserParamNotEq);
 
-		String authHeader64 = req.getHeader(HEADER_AUTHORISATION);
-		if (authHeader64 != null
-				&& authHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
-				&& authHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
-			authHeader64 = authHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
-			final String authHeader = new String(Base64.getDecoder().decode(authHeader64), StandardCharsets.UTF_8);
-			final int x = authHeader.indexOf(":");
+		final String rawAuthHeader64 = req.getHeader(HEADER_AUTHORISATION);
+		if (rawAuthHeader64 != null
+				&& rawAuthHeader64.length() >= HEADER_AUTHORISATION_PREFIX.length() + 3
+				&& rawAuthHeader64.startsWith(HEADER_AUTHORISATION_PREFIX)) {
+			final String authVal64 = rawAuthHeader64.substring(HEADER_AUTHORISATION_PREFIX.length());
+			final String authVal = new String(Base64.getDecoder().decode(authVal64), StandardCharsets.UTF_8);
+			final int x = authVal.indexOf(":");
 			if (x <= 0) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected malformed auth: {}", authHeader);
+				logRequest(req, resp, "Rejected malformed auth: \"{}\"", rawAuthHeader64);
 				return null;
 			}
 
-			final String username = authHeader.substring(0, x);
-			final String pass = authHeader.substring(x + 1);
+			final String username = authVal.substring(0, x);
+			final String pass = authVal.substring(x + 1);
 			if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected missing creds for user: {}", username);
+				logRequest(req, resp, "Rejected missing auth details: \"{}\"", rawAuthHeader64);
 				return null;
 			}
 
@@ -174,12 +174,12 @@ public class AuthFilter implements Filter {
 			if (user == null || isForceUserParamNotEq(req, user)) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected invalid creds for user: {}", username);
+				logRequest(req, resp, "Rejected invalid creds: user=\"{}\" pass=({} chars)", username, String.valueOf(pass.length()));
 				return null;
 			}
 
 			setTokenCookie(user.getUsername(), resp);
-			logRequest(req, resp, "Accepted creds for user: {}", user.getUsername());
+			logRequest(req, resp, "Accepted creds for user: \"{}\"", user.getUsername());
 		}
 		else {
 			if (!required) return NULL_USER;

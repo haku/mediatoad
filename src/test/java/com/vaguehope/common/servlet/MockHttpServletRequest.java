@@ -71,6 +71,10 @@ public class MockHttpServletRequest implements HttpServletRequest {
 		this.content = bytes;
 	}
 
+	public int attributeCount() {
+		return this.attributes.size();
+	}
+
 	// HttpServletRequest
 
 	@Override
