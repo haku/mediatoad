@@ -118,6 +118,7 @@
 				<configuration>
 					<excludes>
 						<!-- exclude generated code. -->
+						<exclude>cdsc/*.class</exclude>
 						<exclude>mediatoad/rpc/MediaGrpc*.class</exclude>
 						<exclude>mediatoad/rpc/MediaToadProto*.class</exclude>
 						<exclude>mediatoad/tagdeterminer/TagDeterminerGrpc*.class</exclude>
