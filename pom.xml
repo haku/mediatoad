@@ -117,8 +117,11 @@
 				<version>0.8.14</version>
 				<configuration>
 					<excludes>
-						<!-- mediatoad.rpc (but not sub pkgs) is all generated code. -->
-						<exclude>mediatoad/rpc/*.class</exclude>
+						<!-- exclude generated code. -->
+						<exclude>mediatoad/rpc/MediaGrpc*.class</exclude>
+						<exclude>mediatoad/rpc/MediaToadProto*.class</exclude>
+						<exclude>mediatoad/tagdeterminer/TagDeterminerGrpc*.class</exclude>
+						<exclude>mediatoad/tagdeterminer/TagDeterminerProto*.class</exclude>
 					</excludes>
 				</configuration>
 				<executions>
