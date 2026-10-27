@@ -115,6 +115,12 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.14</version>
+				<configuration>
+					<excludes>
+						<!-- mediatoad.rpc (but not sub pkgs) is all generated code. -->
+						<exclude>mediatoad/rpc/*.class</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
