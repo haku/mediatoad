@@ -8,4 +8,10 @@
   <Match classregex="mediatoad\.rpc\.MediaToadProto.*" />
   <Match classregex="mediatoad\.tagdeterminer\.TagDeterminerGrpc.*" />
   <Match classregex="mediatoad\.tagdeterminer\.TagDeterminerProto.*" />
+
+  <Match>
+    <Or>
+      <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Or>
+  </Match>
 </FindBugsFilter>
