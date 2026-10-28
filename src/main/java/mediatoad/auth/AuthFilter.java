@@ -157,7 +157,7 @@ public class AuthFilter implements Filter {
 			if (x <= 0) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected malformed auth: \"{}\"", rawAuthHeader64);
+				logRequest(req, resp, "Rejected malformed basic auth: \"{}\"", rawAuthHeader64);
 				return null;
 			}
 
@@ -166,7 +166,7 @@ public class AuthFilter implements Filter {
 			if (username == null || pass == null || username.isEmpty() || pass.isEmpty()) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected missing auth details: \"{}\"", rawAuthHeader64);
+				logRequest(req, resp, "Rejected missing basic auth details: \"{}\"", rawAuthHeader64);
 				return null;
 			}
 
@@ -174,7 +174,7 @@ public class AuthFilter implements Filter {
 			if (user == null || isForceUserParamNotEq(req, user)) {
 				if (!required) return NULL_USER;
 				send401AndMaybePromptLogin(req, resp);
-				logRequest(req, resp, "Rejected invalid creds: user=\"{}\" pass=({} chars)", username, String.valueOf(pass.length()));
+				logRequest(req, resp, "Rejected invalid basic auth creds: user=\"{}\" pass=({} chars)", username, String.valueOf(pass.length()));
 				return null;
 			}
 
