@@ -179,15 +179,13 @@ public class AuthFilter implements Filter {
 			}
 
 			setTokenCookie(user.getUsername(), resp);
-			logRequest(req, resp, "Accepted creds for user: \"{}\"", user.getUsername());
-		}
-		else {
-			if (!required) return NULL_USER;
-			send401AndMaybePromptLogin(req, resp);
-			return null;
+			logRequest(req, resp, "Accepted basic auth creds for user: \"{}\"", user.getUsername());
+			return user;
 		}
 
-		return user != null ? user : NULL_USER;
+		if (!required) return NULL_USER;
+		send401AndMaybePromptLogin(req, resp);
+		return null;
 	}
 
 	private static void addUserDetailsToRequest(final User user, final HttpServletRequest req) {
@@ -244,7 +242,7 @@ public class AuthFilter implements Filter {
 	}
 
 	private static void send401AndMaybePromptLogin(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
-		if (isGet(req) || isLoginRequest(req) | isWebdav(req)) {
+		if (isGet(req) || isLoginRequest(req) || isWebdav(req)) {
 			resp.setHeader(WWW_AUTHENTICATE, BASIC_REALM);
 		}
 		resp.sendError(HttpServletResponse.SC_UNAUTHORIZED);
