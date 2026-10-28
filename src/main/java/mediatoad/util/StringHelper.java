@@ -2,6 +2,7 @@ package mediatoad.util;
 
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class StringHelper {
@@ -44,7 +45,7 @@ public final class StringHelper {
 
 	public static String join (final Enumeration<String> en, final String join) {
 		if (en == null || !en.hasMoreElements()) return null;
-		StringBuilder s = new StringBuilder(en.nextElement());
+		final StringBuilder s = new StringBuilder(en.nextElement());
 		while (en.hasMoreElements()) {
 			s.append(join).append(en.nextElement());
 		}
@@ -66,7 +67,7 @@ public final class StringHelper {
 		return END_QUOTES.matcher(s).replaceAll("");
 	}
 
-	public static String removePrefix(String s, String prefix) {
+	public static String removePrefix(final String s, final String prefix) {
 		if (s == null) return null;
 		if (s.startsWith(prefix)) {
 			return s.substring(prefix.length());
@@ -84,12 +85,30 @@ public final class StringHelper {
 		return s;
 	}
 
-	public static String removeSuffix(String s, String suffix) {
+	public static String removeSuffix(final String s, final String suffix) {
 		if (s == null) return null;
 		if (s.endsWith(suffix)) {
 			return s.substring(0, s.length() - suffix.length());
 		}
 		return s;
+	}
+
+	private static final Pattern LINEBREAKS = Pattern.compile("\\R|\\v");
+
+	/**
+	 * Keep just the first line of text with a max length, and append a number to indicate how many char were removed.
+	 */
+	public static String firstLineMaxLength(final String input, final int maxLen) {
+		if (input == null) return null;
+		if (input.length() < 1) return input;
+
+		final String trimmed = input.length() > maxLen ? input.substring(0, maxLen) : input;
+
+		final Matcher m = LINEBREAKS.matcher(trimmed);
+		final String first = m.find(0) ? trimmed.substring(0, m.start()) : trimmed;
+
+		if (first.length() < input.length()) return first + "[+" + (input.length() - first.length()) + "]";
+		return first;
 	}
 
 }

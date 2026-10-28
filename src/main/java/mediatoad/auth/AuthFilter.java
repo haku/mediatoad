@@ -24,8 +24,10 @@ import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.Users.User;
 import mediatoad.ui.ServletCommon;
+import mediatoad.util.StringHelper;
 
 public class AuthFilter implements Filter {
 
@@ -206,13 +208,17 @@ public class AuthFilter implements Filter {
 		}
 	}
 
+	@SuppressFBWarnings(value = "CRLF_INJECTION_LOGS", justification = "so far as fae can tell this is mitigated")
 	private void logRequest(final HttpServletRequest req, final HttpServletResponse resp, final String msg, final String... args) {
 		if (!this.printAccessLog) return;
 		final Object[] allArgs = new Object[4 + args.length];
 		allArgs[0] = resp.getStatus();
-		allArgs[1] = req.getMethod();
-		allArgs[2] = req.getPathInfo();
-		allArgs[3] = req.getRemoteAddr();
+		allArgs[1] = StringHelper.firstLineMaxLength(req.getMethod(), 10);
+		allArgs[2] = StringHelper.firstLineMaxLength(req.getPathInfo(), 50);
+		allArgs[3] = StringHelper.firstLineMaxLength(req.getRemoteAddr(), 50);
+		for (int i = 0; i < args.length; i++) {
+			args[i] = StringHelper.firstLineMaxLength(args[i], 100);
+		}
 		System.arraycopy(args, 0, allArgs, 4, args.length);
 		LOG.info("{} {} {} {} " + msg, allArgs);
 	}
