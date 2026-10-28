@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ContentServlet;
@@ -21,6 +22,7 @@ public class IndexServlet extends HttpServlet {
 	private final DirServlet dirServlet;
 	private final ServletCommon servletCommon;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public IndexServlet(
 			final ContentTree contentTree,
 			final ContentServlet contentServlet,

@@ -495,7 +495,7 @@ public class MediaIndex implements FileListener {
 		});
 	}
 
-	private final class BasenameFilter implements FilenameFilter {
+	private static final class BasenameFilter implements FilenameFilter {
 
 		private final String baseName;
 

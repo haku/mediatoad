@@ -44,6 +44,7 @@ import com.google.common.base.Strings;
 import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.DbCache;
@@ -355,6 +356,7 @@ public class SearchServlet extends HttpServlet {
 		private final AtomicReference<DIDLContent> payload = new AtomicReference<>();
 		private final AtomicReference<String> err = new AtomicReference<>();
 
+		@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 		public CDSearch(final Service<?, ?> service, final String containerId, final String searchCriteria, final String filter, final long firstResult, final Long maxResults, final SortCriterion... orderBy) {
 			super(service, containerId, searchCriteria, filter, firstResult, maxResults, orderBy);
 			this.service = service;

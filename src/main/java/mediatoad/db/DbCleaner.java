@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import edu.umd.cs.findbugs.annotations.SuppressMatchType;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentTree;
 
@@ -55,8 +54,7 @@ public class DbCleaner {
 	}
 
 	@SuppressFBWarnings(
-			value = "^CRLF_INJECTION_LOGS|PATH_TRAVERSAL_IN$",
-			matchType = SuppressMatchType.REGEX,
+			value = { "CRLF_INJECTION_LOGS", "PATH_TRAVERSAL_IN" },
 			justification = "only way paths get into the DB is via listing directories.")
 	// Visible for testing.
 	void cleanDb() throws SQLException, IOException {

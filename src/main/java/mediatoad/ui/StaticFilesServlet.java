@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class StaticFilesServlet extends DefaultServlet {
 	@Override
 	public Resource getResource(final String pathInContext) {
 		try {
-			String path = StringUtils.removeStartIgnoreCase(pathInContext, "/" + C.STATIC_FILES_PATH_PREFIX);
+			String path = Strings.CI.removeStart(pathInContext, "/" + C.STATIC_FILES_PATH_PREFIX);
 			final Matcher m = CACHE_BUST_PATTERN.matcher(path);
 			if (m.matches()) path = m.group(1);
 

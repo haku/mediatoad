@@ -3,6 +3,7 @@ package mediatoad.auth;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -11,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class Authoriser {
 	}
 
 	private static final Cache<String, Optional<AuthList>> AUTH_FILE_CACHE = CacheBuilder.newBuilder()
-			.expireAfterWrite(1, TimeUnit.MINUTES)
+			.expireAfterWrite(Duration.ofMinutes(1))
 			.build();
 
 	private static AuthList getAuthListForDir(final File dir) throws IOException {

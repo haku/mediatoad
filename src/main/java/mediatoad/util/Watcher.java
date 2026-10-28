@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prometheus.metrics.core.datapoints.CounterDataPoint;
 import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
@@ -142,7 +143,8 @@ public class Watcher {
 		this.onPrescanComplete.add(l);
 	}
 
-	public void waitForPrescan(final long timeout, final TimeUnit unit) throws InterruptedException {
+	@SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED", justification = "only for testing.")
+	void waitForPrescan(final long timeout, final TimeUnit unit) throws InterruptedException {
 		this.prescanComplete.await(timeout, unit);
 	}
 
@@ -386,6 +388,7 @@ public class Watcher {
 
 	}
 
+	@SuppressFBWarnings(value = "EQ_COMPARETO_USE_OBJECT_EQUALS", justification = "represents unique events.")
 	private static class WaitingFile implements Delayed {
 
 		private final Path path;

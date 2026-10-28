@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.MediaDb;
@@ -34,6 +35,7 @@ public class WebdavServlet extends HttpServlet {
 	private final MediaDb db;
 	private final ServletCommon servletCommon;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public WebdavServlet(final ContentTree contentTree, final MediaDb db, final ServletCommon servletCommon) {
 		this.contentTree = contentTree;
 		this.db = db;

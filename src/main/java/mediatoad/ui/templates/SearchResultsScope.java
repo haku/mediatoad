@@ -3,12 +3,15 @@ package mediatoad.ui.templates;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class SearchResultsScope {
 
 	public final List<ResultGroupScope> result_groups = new ArrayList<>();
 
 	private final PageScope pageScope;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public SearchResultsScope(final PageScope pageScope) {
 		this.pageScope = pageScope;
 	}

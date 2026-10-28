@@ -12,6 +12,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentTree;
 import mediatoad.media.ThumbnailGenerator;
@@ -26,6 +27,7 @@ public class ThumbsServlet extends MyFileServlet {
 	private final ThumbnailGenerator thumbnailGenerator;
 	private final ServletCommon servletCommon;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public ThumbsServlet(final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final ServletCommon servletCommon) {
 		super();
 		this.contentTree = contentTree;

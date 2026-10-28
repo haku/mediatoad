@@ -17,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.DefaultAccess;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.TagAutocompleter;
@@ -31,6 +32,7 @@ public class AutocompleteServlet extends HttpServlet {
 	private final DefaultAccess defaultAccess;
 	private final Gson gson;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "tagAutocompleter is supposed to hold mutable state.")
 	public AutocompleteServlet(final TagAutocompleter tagAutocompleter, final DefaultAccess defaultAccess) {
 		this.tagAutocompleter = tagAutocompleter;
 		this.defaultAccess = defaultAccess;

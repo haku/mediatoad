@@ -17,7 +17,7 @@ public class UsersCli {
 	private UsersCli() {
 	}
 
-	@SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE.")
+	@SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE")
 	public static int interactivlyAddUser(final Args args) throws IOException {
 		final File userfile = args.getUserfile();
 		if (userfile == null) {

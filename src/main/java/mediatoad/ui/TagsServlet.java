@@ -20,6 +20,7 @@ import com.google.common.collect.Multiset.Entry;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.MediaDb;
@@ -45,6 +46,7 @@ public class TagsServlet extends HttpServlet {
 	private final TagAutocompleter tagAutocompleter;
 	private final Gson gson;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public TagsServlet(final ContentTree contentTree, final MediaDb mediaDb, final TagAutocompleter tagAutocompleter) {
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
@@ -183,7 +185,7 @@ public class TagsServlet extends HttpServlet {
 
 
 	public class TagFrequencyUi extends TagFrequency {
-		private final String search;
+		public final String search;
 
 		public TagFrequencyUi(String tag, String cls, int count) {
 			super(tag, cls, count);

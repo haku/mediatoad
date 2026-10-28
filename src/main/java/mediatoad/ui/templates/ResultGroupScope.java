@@ -7,12 +7,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.jupnp.model.ModelUtil;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ThumbnailGenerator;
 import mediatoad.util.FileHelper;
 
+@SuppressFBWarnings(value = { "PA_PUBLIC_PRIMITIVE_ATTRIBUTE", "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD" })
 public class ResultGroupScope {
 
 	public final String group_title;

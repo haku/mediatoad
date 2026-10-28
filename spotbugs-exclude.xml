@@ -11,7 +11,15 @@
 
   <Match>
     <Or>
+      <!-- this project never runs untrusted code. -->
       <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+
+      <!-- this project never uses serialisation. -->
+      <Bug pattern="SE_BAD_FIELD"/>
+      <Bug pattern="SE_COMPARATOR_SHOULD_BE_SERIALIZABLE"/>
+
+      <!-- this just seems to cover writing errors to stdout/stderr. -->
+      <Bug pattern="INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE"/>
     </Or>
   </Match>
 </FindBugsFilter>

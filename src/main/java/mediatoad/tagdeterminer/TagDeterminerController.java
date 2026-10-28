@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
@@ -299,7 +300,7 @@ public class TagDeterminerController {
 
 	private final Cache<String, AtomicInteger> errorCounter = CacheBuilder.newBuilder()
 			.maximumSize(QUERY_LIMIT * 3)
-			.expireAfterAccess(1, TimeUnit.DAYS)
+			.expireAfterAccess(Duration.ofDays(1))
 			.build();
 
 	private void errorFromDeterminer(final TagDeterminer determiner, final AboutReply about, final ContentItem item, final Throwable t) {

@@ -2,6 +2,7 @@ package mediatoad.db;
 
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,19 +47,19 @@ public class DbCache {
 		this.verboseLog = verboseLog;
 		this.dirTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
-				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(5, TimeUnit.DAYS)
+				.refreshAfterWrite(Duration.ofMinutes(5))
+				.expireAfterWrite(Duration.ofDays(5))
 				.ticker(ticker)
 				.build(new DirTopTagLoader());
 		this.searchTopTags = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
-				.refreshAfterWrite(5, TimeUnit.MINUTES)
-				.expireAfterWrite(5, TimeUnit.DAYS)
+				.refreshAfterWrite(Duration.ofMinutes(5))
+				.expireAfterWrite(Duration.ofDays(5))
 				.ticker(ticker)
 				.build(new SearchTopTagLoader());
 		this.nodePrefs = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
-				.refreshAfterWrite(1, TimeUnit.NANOSECONDS)  // always check DB version.
+				.refreshAfterWrite(Duration.ofNanos(1))  // always check DB version.
 				.ticker(ticker)
 				.build(new NodePrefLoader());
 	}

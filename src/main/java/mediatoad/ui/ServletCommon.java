@@ -23,6 +23,7 @@ import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.resolver.ClasspathResolver;
 import com.github.mustachejava.resolver.FileSystemResolver;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.Args;
 import mediatoad.Args.ArgsException;
 import mediatoad.C;
@@ -50,6 +51,7 @@ public class ServletCommon {
 	private final MustacheFactory defaultMustacheFactory = new DefaultMustacheFactory(new ClasspathResolver("templates"));
 	private final Set<String> rootPaths;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public ServletCommon(
 			final ContentTree contentTree,
 			final String hostName,

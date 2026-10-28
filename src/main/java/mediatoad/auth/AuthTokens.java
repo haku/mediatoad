@@ -15,7 +15,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import edu.umd.cs.findbugs.annotations.SuppressMatchType;
 import mediatoad.C;
 
 public class AuthTokens {
@@ -57,9 +56,8 @@ public class AuthTokens {
 	}
 
 	@SuppressFBWarnings(
-			value = "^PATH_TRAVERSAL_IN|CRLF_INJECTION_LOGS$",
-			matchType = SuppressMatchType.REGEX,
-			justification = "token must be equal to once generated serverside and match regexp before being used in FS.")
+			value = "PATH_TRAVERSAL_IN",
+			justification = "token must be equal to one generated serverside and match regexp before being used in FS.")
 	private void persistToken(final String token, final String username) throws IOException {
 		if (this.sessionDir == null) return;
 

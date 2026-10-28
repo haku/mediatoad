@@ -40,7 +40,7 @@ public class ExecutorHelper {
 				maxThreads,
 				60L,
 				TimeUnit.SECONDS,
-				new LinkedBlockingQueue<Runnable>(),
+				new LinkedBlockingQueue<>(),
 				new DaemonThreadFactory(name, priority)) {
 
 			@Override

@@ -1,5 +1,6 @@
 package mediatoad.rpc.client;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -50,7 +51,7 @@ public class RpcClient {
 	}
 
 	public List<RemoteInstance> getRemoteInstances() {
-		return this.remoteInstances;
+		return Collections.unmodifiableList(this.remoteInstances);
 	}
 
 	public MediaBlockingStub getMediaBlockingStub(final String rid) {

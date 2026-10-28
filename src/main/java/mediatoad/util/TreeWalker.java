@@ -5,7 +5,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -21,13 +20,13 @@ public class TreeWalker {
 	private final Hiker hiker;
 
 	public TreeWalker (final File root, final FileFilter fileFilter, final Hiker hiker) {
-		this.roots = Collections.singletonList(root);
+		this.roots = List.of(root);
 		this.fileFilter = fileFilter;
 		this.hiker = hiker;
 	}
 
 	public TreeWalker (final List<File> roots, final FileFilter fileFilter, final Hiker hiker) {
-		this.roots = roots;
+		this.roots = List.copyOf(roots);
 		this.fileFilter = fileFilter;
 		this.hiker = hiker;
 	}

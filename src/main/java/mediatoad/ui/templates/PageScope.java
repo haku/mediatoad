@@ -1,7 +1,9 @@
 package mediatoad.ui.templates;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.ui.StaticFilesServlet;
 
+@SuppressFBWarnings(value = { "PA_PUBLIC_PRIMITIVE_ATTRIBUTE", "URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD" })
 public class PageScope {
 
 	public final String cache_bust_prefix = StaticFilesServlet.CACHE_BUST_PREFIX;

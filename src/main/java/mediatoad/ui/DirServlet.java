@@ -27,6 +27,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import com.github.mustachejava.Mustache;
 import com.google.common.net.UrlEscapers;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.DbCache;
@@ -67,6 +68,7 @@ public class DirServlet extends HttpServlet {
 	private final Supplier<Mustache> nodeIndexTemplate;
 
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public DirServlet(final ServletCommon servletCommon, final ContentTree contentTree, final ThumbnailGenerator thumbnailGenerator, final MediaDb db, final DbCache dbCache) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;

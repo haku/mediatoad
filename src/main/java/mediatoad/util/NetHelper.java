@@ -10,8 +10,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public final class NetHelper {
 
@@ -21,6 +24,7 @@ public final class NetHelper {
 		private final NetworkInterface iface;
 		private final InetAddress addr;
 
+		@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 		public IfaceAndAddr(final NetworkInterface iface, final InetAddress addr) {
 			this.iface = iface;
 			this.addr = addr;
@@ -62,7 +66,7 @@ public final class NetHelper {
 	private static boolean isUseable(final NetworkInterface iface) throws SocketException {
 		if (iface.isLoopback()) return false;
 
-		final String name = iface.getName().toLowerCase(Locale.ROOT);
+		final String name = StringUtils.lowerCase(iface.getName(), Locale.ROOT);
 		if (name == null) return false;
 		if (name.startsWith("docker")) return false;
 		if (name.startsWith("br-")) return false;

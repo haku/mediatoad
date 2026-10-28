@@ -59,7 +59,7 @@ public class ContentNodeTest {
 		final int count = 5000;
 		final List<String> titles = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
-			titles.add(RandomStringUtils.randomPrint(10, 50));
+			titles.add(RandomStringUtils.insecure().nextPrint(10, 50));
 		}
 		Collections.shuffle(titles);
 		final Iterator<String> titleIttr = titles.iterator();

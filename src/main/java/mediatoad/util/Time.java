@@ -4,6 +4,8 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public interface Time {
 
 	long now();
@@ -20,6 +22,7 @@ public interface Time {
 		}
 	}
 
+	@SuppressFBWarnings(value = "PREDICTABLE_RANDOM")
 	public class FakeTime implements Time {
 
 		private static final Random RANDOM = new Random();

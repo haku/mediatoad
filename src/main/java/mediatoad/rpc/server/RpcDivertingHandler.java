@@ -11,6 +11,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.grpc.servlet.ServletAdapter;
 
 public class RpcDivertingHandler extends AbstractHandler {
@@ -18,6 +19,7 @@ public class RpcDivertingHandler extends AbstractHandler {
 	private final Handler rpcHandler;
 	private final Handler otherHandler;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "handlers are supposed to have mutable state etc.")
 	public RpcDivertingHandler(final Handler rpcHandler, final Handler otherHandler) {
 		super();
 		this.rpcHandler = rpcHandler;

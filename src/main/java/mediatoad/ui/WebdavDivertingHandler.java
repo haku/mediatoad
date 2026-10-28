@@ -11,11 +11,14 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class WebdavDivertingHandler extends AbstractHandler {
 
 	private final Handler webdavHandler;
 	private final Handler otherHandler;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public WebdavDivertingHandler(final Handler webdavHandler, final Handler otherHandler) {
 		super();
 		this.webdavHandler = webdavHandler;

@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prometheus.metrics.config.PrometheusProperties;
 import io.prometheus.metrics.exporter.common.PrometheusHttpExchange;
 import io.prometheus.metrics.exporter.common.PrometheusHttpRequest;
@@ -117,6 +118,7 @@ public class JettyPrometheusServlet extends HttpServlet {
 
 			private final HttpServletResponse response;
 
+			@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 			public Response(HttpServletResponse response) {
 				this.response = response;
 			}

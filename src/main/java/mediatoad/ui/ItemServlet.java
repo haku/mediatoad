@@ -28,6 +28,7 @@ import com.github.mustachejava.Mustache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.UrlEscapers;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
@@ -86,6 +87,7 @@ public class ItemServlet extends HttpServlet {
 	private final Supplier<Mustache> pageTemplate;
 	private final TagAutocompleter tagAutocompleter;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public ItemServlet(final ServletCommon servletCommon, final ContentTree contentTree, final MediaDb mediaDb, final TagAutocompleter tagAutocompleter) {
 		this.servletCommon = servletCommon;
 		this.contentTree = contentTree;

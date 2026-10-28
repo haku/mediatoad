@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.grpc.Deadline;
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -94,8 +96,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	private final MediaDb mediaDb;
 
 	private final Cache<String, Boolean> recentlyReportedPlaybacks = CacheBuilder.newBuilder()
-			.expireAfterWrite(15, TimeUnit.MINUTES).build();
+			.expireAfterWrite(Duration.ofMinutes(15)).build();
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "contentTree is supposed to be mutable state.")
 	public MediaImpl(final ContentTree contentTree, final MediaDb mediaDb) {
 		this.contentTree = contentTree;
 		this.mediaDb = mediaDb;
