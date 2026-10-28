@@ -1,0 +1,11 @@
+<!-- https://spotbugs.readthedocs.io/en/latest/filter.html -->
+
+<FindBugsFilter>
+  <Match>
+    <Package name="cdsc"/>
+  </Match>
+  <Match classregex="mediatoad\.rpc\.MediaGrpc.*" />
+  <Match classregex="mediatoad\.rpc\.MediaToadProto.*" />
+  <Match classregex="mediatoad\.tagdeterminer\.TagDeterminerGrpc.*" />
+  <Match classregex="mediatoad\.tagdeterminer\.TagDeterminerProto.*" />
+</FindBugsFilter>
