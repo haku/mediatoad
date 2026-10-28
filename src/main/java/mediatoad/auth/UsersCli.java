@@ -8,6 +8,7 @@ import java.util.Scanner;
 import org.apache.commons.io.FileUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.Args;
 import mediatoad.C;
 
@@ -16,6 +17,7 @@ public class UsersCli {
 	private UsersCli() {
 	}
 
+	@SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE.")
 	public static int interactivlyAddUser(final Args args) throws IOException {
 		final File userfile = args.getUserfile();
 		if (userfile == null) {

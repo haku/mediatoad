@@ -11,11 +11,14 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.DefaultAccess;
 
+@SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "control over args implies can access FS as current user anyway.")
 public class Args {
 
 	@Option(name = "-h", aliases = { "--help" }, usage = "Print this help text.") private boolean help;
@@ -140,7 +143,7 @@ public class Args {
 		if (this.httpPathPrefix != null && StringUtils.isBlank(this.httpPathPrefix)) {
 			throw new ArgsException("--http-path-prefix is blank.");
 		}
-		return StringUtils.removeEnd(StringUtils.removeStart(this.httpPathPrefix, "/"), "/");
+		return Strings.CS.removeEnd(Strings.CS.removeStart(this.httpPathPrefix, "/"), "/");
 	}
 
 	public boolean isTrustForwardedHeader() {
@@ -214,12 +217,12 @@ public class Args {
 
 	public List<String> getRemotes() {
 		if (this.remotes == null) return Collections.emptyList();
-		return this.remotes;
+		return Collections.unmodifiableList(this.remotes);
 	}
 
 	public List<String> getTagDeterminers() {
 		if (this.tagDeterminers == null) return Collections.emptyList();
-		return this.tagDeterminers;
+		return Collections.unmodifiableList(this.tagDeterminers);
 	}
 
 	public File getWebRoot() throws ArgsException {

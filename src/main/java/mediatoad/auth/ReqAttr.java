@@ -18,11 +18,11 @@ public class ReqAttr<T> {
 	private final Class<T> cls;
 	private final T defVal;
 
-	public ReqAttr(final String attrName, final Class<T> cls) {
+	private ReqAttr(final String attrName, final Class<T> cls) {
 		this(attrName, cls, null);
 	}
 
-	public ReqAttr(final String attrName, final Class<T> cls, final T defVal) {
+	private ReqAttr(final String attrName, final Class<T> cls, final T defVal) {
 		this.attrName = attrName;
 		this.cls = cls;
 		this.defVal = defVal;

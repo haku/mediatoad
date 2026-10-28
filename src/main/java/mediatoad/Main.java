@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.akuma.Daemon;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prometheus.metrics.instrumentation.jvm.JvmMemoryMetrics;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import mediatoad.Args.ArgsException;
@@ -59,10 +60,10 @@ public final class Main {
 		throw new AssertionError();
 	}
 
+	@SuppressFBWarnings(value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE", justification = "printing stack traces to the logs is fine actually.")
 	public static void main (final String[] rawArgs) throws Exception { // NOSONAR
 		LogHelper.bridgeJul();
 
-		final PrintStream err = System.err;
 		final Args args = new Args();
 		final CmdLineParser parser = new CmdLineParser(args);
 		try {
@@ -75,13 +76,13 @@ public final class Main {
 			run(args);
 		}
 		catch (final ArgsException e) {
-			err.println(e.getMessage());
-			help(parser, err);
+			System.err.println(e.getMessage());
+			help(parser, System.err);
 			return;
 		}
 		catch (final Exception e) {
-			err.println("An unhandled error occured.");
-			e.printStackTrace(err);
+			System.err.println("An unhandled error occured.");
+			e.printStackTrace(System.err);
 			System.exit(1);
 		}
 	}

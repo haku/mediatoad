@@ -9,12 +9,14 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.ui.ServletCommon;
 
 public class PermissionFilter implements Filter {
 
 	private final ReqAttr<Boolean> reqAttr;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "ReqAttr are immutable.")
 	public PermissionFilter(final ReqAttr<Boolean> reqAttr) {
 		this.reqAttr = reqAttr;
 	}

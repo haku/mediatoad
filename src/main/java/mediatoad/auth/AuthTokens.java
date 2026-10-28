@@ -3,8 +3,8 @@ package mediatoad.auth;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import edu.umd.cs.findbugs.annotations.SuppressMatchType;
 import mediatoad.C;
 
 public class AuthTokens {
@@ -29,11 +31,11 @@ public class AuthTokens {
 	}
 
 	private final Cache<String, String> newTokens = CacheBuilder.newBuilder()
-			.expireAfterAccess(Auth.MAX_TOKEN_AGE_MILLIS, TimeUnit.MILLISECONDS)
+			.expireAfterAccess(Duration.ofMillis(Auth.MAX_TOKEN_AGE_MILLIS))
 			.build();
 
 	private final Cache<String, String> persistedTokens = CacheBuilder.newBuilder()
-			.expireAfterAccess(Auth.MAX_TOKEN_AGE_MILLIS, TimeUnit.MILLISECONDS)
+			.expireAfterAccess(Duration.ofMillis(Auth.MAX_TOKEN_AGE_MILLIS))
 			.build();
 
 	public String newToken(final String username) throws IOException {
@@ -54,13 +56,16 @@ public class AuthTokens {
 		return username;
 	}
 
+	@SuppressFBWarnings(
+			value = "^PATH_TRAVERSAL_IN|CRLF_INJECTION_LOGS$",
+			matchType = SuppressMatchType.REGEX,
+			justification = "token must be equal to once generated serverside and match regexp before being used in FS.")
 	private void persistToken(final String token, final String username) throws IOException {
 		if (this.sessionDir == null) return;
 
 		// this check could be argued to be redundant, but here to make the static analysis happier.
 		if (!UUID_PATTERN.matcher(token).matches()) {
-			LOG.error("Not persisting invalid token: {}", token);
-			throw new IllegalArgumentException("Invalid token: " + token);
+			throw new IllegalArgumentException("Not persisting invalid token: " + token);
 		}
 
 		final File file = new File(this.sessionDir, token);
