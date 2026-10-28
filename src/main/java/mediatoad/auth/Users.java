@@ -93,7 +93,7 @@ public class Users {
 		public User(final String username, final String encPass, final Set<Permission> permissions) {
 			this.username = username;
 			this.encPass = encPass;
-			this.permissions = permissions;
+			this.permissions = permissions != null ? Collections.unmodifiableSet(permissions) : null;
 		}
 
 		public String getUsername() {

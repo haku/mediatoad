@@ -3,6 +3,7 @@ package mediatoad.ffmpeg;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,7 @@ public class ProcessHelper {
 		pb.redirectErrorStream(true);
 		final Process p = pb.start();
 		try {
-			final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
 			try {
 				String line;
 				while ((line = reader.readLine()) != null) {

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.cache.Cache;
@@ -208,7 +209,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			int toReadLength;
 			int wasReadLength;
 
-			if (range != null) is.skip(range.getFirst());
+			if (range != null) IOUtils.skipFully(is, range.getFirst());
 			toReadLength = range != null
 					? (int) Math.min(rangeLength, MESSAGE_SIZE_BYTES)
 					: MESSAGE_SIZE_BYTES;

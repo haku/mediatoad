@@ -2,6 +2,7 @@ package mediatoad.auth;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import org.apache.commons.io.FileUtils;
@@ -35,7 +36,7 @@ public class UsersCli {
 		}
 
 		@SuppressWarnings("resource")
-		final Scanner scanner = new Scanner(System.in);
+		final Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
 
 		System.out.print("Username: ");
 		final String username = scanner.next();

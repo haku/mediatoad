@@ -21,6 +21,7 @@ import com.google.gson.FormattingStyle;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.jsonwebtoken.LocatorAdapter;
 import io.jsonwebtoken.ProtectedHeader;
 import io.jsonwebtoken.gson.io.GsonSupplierSerializer;
@@ -57,6 +58,7 @@ public class JwkLoader extends LocatorAdapter<Key> {
 		setPrivateKeyFilePermissions(file);
 	}
 
+	@SuppressFBWarnings(value = "NS_DANGEROUS_NON_SHORT_CIRCUIT", justification = "intentional use of single | operator")
 	private static void setPrivateKeyFilePermissions(final File file) throws IOException {
 		// there does not appear to be any way to check current permissions, so can only set them to what they should be.
 		// only way to clear group and other bits seems to be to clear them all, then just set owner bits.

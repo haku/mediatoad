@@ -22,7 +22,9 @@ public interface Time {
 
 	public class FakeTime implements Time {
 
-		private final AtomicLong time = new AtomicLong(1000000000000L + new Random().nextInt());
+		private static final Random RANDOM = new Random();
+
+		private final AtomicLong time = new AtomicLong(1000000000000L + RANDOM.nextInt());
 
 		@Override
 		public long now() {

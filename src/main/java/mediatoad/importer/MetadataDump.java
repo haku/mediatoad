@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -34,7 +35,7 @@ class MetadataDump {
 	}
 
 	public static MetadataDump readInputStream(final InputStream is) throws IOException {
-		return readReader(new BufferedReader(new InputStreamReader(is)));
+		return readReader(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)));
 	}
 
 	public static MetadataDump readReader(final Reader reader) throws IOException {
