@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.resource.Resource;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.ui.ServletCommon;
 import mediatoad.util.MyFileServlet;
 
@@ -19,6 +20,7 @@ public class ContentServlet extends MyFileServlet {
 	private final ContentServingHistory contentServingHistory;
 	private final ServletCommon servletCommon;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public ContentServlet (final ContentTree contentTree, final ContentServingHistory contentServingHistory, final ServletCommon servletCommon) {
 		super();
 		this.contentTree = contentTree;

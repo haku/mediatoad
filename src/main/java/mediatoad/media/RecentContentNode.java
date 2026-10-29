@@ -6,8 +6,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
 
+@SuppressFBWarnings(value = "EQ_DOESNT_OVERRIDE_EQUALS")
 public class RecentContentNode extends ContentNode {
 
 	private static final int MAX_RECENT_ITEMS = 200;
@@ -17,6 +19,7 @@ public class RecentContentNode extends ContentNode {
 
 	private final Map<String, AuthList> itemIdToAuth = new ConcurrentHashMap<>();
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public RecentContentNode() {
 		super(
 				ContentGroup.RECENT.getId(),

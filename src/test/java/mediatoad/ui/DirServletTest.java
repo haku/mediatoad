@@ -76,6 +76,10 @@ public class DirServletTest {
 		this.servletCommon = FakeServletCommon.make(this.contentTree, "hostName", contentServingHistory);
 		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, null);
 
+		resetRequest();
+	}
+
+	private void resetRequest() {
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
 	}
@@ -303,6 +307,39 @@ public class DirServletTest {
 		}
 
 		assertEquals(expectedNames, actualNames);
+	}
+
+	@Test
+	public void itSetsPrefs() throws Exception {
+		final MediaDb db = new InMemoryMediaDb();
+		final DbCache dbCache = mock(DbCache.class);
+		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, db, dbCache);
+
+		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
+		final ContentNode mockDir = mockDirs.get(0);
+
+		final List<String> prefs = List.of("favourite", "sort_by_modified", "video_thumbs");
+		for (final String pref : prefs) {
+			resetRequest();
+			this.req.setPathInfo("/" + mockDir.getId());
+			this.req.setParameter("action", "setprefs");
+			this.req.setParameter(pref, "true");
+
+			this.undertest.doPost(this.req, this.resp);
+			assertEquals(403, this.resp.getStatus());
+
+			// reuse req to ensure only difference is auth.
+			this.resp = new MockHttpServletResponse();
+			ReqAttr.ALLOW_EDIT_DIR_PREFS.set(this.req, Boolean.TRUE);
+			this.undertest.doPost(this.req, this.resp);
+
+			assertEquals("Prefs saved.\n", this.resp.getOutputAsString());
+			assertEquals(303, this.resp.getStatus());
+			assertEquals(mockDir.getId(), this.resp.getHeader("Location"));
+
+			assertEquals(Map.of(pref, "true"), db.getNodePrefs(mockDir.getId()));
+		}
+
 	}
 
 	/**

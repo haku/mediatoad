@@ -92,33 +92,25 @@ public class ProcessHelper {
 
 		private static final long serialVersionUID = -7155994946532421402L;
 
-		private final String[] cmd;
 		private final FailureReason reason;
 		private final int exitCode;
 
 		public ProcessException(final String[] cmd, final FailureReason reason) {
 			super("Process failed: cmd=" + Arrays.toString(cmd) + " " + reason);
-			this.cmd = cmd;
 			this.reason = reason;
 			this.exitCode = Integer.MAX_VALUE;
 		}
 
 		public ProcessException(final String[] cmd, final int exitCode) {
 			super("Process failed: cmd=" + Arrays.toString(cmd) + " result=" + exitCode);
-			this.cmd = cmd;
 			this.reason = FailureReason.NON_ZERO_EXIT_CODE;
 			this.exitCode = exitCode;
 		}
 
 		public ProcessException(final String[] cmd, final Exception e) {
 			super("Process failed: cmd=" + Arrays.toString(cmd) + ": " + e.toString(), e);
-			this.cmd = cmd;
 			this.reason = FailureReason.EXCEPTION;
 			this.exitCode = Integer.MAX_VALUE;
-		}
-
-		public String[] getCmd() {
-			return this.cmd;
 		}
 
 		public FailureReason getReason() {

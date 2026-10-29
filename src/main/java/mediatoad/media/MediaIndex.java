@@ -14,6 +14,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.AuthList.AccessType;
 import mediatoad.auth.Authoriser;
@@ -45,6 +46,7 @@ public class MediaIndex implements FileListener {
 	private final ContentNode audioContainer;
 	private final ContentNode docContainer;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo, final Authoriser authoriser, final boolean verboseLog) throws IOException {
 		this.contentTree = contentTree;
 		this.hierarchyMode = hierarchyMode;

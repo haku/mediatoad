@@ -165,7 +165,9 @@ public class ImageResizer {
 			if (!ftmp.renameTo(f)) throw new IOException("Failed to rename '" + ftmp.getAbsolutePath() + "' to '" + f.getAbsolutePath() + "'.");
 		}
 		finally {
-			if (ftmp.exists()) ftmp.delete();
+			if (ftmp.exists()) {
+				if (!ftmp.delete()) throw new IOException("Failed to delete tmp file: " + ftmp.getAbsolutePath());
+			}
 		}
 	}
 

@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.media.MetadataReader.Metadata;
 import mediatoad.util.ExConsumer;
 
@@ -48,6 +49,7 @@ public class ContentItem extends AbstractContent {
 		this.durationMillis = durationMillis;
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public void setArt(final ContentItem art) {
 		this.art = art;
 	}
@@ -132,6 +134,7 @@ public class ContentItem extends AbstractContent {
 		return this.height;
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public ContentItem getArt() {
 		return this.art;
 	}

@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.db.FileInfo;
 import mediatoad.db.MediaMetadataStore;
 import mediatoad.ffmpeg.Ffprobe;
@@ -27,6 +28,7 @@ public class MediaInfo {
 		this(null, null, null);
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public MediaInfo (final MediaMetadataStore mediaMetadataStore, final ThumbnailGenerator thumbnailGenerator, final ExecutorService exSvc) {
 		this.mediaMetadataStore = mediaMetadataStore;
 		this.thumbnailGenerator = thumbnailGenerator;

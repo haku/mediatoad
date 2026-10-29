@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.servlet.ServletException;
@@ -148,6 +149,7 @@ public class TagsServlet extends HttpServlet {
 		returnTagsAndCounts(resp, items);
 	}
 
+	@SuppressFBWarnings(value = "NP_UNWRITTEN_FIELD", justification = "TagsRequest fields are written by gson.")
 	private List<ContentItem> readReqItems(final HttpServletRequest req, final HttpServletResponse resp, final TagsRequest tagReq) throws IOException {
 		final String username = ReqAttr.USERNAME.get(req);
 		final List<ContentItem> items = this.contentTree.getItemsForIds(tagReq.ids, username);
@@ -183,13 +185,21 @@ public class TagsServlet extends HttpServlet {
 		List<String> ids;
 	}
 
-
-	public class TagFrequencyUi extends TagFrequency {
+	public static class TagFrequencyUi extends TagFrequency {
 		public final String search;
 
 		public TagFrequencyUi(String tag, String cls, int count) {
 			super(tag, cls, count);
 			this.search = DbSearchSyntax.makeSingleTagSearch(tag);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null) return false;
+			if (this == obj) return true;
+			if (!(obj instanceof TagFrequencyUi)) return false;
+			final TagFrequencyUi that = (TagFrequencyUi) obj;
+			return super.equals(obj) && Objects.equals(this.search, that.search);
 		}
 	}
 

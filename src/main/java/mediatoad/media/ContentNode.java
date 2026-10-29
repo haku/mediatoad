@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.Permission;
 import mediatoad.util.ExConsumer;
@@ -110,10 +111,12 @@ public class ContentNode extends AbstractContent {
 		}
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public void setArt(final ContentItem art) {
 		this.art = art;
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public ContentItem getArt() {
 		return this.art;
 	}
@@ -283,7 +286,7 @@ public class ContentNode extends AbstractContent {
 			public int compare(final ContentNode a, final ContentNode b) {
 				final String at = a.sortKey;
 				final String bt = b.sortKey;
-				if (at == bt) return ID.compare(a, b);
+				if (Objects.equals(at, bt)) return ID.compare(a, b);
 				final int c = (at != null ? (bt != null ? at.compareTo(bt) : 1) : -1);
 				if (c != 0) return c;
 				return ID.compare(a, b);
@@ -294,7 +297,7 @@ public class ContentNode extends AbstractContent {
 			public int compare(final ContentNode a, final ContentNode b) {
 				final String at = a.title;
 				final String bt = b.title;
-				if (at == bt) ID.compare(a, b);
+				if (Objects.equals(at, bt)) ID.compare(a, b);
 				final int c = (at != null ? (bt != null ? at.compareToIgnoreCase(bt) : 1) : -1);
 				if (c != 0) return c;
 				return ID.compare(a, b);

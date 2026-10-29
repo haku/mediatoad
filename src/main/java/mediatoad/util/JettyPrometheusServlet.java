@@ -52,6 +52,7 @@ public class JettyPrometheusServlet extends HttpServlet {
 			return this.request;
 		}
 
+		@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 		@Override
 		public PrometheusHttpResponse getResponse() {
 			return this.response;

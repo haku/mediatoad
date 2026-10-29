@@ -18,6 +18,7 @@ import org.jupnp.model.types.DeviceType;
 import org.jupnp.model.types.UDADeviceType;
 import org.jupnp.support.connectionmanager.ConnectionManagerService;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.media.ContentTree;
 
@@ -55,6 +56,7 @@ public class MediaServer {
 		this.localDevice = new LocalDevice(new DeviceIdentity(systemId.getUsi(), C.MIN_ADVERTISEMENT_AGE_SECONDS), type, details, icon, new LocalService[] { contDirSrv, connManSrv });
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public LocalDevice getDevice () {
 		return this.localDevice;
 	}

@@ -125,6 +125,7 @@ public class SearchServlet extends HttpServlet {
 	}
 
 	@SuppressWarnings("resource")
+	@SuppressFBWarnings(value = "REC_CATCH_EXCEPTION")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		final GenTimer genTimer = new GenTimer();

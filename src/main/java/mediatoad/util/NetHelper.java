@@ -34,6 +34,7 @@ public final class NetHelper {
 			return this.iface;
 		}
 
+		@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 		public InetAddress getAddr() {
 			return this.addr;
 		}

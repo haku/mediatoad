@@ -366,9 +366,7 @@ public class DirServlet extends HttpServlet {
 		}
 
 		this.dbCache.invalidateNodePrefs(node.getId());
-
-		resp.addHeader("Location", node.getId());
-		ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Prefs saved.");
+		ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, node.getId(), "Prefs saved.");
 	}
 
 	private ContentNode getNodeFromPath(final HttpServletRequest req, final HttpServletResponse resp) throws IOException {

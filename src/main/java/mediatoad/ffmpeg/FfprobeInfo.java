@@ -2,6 +2,9 @@ package mediatoad.ffmpeg;
 
 import java.util.Set;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 public class FfprobeInfo {
 
 	private final Set<String> codecs;

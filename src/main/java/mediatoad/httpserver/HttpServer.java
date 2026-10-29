@@ -29,6 +29,7 @@ import com.vaguehope.common.rpc.RpcPrometheusMetrics;
 import com.vaguehope.common.rpc.RpcStatusServlet;
 import com.vaguehope.common.servlet.RequestLoggingFilter;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import mediatoad.Args;
 import mediatoad.Args.ArgsException;
@@ -84,6 +85,7 @@ public class HttpServer {
 	private final List<InetAddress> bindAddresses;
 	private final String hostName;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public HttpServer(
 			final ContentTree contentTree,
 			final MediaDb mediaDb,

@@ -198,6 +198,7 @@ public class ItemServletTest {
 
 		assertEquals("Tag added.\n", this.resp.getOutputAsString());
 		assertEquals(303, this.resp.getStatus());
+		assertEquals(item.getId() + "?autofocus=addtag", this.resp.getHeader("Location"));
 		assertEquals(tagToAdded, this.mediaDb.getTags(item.getId(), true, false).iterator().next().getTag());
 
 		verify(this.tagAutocompleter).addOrIncrementTag(tagToAdded);
@@ -233,6 +234,7 @@ public class ItemServletTest {
 
 		assertEquals("Tags removed.\n", this.resp.getOutputAsString());
 		assertEquals(303, this.resp.getStatus());
+		assertEquals(item.getId(), this.resp.getHeader("Location"));
 		assertFalse(this.mediaDb.getTags(item.getId(), true, false).iterator().hasNext());
 
 		verify(this.tagAutocompleter).decrementTag(tagToRm);

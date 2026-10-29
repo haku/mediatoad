@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import mediatoad.C;
@@ -71,6 +72,7 @@ public class ContentTree {
 		registry.register(this.itemCountMetric);
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public AuthSet getAuthSet() {
 		return this.authSet;
 	}
@@ -83,6 +85,7 @@ public class ContentTree {
 		return this.contentItems.size();
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public ContentNode getRootNode () {
 		return this.rootNode;
 	}
@@ -249,6 +252,7 @@ public class ContentTree {
 		}
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public RecentContentNode getRecent () {
 		return this.recentNode;
 	}

@@ -429,8 +429,7 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
-			resp.addHeader("Location", item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"));
-			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tag added.");
+			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"), "Tag added.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
 			this.tagAutocompleter.addOrIncrementTag(tag);
@@ -461,8 +460,7 @@ public class ItemServlet extends HttpServlet {
 			}
 			// TODO decode b64tagsandclss.
 			LOG.info("{} rm tags from {}: {}", username, item.getId(), Arrays.toString(b64tagsandclss));
-			resp.addHeader("Location", item.getId() + ServletCommon.query(req));
-			ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, "Tags removed.");
+			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.query(req), "Tags removed.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
 			for (final String tag : tags) {

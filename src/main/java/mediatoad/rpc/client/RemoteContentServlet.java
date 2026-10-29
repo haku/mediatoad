@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.rpc.MediaGrpc.MediaBlockingStub;
 import mediatoad.rpc.MediaToadProto.ReadMediaReply;
 import mediatoad.rpc.MediaToadProto.ReadMediaRequest;
@@ -20,6 +21,7 @@ public class RemoteContentServlet extends HttpServlet {
 	private final RpcClient rpcClient;
 	private final ServletCommon servletCommon;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public RemoteContentServlet(final RpcClient rpcClient, final ServletCommon servletCommon) {
 		this.rpcClient = rpcClient;
 		this.servletCommon = servletCommon;

@@ -20,7 +20,7 @@ public class ThreadSafeDateFormatter {
 		return this.threadLocal.get();
 	}
 
-	private final class FormatTl extends ThreadLocal<SimpleDateFormat> {
+	private static final class FormatTl extends ThreadLocal<SimpleDateFormat> {
 
 		private final String format;
 		private final Locale locale;

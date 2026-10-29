@@ -35,11 +35,14 @@ import org.jupnp.transport.spi.ServletContainerAdapter;
 import org.jupnp.transport.spi.StreamClient;
 import org.jupnp.transport.spi.StreamServer;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class DlnaService {
 
 	private final List<InetAddress> addressesToBind;  // Named this way cos NetworkAddressFactoryImpl has a bindAddresses field.
 	private final Map<String, Resource<?>> registryPathToRes = new HashMap<>();
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public DlnaService(final List<InetAddress> bindAddresses) throws IOException {
 		this.addressesToBind = bindAddresses;
 		final Icon icon = MediaServer.createDeviceIcon();
@@ -122,7 +125,7 @@ public class DlnaService {
 
 	}
 
-	private class MyJettyServletContainer implements ServletContainerAdapter {
+	private static class MyJettyServletContainer implements ServletContainerAdapter {
 
 		protected Server server;
 

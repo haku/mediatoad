@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -96,6 +97,16 @@ public class ServletCommon {
 
 	public static void returnForbidden(final HttpServletResponse resp) throws IOException {
 		ServletCommon.returnStatus(resp, HttpServletResponse.SC_FORBIDDEN, "Forbidden");
+	}
+
+	@SuppressFBWarnings(value = "UNVALIDATED_REDIRECT", justification = "this method is doing the validating.")
+	public static void returnRedirect(final HttpServletResponse resp, final int code, final String location, final String msg) throws IOException {
+		if (Strings.CI.startsWithAny(location, "http", "/")) {
+			throw new IllegalArgumentException("Invalid redirect location: " + location);
+		}
+
+		resp.addHeader("Location", location);
+		ServletCommon.returnStatusWithoutReset(resp, HttpServletResponse.SC_SEE_OTHER, msg);
 	}
 
 	public Supplier<Mustache> mustacheTemplate(final String name) {

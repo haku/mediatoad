@@ -3,6 +3,8 @@ package mediatoad.media;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class StoringMediaIdCallback implements MediaIdCallback {
 
 	private final CountDownLatch latch = new CountDownLatch(1);
@@ -15,6 +17,7 @@ public class StoringMediaIdCallback implements MediaIdCallback {
 		this.latch.countDown();
 	}
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	@Override
 	public void onError(final IOException e) {
 		this.exception = e;
