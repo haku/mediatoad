@@ -46,16 +46,30 @@ public class SystemId {
 	}
 
 	private static UUID generate(final File f) throws IOException {
-		final UDN udn = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
-		final UUID i = UUID.fromString(udn.getIdentifierString());
+		UUID uuid = maybeGetStableId();
+		if (uuid == null) uuid = UUID.randomUUID();
 
 		if (f != null) {
 			try (final OutputStream os = new FileOutputStream(f)) {
-				IOUtils.write(i.toString(), os, StandardCharsets.UTF_8);
+				IOUtils.write(uuid.toString(), os, StandardCharsets.UTF_8);
 			}
 		}
 
-		return i;
+		return uuid;
+	}
+
+	private static UUID maybeGetStableId() {
+		try {
+			final UDN udn = UDN.uniqueSystemIdentifier("DLNAtoad-MediaServer");
+			return UUID.fromString(udn.getIdentifierString());
+		}
+		catch (final RuntimeException e) {
+			if ("Could not discover first network interface hardware address".equals(e.getMessage())) {
+				LOG.warn("Failed to generate stable system identifier, assuming networking is offline and failling back to ramdom.");
+				return null;
+			}
+			throw e;
+		}
 	}
 
 }

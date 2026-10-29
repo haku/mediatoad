@@ -10,12 +10,12 @@
       version = "1";
 
       src = ./..;
-      mvnHash = "sha256-pkQ2NFFxzL0Uf1xmFlBAvO6pHgg2+c/aGMxd9HWRrs4=";
+      mvnHash = "sha256-WzAPOUY4MLOTJOZ2cFwsg4VWClv3Kh7KZpO2MQzMsu8=";
 
       mvnJdk = my_jdk;
       mvnParameters = "-P offline";
       buildOffline = true;
-      doCheck = false;
+      doCheck = true;
 
       nativeBuildInputs = [ pkgs.makeWrapper pkgs.protobuf plugin ];
 

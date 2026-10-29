@@ -24,8 +24,6 @@
 		<protobuf-java.version>4.36.2</protobuf-java.version>
 		<slf4j.version>2.0.20</slf4j.version>
 		<twelvemonkeys-imageio.version>3.15.3</twelvemonkeys-imageio.version>
-
-		<junit.version>4.13.2</junit.version>
 	</properties>
 
 	<build>
@@ -537,7 +535,7 @@
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -560,6 +558,22 @@
 			<artifactId>spotbugs-annotations</artifactId>
 			<version>4.10.5</version>
 			<scope>provided</scope>
+		</dependency>
+
+		<!-- transient test deps for offline nix build. -->
+
+		<dependency>
+			<groupId>org.apache.maven.surefire</groupId>
+			<artifactId>surefire-junit-platform</artifactId>
+			<version>3.6.1</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<version>5.14.4</version>
+			<scope>test</scope>
 		</dependency>
 
 	</dependencies>
