@@ -44,6 +44,10 @@
     };
 
     nix2containerPkgs = inputs.nix2container.packages.${system};
+
+    tmp = pkgs.runCommand "tmp" {} ''
+      mkdir -p $out/tmp
+    '';
   in {
     packages = {
       mediatoad = package;
@@ -56,7 +60,21 @@
           };
         };
         layers = [
-          (nix2containerPkgs.nix2container.buildLayer {deps = [my_jdk plugin];})
+          (nix2containerPkgs.nix2container.buildLayer {
+            deps = [
+              my_jdk
+              pkgs.ffmpeg-headless
+              plugin
+              tmp
+            ];
+            perms = [
+              {
+                path = tmp;
+                regex = ".*";
+                mode = "0777";
+              }
+            ];
+          })
         ];
       };
     };
