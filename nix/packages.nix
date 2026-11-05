@@ -65,8 +65,8 @@
               my_jdk
               pkgs.ffmpeg-headless
               plugin
-              tmp
             ];
+            copyToRoot = [ tmp ];
             perms = [
               {
                 path = tmp;
