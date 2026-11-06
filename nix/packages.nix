@@ -58,15 +58,24 @@
           exposedPorts = {
             "8192/tcp" = {};
           };
+          Env = [
+            "PATH=/bin"
+          ];
         };
         layers = [
           (nix2containerPkgs.nix2container.buildLayer {
             deps = [
               my_jdk
-              pkgs.ffmpeg-headless
               plugin
             ];
-            copyToRoot = [ tmp ];
+            copyToRoot = [
+              tmp
+              (pkgs.buildEnv {
+                name = "root";
+                paths = [ pkgs.ffmpeg-headless ];
+                pathsToLink = ["/bin"];
+              })
+            ];
             perms = [
               {
                 path = tmp;
