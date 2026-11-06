@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,7 @@ import mediatoad.FakeServletCommon;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.DbCache;
+import mediatoad.db.DirPrefs;
 import mediatoad.db.InMemoryMediaDb;
 import mediatoad.db.MediaDb;
 import mediatoad.db.TagFrequency;
@@ -166,7 +168,7 @@ public class DirServletTest {
 		final ContentNode subDir = this.mockContent.addMockDir("subdir", mockDir);
 
 		try (final WritableMediaDb w = db.getWritable()) {
-			w.setNodePref(subDir.getId(), DirServlet.PREF_KEY_FAVOURITE, Boolean.TRUE.toString());
+			w.setNodePref(subDir.getId(), DirPrefs.PREF_KEY_FAVOURITE, Boolean.TRUE.toString());
 		}
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
@@ -252,6 +254,8 @@ public class DirServletTest {
 	@Test
 	public void itShowsTopTags() throws Exception {
 		final DbCache dbCache = mock(DbCache.class);
+		when(dbCache.nodePrefs(anyString())).thenReturn(DirPrefs.DEFAULT);
+
 		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, null, dbCache);
 
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);
@@ -271,8 +275,10 @@ public class DirServletTest {
 
 	@Test
 	public void itScopesSearchesToCurrentDir() throws Exception {
-		final MediaDb db = new InMemoryMediaDb();
 		final DbCache dbCache = mock(DbCache.class);
+		when(dbCache.nodePrefs(anyString())).thenReturn(DirPrefs.DEFAULT);
+
+		final MediaDb db = new InMemoryMediaDb();
 		this.undertest = new DirServlet(this.servletCommon, this.contentTree, this.thumbnailGenerator, db, dbCache);
 
 		final List<ContentNode> mockDirs = this.mockContent.givenMockDirs(1);

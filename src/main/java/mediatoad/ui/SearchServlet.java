@@ -48,6 +48,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.DbCache;
+import mediatoad.db.DirPrefs;
 import mediatoad.db.MediaDb;
 import mediatoad.db.TagFrequency;
 import mediatoad.db.search.DbSearchParser;
@@ -262,7 +263,8 @@ public class SearchServlet extends HttpServlet {
 		int x = 0;
 		for (final ContentItem i : items) {
 			final String q = offset != null ? linkQuery + "&" + PARAM_PAGE_OFFSET + "=" + (offset + x) : linkQuery;
-			resultGroup.addContentItem(i, q, useThumbnails ? this.thumbnailGenerator : null, false);
+			final DirPrefs nodePrefs = this.dbCache != null ? this.dbCache.nodePrefs(i.getParentId()) : DirPrefs.DEFAULT;
+			resultGroup.addContentItem(i, q, useThumbnails ? this.thumbnailGenerator : null, nodePrefs.videoThumbs);
 			x += 1;
 		}
 	}

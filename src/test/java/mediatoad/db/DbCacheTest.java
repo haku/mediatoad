@@ -73,23 +73,23 @@ public class DbCacheTest {
 
 	@Test
 	public void itCachesDbPrefs() throws Exception {
-		final Map<String, String> ret1 = ImmutableMap.of("foo", "bar");
+		final Map<String, String> ret1 = ImmutableMap.of(DirPrefs.PREF_KEY_FAVOURITE, "true");
 		when(this.db.getNodePrefs("nodeId")).thenReturn(ret1);
 		when(this.db.getWriteCount()).thenReturn(1L);
 
 		for (int i = 0; i < 3; i++) {
-			this.ticker.addTime(2, TimeUnit.NANOSECONDS);
-			assertEquals(ret1, this.undertest.nodePrefs("nodeId"));
+			this.ticker.addTime(10, TimeUnit.MINUTES);
+			assertEquals(new DirPrefs(true, false, false), this.undertest.nodePrefs("nodeId"));
 		}
 		verify(this.db, times(1)).getNodePrefs(anyString());
 
-		final Map<String, String> ret2 = ImmutableMap.of("foo", "buzz");
+		final Map<String, String> ret2 = ImmutableMap.of(DirPrefs.PREF_KEY_FAVOURITE, "false");
 		when(this.db.getNodePrefs("nodeId")).thenReturn(ret2);
 		when(this.db.getWriteCount()).thenReturn(2L);
 
 		for (int i = 0; i < 3; i++) {
-			this.ticker.addTime(2, TimeUnit.NANOSECONDS);
-			assertEquals(ret2, this.undertest.nodePrefs("nodeId"));
+			this.ticker.addTime(10, TimeUnit.MINUTES);
+			assertEquals(new DirPrefs(false, false, false), this.undertest.nodePrefs("nodeId"));
 		}
 		verify(this.db, times(2)).getNodePrefs(anyString());
 	}

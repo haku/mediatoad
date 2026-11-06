@@ -1,10 +1,10 @@
 package mediatoad.db;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -35,7 +35,7 @@ public class DbCache {
 
 	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> dirTopTags;
 	private final LoadingCache<CacheKey, ValueAndVersion<List<TagFrequency>>> searchTopTags;
-	private final LoadingCache<CacheKey, ValueAndVersion<Map<String, String>>> nodePrefs;
+	private final LoadingCache<CacheKey, ValueAndVersion<DirPrefs>> nodePrefs;
 
 	public DbCache(final MediaDb db, final Executor executor, final boolean verboseLog) {
 		this(db, executor, verboseLog, Ticker.systemTicker());
@@ -59,7 +59,7 @@ public class DbCache {
 				.build(new SearchTopTagLoader());
 		this.nodePrefs = CacheBuilder.newBuilder()
 				.maximumSize(1000L)
-				.refreshAfterWrite(Duration.ofNanos(1))  // always check DB version.
+				.refreshAfterWrite(Duration.ofMinutes(5))  // DirServlet explicitly invalidates after write.
 				.ticker(ticker)
 				.build(new NodePrefLoader());
 	}
@@ -81,14 +81,13 @@ public class DbCache {
 	/**
 	 * always returns prefs, never defers loading.
 	 */
-	public Map<String, String> nodePrefs(final String nodeId) throws SQLException {
+	public DirPrefs nodePrefs(final String nodeId) throws IOException {
 		try {
 			return this.nodePrefs.get(new CacheKey(null, nodeId)).value;
 		}
 		catch (final ExecutionException e) {
-			if (e.getCause() instanceof SQLException) {
-				throw (SQLException) e.getCause();
-			}
+			if (e.getCause() instanceof IOException) throw (IOException) e.getCause();
+			if (e.getCause() instanceof SQLException) throw new IOException(e.getCause());
 			throw new IllegalStateException(e);
 		}
 	}
@@ -131,11 +130,11 @@ public class DbCache {
 		}
 	}
 
-	private class NodePrefLoader extends DbLoader<Map<String, String>> {
+	private class NodePrefLoader extends DbLoader<DirPrefs> {
 		@Override
-		public ValueAndVersion<Map<String, String>> load(final CacheKey key) throws Exception {
+		public ValueAndVersion<DirPrefs> load(final CacheKey key) throws Exception {
 			final long ver = DbCache.this.db.getWriteCount();
-			final Map<String, String> prefs = DbCache.this.db.getNodePrefs(key.query);
+			final DirPrefs prefs = DirPrefs.read(DbCache.this.db, key.query);
 			return new ValueAndVersion<>(prefs, ver);
 		}
 	}

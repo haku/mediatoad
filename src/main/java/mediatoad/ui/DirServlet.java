@@ -31,6 +31,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
 import mediatoad.db.DbCache;
+import mediatoad.db.DirPrefs;
 import mediatoad.db.MediaDb;
 import mediatoad.db.TagFrequency;
 import mediatoad.db.WritableMediaDb;
@@ -53,10 +54,6 @@ public class DirServlet extends HttpServlet {
 
 	static final String PARAM_SORT = "sort";
 	private static final int ITEMS_PER_PAGE = SearchServlet.MAX_RESULTS;
-
-	static final String PREF_KEY_FAVOURITE = "favourite";
-	private static final String PREF_KEY_SORT_MODIFIED = "sort_by_modified";
-	private static final String PREF_KEY_VIDEO_THUMBS = "video_thumbs";
 
 	private static final long serialVersionUID = 6207424145390666199L;
 
@@ -131,9 +128,7 @@ public class DirServlet extends HttpServlet {
 
 		final boolean isRoot = ContentGroup.ROOT.getId().equals(node.getId());
 		final ResultGroupScope favouritesScope;
-		final boolean favourite;
-		final boolean sortModified;
-		final boolean videoThumbs;
+		final DirPrefs dirPrefs;
 		if (isRoot) {
 			genTimer.startSection("favs");
 
@@ -141,17 +136,11 @@ public class DirServlet extends HttpServlet {
 			final List<ContentNode> favourites = readFavourites(username);
 			appendNodes(favouritesScope, favourites);
 
-			favourite = false;
-			sortModified = false;
-			videoThumbs = false;
+			dirPrefs = DirPrefs.DEFAULT;
 		}
 		else {
 			genTimer.startSection("prefs");
-
-			final Map<String, String> dirPrefs = readNodePrefs(node);
-			favourite = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_FAVOURITE));
-			sortModified = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_SORT_MODIFIED));
-			videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
+			dirPrefs = this.dbCache != null ? this.dbCache.nodePrefs(node.getId()) : DirPrefs.DEFAULT;
 
 			favouritesScope = null;
 			pageScope.setUpLinkPath(node.getParentId());
@@ -165,7 +154,7 @@ public class DirServlet extends HttpServlet {
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth, itemsUserHasAuth);
 		final long nodeTotalFileLength = itemsUserHasAuth.stream().mapToLong(i -> i.getFileLength()).sum();
 
-		final Order sort = sortModified ? ContentItem.Order.MODIFIED_DESC : parseSort(sortRaw);
+		final Order sort = dirPrefs.sortModified ? ContentItem.Order.MODIFIED_DESC : parseSort(sortRaw);
 		final String sortParam = paramForSort(sort);
 		if (sort != null) {
 			itemsUserHasAuth.sort(sort);
@@ -192,9 +181,9 @@ public class DirServlet extends HttpServlet {
 				resultScope,
 				!isRoot,
 				this.db != null && ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req),
-				favourite,
+				dirPrefs.favourite,
 				isRoot || sort == Order.MODIFIED_DESC,
-				videoThumbs,
+				dirPrefs.videoThumbs,
 				node.getId(),
 				node.getFile() != null ? node.getFile().getName() : node.getTitle(),
 				FileHelper.readableFileSize(nodeTotalFileLength));
@@ -205,7 +194,7 @@ public class DirServlet extends HttpServlet {
 		final String linkQuery = "?" + ItemServlet.PARAM_NODE_ID + "=" + node.getId()
 				+ (sort != null ? "&" + sortParam : "");
 		for (final ContentItem i : pageItems) {
-			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator, videoThumbs);
+			resultScope.addContentItem(i, linkQuery, this.thumbnailGenerator, dirPrefs.videoThumbs);
 		}
 
 		genTimer.startSection("tags");
@@ -319,7 +308,7 @@ public class DirServlet extends HttpServlet {
 
 		final Map<String, String> pathToValue;
 		try {
-			pathToValue = this.db.getAllNodePref(PREF_KEY_FAVOURITE);
+			pathToValue = this.db.getAllNodePref(DirPrefs.PREF_KEY_FAVOURITE);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);
@@ -336,15 +325,6 @@ public class DirServlet extends HttpServlet {
 		return ret;
 	}
 
-	private Map<String, String> readNodePrefs(final ContentNode node) throws IOException {
-		if (node.getFile() == null || this.db == null) return Collections.emptyMap();
-		try {
-			return this.dbCache.nodePrefs(node.getId());
-		}
-		catch (final SQLException e) {
-			throw new IOException(e);
-		}
-	}
 
 	private void setPrefs(final ContentNode node, final HttpServletRequest req, final HttpServletResponse resp) throws IOException {
 		if (!ReqAttr.ALLOW_EDIT_DIR_PREFS.get(req) || node.getFile() == null) {
@@ -352,14 +332,14 @@ public class DirServlet extends HttpServlet {
 			return;
 		}
 
-		final Boolean favourite = Boolean.valueOf(req.getParameter(PREF_KEY_FAVOURITE));
-		final Boolean sortModified = Boolean.valueOf(req.getParameter(PREF_KEY_SORT_MODIFIED));
-		final Boolean videoThumbs = Boolean.valueOf(req.getParameter(PREF_KEY_VIDEO_THUMBS));
+		final Boolean favourite = Boolean.valueOf(req.getParameter(DirPrefs.PREF_KEY_FAVOURITE));
+		final Boolean sortModified = Boolean.valueOf(req.getParameter(DirPrefs.PREF_KEY_SORT_MODIFIED));
+		final Boolean videoThumbs = Boolean.valueOf(req.getParameter(DirPrefs.PREF_KEY_VIDEO_THUMBS));
 
 		try (final WritableMediaDb w = this.db.getWritable()) {
-			w.setNodePref(node.getId(), PREF_KEY_FAVOURITE, favourite.booleanValue() ? favourite.toString() : null);
-			w.setNodePref(node.getId(), PREF_KEY_SORT_MODIFIED, sortModified.booleanValue() ? sortModified.toString() : null);
-			w.setNodePref(node.getId(), PREF_KEY_VIDEO_THUMBS, videoThumbs.booleanValue() ? videoThumbs.toString() : null);
+			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_FAVOURITE, favourite.booleanValue() ? Boolean.TRUE.toString() : null);
+			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_SORT_MODIFIED, sortModified.booleanValue() ? Boolean.TRUE.toString() : null);
+			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_VIDEO_THUMBS, videoThumbs.booleanValue() ? Boolean.TRUE.toString() : null);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);

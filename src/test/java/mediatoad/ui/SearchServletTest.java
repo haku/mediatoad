@@ -24,6 +24,7 @@ import com.vaguehope.common.servlet.MockHttpServletResponse;
 
 import mediatoad.FakeServletCommon;
 import mediatoad.db.DbCache;
+import mediatoad.db.DirPrefs;
 import mediatoad.db.MediaDb;
 import mediatoad.db.MockMediaMetadataStore;
 import mediatoad.dlnaserver.SearchEngine;
@@ -64,6 +65,7 @@ public class SearchServletTest {
 		this.db = this.mockMediaMetadataStore.getMediaDb();
 
 		this.dbCache = mock(DbCache.class);
+		when(this.dbCache.nodePrefs(anyString())).thenReturn(DirPrefs.DEFAULT);
 		when(this.dbCache.searchTopTags(anySet(), anyString())).thenReturn(Collections.emptyList());
 
 		this.undertest = new SearchServlet(this.servletCommon, this.contentTree, this.contentServlet, this.db, this.dbCache, this.upnpService, this.rpcClient, this.thumbnailGenerator, this.searchEngine);
