@@ -31,7 +31,7 @@ input[type=submit]:disabled, button:disabled {
 
 .thumbnail.video:before {
   color: #000;
-  background: #f3b1cb;
+  text-shadow: #fff 0px 0px 5px;
 }
 .thumbnail.selected {
   border-color: #69c6b0;
