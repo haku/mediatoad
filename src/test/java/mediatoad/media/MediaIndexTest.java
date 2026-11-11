@@ -36,7 +36,6 @@ import mediatoad.db.InMemoryMediaDb;
 import mediatoad.db.MediaMetadataStore;
 import mediatoad.media.MediaIndex.HierarchyMode;
 import mediatoad.util.CollectionHelper;
-import mediatoad.util.CollectionHelper.Function;
 import mediatoad.util.DaemonThreadFactory;
 
 public class MediaIndexTest {
@@ -453,33 +452,12 @@ public class MediaIndexTest {
 
 	private static void assertContainerContainsDirsAndFiles(final ContentNode node, final List<File> dirs,
 			final List<File> files) {
-		final Collection<String> expectedDirs = CollectionHelper.map(dirs, new Function<File, String>() {
-			@Override
-			public String exec(final File input) {
-				return input.getName();
-			}
-		}, new ArrayList<String>());
-		final Collection<String> actualDirs = CollectionHelper.map(node.getCopyOfNodes(),
-				new Function<ContentNode, String>() {
-					@Override
-					public String exec(final ContentNode input) {
-						return input.getTitle();
-					}
-				}, new ArrayList<String>());
+		final Collection<String> expectedDirs = CollectionHelper.map(dirs, i -> i.getName(), new ArrayList<String>());
+		final Collection<String> actualDirs = CollectionHelper.map(node.getCopyOfNodes(), i-> i.getTitle(), new ArrayList<String>());
 		assertEquals(expectedDirs, actualDirs);
 
-		final Collection<String> expectedFiles = CollectionHelper.map(files, new Function<File, String>() {
-			@Override
-			public String exec(final File input) {
-				return input.getName();
-			}
-		}, new ArrayList<String>());
-		final Collection<String> actualFiles = CollectionHelper.map(node.getCopyOfItems(), new Function<ContentItem, String>() {
-			@Override
-			public String exec(final ContentItem input) {
-				return input.getTitle();
-			}
-		}, new ArrayList<String>());
+		final Collection<String> expectedFiles = CollectionHelper.map(files, i -> i.getName(), new ArrayList<String>());
+		final Collection<String> actualFiles = CollectionHelper.map(node.getCopyOfItems(), i -> i.getTitle(), new ArrayList<String>());
 		assertEquals(expectedFiles, actualFiles);
 	}
 

@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashSet;
 
 import mediatoad.util.CollectionHelper;
-import mediatoad.util.CollectionHelper.Function;
 
 public enum ContentGroup {
 
@@ -19,12 +18,7 @@ public enum ContentGroup {
 	DOCUMENT("6-docs", "doc-", "Documents");
 
 	private static final Collection<String> IDS = Collections.unmodifiableCollection(
-			CollectionHelper.map(values(), new Function<ContentGroup, String>() {
-				@Override
-				public String exec (final ContentGroup input) {
-					return input.getId();
-				}
-			}, new HashSet<String>()));
+			CollectionHelper.map(values(), i -> i.getId(), new HashSet<String>()));
 
 	private final String id;
 	private final String itemIdPrefix;
