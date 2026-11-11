@@ -17,8 +17,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaguehope.common.util.StringsCommon;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import mediatoad.util.StringHelper;
 
 public class RequestLoggingFilter implements Filter {
 
@@ -35,9 +36,9 @@ public class RequestLoggingFilter implements Filter {
 		final HttpServletRequest req = (HttpServletRequest) request;
 		final HttpServletResponse resp = (HttpServletResponse) response;
 
-		final String remoteAddr = StringHelper.firstLineMaxLength(req.getRemoteAddr(), 50);
-		final String requestURI = StringHelper.firstLineMaxLength(req.getRequestURI(), 50);
-		final String method = StringHelper.firstLineMaxLength(req.getMethod(), 10);
+		final String remoteAddr = StringsCommon.firstLineMaxLength(req.getRemoteAddr(), 50);
+		final String requestURI = StringsCommon.firstLineMaxLength(req.getRequestURI(), 50);
+		final String method = StringsCommon.firstLineMaxLength(req.getMethod(), 10);
 		final String ranges = joinEnumeration(req.getHeaders("Range"), ",");
 
 		try {
@@ -55,9 +56,9 @@ public class RequestLoggingFilter implements Filter {
 
 	private static String joinEnumeration(final Enumeration<String> en, final String join) {
 		if (en == null || !en.hasMoreElements()) return null;
-		StringBuilder s = new StringBuilder(StringHelper.firstLineMaxLength(en.nextElement(), 50));
+		StringBuilder s = new StringBuilder(StringsCommon.firstLineMaxLength(en.nextElement(), 50));
 		while (en.hasMoreElements()) {
-			s.append(join).append(StringHelper.firstLineMaxLength(en.nextElement(), 50));
+			s.append(join).append(StringsCommon.firstLineMaxLength(en.nextElement(), 50));
 		}
 		return s.toString();
 	}

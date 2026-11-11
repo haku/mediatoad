@@ -1,5 +1,7 @@
 package com.vaguehope.common.servlet;
 
+import static com.vaguehope.common.util.StringsCommon.escapeHtml;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
@@ -10,8 +12,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.common.collect.Table;
 
@@ -76,10 +76,6 @@ public abstract class StatusPageServlet extends HttpServlet {
 			w.println("</tr>");
 		}
 		w.println("</table>");
-	}
-
-	private static String escapeHtml(final Object a) {
-		return StringEscapeUtils.escapeHtml4(String.valueOf(a));
 	}
 
 }
