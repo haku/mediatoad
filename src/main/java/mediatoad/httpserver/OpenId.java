@@ -133,7 +133,7 @@ public class OpenId {
 			if (username != null) {
 				final User user = OpenId.this.users.getUser(username);
 				if (user == null) {
-					resp.sendError(HttpServletResponse.SC_FORBIDDEN, "User '" + username + "' not found in userfile.");
+					resp.sendError(HttpServletResponse.SC_FORBIDDEN, "User not found in userfile.");
 					return;
 				}
 				ReqAttr.USER.set(req, user);

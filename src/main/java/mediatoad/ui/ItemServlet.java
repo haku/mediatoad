@@ -48,6 +48,7 @@ import mediatoad.media.MediaFormat;
 import mediatoad.ui.templates.ItemScope;
 import mediatoad.ui.templates.PageScope;
 import mediatoad.util.FileHelper;
+import mediatoad.util.StringHelper;
 import mediatoad.util.ThreadSafeDateFormatter;
 
 public class ItemServlet extends HttpServlet {
@@ -401,6 +402,7 @@ public class ItemServlet extends HttpServlet {
 		}
 	}
 
+	@SuppressFBWarnings("CRLF_INJECTION_LOGS")
 	@Override
 	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
 		if (this.mediaDb == null) {
@@ -421,7 +423,16 @@ public class ItemServlet extends HttpServlet {
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
 			final String tag = ServletCommon.readRequiredParam(req, resp, "addTag", 1);
-			if (tag == null) return;
+			if (tag == null) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param missing: tag");
+				return;
+			}
+			// TODO decide on some proper tag validation rules.
+			if (tag.length() > 100) {
+				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param too long: tag");
+				return;
+			}
+
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 				w.addTag(item.getId(), tag, System.currentTimeMillis());
 				w.commit();
@@ -429,7 +440,7 @@ public class ItemServlet extends HttpServlet {
 			catch (final SQLException e) {
 				throw new IOException(e);
 			}
-			LOG.info("{} added tag to {}: {}", username, item.getId(), tag);
+			LOG.info("{} added tag to {}: {}", username, item.getId(), StringHelper.escapeNewLines(tag));
 			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"), "Tag added.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
@@ -445,7 +456,7 @@ public class ItemServlet extends HttpServlet {
 				final String b64tagandcls = b64tagsandclss[i];
 				final int x = b64tagandcls.indexOf(":");
 				if (x <= 0) {
-					ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid: " + b64tagandcls);
+					ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Param invalid: b64tag");
 					return;
 				}
 				tags[i] = new String(Base64.getDecoder().decode(b64tagandcls.substring(0, x)), StandardCharsets.UTF_8);
@@ -461,7 +472,7 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 			// TODO decode b64tagsandclss.
-			LOG.info("{} rm tags from {}: {}", username, item.getId(), Arrays.toString(b64tagsandclss));
+			LOG.info("{} rm tags from {}: {}", username, item.getId(), StringHelper.escapeNewLines(Arrays.toString(b64tagsandclss)));
 			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.query(req), "Tags removed.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.

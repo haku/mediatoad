@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /*
  * Binary search and then step backwards/forwards inspired by:
  * https://stackoverflow.com/questions/9543046/implement-binary-search-with-string-prefix
@@ -37,6 +39,7 @@ public class TagAutocompleter {
 	private FragmentAndTag[] tagsArr;
 	private FragmentAndTag[] fragmentsArr;
 
+	@SuppressFBWarnings(value = "EI_EXPOSE_REP")
 	public TagAutocompleter(final MediaDb db, final ScheduledExecutorService schExSvc) {
 		this.db = db;
 		this.schExSvc = schExSvc;

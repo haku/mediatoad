@@ -11,7 +11,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.text.StringEscapeUtils;
+
 import com.google.common.collect.Table;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 @SuppressWarnings("serial")
 public abstract class StatusPageServlet extends HttpServlet {
@@ -45,28 +49,33 @@ public abstract class StatusPageServlet extends HttpServlet {
 
 	protected abstract void generatePageBodyHtml(HttpServletRequest req, HttpServletResponse resp, PrintWriter w);
 
+	@SuppressFBWarnings("XSS_SERVLET")  // scanner does not seem to know about StringEscapeUtils.
 	public static <R, C, V> void tableToHtml(final PrintWriter w, final Table<R, C, V> table) {
 		final Set<C> columns = table.columnKeySet();
 		w.println("<table>");
 		w.print("<tr><th></th>");
 		for (final C c : columns) {
-			w.print("<th>" + c + "</th>");
+			w.print("<th>" + escapeHtml(c) + "</th>");
 		}
 		w.println("</tr>");
 		for (final Entry<R, Map<C, V>> re : table.rowMap().entrySet()) {
-			w.print("<tr><td>" + re.getKey() + "</td>");
+			w.print("<tr><td>" + escapeHtml(re.getKey()) + "</td>");
 			for (final C c : columns) {
 				final V val = re.getValue().get(c);
 				if (val == null) {
 					w.print("<td></td>");
 				}
 				else {
-					w.print("<td>" + val + "</td>");
+					w.print("<td>" + escapeHtml(val) + "</td>");
 				}
 			}
 			w.println("</tr>");
 		}
 		w.println("</table>");
+	}
+
+	private static String escapeHtml(final Object a) {
+		return StringEscapeUtils.escapeHtml4(String.valueOf(a));
 	}
 
 }

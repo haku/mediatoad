@@ -267,6 +267,9 @@ public class AuthFilter implements Filter {
 		resp.addCookie(cookie);
 	}
 
+	// scanner does not understand cookie.setSecure() with a param.
+	// eg https://github.com/find-sec-bugs/find-sec-bugs/issues/164
+	@SuppressFBWarnings("INSECURE_COOKIE")
 	private Cookie makeAuthCookie(final String token) {
 		final Cookie cookie = new Cookie(Auth.TOKEN_COOKIE_NAME, token);
 		cookie.setPath("/" + (this.httpPathPrefix != null ? this.httpPathPrefix : ""));

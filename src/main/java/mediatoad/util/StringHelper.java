@@ -5,6 +5,8 @@ import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.Strings;
+
 public final class StringHelper {
 
 	private StringHelper () {
@@ -109,6 +111,15 @@ public final class StringHelper {
 
 		if (first.length() < input.length()) return first + "[+" + (input.length() - first.length()) + "]";
 		return first;
+	}
+
+	public static String escapeNewLines(final String input) {
+		if (input == null) return null;
+		if (input.length() < 1) return input;
+		String output = input;
+		output = Strings.CS.replace(output, "\n", "\\n");
+		output = Strings.CS.replace(output, "\r", "\\r");
+		return output;
 	}
 
 }

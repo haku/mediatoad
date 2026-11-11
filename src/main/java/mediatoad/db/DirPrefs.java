@@ -10,7 +10,7 @@ public class DirPrefs {
 	public static final String PREF_KEY_SORT_MODIFIED = "sort_by_modified";
 	public static final String PREF_KEY_VIDEO_THUMBS = "video_thumbs";
 
-	public static DirPrefs DEFAULT = new DirPrefs(false, false, false);
+	public static final DirPrefs DEFAULT = new DirPrefs(false, false, false);
 
 	public static DirPrefs read(final MediaDb db, final String nodeId) throws SQLException {
 		if (db == null || nodeId == null) return DEFAULT;
@@ -29,7 +29,7 @@ public class DirPrefs {
 		this.videoThumbs = Boolean.parseBoolean(dirPrefs.get(PREF_KEY_VIDEO_THUMBS));
 	}
 
-	protected DirPrefs(boolean favourite, boolean sortModified, boolean videoThumbs) {
+	protected DirPrefs(final boolean favourite, final boolean sortModified, final boolean videoThumbs) {
 		this.favourite = favourite;
 		this.sortModified = sortModified;
 		this.videoThumbs = videoThumbs;
