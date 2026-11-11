@@ -3,8 +3,9 @@ package mediatoad.media;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
@@ -14,20 +15,19 @@ public class RecentContentNode extends ContentNode {
 
 	private static final int MAX_RECENT_ITEMS = 200;
 
-	private final ConcurrentSkipListSet<ContentItem> recent;
+	private final NavigableSet<ContentItem> recent;
 	private volatile long oldestRecentItem = 0L;
 
 	private final Map<String, AuthList> itemIdToAuth = new ConcurrentHashMap<>();
 
-	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
 	public RecentContentNode() {
 		super(
 				ContentGroup.RECENT.getId(),
 				ContentGroup.ROOT.getId(),
 				ContentGroup.RECENT.getHumanName(),
 				null, null, null, null,
-				new ConcurrentSkipListSet<>(ContentItem.Order.MODIFIED_DESC));
-		this.recent = (ConcurrentSkipListSet<ContentItem>) this.items;
+				new TreeSet<>(ContentItem.Order.MODIFIED_DESC));
+		this.recent = (NavigableSet<ContentItem>) this.items;
 	}
 
 	@Override
