@@ -6,6 +6,8 @@ import java.util.Map.Entry;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.text.StringEscapeUtils;
+
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.ImmutableTable.Builder;
 import com.vaguehope.common.rpc.RpcMetrics.ChannelState;
@@ -38,7 +40,9 @@ public class RpcStatusServlet extends StatusPageServlet {
 		w.println("<h2>client channels</h2>");
 		w.println("<table><tr><th>connection</th><th>state</th></tr>");
 		for (final ChannelState c : RpcMetrics.channelStates()) {
-			w.println(String.format("<tr><td>%s</td><td>%s</td></tr>", c.getName(), c.getState()));
+			w.println(String.format("<tr><td>%s</td><td>%s</td></tr>",
+					StringEscapeUtils.escapeHtml4(c.getName()),
+					StringEscapeUtils.escapeHtml4(String.valueOf(c.getState()))));
 		}
 		w.println("</table>");
 

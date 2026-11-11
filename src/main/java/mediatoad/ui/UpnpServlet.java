@@ -1,5 +1,7 @@
 package mediatoad.ui;
 
+import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -84,7 +86,9 @@ public class UpnpServlet extends HttpServlet {
 		w.println("</form>");
 
 		if (message != null) {
-			w.println("<p>" + message + "</p>");
+			w.println("<p>");
+			w.println(escapeHtml4(message));
+			w.println("</p>");
 		}
 
 		w.println("<h3>Local Devices</h3>");
@@ -100,7 +104,9 @@ public class UpnpServlet extends HttpServlet {
 		w.println("<html>");
 		w.println("<head>");
 		w.println("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\">");
-		w.println("<title>" + title + "</title>");
+		w.print("<title>");
+		w.print(escapeHtml4(title));
+		w.println("</title>");
 		w.println("<meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0\">");
 		w.println("<link rel=\"stylesheet\" href=\"w/layout.css\">");
 		w.println("<link rel=\"stylesheet\" href=\"w/colours.css\">");
@@ -132,18 +138,34 @@ public class UpnpServlet extends HttpServlet {
 
 		String title = d.getDetails().getFriendlyName();
 		if (StringUtils.isBlank(title)) title = d.getDisplayString();
-		w.println("<li>" + title);
-		w.println("<br>UDN: " + d.getIdentity().getUdn());
-		w.println("<br>Max Age: " + d.getIdentity().getMaxAgeSeconds() + " seconds");
-		w.println("<br>Type: " + d.getType());
-		w.println("<br>Model / Version: " + d.getDetails().getModelDetails().getModelName() + " / " + d.getVersion().getMajor() + "." + d.getVersion().getMinor());
+		w.println("<li>");
+		w.println(escapeHtml4(title));
+
+		w.print("<br>UDN: ");
+		w.println(escapeHtml4(String.valueOf(d.getIdentity().getUdn())));
+
+		w.print("<br>Max Age: ");
+		w.print(d.getIdentity().getMaxAgeSeconds());
+		w.println(" seconds");
+
+		w.print("<br>Type: ");
+		w.println(escapeHtml4(String.valueOf(d.getType())));
+
+		w.print("<br>Model / Version: ");
+		w.print(escapeHtml4(d.getDetails().getModelDetails().getModelName()));
+		w.print(" / ");
+		w.print(d.getVersion().getMajor());
+		w.print(".");
+		w.println(d.getVersion().getMinor());
 
 		final DeviceIdentity identity = d.getIdentity();
 		if (identity instanceof RemoteDeviceIdentity) {
 			final RemoteDeviceIdentity rdi = (RemoteDeviceIdentity) identity;
 			w.print("<br>Descriptor URL: ");
 			printUrl(w, rdi.getDescriptorURL());
-			w.println("<br>Discovered On: " + rdi.getDiscoveredOnLocalAddress());
+
+			w.print("<br>Discovered On: ");
+			w.println(escapeHtml4(String.valueOf(rdi.getDiscoveredOnLocalAddress())));
 		}
 
 		if (d.getDetails().getPresentationURI() != null) {
@@ -155,18 +177,23 @@ public class UpnpServlet extends HttpServlet {
 			printUrl(w, d.getDetails().getBaseURL());
 		}
 		if (d.getDetails().getDlnaCaps() != null) {
-			w.println("<br>Dlna Caps: " + d.getDetails().getDlnaCaps());
+			w.print("<br>Dlna Caps: ");
+			w.println(escapeHtml4(String.valueOf(d.getDetails().getDlnaCaps())));
 		}
 
 		final Service<?, ?>[] services = d.getServices();
 		if (services != null && services.length > 0) {
 			w.println("<br>Services:<ul>");
 			for (final Service<?, ?> s : services) {
-				w.println("<li>" + s.getServiceId());
-				w.println("<br>Type: " + s.getServiceType());
+				w.println("<li>");
+				w.println(escapeHtml4(String.valueOf(s.getServiceId())));
+
+				w.println("<br>Type: ");
+				w.println(escapeHtml4(String.valueOf(s.getServiceType())));
+
 				w.println("<br>Actions: ");
 				for (final Action<?> a : s.getActions()) {
-					w.print(a.getName());
+					w.print(escapeHtml4(a.getName()));
 					w.print(" ");
 				}
 				w.println("</li>");
@@ -207,10 +234,13 @@ public class UpnpServlet extends HttpServlet {
 
 	private static void printUri(final PrintWriter w, final URI u) {
 		final boolean link = StringUtils.isNotBlank(u.getScheme());
+		final String eu = escapeHtml4(String.valueOf(u));
 		if (link) {
-			w.println("<a href=\"" + u + "\">");
+			w.print("<a href=\"");
+			w.print(eu);
+			w.print("\">");
 		}
-		w.println(u);
+		w.print(eu);
 		if (link) {
 			w.println("</a>");
 		}
@@ -218,10 +248,13 @@ public class UpnpServlet extends HttpServlet {
 
 	private static void printUrl(final PrintWriter w, final URL u) {
 		final boolean link = StringUtils.isNotBlank(u.getProtocol());
+		final String eu = escapeHtml4(String.valueOf(u));
 		if (link) {
-			w.println("<a href=\"" + u + "\">");
+			w.print("<a href=\"");
+			w.print(eu);
+			w.print("\">");
 		}
-		w.println(u);
+		w.print(eu);
 		if (link) {
 			w.println("</a>");
 		}

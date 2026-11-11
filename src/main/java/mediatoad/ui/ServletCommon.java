@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
@@ -83,7 +84,7 @@ public class ServletCommon {
 	public static void returnStatusWithoutReset (final HttpServletResponse resp, final int status, final String msg) throws IOException {
 		resp.setContentType("text/plain");
 		resp.setStatus(status);
-		resp.getWriter().println(msg);
+		resp.getWriter().println(StringEscapeUtils.escapeHtml4(msg));
 	}
 
 	public static void returnDenied(final HttpServletResponse resp, final String username) throws IOException {

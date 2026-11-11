@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.vaguehope.common.servlet.StatusPageServlet;
 
@@ -53,7 +54,10 @@ public class RpcAuthServlet extends StatusPageServlet {
 					+ "<input type=\"submit\" value=\"Revoke\">"
 					+ "</form></td>"
 					+ "</tr>",
-					e.getKey(), e.getValue().thumbprint(), e.getKey(), e.getValue().thumbprint()));
+					escapeHtml(e.getKey()),
+					escapeHtml(e.getValue().thumbprint()),
+					escapeHtml(e.getKey()),
+					escapeHtml(e.getValue().thumbprint())));
 		}
 		w.println("</table>");
 
@@ -69,9 +73,16 @@ public class RpcAuthServlet extends StatusPageServlet {
 					+ "<input type=\"submit\" value=\"Auth\">"
 					+ "</form></td>"
 					+ "</tr>",
-					e.getKey(), e.getValue().thumbprint(), e.getKey(), e.getValue().thumbprint()));
+					escapeHtml(e.getKey()),
+					escapeHtml(e.getValue().thumbprint()),
+					escapeHtml(e.getKey()),
+					escapeHtml(e.getValue().thumbprint())));
 		}
 		w.println("</table>");
+	}
+
+	private static String escapeHtml(final Object a) {
+		return StringEscapeUtils.escapeHtml4(String.valueOf(a));
 	}
 
 	@Override

@@ -3,8 +3,8 @@ package com.vaguehope.common.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -14,8 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.common.collect.Table;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 @SuppressWarnings("serial")
 public abstract class StatusPageServlet extends HttpServlet {
@@ -49,24 +47,30 @@ public abstract class StatusPageServlet extends HttpServlet {
 
 	protected abstract void generatePageBodyHtml(HttpServletRequest req, HttpServletResponse resp, PrintWriter w);
 
-	@SuppressFBWarnings("XSS_SERVLET")  // scanner does not seem to know about StringEscapeUtils.
 	public static <R, C, V> void tableToHtml(final PrintWriter w, final Table<R, C, V> table) {
 		final Set<C> columns = table.columnKeySet();
 		w.println("<table>");
 		w.print("<tr><th></th>");
 		for (final C c : columns) {
-			w.print("<th>" + escapeHtml(c) + "</th>");
+			w.print("<th>");
+			w.print(escapeHtml(c));
+			w.print("</th>");
 		}
 		w.println("</tr>");
 		for (final Entry<R, Map<C, V>> re : table.rowMap().entrySet()) {
-			w.print("<tr><td>" + escapeHtml(re.getKey()) + "</td>");
+			w.print("<tr><td>");
+			w.print(escapeHtml(re.getKey()));
+			w.print("</td>");
+
 			for (final C c : columns) {
 				final V val = re.getValue().get(c);
 				if (val == null) {
 					w.print("<td></td>");
 				}
 				else {
-					w.print("<td>" + escapeHtml(val) + "</td>");
+					w.print("<td>");
+					w.print(escapeHtml(val));
+					w.print("</td>");
 				}
 			}
 			w.println("</tr>");
