@@ -227,6 +227,7 @@ public class ItemServletTest {
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.addTag(item.getId(), tagToRm, 1);
+			w.commit();
 		}
 		givenUserWithEditTagsPermission();
 

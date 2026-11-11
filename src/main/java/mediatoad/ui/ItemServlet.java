@@ -424,6 +424,7 @@ public class ItemServlet extends HttpServlet {
 			if (tag == null) return;
 			try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 				w.addTag(item.getId(), tag, System.currentTimeMillis());
+				w.commit();
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);
@@ -454,6 +455,7 @@ public class ItemServlet extends HttpServlet {
 				for (int i = 0; i < tags.length; i++) {
 					w.setTagModifiedAndDeleted(item.getId(), tags[i], clss[i], true, System.currentTimeMillis());
 				}
+				w.commit();
 			}
 			catch (final SQLException e) {
 				throw new IOException(e);

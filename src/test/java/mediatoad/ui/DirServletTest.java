@@ -169,6 +169,7 @@ public class DirServletTest {
 
 		try (final WritableMediaDb w = db.getWritable()) {
 			w.setNodePref(subDir.getId(), DirPrefs.PREF_KEY_FAVOURITE, Boolean.TRUE.toString());
+			w.commit();
 		}
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());

@@ -144,6 +144,7 @@ public class MetadataImporter {
 					if (modified) changeCount += 1;
 				}
 			}
+			w.commit();
 		}
 		return changeCount;
 	}

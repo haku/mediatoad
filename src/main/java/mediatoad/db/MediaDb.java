@@ -23,6 +23,8 @@ import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
 import org.sqlite.SQLiteConfig.TransactionMode;
 
+import mediatoad.util.ExConsumer;
+
 public class MediaDb {
 
 	public static final String COL_FILE = "file";
@@ -108,9 +110,29 @@ public class MediaDb {
 
 	@SuppressWarnings("resource")
 	public WritableMediaDb getWritable() throws SQLException {
-		final Connection c = makeDbConnection(this.dbPath);
-		c.setAutoCommit(false);
-		return new WritableMediaDb(c, this.writeCounter);
+		final Connection conn = makeDbConnection(this.dbPath);
+		conn.setAutoCommit(false);
+		return new WritableMediaDb(conn, this.writeCounter);
+	}
+
+	public <E extends Exception> void write (final ExConsumer<WritableMediaDb, E> consumer) throws E, SQLException {
+		try (final Connection conn = makeDbConnection(this.dbPath)) {
+			conn.setAutoCommit(false);
+
+			@SuppressWarnings("resource")
+			final WritableMediaDb writable = new WritableMediaDb(conn, this.writeCounter);
+
+			boolean success = false;
+			try {
+				consumer.accept(writable);
+				success = true;
+			}
+			finally {
+				if (!success) writable.rollbackWithoutThrow();
+			}
+
+			writable.commitOrRollback();
+		}
 	}
 
 	public PreparedStatement prepare(final String sql) throws SQLException {

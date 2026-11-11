@@ -66,6 +66,7 @@ public class TagsServletTest {
 			w.addTag(items.get(1).getId(), "tag0", 0L);
 			w.addTag(items.get(0).getId(), "tag0", "foo", 0L);
 			w.addTag(items.get(0).getId(), "tag1", "foo", 0L);
+			w.commit();
 		}
 
 		final String ids = "['" + items.stream().map(i -> i.getId()).collect(Collectors.joining("','")) + "']";
@@ -115,6 +116,7 @@ public class TagsServletTest {
 			w.addTag(items.get(1).getId(), "mytag", 0L);
 			w.addTag(items.get(0).getId(), "othertag", 0L);
 			w.addTag(items.get(1).getId(), "othertag", 0L);
+			w.commit();
 		}
 
 		final String ids = "['" + items.stream().map(i -> i.getId()).collect(Collectors.joining("','")) + "']";

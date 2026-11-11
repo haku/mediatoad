@@ -558,6 +558,7 @@ public class DbSearchParserTest {
 			w.addTag(t4, "one", "class1", System.currentTimeMillis());
 			w.addTag(t4, "one", "class2", System.currentTimeMillis());
 			w.addTag(t4, "one", "class3", System.currentTimeMillis());
+			w.commit();
 		}
 		final String t5 = mockMediaFileWithTags("one", "two", "three", "four", "five");
 		runQuery("t=one t<5", t4);
@@ -593,6 +594,7 @@ public class DbSearchParserTest {
 		final String t2 = this.mockMediaMetadataStore.addFileWithNameAndTags("thing2", "bar");
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.addTag(t2, "other", "class1", time);
+			w.commit();
 		}
 
 		final Map<String, List<Tag>> actual = DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10);
@@ -704,6 +706,7 @@ public class DbSearchParserTest {
 			for (String id : excluded) {
 				w.setFileExcluded(id, true, true);
 			}
+			w.commit();
 		}
 
 		final List<String> actual = DbSearchParser.parseSearchForChoose("t=thing", null, ChooseMethod.RANDOM).execute(this.mediaDb, 1, 0);
@@ -721,6 +724,7 @@ public class DbSearchParserTest {
 			for (int i = 0; i < 3; i++) {
 				w.recordPlayback(expectedIds.get(i), System.currentTimeMillis() - TimeUnit.DAYS.toMillis(i + 1), false);
 			}
+			w.commit();
 		}
 		for (int i = 0; i < 20; i++) {
 			this.mockMediaMetadataStore.addFileWithTags("other");
@@ -741,6 +745,7 @@ public class DbSearchParserTest {
 			for (int i = 0; i < 3; i++) {
 				w.recordPlayback(expectedIds.get(i), 0, false);
 			}
+			w.commit();
 		}
 		for (int i = 0; i < 20; i++) {
 			this.mockMediaMetadataStore.addFileWithTags("other");

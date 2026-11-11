@@ -283,6 +283,7 @@ public class MediaMetadataStoreTest {
 		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
 			final String canonicalId = w.canonicalIdForHash(fd2.getHash());
 			assertEquals(fd2.getId(), canonicalId);
+			w.commit();
 		}
 	}
 
@@ -307,6 +308,7 @@ public class MediaMetadataStoreTest {
 		// Simulate old DB with no MD5 values.
 		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
 			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", null, "mime/type", "some-id", BigInteger.ZERO, false));
+			w.commit();
 		}
 		assertEquals(null, getFileData(f).getMd5());  // Verify simulation.
 
@@ -321,6 +323,7 @@ public class MediaMetadataStoreTest {
 		// Simulate old DB with no mimeType values.
 		try (final WritableMediaDb w = this.undertest.getMediaDb().getWritable()) {
 			w.updateFileData(f, new FileData(f.length(), f.lastModified(), "sha1", "md5", null, "some-id", BigInteger.ZERO, false));
+			w.commit();
 		}
 		assertEquals(null, getFileData(f).getMimeType());  // Verify simulation.
 

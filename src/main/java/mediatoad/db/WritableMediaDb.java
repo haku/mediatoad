@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ public class WritableMediaDb implements Closeable {
 	private final Connection conn;
 	private final AtomicLong writeCounter;
 	private final long startTime;
+	private final AtomicBoolean committed = new AtomicBoolean(false);
 
 	protected WritableMediaDb(final Connection conn, final AtomicLong writeCounter) throws SQLException {
 		this.writeCounter = writeCounter;
@@ -47,37 +49,59 @@ public class WritableMediaDb implements Closeable {
 
 	@Override
 	public void close() throws IOException {
-		boolean committed = false;
 		try {
-			commitOrRollback();
-			committed = true;
-		}
-		finally {
-			TRANSACTION_DURATION.observe(Unit.nanosToSeconds(System.nanoTime() - this.startTime));
 			try {
+				if (!this.committed.get()) this.conn.rollback();
+			}
+			finally {
 				this.conn.close();
 			}
-			catch (final SQLException e) {
-				if (committed) throw new IOException("Failed to close DB connection.", e);
-				LOG.error("Failed to close DB connection", e);
-			}
+		}
+		catch (SQLException e) {
+			throw new IOException(e.getMessage(), e);
 		}
 	}
 
-	private void commitOrRollback() throws IOException {
+	/**
+	 * for use with try-with-resources.
+	 */
+	public void commit() throws IOException {
 		try {
-			this.conn.commit();
-			this.writeCounter.incrementAndGet();
+			commitOrRollback();
 		}
 		catch (final SQLException e) {
-			try {
-				this.conn.rollback();
-			}
-			catch (final SQLException e1) {
-				LOG.error("Failed to rollback transaction.", e1);
-			}
-			throw new IOException("Failed to commit.", e);
+			throw new IOException(e.getMessage(), e);
 		}
+	}
+
+	protected void commitOrRollback() throws SQLException {
+		if (!this.committed.compareAndSet(false, true)) throw new IllegalStateException("Transaction was already committed.");
+
+		try {
+			this.conn.commit();
+		}
+		catch (final SQLException e) {
+			rollbackWithoutThrow();
+			throw new SQLException("Failed to commit.", e);
+		}
+		finally {
+			TRANSACTION_DURATION.observe(Unit.nanosToSeconds(System.nanoTime() - this.startTime));
+		}
+
+		this.writeCounter.incrementAndGet();
+	}
+
+	protected void rollbackWithoutThrow() {
+		try {
+			this.conn.rollback();
+		}
+		catch (final SQLException e) {
+			LOG.error("Failed to rollback transaction after exception.", e);
+		}
+	}
+
+	private void assertNotCommitted() {
+		if (this.committed.get()) throw new IllegalStateException("Transaction is already committed.");
 	}
 
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -115,6 +139,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	public String canonicalIdForHash (final String hash) throws SQLException {
+		assertNotCommitted();
 		return MediaDb.canonicalIdForHashFromConn(this.conn, hash);
 	}
 
@@ -141,6 +166,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void storeFileData (final File file, final FileData fileData) throws SQLException {
+		assertNotCommitted();
 		final PreparedStatement st = this.conn.prepareStatement(
 				"INSERT INTO files (file,size,modified,hash,md5,mimetype,id) VALUES (?,?,?,?,?,?,?);");
 		try {
@@ -163,6 +189,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void updateFileData (final File file, final FileData fileData) throws SQLException {
+		assertNotCommitted();
 		final PreparedStatement st = this.conn.prepareStatement(
 				"UPDATE files SET size=?,modified=?,hash=?,md5=?,mimetype=?,id=?,missing=? WHERE file=?;");
 		try {
@@ -186,6 +213,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void updateFileAuth(final File file, final BigInteger auth) throws SQLException {
+		assertNotCommitted();
 		final PreparedStatement st = this.conn.prepareStatement(
 				"UPDATE files SET auth=? WHERE file=?;");
 		try {
@@ -207,6 +235,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void setFileMissing(final String file, final boolean missing, final boolean dbMustChange) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE files SET missing=? WHERE file=?;")) {
 			st.setBoolean(1, missing);
 			st.setString(2, file);
@@ -219,6 +248,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void removeFile (final File file) throws SQLException {
+		assertNotCommitted();
 		final PreparedStatement st = this.conn.prepareStatement(
 				"DELETE FROM files WHERE file=?;");
 		try {
@@ -235,6 +265,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	protected void storeCanonicalId (final String hash, final String id) throws SQLException {
+		assertNotCommitted();
 		final PreparedStatement st = this.conn.prepareStatement(
 				"INSERT INTO hashes (hash,id) VALUES (?,?);");
 		try {
@@ -268,6 +299,7 @@ public class WritableMediaDb implements Closeable {
 	//	Infos.
 
 	protected void storeInfos(final List<FileIdAndInfo> toStore) throws SQLException {
+		assertNotCommitted();
 		final List<FileIdAndInfo> toInsert = new ArrayList<>();
 
 		final PreparedStatement stUpdate = this.conn.prepareStatement(
@@ -349,6 +381,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	private boolean mergeTag(final String fileId, final String tag, final String cls, final long modifiled, final boolean deleted, final boolean updateModified, final boolean insertOnly) throws SQLException {
+		assertNotCommitted();
 		final Collection<Tag> existing = MediaDb.getTagFromConn(this.conn, fileId, tag, cls);
 		if (existing.size() > 1) throw new IllegalStateException(String.format("DB UNIQUE(file_id, tag) constraint failed: id=%s tag='%s'", fileId, tag));
 		if (existing.size() > 0) {
@@ -384,6 +417,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	public void setTagModifiedAndDeleted(final String fileId, final String tag, final String cls, final boolean deleted, final long modifiled) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET deleted=?,modified=? WHERE file_id=? AND tag=? AND cls=?")) {
 			st.setInt(1, deleted ? 1 : 0);
 			st.setLong(2, modifiled);
@@ -399,6 +433,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	public void updateTagString(final String fileId, final String tag, final String cls) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement("UPDATE tags SET tag=? WHERE file_id=? AND tag=? AND cls=?")) {
 			st.setString(1, tag);
 			st.setString(2, fileId);
@@ -416,6 +451,7 @@ public class WritableMediaDb implements Closeable {
 	// playback:
 
 	public void recordPlayback(final String id, final long startTimeMillis, final boolean completed) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement(
 				"INSERT INTO playback(file_id, last_played, start_count, complete_count) VALUES(?,?,1,?)"
 				+ "ON CONFLICT(file_id) DO UPDATE SET last_played=?, start_count=start_count+1, complete_count=complete_count+?"
@@ -434,6 +470,7 @@ public class WritableMediaDb implements Closeable {
 	}
 
 	public void setFileExcluded(final String id, final boolean excluded, final boolean dbMustChange) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement(
 				"INSERT INTO playback(file_id, excluded) VALUES(?,?)"
 				+ "ON CONFLICT(file_id) DO UPDATE SET excluded=?"
@@ -453,6 +490,7 @@ public class WritableMediaDb implements Closeable {
 	// prefs:
 
 	public void setNodePref(final String nodeId, final String key, final String value) throws SQLException {
+		assertNotCommitted();
 		try (final PreparedStatement st = this.conn.prepareStatement("DELETE FROM nodeprefs WHERE id=? AND key=?")) {
 			st.setString(1, nodeId);
 			st.setString(2, key);

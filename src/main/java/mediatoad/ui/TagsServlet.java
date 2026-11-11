@@ -140,6 +140,7 @@ public class TagsServlet extends HttpServlet {
 					w.addTag(i.getId(), tag, now);
 				}
 			}
+			w.commit();
 		}
 
 		int count = items.size();

@@ -345,6 +345,7 @@ public class TagDeterminerController {
 						w.addTagIfNotDeleted(r.item.getId(), tag, r.about.getTagCls(), this.clock.millis());
 					}
 				}
+				w.commit();
 			}
 			LOG.info("Batch tag write for {} items.", todo.size());
 		}

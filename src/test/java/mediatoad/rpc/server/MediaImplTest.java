@@ -153,6 +153,7 @@ public class MediaImplTest {
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.setFileExcluded(id, true, true);
 			w.addTag(id, "other", "class1", time);
+			w.commit();
 		}
 		final File file = new File(this.mediaDb.getFilePathForId(id));
 		this.contentTree.addItem(new ContentItem(id, "0", name, file, MediaFormat.MP3));
@@ -366,6 +367,7 @@ public class MediaImplTest {
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.setFileExcluded(id2, true, true);
+			w.commit();
 		}
 
 		final UpdateExcludedRequest req = UpdateExcludedRequest.newBuilder()

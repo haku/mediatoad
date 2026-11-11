@@ -77,6 +77,7 @@ public class DbCleaner {
 			for (final String f : newlyMissing) {
 				w.setFileMissing(f, true);
 			}
+			w.commit();
 		}
 		LOG.info("Marked {} files as missing.", newlyMissing.size());
 	}

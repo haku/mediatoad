@@ -144,6 +144,7 @@ public class MediaMetadataStore {
 			if (this.fileQueue.size() > 0) {
 				scheduleFileIdBatchIfNeeded();
 			}
+			w.commit();
 		}
 		LOG.info("Batch file metadata write for {} files in {}ms.", count, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
@@ -417,6 +418,7 @@ public class MediaMetadataStore {
 				if (todo.size() > 0) {
 					try (final WritableMediaDb w = MediaMetadataStore.this.mediaDb.getWritable()) {
 						w.storeInfos(todo);
+						w.commit();
 					}
 					LOG.info("Batch info write for {} files.", todo.size());
 				}

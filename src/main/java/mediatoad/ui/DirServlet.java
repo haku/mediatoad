@@ -340,6 +340,7 @@ public class DirServlet extends HttpServlet {
 			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_FAVOURITE, favourite.booleanValue() ? Boolean.TRUE.toString() : null);
 			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_SORT_MODIFIED, sortModified.booleanValue() ? Boolean.TRUE.toString() : null);
 			w.setNodePref(node.getId(), DirPrefs.PREF_KEY_VIDEO_THUMBS, videoThumbs.booleanValue() ? Boolean.TRUE.toString() : null);
+			w.commit();
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);

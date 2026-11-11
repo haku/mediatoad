@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -47,6 +48,53 @@ public class MediaDbTest {
 	}
 
 	@Test
+	public void itRollsBackOnExceptionDuringTransacitonCallback() throws Exception {
+		final File file = new File("/media/foo.wav");
+		final FileData expected1 = new FileData(12, 123456, "myhash", "mymd5", "mime/type", "fileId", BigInteger.ZERO, false);
+		this.undertest.write(w -> w.storeFileData(file, expected1));
+		assertEquals(expected1, this.undertest.getFileData(file));
+
+		final FileData newExpected = new FileData(13, 654321, "newhash", "newmd5", "mime/other", "newFileId", BigInteger.ZERO, false);
+		try {
+			this.undertest.write(w -> {
+				w.updateFileData(file, newExpected);
+				throw new RuntimeException("expected.");
+			});
+			Assert.fail();
+		}
+		catch (final RuntimeException e) {
+			assertEquals("expected.", e.getMessage());
+		}
+		assertEquals(expected1, this.undertest.getFileData(file));
+
+		// check the update would have worked on its own.
+		this.undertest.write(w -> w.updateFileData(file, newExpected));
+		assertEquals(newExpected, this.undertest.getFileData(file));
+	}
+
+	@Test
+	public void itRollsBackOnExceptionDuringTransacitonTryWithResoucesNoCommit() throws Exception {
+		final File file = new File("/media/foo.wav");
+		final FileData expected1 = new FileData(12, 123456, "myhash", "mymd5", "mime/type", "fileId", BigInteger.ZERO, false);
+		this.undertest.write(w -> w.storeFileData(file, expected1));
+		assertEquals(expected1, this.undertest.getFileData(file));
+
+		final FileData newExpected = new FileData(13, 654321, "newhash", "newmd5", "mime/other", "newFileId", BigInteger.ZERO, false);
+		try (WritableMediaDb w = this.undertest.getWritable()) {
+			w.updateFileData(file, newExpected);
+			// testing commit() not called.
+		}
+		assertEquals(expected1, this.undertest.getFileData(file));
+
+		// check the update would have worked on its own.
+		try (WritableMediaDb w = this.undertest.getWritable()) {
+			w.updateFileData(file, newExpected);
+			w.commit();
+		}
+		assertEquals(newExpected, this.undertest.getFileData(file));
+	}
+
+	@Test
 	public void itStoresFileData() throws Exception {
 		final File file = new File("/media/foo.wav");
 		final BigInteger auth = BigInteger.valueOf(123L);
@@ -54,6 +102,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, expected);
 			w.updateFileAuth(file, auth);
+			w.commit();
 		}
 		assertEquals(expected, this.undertest.getFileData(file));
 
@@ -62,6 +111,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.updateFileData(file, newExpected);
 			w.updateFileAuth(file, newAuth);
+			w.commit();
 		}
 		assertEquals(newExpected, this.undertest.getFileData(file));
 	}
@@ -76,6 +126,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", "other", 1234567892L));
 			assertTrue(w.addTag(fileId, "hidden", ".hidden", 1234567892L));
 			assertTrue(w.mergeTag(fileId, "deleted", "", 1234567899L, true));
+			w.commit();
 		}
 
 		final Collection<Tag> actual = this.undertest.getTags(fileId, false, false);
@@ -92,6 +143,7 @@ public class MediaDbTest {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", "", 1234567890L));
 			assertTrue(w.addTag(fileId, "hidden", ".hidden", 1234567892L));
+			w.commit();
 		}
 
 		final Collection<Tag> actual = this.undertest.getTags(fileId, true, false);
@@ -106,6 +158,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
+			w.commit();
 		}
 
 		final Collection<Tag> expectedTags = this.undertest.getTags(fileId, true, false);
@@ -117,6 +170,7 @@ public class MediaDbTest {
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setTagModifiedAndDeleted(fileId, existing.getTag(), existing.getCls(), true, 2345678901L);
+			w.commit();
 		}
 
 		final Collection<Tag> deletedTags = this.undertest.getTags(fileId, true, true);
@@ -135,6 +189,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
@@ -146,6 +201,7 @@ public class MediaDbTest {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
 			assertFalse(w.addTagIfNotDeleted(fileId, "my-tag", "", 9234567890L));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, true)));
 	}
@@ -159,6 +215,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 			assertFalse(w.addTag(fileId, "my-tag", 1234567891L));
 			assertFalse(w.addTag(fileId, "MY-TAG", 1234567892L));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
@@ -169,9 +226,11 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(new File("/media/foo.wav"), new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+			w.commit();
 		}
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			assertTrue(w.addTag(fileId, "My-Tag", "", 1234567891L));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("My-Tag", 1234567891L, false)));
 	}
@@ -186,6 +245,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", "c", 1234567890L));
 			assertFalse(w.addTag(fileId, "my-tag", "", 1234567891L));
 			assertFalse(w.addTag(fileId, "my-tag", "c", 1234567892L));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(
 				new Tag("my-tag", "", 1234567889L, false),
@@ -194,6 +254,7 @@ public class MediaDbTest {
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setTagModifiedAndDeleted(fileId, "my-tag", "c", true, 1234567891L);
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(
 				new Tag("my-tag", "", 1234567889L, false),
@@ -210,6 +271,7 @@ public class MediaDbTest {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
 			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567870L, true));
 			assertFalse(w.mergeTag(fileId, "my-tag", "", 1234567890L, true));
+			w.commit();
 		}
 		assertThat(this.undertest.getTags(fileId, true, true), contains(new Tag("my-tag", 1234567890L, false)));
 	}
@@ -221,12 +283,14 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, new FileData(12, 123456, "myhash", "mymd5", "mime/type", fileId, BigInteger.ZERO, false));
 			assertTrue(w.addTag(fileId, "my-tag", 1234567890L));
+			w.commit();
 		}
 
 		final Collection<Tag> tags = this.undertest.getTags(fileId, true, false);
 		final Tag tag = tags.iterator().next();
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setTagModifiedAndDeleted(fileId, tag.getTag(), tag.getCls(), true, 1234567891L);
+			w.commit();
 		}
 
 		final Collection<Tag> deleted = this.undertest.getTags(fileId, true, true);
@@ -237,6 +301,7 @@ public class MediaDbTest {
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			assertTrue(w.addTag(fileId, "my-tag", 1234567892L));
+			w.commit();
 		}
 
 		final Collection<Tag> undeleted = this.undertest.getTags(fileId, true, true);
@@ -251,11 +316,13 @@ public class MediaDbTest {
 		final File file = new File("/media/foo.wav");
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeFileData(file, new FileData(12, 123456, "myhash", "mymd5", "mime/type", "myid", BigInteger.ZERO, false));
+			w.commit();
 		}
 		assertFalse(getFileData(file).isMissing());
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setFileMissing(file.getAbsolutePath(), true);
+			w.commit();
 		}
 		assertTrue(getFileData(file).isMissing());
 	}
@@ -268,6 +335,7 @@ public class MediaDbTest {
 				);
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeInfos(infos);
+			w.commit();
 		}
 
 		assertEquals(new FileInfo(0, 2000, 1000), this.undertest.readInfoCheckingFileSize("id1", 0));
@@ -281,6 +349,7 @@ public class MediaDbTest {
 				);
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.storeInfos(infos);
+			w.commit();
 		}
 	}
 
@@ -297,6 +366,7 @@ public class MediaDbTest {
 				addMockFiles(w, "id-" + i, auth, "tag1", "tag2");
 			}
 			w.mergeTag("id-0", "deleted", "", 1234567890L, true);
+			w.commit();
 		}
 		assertThat(this.undertest.getTopTags(null, null, 10), contains(new TagFrequency("tag1", 10)));
 		assertThat(this.undertest.getTopTags(ImmutableSet.of(auth), null, 10), contains(new TagFrequency("tag1", 20), new TagFrequency("tag2", 10)));
@@ -314,6 +384,7 @@ public class MediaDbTest {
 			for (int i = 11; i < 18; i++) {
 				addMockFiles(w, "sub2/path/id-" + i, BigInteger.ZERO, "tag3");
 			}
+			w.commit();
 		}
 		assertThat(this.undertest.getTopTags(null, null, 10), contains(
 				new TagFrequency("tag3", 7),
@@ -331,6 +402,7 @@ public class MediaDbTest {
 				w.addTag("id-" + i, "foo hidden", ".class", 1234567891L);  // . classes should be excluded
 				w.mergeTag("id-" + i, "foodeleted", "", 1234567890L, true);
 			}
+			w.commit();
 		}
 		assertThat(this.undertest.getAllTagsNotMissingNotDeleted(), contains(
 				new TagFrequency("foobar", 10)));
@@ -341,6 +413,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.recordPlayback("incomplete", 1234567890L, false);
 			w.recordPlayback("complete", 2234567890L, true);
+			w.commit();
 		}
 
 		final Playback incomplete1 = this.undertest.getPlayback("incomplete");
@@ -356,6 +429,7 @@ public class MediaDbTest {
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.recordPlayback("incomplete", 1534567890L, false);
 			w.recordPlayback("complete", 2534567890L, true);
+			w.commit();
 		}
 
 		final Playback incomplete2 = this.undertest.getPlayback("incomplete");
@@ -375,11 +449,13 @@ public class MediaDbTest {
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setFileExcluded("myid", false, true);
+			w.commit();
 		}
 		assertFalse(this.undertest.getPlayback("myid").isExcluded());
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setFileExcluded("myid", true, true);
+			w.commit();
 		}
 		assertTrue(this.undertest.getPlayback("myid").isExcluded());
 	}
@@ -394,6 +470,7 @@ public class MediaDbTest {
 				ids.add(id);
 				w.recordPlayback(id, 1234567890L, false);
 			}
+			w.commit();
 		}
 		System.out.println("item count: " + ids.size());
 
@@ -419,11 +496,13 @@ public class MediaDbTest {
 			w.setNodePref(id1, "my_pref_1", "true");
 			w.setNodePref(id2, "my_pref_1", "true");
 			w.setNodePref(id1, "my_pref_2", "false");
+			w.commit();
 		}
 		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "false"), this.undertest.getNodePrefs(id1));
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setNodePref(id1, "my_pref_2", "true");
+			w.commit();
 		}
 		assertEquals(ImmutableMap.of("my_pref_1", "true", "my_pref_2", "true"), this.undertest.getNodePrefs(id1));
 
@@ -431,6 +510,7 @@ public class MediaDbTest {
 
 		try (final WritableMediaDb w = this.undertest.getWritable()) {
 			w.setNodePref(id1, "my_pref_1", null);
+			w.commit();
 		}
 		assertEquals(ImmutableMap.of(id2, "true"), this.undertest.getAllNodePref("my_pref_1"));
 	}

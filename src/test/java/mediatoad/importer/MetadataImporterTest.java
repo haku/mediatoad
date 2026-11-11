@@ -86,6 +86,7 @@ public class MetadataImporterTest {
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.addTag(fileIdA, "should-not-change", now);
 			w.addTag(fileIdA, "will-be-deleted", now);
+			w.commit();
 		}
 
 		final String sha1UpperCase = sha1.toUpperCase();

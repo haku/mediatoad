@@ -396,6 +396,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.recordPlayback(request.getId(), request.getStartTimeMillis(), request.getCompleted());
+			w.commit();
 		}
 		catch (final IOException | SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
@@ -470,6 +471,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 					throw new IllegalStateException();
 				}
 			}
+			w.commit();
 		}
 		catch (final IOException | SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
@@ -513,6 +515,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			for (final ExcludedChange change : request.getChangeList()) {
 				w.setFileExcluded(change.getId(), change.getExcluded(), false);
 			}
+			w.commit();
 		}
 		catch (final IOException | SQLException e) {
 			responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());

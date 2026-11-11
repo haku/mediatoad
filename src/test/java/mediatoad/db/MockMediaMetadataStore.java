@@ -167,6 +167,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 			w.setFileMissing(mediaFile.getAbsolutePath(), missing);
 			if (info != null) w.storeInfos(Arrays.asList(new FileIdAndInfo(fileId, mediaFile, info)));
 			if (timeLastPlayed != 0) w.recordPlayback(fileId, timeLastPlayed, true);
+			w.commit();
 		}
 
 		return fileId;
@@ -209,6 +210,7 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 				for (final ExConsumer<WritableMediaDb, SQLException> write : this.dbWrites) {
 					write.accept(w);
 				}
+				w.commit();
 			}
 		}
 
