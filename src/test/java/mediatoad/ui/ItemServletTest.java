@@ -19,9 +19,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.vaguehope.common.servlet.MockHttpServletRequest;
-import com.vaguehope.common.servlet.MockHttpServletResponse;
-
+import faecommon.servlet.MockHttpServletRequest;
+import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.FakeServletCommon;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.Permission;

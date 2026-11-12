@@ -14,9 +14,8 @@ import javax.servlet.ServletException;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaguehope.common.servlet.MockHttpServletRequest;
-import com.vaguehope.common.servlet.MockHttpServletResponse;
-
+import faecommon.servlet.MockHttpServletRequest;
+import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.auth.DefaultAccess;
 import mediatoad.db.TagAutocompleter;
 import mediatoad.db.TagFrequency;

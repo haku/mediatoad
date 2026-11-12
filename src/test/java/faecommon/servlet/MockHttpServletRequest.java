@@ -1,4 +1,4 @@
-package com.vaguehope.common.servlet;
+package faecommon.servlet;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

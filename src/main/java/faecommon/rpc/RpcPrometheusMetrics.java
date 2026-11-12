@@ -1,4 +1,4 @@
-package com.vaguehope.common.rpc;
+package faecommon.rpc;
 
 import io.grpc.opentelemetry.GrpcOpenTelemetry;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;

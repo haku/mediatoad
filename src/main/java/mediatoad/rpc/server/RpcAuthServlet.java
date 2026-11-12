@@ -11,8 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
-import com.vaguehope.common.servlet.StatusPageServlet;
-
+import faecommon.servlet.StatusPageServlet;
 import io.jsonwebtoken.security.PublicJwk;
 import mediatoad.auth.ReqAttr;
 import mediatoad.ui.ServletCommon;

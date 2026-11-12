@@ -1,4 +1,4 @@
-package com.vaguehope.common.servlet;
+package faecommon.servlet;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -17,9 +17,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.common.util.StringsCommon;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import faecommon.util.StringsCommon;
 
 public class RequestLoggingFilter implements Filter {
 

@@ -34,9 +34,9 @@ import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.reflect.ReflectionObjectHandler;
 import com.google.common.collect.ImmutableMap;
-import com.vaguehope.common.servlet.MockHttpServletRequest;
-import com.vaguehope.common.servlet.MockHttpServletResponse;
 
+import faecommon.servlet.MockHttpServletRequest;
+import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.FakeServletCommon;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.ReqAttr;

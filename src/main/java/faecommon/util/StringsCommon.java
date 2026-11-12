@@ -1,4 +1,4 @@
-package com.vaguehope.common.util;
+package faecommon.util;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

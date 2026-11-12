@@ -1,4 +1,4 @@
-package com.vaguehope.common.util;
+package faecommon.util;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;

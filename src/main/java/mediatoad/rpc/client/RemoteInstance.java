@@ -2,7 +2,7 @@ package mediatoad.rpc.client;
 
 import java.util.Objects;
 
-import com.vaguehope.common.rpc.RpcTarget;
+import faecommon.rpc.RpcTarget;
 
 public class RemoteInstance {
 

@@ -1,8 +1,10 @@
-package com.vaguehope.common.util;
+package faecommon.util;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+
+import faecommon.util.StringsCommon;
 
 public class StringsCommonTest {
 

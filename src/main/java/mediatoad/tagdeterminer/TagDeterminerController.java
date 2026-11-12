@@ -32,9 +32,9 @@ import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import com.vaguehope.common.rpc.RpcTarget;
-import com.vaguehope.common.rpc.RpcTarget.RpcConfigException;
 
+import faecommon.rpc.RpcTarget;
+import faecommon.rpc.RpcTarget.RpcConfigException;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
 import mediatoad.Args;

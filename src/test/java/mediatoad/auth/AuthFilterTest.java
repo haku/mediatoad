@@ -31,9 +31,8 @@ import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaguehope.common.servlet.MockHttpServletRequest;
-import com.vaguehope.common.servlet.MockHttpServletResponse;
-
+import faecommon.servlet.MockHttpServletRequest;
+import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.auth.Users.User;
 
 public class AuthFilterTest {

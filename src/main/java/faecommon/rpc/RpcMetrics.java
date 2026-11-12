@@ -1,4 +1,4 @@
-package com.vaguehope.common.rpc;
+package faecommon.rpc;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,8 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.vaguehope.common.util.TotalOverTime;
-
+import faecommon.util.TotalOverTime;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;

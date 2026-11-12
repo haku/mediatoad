@@ -1,4 +1,4 @@
-package com.vaguehope.common.rpc;
+package faecommon.rpc;
 
 import java.io.PrintWriter;
 import java.util.Map.Entry;
@@ -10,12 +10,12 @@ import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.ImmutableTable.Builder;
-import com.vaguehope.common.rpc.RpcMetrics.ChannelState;
-import com.vaguehope.common.rpc.RpcMetrics.EndpointRecorder;
-import com.vaguehope.common.rpc.RpcMetrics.MethodMetrics;
-import com.vaguehope.common.rpc.RpcMetrics.TimeSet;
-import com.vaguehope.common.servlet.StatusPageServlet;
 
+import faecommon.rpc.RpcMetrics.ChannelState;
+import faecommon.rpc.RpcMetrics.EndpointRecorder;
+import faecommon.rpc.RpcMetrics.MethodMetrics;
+import faecommon.rpc.RpcMetrics.TimeSet;
+import faecommon.servlet.StatusPageServlet;
 import io.grpc.Status;
 
 public class RpcStatusServlet extends StatusPageServlet {

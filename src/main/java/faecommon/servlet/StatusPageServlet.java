@@ -1,6 +1,6 @@
-package com.vaguehope.common.servlet;
+package faecommon.servlet;
 
-import static com.vaguehope.common.util.StringsCommon.escapeHtml;
+import static faecommon.util.StringsCommon.escapeHtml;
 
 import java.io.IOException;
 import java.io.PrintWriter;

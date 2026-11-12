@@ -32,8 +32,8 @@ import org.mockito.InOrder;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-import com.vaguehope.common.rpc.RpcTarget;
 
+import faecommon.rpc.RpcTarget;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;

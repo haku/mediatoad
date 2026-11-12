@@ -22,8 +22,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 
-import com.vaguehope.common.servlet.RequestLoggingFilter;
-
+import faecommon.servlet.RequestLoggingFilter;
 import mediatoad.auth.ReqAttr;
 import mediatoad.media.MediaFormat;
 

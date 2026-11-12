@@ -7,8 +7,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.vaguehope.common.rpc.RpcMetrics;
-
+import faecommon.rpc.RpcMetrics;
 import io.grpc.servlet.ServletAdapter;
 import io.grpc.servlet.ServletServerBuilder;
 import mediatoad.ui.ServletCommon;

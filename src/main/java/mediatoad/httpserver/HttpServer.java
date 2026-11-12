@@ -25,11 +25,10 @@ import org.jupnp.UpnpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.vaguehope.common.rpc.RpcPrometheusMetrics;
-import com.vaguehope.common.rpc.RpcStatusServlet;
-import com.vaguehope.common.servlet.RequestLoggingFilter;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import faecommon.rpc.RpcPrometheusMetrics;
+import faecommon.rpc.RpcStatusServlet;
+import faecommon.servlet.RequestLoggingFilter;
 import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import mediatoad.Args;
 import mediatoad.Args.ArgsException;

@@ -8,9 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import com.vaguehope.common.rpc.RpcTarget;
-import com.vaguehope.common.rpc.RpcTarget.RpcConfigException;
-
+import faecommon.rpc.RpcTarget;
+import faecommon.rpc.RpcTarget.RpcConfigException;
 import io.grpc.ManagedChannel;
 import mediatoad.Args;
 import mediatoad.Args.ArgsException;
