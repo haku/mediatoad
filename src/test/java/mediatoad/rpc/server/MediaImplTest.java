@@ -76,6 +76,7 @@ import mediatoad.rpc.MediaToadProto.UpdateExcludedReply;
 import mediatoad.rpc.MediaToadProto.UpdateExcludedRequest;
 import mediatoad.rpc.MediaToadProto.UpdateTagsReply;
 import mediatoad.rpc.MediaToadProto.UpdateTagsRequest;
+import mediatoad.util.HashHelper;
 
 public class MediaImplTest {
 
@@ -115,6 +116,7 @@ public class MediaImplTest {
 	@Test
 	public void itListsNode() throws Exception {
 		final ContentItem item = mockItem("itemid", "parent");
+		when(this.mediaDb.getFileHashes(Collections.singletonList("itemid"))).thenReturn(ImmutableMap.of("itemid", "f00b44"));
 		when(this.mediaDb.getTags("itemid", false, false)).thenReturn(asList(new Tag("foo", "cls", 1234567890L, false)));
 		when(this.mediaDb.getPlayback(Collections.singletonList("itemid"))).thenReturn(ImmutableMap.of("itemid", new Playback(0, 0, 0, true)));
 
@@ -136,6 +138,7 @@ public class MediaImplTest {
 						.setTitle("title for itemid")
 						.setMimeType("image/jpeg")
 						.setExcluded(true)
+						.setSha1("f00b44")
 						.addTag(MediaTag.newBuilder().setTag("foo").setCls("cls").setModifiedMillis(1234567890L).build())
 						.build())
 				.build());
@@ -168,6 +171,7 @@ public class MediaImplTest {
 						.setMimeType("audio/mpeg")
 						.setFileLength(file.length())
 						.setExcluded(true)
+						.setSha1(HashHelper.sha1(file).toString(16))
 						.addTag(MediaTag.newBuilder()
 								.setTag("foo")
 								.setModifiedMillis(time)

@@ -232,6 +232,25 @@ public class MediaDb {
 		}
 	}
 
+	public String getFileHash(final String id) throws SQLException {
+		return getFileHashes(Collections.singleton(id)).get(id);
+	}
+
+	public Map<String, String> getFileHashes(final Collection<String> ids) throws SQLException {
+		final Map<String, String> ret = new HashMap<>();
+		try (final PreparedStatement st = this.dbConn
+				.prepareStatement("SELECT hash FROM files WHERE id=?")) {
+			for (final String id : ids) {
+				st.setString(1, id);
+				try (final ResultSet rs = st.executeQuery()) {
+					if (!rs.next()) continue;
+					ret.put(id, rs.getString(1));
+				}
+			}
+		}
+		return ret;
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	// File Info; duration, width, height.
 

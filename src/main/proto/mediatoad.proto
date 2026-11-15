@@ -21,6 +21,7 @@ message MediaItem {
   int64 duration_millis = 5;
   repeated MediaTag tag = 6;
   bool excluded = 7;
+  string sha1 = 8;
 }
 
 message MediaTag {

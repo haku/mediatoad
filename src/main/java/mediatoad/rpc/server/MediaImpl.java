@@ -126,9 +126,11 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		if (item == null) return;
 
+		final String hash;
 		final Playback playback;
 		final Collection<Tag> tags;
 		try {
+			hash = this.mediaDb.getFileHash(item.getId());
 			playback = this.mediaDb.getPlayback(item.getId());
 			tags = this.mediaDb.getTags(item.getId(), false, false);
 		}
@@ -136,7 +138,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			responseObserver.onError(Status.INTERNAL.withDescription("Failed to read tags from DB.").asRuntimeException());
 			return;
 		}
-		final MediaItem rpcItem = itemToRpcItem(item, playback, tags);
+		final MediaItem rpcItem = itemToRpcItem(item, hash, playback, tags);
 
 		final HasMediaReply.Builder reply = HasMediaReply.newBuilder()
 				.setExistence(FileExistance.EXISTS)
@@ -165,10 +167,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		final List<ContentItem> items = node.itemsUserHasAuth(username);
 		final List<String> ids = items.stream().map(i -> i.getId()).collect(Collectors.toList());
 		try {
+			final Map<String, String> hashes = this.mediaDb.getFileHashes(ids);
 			final Map<String, Playback> playbacks = this.mediaDb.getPlayback(ids);
 			for (final ContentItem i : items) {
 				reply.addItem(itemToRpcItem(
 						i,
+						hashes.get(i.getId()),
 						playbacks.get(i.getId()),
 						this.mediaDb.getTags(i.getId(), false, false)));  // TODO batch read tags.
 			}
@@ -311,8 +315,10 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final Map<String, List<Tag>> idsToTags;
 		final Map<String, Playback> playbacks;
+		final Map<String, String> hashes;
 		try {
 			idsToTags = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
+			hashes = this.mediaDb.getFileHashes(idsToTags.keySet());
 			playbacks = this.mediaDb.getPlayback(idsToTags.keySet());
 		}
 		catch (final SQLException e) {
@@ -325,6 +331,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		for (final ContentItem i : results) {
 			ret.addResult(itemToRpcItem(
 					i,
+					hashes.get(i.getId()),
 					playbacks.get(i.getId()),
 					idsToTags.get(i.getId())));
 		}
@@ -355,10 +362,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
 		try {
+			final Map<String, String> hashes = this.mediaDb.getFileHashes(ids);
 			final Map<String, Playback> playbacks = this.mediaDb.getPlayback(ids);
 			for (final ContentItem i : results) {
 				ret.addItem(itemToRpcItem(
 						i,
+						hashes.get(i.getId()),
 						playbacks.get(i.getId()),
 						this.mediaDb.getTags(i.getId(), false, false)));
 			}
@@ -586,13 +595,14 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.build();
 	}
 
-	private static MediaItem itemToRpcItem(final ContentItem item, final Playback playback, final Collection<Tag> tags) {
+	private static MediaItem itemToRpcItem(final ContentItem item, final String sha1, final Playback playback, final Collection<Tag> tags) {
 		final MediaItem.Builder builder = MediaItem.newBuilder()
 				.setId(item.getId())
 				.setTitle(item.getTitle())
 				.setMimeType(item.getFormat().getMime())
 				.setFileLength(item.getFileLength())
 				.setDurationMillis(item.getDurationMillis())
+				.setSha1(sha1)
 				.setExcluded(playback != null ? playback.isExcluded() : false);
 
 		if (tags != null) {
