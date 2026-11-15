@@ -76,7 +76,7 @@ import mediatoad.rpc.MediaToadProto.UpdateTagsRequest;
 
 public class MediaImpl extends MediaGrpc.MediaImplBase {
 
-	private static final int MAX_SEARCH_RESULTS = 500;
+	private static final int MAX_SEARCH_RESULTS = 1000;
 	private static final int MESSAGE_SIZE_BYTES = 256 * 1024;
 
 	private static final Counter CHUNKS_SENT_METRIC = Counter.builder()
