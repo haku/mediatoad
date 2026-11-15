@@ -167,6 +167,11 @@ public class MockHttpServletResponse implements HttpServletResponse {
 	public void setCharacterEncoding (final String arg0) {
 	}
 
+	@Override
+	public String encodeRedirectURL (final String url) {
+		return url;
+	}
+
 //	- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 	@Override
@@ -211,11 +216,6 @@ public class MockHttpServletResponse implements HttpServletResponse {
 
 	@Override
 	public boolean containsHeader (final String arg0) {
-		throw new UnsupportedOperationException("Not implemented.");
-	}
-
-	@Override
-	public String encodeRedirectURL (final String arg0) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
