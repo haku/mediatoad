@@ -232,7 +232,7 @@ public class TagAutocompleterTest {
 		}
 	}
 
-	@Ignore
+	@Ignore("benchmark, real files")
 	@Test
 	public void itLoadsRealDbData() throws Exception {
 		final File dbFile = new File(new File(System.getProperty("user.home")), "tmp/mediatoad-db");

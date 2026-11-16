@@ -37,7 +37,7 @@ public class ImageResizerTest {
 		assertThat(f.length(), greaterThan(1L));
 	}
 
-	@Ignore
+	@Ignore("real file")
 	@Test
 	public void itDecodesLocalFile() throws Exception {
 		final File f = this.tmp.newFile();

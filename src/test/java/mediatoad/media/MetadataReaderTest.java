@@ -24,14 +24,14 @@ public class MetadataReaderTest {
 				"Some Artist", null);
 	}
 
-	@Ignore
+	@Ignore("unimplemented")
 	@Test
 	public void itReadsArtistAlbumPathAndFilename () throws Exception {
 		testFileNameExtraction("/foo/bar/Some Artist - Some Album/01 - Some Track.ogg",
 				"Some Artist", "Some Album");
 	}
 
-	@Ignore
+	@Ignore("unimplemented")
 	@Test
 	public void itReadsArtistPathAndFilename () throws Exception {
 		testFileNameExtraction("/foo/bar/Some Artist/01 - Some Track.ogg",

@@ -617,7 +617,7 @@ public class DbSearchParserTest {
 		assertThat(actual.keySet(), hasSize(10));
 	}
 
-	@Ignore
+	@Ignore("benchmark")
 	@Test
 	public void benchmarkForIncludingTags() throws Exception {
 		this.mockMediaMetadataStore = MockMediaMetadataStore.withRealExSvc(this.tmp);

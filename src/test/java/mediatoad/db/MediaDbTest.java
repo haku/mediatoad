@@ -460,7 +460,7 @@ public class MediaDbTest {
 		assertTrue(this.undertest.getPlayback("myid").isExcluded());
 	}
 
-	@Ignore
+	@Ignore("benchmark")
 	@Test
 	public void benchmarkPlaybackRead() throws Exception {
 		final List<String> ids = new ArrayList<>();

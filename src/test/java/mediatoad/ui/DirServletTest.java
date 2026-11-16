@@ -357,7 +357,7 @@ public class DirServletTest {
 	 *
 	 * also classScope is 10x faster to build than mapScope.
 	 */
-	@Ignore
+	@Ignore("benchmark")
 	@SuppressWarnings("resource")
 	@Test
 	public void itDoesAMicroBenckmark() throws Exception {

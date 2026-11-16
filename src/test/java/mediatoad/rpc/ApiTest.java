@@ -21,7 +21,7 @@ public class ApiTest {
 
 	private static final Metadata.Key<String> CUSTOM_HEADER_KEY = Metadata.Key.of("custom_client_header_key", Metadata.ASCII_STRING_MARSHALLER);
 
-	@Ignore
+	@Ignore("integration test?")
 	@Test
 	public void itCallsAnApi() throws Exception {
 		final String target = "localhost:8192";
