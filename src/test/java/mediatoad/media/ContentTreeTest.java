@@ -103,8 +103,8 @@ public class ContentTreeTest {
 		final String bPath = FileHelper.rootAndPath(bRoot, bDir);
 		assertEquals(aPath, bPath);
 
-		ContentNode aNode = new ContentNode("id-a", "0", "title-a", aDir, aPath, null, null);
-		ContentNode bNode = new ContentNode("id-b", "0", "title-b", bDir, bPath, null, null);
+		final ContentNode aNode = new ContentNode("id-a", "0", "title-a", aDir, aPath, null, null);
+		final ContentNode bNode = new ContentNode("id-b", "0", "title-b", bDir, bPath, null, null);
 
 		this.undertest.addNode(aNode);
 		this.undertest.addNode(bNode);
@@ -221,12 +221,12 @@ public class ContentTreeTest {
 		assertThat(this.undertest.getRecent().getCopyOfItems(), hasSize(0));
 	}
 
-	private static Consumer<File> sequentialTimeStamps() {
+	private static Consumer<ContentItem> sequentialTimeStamps() {
 		return new Consumer<>() {
 			@Override
-			public void accept(final File f) {
-				final int n = Integer.parseInt(f.getName().substring(0, f.getName().indexOf(".")).replace("id", ""));
-				when(f.lastModified()).thenReturn(n * 1000L);
+			public void accept(final ContentItem f) {
+				final int n = Integer.parseInt(f.getFile().getName().substring(0, f.getFile().getName().indexOf(".")).replace("id", ""));
+				f.setLastModified(n * 1000L);
 			}
 		};
 	}

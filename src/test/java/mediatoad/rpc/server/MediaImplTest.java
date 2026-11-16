@@ -159,7 +159,10 @@ public class MediaImplTest {
 			w.commit();
 		}
 		final File file = new File(this.mediaDb.getFilePathForId(id));
-		this.contentTree.addItem(new ContentItem(id, "0", name, file, MediaFormat.MP3));
+		final ContentItem item = new ContentItem(id, "0", name, file, MediaFormat.MP3);
+		item.setCreatedAt(123456789000L);
+		item.setLastModified(123456799000L);
+		this.contentTree.addItem(item);
 
 		final StreamObserver<SearchReply> respObs = mock(ServerCallStreamObserver.class);
 		this.undertest.search(SearchRequest.newBuilder().setQuery("t=foo").build(), respObs);
@@ -170,8 +173,10 @@ public class MediaImplTest {
 						.setTitle(name)
 						.setMimeType("audio/mpeg")
 						.setFileLength(file.length())
-						.setExcluded(true)
+						.setFileCreatedAt(123456789000L)
+						.setFileLastModified(123456799000L)
 						.setSha1(HashHelper.sha1(file).toString(16))
+						.setExcluded(true)
 						.addTag(MediaTag.newBuilder()
 								.setTag("foo")
 								.setModifiedMillis(time)

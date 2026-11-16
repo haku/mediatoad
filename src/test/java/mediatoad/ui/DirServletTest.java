@@ -95,8 +95,8 @@ public class DirServletTest {
 		final List<ContentItem> thumbItems = this.mockContent.givenMockItems(MediaFormat.JPEG, 3, mockDir);
 
 		for (final ContentItem i : items) {
-			when(i.getFile().length()).thenReturn(10000L);
 			i.reload();
+			i.setFileLength(10000L);
 			i.setDurationMillis(123456);
 		}
 
@@ -135,14 +135,11 @@ public class DirServletTest {
 		final ContentNode mockDir = mockDirs.get(0);
 		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.JPEG, 5, mockDir);
 
-		when(items.get(3).getFile().lastModified()).thenReturn(1234567004L);
-		when(items.get(0).getFile().lastModified()).thenReturn(1234567003L);
-		when(items.get(4).getFile().lastModified()).thenReturn(1234567002L);
-		when(items.get(1).getFile().lastModified()).thenReturn(1234567001L);
-		when(items.get(2).getFile().lastModified()).thenReturn(1234567000L);
-		for (final ContentItem i : items) {
-			i.reload();
-		}
+		items.get(3).setLastModified(1234567004L);
+		items.get(0).setLastModified(1234567003L);
+		items.get(4).setLastModified(1234567002L);
+		items.get(1).setLastModified(1234567001L);
+		items.get(2).setLastModified(1234567000L);
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.req.setParameter("sort", "modified");

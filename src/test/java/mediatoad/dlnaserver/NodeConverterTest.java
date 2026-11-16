@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.net.URI;
@@ -48,10 +47,7 @@ public class NodeConverterTest {
 		input.addItemIfAbsent(new ContentItem("2", "id", "2", null, MediaFormat.AAC));
 		input.addItemIfAbsent(new ContentItem("3", "id", "3", null, MediaFormat.AAC));
 
-		final File artFile = mock(File.class);
-		when(artFile.exists()).thenReturn(true);
-		when(artFile.length()).thenReturn(222L);
-		final ContentItem art = new ContentItem("art", "id-of-art-container", null, artFile, MediaFormat.JPEG);
+		final ContentItem art = new ContentItem("art", "id-of-art-container", null, mock(File.class), MediaFormat.JPEG);
 		input.setArt(art);
 
 		final Container c = this.undertest.makeContainerWithoutSubContainers(input);
@@ -81,25 +77,19 @@ public class NodeConverterTest {
 
 	@Test
 	public void itMakesAnItem() throws Exception {
-		final File inputFile = mock(File.class);
-		when(inputFile.exists()).thenReturn(true);
-		when(inputFile.length()).thenReturn(123456L);
-		final ContentItem input = new ContentItem("id", "pid", "title", inputFile, MediaFormat.MP3);
+		final ContentItem input = new ContentItem("id", "pid", "title", mock(File.class), MediaFormat.MP3);
+		input.setFileLength(123456L);
 
 		final Metadata md = new Metadata("artist", "album");
 		input.setMetadata(md);
 		input.setDurationMillis(TimeUnit.MINUTES.toMillis(90));
 
-		final File artFile = mock(File.class);
-		when(artFile.exists()).thenReturn(true);
-		when(artFile.length()).thenReturn(222L);
-		final ContentItem art = new ContentItem("art", "id-of-art-container", null, artFile, MediaFormat.JPEG);
+		final ContentItem art = new ContentItem("art", "id-of-art-container", null, mock(File.class), MediaFormat.JPEG);
+		art.setFileLength(222L);
 		input.setArt(art);
 
-		final File subtitlesFile = mock(File.class);
-		when(subtitlesFile.exists()).thenReturn(true);
-		when(subtitlesFile.length()).thenReturn(111L);
-		final ContentItem subtitles = new ContentItem("subtitles", "id-of-subtitles-container", null, subtitlesFile, MediaFormat.SRT);
+		final ContentItem subtitles = new ContentItem("subtitles", "id-of-subtitles-container", null, mock(File.class), MediaFormat.SRT);
+		subtitles.setFileLength(111L);
 		input.addAttachmentIfNotPresent(subtitles);
 
 		final Item i = this.undertest.makeItem(input);

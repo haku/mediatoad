@@ -1,11 +1,17 @@
 package mediatoad.media;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+
+import com.google.common.annotations.VisibleForTesting;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.media.MetadataReader.Metadata;
@@ -24,6 +30,7 @@ public class ContentItem extends AbstractContent {
 	private volatile ContentItem art;
 	private volatile Metadata metadata;
 	private volatile long fileLength = 0L;
+	private volatile long createdAt = 0L;
 	private volatile long lastModified = 0L;
 
 	public ContentItem(
@@ -31,7 +38,7 @@ public class ContentItem extends AbstractContent {
 			final String parentId,
 			final String title,
 			final File file,
-			final MediaFormat format) {
+			final MediaFormat format) throws IOException {
 		super(id, parentId, title);
 		if (parentId == null) throw new IllegalArgumentException("parentId must not be null.");
 		this.file = file;
@@ -39,10 +46,31 @@ public class ContentItem extends AbstractContent {
 		reload();
 	}
 
-	public void reload() {
+	public void reload() throws IOException {
 		if (this.file == null || !this.file.exists()) return;
-		this.fileLength = this.file.length();
-		this.lastModified = this.file.lastModified();
+
+		final Path path = this.file.toPath();
+		if (path == null) return;  // For when File is a mock object.
+
+		final BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
+		this.fileLength = attrs.size();
+		this.lastModified = attrs.lastModifiedTime().toMillis();
+		this.createdAt = attrs.creationTime().toMillis();
+	}
+
+	@VisibleForTesting
+	public void setFileLength(final long fileLength) {
+		this.fileLength = fileLength;
+	}
+
+	@VisibleForTesting
+	public void setCreatedAt(final long createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	@VisibleForTesting
+	public void setLastModified(final long lastModified) {
+		this.lastModified = lastModified;
 	}
 
 	public void setDurationMillis(final long durationMillis) {
@@ -58,7 +86,7 @@ public class ContentItem extends AbstractContent {
 		this.metadata = metadata;
 	}
 
-	public void setWidthAndHeight(int width, int height) {
+	public void setWidthAndHeight(final int width, final int height) {
 		this.width = width;
 		this.height = height;
 	}
@@ -149,6 +177,10 @@ public class ContentItem extends AbstractContent {
 
 	public long getLastModified() {
 		return this.lastModified;
+	}
+
+	public long getCreatedAt() {
+		return this.createdAt;
 	}
 
 	@Override

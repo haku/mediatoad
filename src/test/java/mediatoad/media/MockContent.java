@@ -59,7 +59,7 @@ public class MockContent {
 		return givenMockItems(MediaFormat.MP4, n);
 	}
 
-	public List<ContentItem> givenMockItems (final int n, final Consumer<File> modifier) throws IOException {
+	public List<ContentItem> givenMockItems (final int n, final Consumer<ContentItem> modifier) throws IOException {
 		return givenMockItems(MediaFormat.MP4, n, this.contentTree.getRootNode(), modifier);
 	}
 
@@ -75,7 +75,7 @@ public class MockContent {
 		return givenMockItems(format, n, parent, null);
 	}
 
-	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, final Consumer<File> modifier) throws IOException {
+	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent, final Consumer<ContentItem> modifier) throws IOException {
 		final List<Integer> ids = new ArrayList<>();
 		for (int i = 0; i < n; i++) {
 			ids.add(this.idGen.getAndIncrement());
@@ -135,7 +135,7 @@ public class MockContent {
 		return addMockItem(format, id, parent, null);
 	}
 
-	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent, final Consumer<File> modifier) throws IOException {
+	public ContentItem addMockItem (final MediaFormat format, final String id, final ContentNode parent, final Consumer<ContentItem> modifier) throws IOException {
 		final String fileName = id + "." + format.getExt();
 		final File file;
 		if (this.tmp != null) {
@@ -147,10 +147,10 @@ public class MockContent {
 			when(file.getName()).thenReturn(fileName);
 			when(file.getAbsolutePath()).thenReturn("/mock/path/" + fileName);
 		}
-		if (modifier != null) modifier.accept(file);
 
 		ContentItem item = new ContentItem(id, parent.getId(), "item " + id, file, format);
 		if (this.spy) item = spy(item);
+		if (modifier != null) modifier.accept(item);
 		this.contentTree.addItem(item);
 		parent.addItemIfAbsent(item);
 		return item;

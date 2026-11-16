@@ -601,8 +601,10 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.setTitle(item.getTitle())
 				.setMimeType(item.getFormat().getMime())
 				.setFileLength(item.getFileLength())
-				.setDurationMillis(item.getDurationMillis())
+				.setFileCreatedAt(item.getCreatedAt())
+				.setFileLastModified(item.getLastModified())
 				.setSha1(sha1)
+				.setDurationMillis(item.getDurationMillis())
 				.setExcluded(playback != null ? playback.isExcluded() : false);
 
 		if (tags != null) {
