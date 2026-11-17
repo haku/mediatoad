@@ -226,7 +226,7 @@ public class ContentTreeTest {
 			@Override
 			public void accept(final ContentItem f) {
 				final int n = Integer.parseInt(f.getFile().getName().substring(0, f.getFile().getName().indexOf(".")).replace("id", ""));
-				f.setLastModified(n * 1000L);
+				f.setModifiedMillis(n * 1000L);
 			}
 		};
 	}

@@ -44,7 +44,7 @@ public class RecentContentNode extends ContentNode {
 
 	public void maybeAddToRecent(final ContentItem item, ContentNode node) {
 		if (item.getParentId() == null) return;  // Things like subtitles and thumbnails.
-		if (item.getLastModified() < this.oldestRecentItem) return;
+		if (item.getModifiedMillis() < this.oldestRecentItem) return;
 
 		final AuthList auth = node.getAuthList();
 		if (auth != null) this.itemIdToAuth.put(item.getId(), auth);
@@ -55,7 +55,7 @@ public class RecentContentNode extends ContentNode {
 				final ContentItem removed = this.recent.pollLast();
 				this.itemIdToAuth.remove(removed.getId());
 
-				this.oldestRecentItem = this.recent.last().getLastModified();
+				this.oldestRecentItem = this.recent.last().getModifiedMillis();
 			}
 			else {
 				this.oldestRecentItem = 0L;

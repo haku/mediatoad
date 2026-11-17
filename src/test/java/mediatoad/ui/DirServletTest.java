@@ -135,11 +135,11 @@ public class DirServletTest {
 		final ContentNode mockDir = mockDirs.get(0);
 		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.JPEG, 5, mockDir);
 
-		items.get(3).setLastModified(1234567004L);
-		items.get(0).setLastModified(1234567003L);
-		items.get(4).setLastModified(1234567002L);
-		items.get(1).setLastModified(1234567001L);
-		items.get(2).setLastModified(1234567000L);
+		items.get(3).setModifiedMillis(1234567004L);
+		items.get(0).setModifiedMillis(1234567003L);
+		items.get(4).setModifiedMillis(1234567002L);
+		items.get(1).setModifiedMillis(1234567001L);
+		items.get(2).setModifiedMillis(1234567000L);
 
 		this.req.setPathInfo("/" + mockDir.getId());
 		this.req.setParameter("sort", "modified");

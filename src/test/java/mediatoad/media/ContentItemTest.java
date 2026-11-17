@@ -21,8 +21,8 @@ public class ContentItemTest {
 
 		final ContentItem item = new ContentItem("id", "pid", "title", file, MediaFormat.GIF);
 		assertEquals(file.length(), item.getFileLength());
-		assertEquals(file.lastModified(), item.getLastModified());
-		assertEquals(attrs.creationTime().toMillis(), item.getCreatedAt());
+		assertEquals(file.lastModified(), item.getModifiedMillis());
+		assertEquals(attrs.creationTime().toMillis(), item.getCreatedMillis());
 	}
 
 }

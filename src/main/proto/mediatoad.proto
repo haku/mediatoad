@@ -18,8 +18,8 @@ message MediaItem {
   string title = 2;
   string mime_type = 3;
   int64 file_length = 4;
-  int64 file_created_at = 9;
-  int64 file_last_modified = 10;
+  int64 file_created_millis = 9;
+  int64 file_modified_millis = 10;
   string sha1 = 8;
   int64 duration_millis = 5;
   repeated MediaTag tag = 6;

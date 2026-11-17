@@ -30,8 +30,8 @@ public class ContentItem extends AbstractContent {
 	private volatile ContentItem art;
 	private volatile Metadata metadata;
 	private volatile long fileLength = 0L;
-	private volatile long createdAt = 0L;
-	private volatile long lastModified = 0L;
+	private volatile long createdMillis = 0L;
+	private volatile long modifiedMillis = 0L;
 
 	public ContentItem(
 			final String id,
@@ -54,8 +54,8 @@ public class ContentItem extends AbstractContent {
 
 		final BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
 		this.fileLength = attrs.size();
-		this.lastModified = attrs.lastModifiedTime().toMillis();
-		this.createdAt = attrs.creationTime().toMillis();
+		this.modifiedMillis = attrs.lastModifiedTime().toMillis();
+		this.createdMillis = attrs.creationTime().toMillis();
 	}
 
 	@VisibleForTesting
@@ -64,13 +64,13 @@ public class ContentItem extends AbstractContent {
 	}
 
 	@VisibleForTesting
-	public void setCreatedAt(final long createdAt) {
-		this.createdAt = createdAt;
+	public void setCreatedMillis(final long createdMillis) {
+		this.createdMillis = createdMillis;
 	}
 
 	@VisibleForTesting
-	public void setLastModified(final long lastModified) {
-		this.lastModified = lastModified;
+	public void setModifiedMillis(final long modifiedMillis) {
+		this.modifiedMillis = modifiedMillis;
 	}
 
 	public void setDurationMillis(final long durationMillis) {
@@ -175,12 +175,12 @@ public class ContentItem extends AbstractContent {
 		return this.fileLength;
 	}
 
-	public long getLastModified() {
-		return this.lastModified;
+	public long getModifiedMillis() {
+		return this.modifiedMillis;
 	}
 
-	public long getCreatedAt() {
-		return this.createdAt;
+	public long getCreatedMillis() {
+		return this.createdMillis;
 	}
 
 	@Override
@@ -206,7 +206,7 @@ public class ContentItem extends AbstractContent {
 		MODIFIED_DESC {
 			@Override
 			public int compare (final ContentItem a, final ContentItem b) {
-				int c = Long.compare(b.lastModified, a.lastModified);
+				int c = Long.compare(b.modifiedMillis, a.modifiedMillis);
 				if (c == 0) {
 					c = TITLE_CASE_INSENSITIVE.compare(a, b);
 				}

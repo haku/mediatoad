@@ -84,7 +84,7 @@ public class Webdav {
 			w.println("</D:getcontentlength>");
 		}
 
-		final long lastModified = item.getLastModified();
+		final long lastModified = item.getModifiedMillis();
 		if (lastModified > 0) {
 			w.print("<D:getlastmodified>");
 			w.print(RFC1123_DATE.get().format(new Date(lastModified)));

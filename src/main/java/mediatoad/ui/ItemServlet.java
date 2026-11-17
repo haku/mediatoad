@@ -191,8 +191,8 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		itemScope.details += "\n" + absolutePath;
-		itemScope.details += "\n" + "created:  " + DATE_FORMAT.get().format(new Date(item.getCreatedAt()));
-		itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getLastModified()));
+		itemScope.details += "\n" + "created:  " + DATE_FORMAT.get().format(new Date(item.getCreatedMillis()));
+		itemScope.details += "\n" + "modified: " + DATE_FORMAT.get().format(new Date(item.getModifiedMillis()));
 		item.withEachAttachment(a -> {
 			itemScope.details += "\n" + "attachment: " + a.getFile().getAbsolutePath() + " (" + a.getFormat().getMime() + ")";
 		});

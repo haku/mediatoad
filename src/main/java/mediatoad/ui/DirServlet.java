@@ -292,7 +292,7 @@ public class DirServlet extends HttpServlet {
 		for (final ContentItem i : items) {
 			final ZipEntry e = new ZipEntry(i.getFile().getName());
 			e.setSize(i.getFileLength());
-			e.setTime(i.getLastModified());
+			e.setTime(i.getModifiedMillis());
 			zo.putNextEntry(e);
 			FileUtils.copyFile(i.getFile(), zo);
 			zo.closeEntry();
