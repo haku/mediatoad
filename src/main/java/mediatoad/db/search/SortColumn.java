@@ -2,13 +2,13 @@ package mediatoad.db.search;
 
 public enum SortColumn {
 
-	FILE_PATH("file COLLATE NOCASE"),
-	FILE_SIZE("size"),
-	MODIFIED("modified"),
-	DURATION("duration"),
-	LAST_PLAYED("last_played"),
-	START_COUNT("start_count"),
-	COMPLETE_COUNT("complete_count");
+	FILE_PATH("files.file COLLATE NOCASE"),
+	FILE_SIZE("files.size"),
+	MODIFIED("files.modified"),
+	DURATION("infos.duration"),
+	LAST_PLAYED("playback.last_played"),
+	START_COUNT("playback.start_count"),
+	COMPLETE_COUNT("playback.complete_count");
 
 	private final String sqlColumnName;
 

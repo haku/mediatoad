@@ -65,7 +65,7 @@ public class DbSearchParserTest {
 				" missing=0" +
 				" AND auth IN ('0')" +
 				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) ) " +
-				" ORDER BY file COLLATE NOCASE ASC",
+				" ORDER BY files.file COLLATE NOCASE ASC",
 				"hello");
 	}
 
@@ -655,6 +655,22 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itSortsResultsByDateModified() throws Exception {
+		final String id2 = mockMediaTrackWithNameContaining("thing 2");
+		final String id1 = mockMediaTrackWithNameContaining("thing 1");
+		final String id4 = mockMediaTrackWithNameContaining("thing 4");
+		final String id3 = mockMediaTrackWithNameContaining("thing 3");
+
+		assertThat(
+				DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.MODIFIED.asc()).execute(this.mediaDb, 10).keySet(),
+				contains(id2, id1, id4, id3));
+
+		assertThat(
+				DbSearchParser.parseSearchWithTags("f~thing", null, SortColumn.MODIFIED.desc()).execute(this.mediaDb, 10).keySet(),
+				contains(id3, id4, id1, id2));
+	}
+
+	@Test
 	public void itSortsResultsByDuration() throws Exception {
 		final String id2 = mockMediaTrackWithDuration(21000, "thing");
 		final String id1 = mockMediaTrackWithDuration(13000, "thing");
@@ -689,6 +705,14 @@ public class DbSearchParserTest {
 	}
 
 	@Test
+	public void itDoesNotErrorOnAnySortColumn() throws Exception {
+		final String id = mockMediaFileWithTags("thing");
+		for (final SortColumn col : SortColumn.values()) {
+			assertThat(DbSearchParser.parseSearchWithTags("t=thing", null, col.asc()).execute(this.mediaDb, 10).keySet(), contains(id));
+		}
+	}
+
+	@Test
 	public void itChoosesRandomMedia() throws Exception {
 		final Set<String> expectedIds = new HashSet<>();
 		for (int i = 0; i < 3; i++) {
@@ -703,7 +727,7 @@ public class DbSearchParserTest {
 			excluded.add(this.mockMediaMetadataStore.addFileWithTags("thing"));
 		}
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
-			for (String id : excluded) {
+			for (final String id : excluded) {
 				w.setFileExcluded(id, true, true);
 			}
 			w.commit();
