@@ -603,7 +603,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 				.setFileLength(item.getFileLength())
 				.setFileCreatedMillis(item.getCreatedMillis())
 				.setFileModifiedMillis(item.getModifiedMillis())
-				.setSha1(sha1)
+				.setSha1(StringUtils.leftPad(sha1, 40, '0'))
 				.setDurationMillis(item.getDurationMillis())
 				.setExcluded(playback != null ? playback.isExcluded() : false);
 

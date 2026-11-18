@@ -135,6 +135,10 @@ public class MockMediaMetadataStore extends MediaMetadataStore {
 		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, randomBytes(), null, 0L, tags);
 	}
 
+	public String addFileWithNameAndSuffexAndTagsAndContent(final String nameFragment, final String nameSuffex, final byte[] fileContent, final String... tags) throws IOException, InterruptedException, SQLException {
+		return addFileWithNameExtAndTags(nameFragment, nameSuffex, BigInteger.ZERO, false, fileContent, null, 0L, tags);
+	}
+
 	public String addFileWithContent(final byte[] fileContent) throws IOException, InterruptedException, SQLException {
 		return addFileWithNameExtAndTags(RandomStringUtils.insecure().nextAlphanumeric(10, 50), ".ext", BigInteger.ZERO, false, fileContent, null, 0L);
 	}

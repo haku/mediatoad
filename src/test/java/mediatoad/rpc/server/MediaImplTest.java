@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,7 +77,6 @@ import mediatoad.rpc.MediaToadProto.UpdateExcludedReply;
 import mediatoad.rpc.MediaToadProto.UpdateExcludedRequest;
 import mediatoad.rpc.MediaToadProto.UpdateTagsReply;
 import mediatoad.rpc.MediaToadProto.UpdateTagsRequest;
-import mediatoad.util.HashHelper;
 
 public class MediaImplTest {
 
@@ -138,7 +138,7 @@ public class MediaImplTest {
 						.setTitle("title for itemid")
 						.setMimeType("image/jpeg")
 						.setExcluded(true)
-						.setSha1("f00b44")
+						.setSha1("0000000000000000000000000000000000f00b44")
 						.addTag(MediaTag.newBuilder().setTag("foo").setCls("cls").setModifiedMillis(1234567890L).build())
 						.build())
 				.build());
@@ -150,9 +150,10 @@ public class MediaImplTest {
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 		final long time = mockMediaMetadataStore.getNowMillis();
 
+		final String fileContent = "9";  // needs to make a sha1 with leading zeros.
 		final String name = "thing 0";
 		final String tag = "foo";
-		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTags(name, ".mp3", tag);
+		final String id = mockMediaMetadataStore.addFileWithNameAndSuffexAndTagsAndContent(name, ".mp3", fileContent.getBytes(StandardCharsets.UTF_8), tag);
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
 			w.setFileExcluded(id, true, true);
 			w.addTag(id, "other", "class1", time);
@@ -175,7 +176,7 @@ public class MediaImplTest {
 						.setFileLength(file.length())
 						.setFileCreatedMillis(123456789000L)
 						.setFileModifiedMillis(123456799000L)
-						.setSha1(HashHelper.sha1(file).toString(16))
+						.setSha1("0ade7c2cf97f75d009975f4d720d1fa6c19f4897")
 						.setExcluded(true)
 						.addTag(MediaTag.newBuilder()
 								.setTag("foo")
