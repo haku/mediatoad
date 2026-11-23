@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteConfig.Encoding;
@@ -33,6 +34,8 @@ public class MediaDb {
 	private final String dbPath;
 	private final Connection dbConn;
 	protected final AtomicLong writeCounter = new AtomicLong(0L);
+
+	private volatile Consumer<Collection<String>> tagChangeListener;
 
 	public MediaDb (final File dbFile) throws SQLException {
 		this("jdbc:sqlite:" + dbFile.getAbsolutePath());
@@ -108,11 +111,16 @@ public class MediaDb {
 				+ ");");
 	}
 
+	public void setTagChangeListener(final Consumer<Collection<String>> tagChangeListener) {
+		if (this.tagChangeListener != null) throw new IllegalStateException();
+		this.tagChangeListener = tagChangeListener;
+	}
+
 	@SuppressWarnings("resource")
 	public WritableMediaDb getWritable() throws SQLException {
 		final Connection conn = makeDbConnection(this.dbPath);
 		conn.setAutoCommit(false);
-		return new WritableMediaDb(conn, this.writeCounter);
+		return new WritableMediaDb(conn, this.writeCounter, this.tagChangeListener);
 	}
 
 	public <E extends Exception> void write (final ExConsumer<WritableMediaDb, E> consumer) throws E, SQLException {
@@ -120,7 +128,7 @@ public class MediaDb {
 			conn.setAutoCommit(false);
 
 			@SuppressWarnings("resource")
-			final WritableMediaDb writable = new WritableMediaDb(conn, this.writeCounter);
+			final WritableMediaDb writable = new WritableMediaDb(conn, this.writeCounter, this.tagChangeListener);
 
 			boolean success = false;
 			try {

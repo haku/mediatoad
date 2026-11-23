@@ -36,7 +36,7 @@ public class AuthFilter implements Filter {
 	private static final String HEADER_AUTHORISATION = "Authorization"; // Incoming request has this.
 	private static final String HEADER_AUTHORISATION_PREFIX = "Basic "; // Incoming request starts with this.
 	private static final Logger LOG = LoggerFactory.getLogger(AuthFilter.class);
-	private static final User NULL_USER = new User(null, null, null);
+	private static final User NULL_USER = new User(null, null, null, null);
 
 	private final static Set<String> READ_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
 			"GET",

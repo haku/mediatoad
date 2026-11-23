@@ -36,6 +36,7 @@ import mediatoad.db.Tag;
 import mediatoad.db.TagFrequency;
 import mediatoad.db.WritableMediaDb;
 import mediatoad.db.search.DbSearchParser.DbSearch;
+import mediatoad.db.search.DbSearchParser.DbSearchWithTags;
 import mediatoad.rpc.MediaToadProto.ChooseMethod;
 
 public class DbSearchParserTest {
@@ -63,7 +64,7 @@ public class DbSearchParserTest {
 		runParser("hello",
 				"SELECT DISTINCT id FROM files INNER JOIN hashes USING (id) WHERE" +
 				" missing=0" +
-				" AND auth IN ('0')" +
+				" AND (  auth IN ('0') ) " +
 				" AND (  (file LIKE ? ESCAPE ? OR id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0)) ) " +
 				" ORDER BY files.file COLLATE NOCASE ASC",
 				"hello");
@@ -83,7 +84,7 @@ public class DbSearchParserTest {
 			ids.add(this.mockMediaMetadataStore.addFileWithNameAndTags(String.format("file%07d", i), "thing" + i));
 		}
 
-		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, SortColumn.FILE_PATH.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch("t~^thing", null, null, SortColumn.FILE_PATH.asc());
 
 		final List<String> page0 = parsed.execute(this.mediaDb, 50, 0);
 		assertThat(page0, contains(ids.subList(0, 50).toArray(new String[] {})));
@@ -97,7 +98,22 @@ public class DbSearchParserTest {
 		final String noauth = this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.ZERO, "hello");
 		final String allowed = this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.valueOf(100001L), "hello");
 		this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.valueOf(200002L), "hello");
+
+		runQuery("hello", noauth);
 		runQuery("hello", ImmutableSet.of(BigInteger.valueOf(100001L)), noauth, allowed);
+	}
+
+	@Test
+	public void itSeachesMatchingTagAuth() throws Exception {
+		final String noauth = this.mockMediaMetadataStore.addFileWithTags("hello");
+		final String allowed = this.mockMediaMetadataStore.addFileWithAuthAndTags(BigInteger.valueOf(100001L), "hello", "letmein");
+		this.mockMediaMetadataStore.addFileWithTags("other");
+
+		runQuery("t=hello", noauth);
+		runQuery("t=hello", null, ImmutableSet.of("letmein"), noauth, allowed);
+
+		runQueryForTags("t=hello", null, null, noauth);
+		runQueryForTags("t=hello", null, ImmutableSet.of("letmein"), noauth, allowed);
 	}
 
 	@Test
@@ -646,11 +662,11 @@ public class DbSearchParserTest {
 		final String id3 = mockMediaTrackWithNameContaining("thing 3");
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("f~thing", null, null, SortColumn.FILE_PATH.asc()).execute(this.mediaDb, 10),
 				contains(id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("f~thing", null, SortColumn.FILE_PATH.desc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("f~thing", null, null, SortColumn.FILE_PATH.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1));
 	}
 
@@ -679,11 +695,11 @@ public class DbSearchParserTest {
 		final String idNoD = mockMediaFileWithTags("thing");
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.asc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("t=thing", null, null, SortColumn.DURATION.asc()).execute(this.mediaDb, 10),
 				contains(idNoD, id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.DURATION.desc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("t=thing", null, null, SortColumn.DURATION.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1, idNoD));
 	}
 
@@ -696,11 +712,11 @@ public class DbSearchParserTest {
 		final String idNoL = mockMediaFileWithTags("thing");
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.asc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("t=thing", null, null, SortColumn.LAST_PLAYED.asc()).execute(this.mediaDb, 10),
 				contains(idNoL, id1, id2, id3, id4));
 
 		assertThat(
-				DbSearchParser.parseSearch("t=thing", null, SortColumn.LAST_PLAYED.desc()).execute(this.mediaDb, 10),
+				DbSearchParser.parseSearch("t=thing", null, null, SortColumn.LAST_PLAYED.desc()).execute(this.mediaDb, 10),
 				contains(id4, id3, id2, id1, idNoL));
 	}
 
@@ -793,7 +809,7 @@ public class DbSearchParserTest {
 // Template tests.
 
 	private static void runParser(final String input, final String expectedSql, final String... expectedTerms) {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, null, SortColumn.FILE_PATH.asc());
+		final DbSearch parsed = DbSearchParser.parseSearch(input, null, null, SortColumn.FILE_PATH.asc());
 		if (expectedSql != null) assertEquals(expectedSql, parsed.getSql());
 		assertThat(parsed.getTerms(), contains(expectedTerms));
 	}
@@ -803,9 +819,19 @@ public class DbSearchParserTest {
 	}
 
 	private void runQuery(final String input, final Set<BigInteger> authIds, final String... expectedResults) throws SQLException {
-		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, SortColumn.FILE_PATH.asc());
+		runQuery(input, authIds, null, expectedResults);
+	}
+
+	private void runQuery(final String input, final Set<BigInteger> authIds, final Set<String> authTags, final String... expectedResults) throws SQLException {
+		final DbSearch parsed = DbSearchParser.parseSearch(input, authIds, authTags, SortColumn.FILE_PATH.asc());
 		final List<String> results = parsed.execute(this.mediaDb, 10);
 		assertThat(results, containsInAnyOrder(expectedResults));
+	}
+
+	private void runQueryForTags(final String input, final Set<BigInteger> authIds, final Set<String> authTags, final String... expectedResults) throws SQLException {
+		final DbSearchWithTags parsed = DbSearchParser.parseSearchWithTags(input, authIds, authTags, List.of(SortColumn.FILE_PATH.asc()));
+		final Map<String, List<Tag>> results = parsed.execute(this.mediaDb, 10);
+		assertThat(results.keySet(), containsInAnyOrder(expectedResults));
 	}
 
 // Builders.

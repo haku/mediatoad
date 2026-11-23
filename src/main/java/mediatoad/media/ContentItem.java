@@ -10,11 +10,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import mediatoad.auth.Users.User;
 import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.util.CollectionHelper;
 import mediatoad.util.ExConsumer;
 
 public class ContentItem extends AbstractContent {
@@ -24,6 +27,7 @@ public class ContentItem extends AbstractContent {
 
 	private final List<ContentItem> attachments = new ArrayList<>();
 
+	private volatile Set<String> authTags = Set.of();
 	private volatile long durationMillis;
 	private volatile int width;
 	private volatile int height;
@@ -44,6 +48,15 @@ public class ContentItem extends AbstractContent {
 		this.file = file;
 		this.format = format;
 		reload();
+	}
+
+	public void setAuthTags(final Set<String> authTags) {
+		this.authTags = Set.copyOf(authTags);
+	}
+
+	public boolean isUserAuth(final User user) {
+		if (this.authTags.size() < 1 || user == null || user.getAuthTags() == null) return false;
+		return CollectionHelper.intersects(this.authTags, user.getAuthTags());
 	}
 
 	public void reload() throws IOException {

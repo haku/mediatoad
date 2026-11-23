@@ -6,9 +6,11 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +28,12 @@ public class Users {
 
 	public Set<String> allUsernames() {
 		return this.users.keySet();
+	}
+
+	public Set<String> allAuthTags() {
+		return this.users.values().stream()
+				.flatMap(u -> u.getAuthTags().stream())
+				.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public User getUser(final String username) {
@@ -63,21 +71,36 @@ public class Users {
 				rejectInvalidFile(userfile, lineN, "encoded password not long enough");
 
 			Set<Permission> permissions = null;
+			Set<String> authTags = null;
 			if (parts.length > 2) {
 				for (int i = 2; i < parts.length; i++) {
 					final String part = parts[i];
-					final Permission permission = Permission.fromKey(part);
-					if (permission != null) {
-						if (permissions == null) permissions = EnumSet.noneOf(Permission.class);
-						permissions.add(permission);
+					if (part.startsWith("+")) {
+						final Permission permission = Permission.fromKey(part);
+						if (permission != null) {
+							if (permissions == null) permissions = EnumSet.noneOf(Permission.class);
+							permissions.add(permission);
+						}
+						else {
+							rejectInvalidFile(userfile, lineN, "invalid permission");
+						}
+					}
+					else if (part.startsWith("t=")) {
+						if (part.length() >= 3) {
+							if (authTags == null) authTags = new HashSet<>();
+							authTags.add(part.substring(2));
+						}
+						else {
+							rejectInvalidFile(userfile, lineN, "invalid auth-tag");
+						}
 					}
 					else {
-						rejectInvalidFile(userfile, lineN, "invalid permission");
+						rejectInvalidFile(userfile, lineN, "invalid permission or auth-tag");
 					}
 				}
 			}
 
-			ret.put(username, new User(username, encPass, permissions));
+			ret.put(username, new User(username, encPass, permissions, authTags));
 		}
 		return ret;
 	}
@@ -91,11 +114,13 @@ public class Users {
 		private final String username;
 		private final String encPass;
 		private final Set<Permission> permissions;
+		private final Set<String> authTags;
 
-		public User(final String username, final String encPass, final Set<Permission> permissions) {
+		public User(final String username, final String encPass, final Set<Permission> permissions, final Set<String> authTags) {
 			this.username = username;
 			this.encPass = encPass;
-			this.permissions = permissions != null ? Collections.unmodifiableSet(permissions) : null;
+			this.permissions = permissions != null && permissions.size() > 0 ? EnumSet.copyOf(permissions) : EnumSet.noneOf(Permission.class);
+			this.authTags = authTags != null ? Set.copyOf(authTags) : Set.of();
 		}
 
 		public String getUsername() {
@@ -108,13 +133,16 @@ public class Users {
 		}
 
 		public boolean hasPermission(final Permission permission) {
-			if (this.permissions == null) return false;
 			return this.permissions.contains(permission);
 		}
 
 		@VisibleForTesting
 		protected Set<Permission> getPermissions() {
 			return this.permissions;
+		}
+
+		public Set<String> getAuthTags() {
+			return this.authTags;
 		}
 
 	}

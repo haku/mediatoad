@@ -123,6 +123,12 @@ public class ServletCommonTest {
 
 		when(node.isUserAuth(user)).thenReturn(true);
 		checkGetItemResp(sc, req, 200, "");
+
+		when(node.isUserAuth(user)).thenReturn(false);
+		checkGetItemResp(sc, req, 403, "Forbidden\n");
+
+		when(item.isUserAuth(user)).thenReturn(true);
+		checkGetItemResp(sc, req, 200, "");
 	}
 
 	private static void checkGetItemResp(final ServletCommon sc, final MockHttpServletRequest req, final int status, final String body) throws IOException {

@@ -71,6 +71,10 @@ public class MockContent {
 		return givenMockItems(MediaFormat.MP4, n, parent, null);
 	}
 
+	public List<ContentItem> givenMockItems (final int n, final ContentNode parent, Consumer<ContentItem> modifier) throws IOException {
+		return givenMockItems(MediaFormat.MP4, n, parent, modifier);
+	}
+
 	public List<ContentItem> givenMockItems (final MediaFormat format, final int n, final ContentNode parent) throws IOException {
 		return givenMockItems(format, n, parent, null);
 	}

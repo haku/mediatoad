@@ -26,6 +26,12 @@ public class UsersTest {
 	public TemporaryFolder tmp = new TemporaryFolder();
 
 	@Test
+	public void itParsesEmptyFile() throws Exception {
+		final Users undertest = makeUnderTest("");
+		assertEquals(Set.of(), undertest.allAuthTags());
+	}
+
+	@Test
 	public void itParsesUsersFile() throws Exception {
 		final String data =
 				" // a comment\n"
@@ -33,24 +39,34 @@ public class UsersTest {
 				+ "   "
 				+ "myuser $2a$10$SjEvTt.bmT24T23CK6cQB.LWvtTWuBeH6W9WixjjEEqcww2/ZnLz. +edittags +managerpc\n"
 				+ "anotheruser $2a$10$CXay0mG8MKHCWtwdyX/LmeBaga4M0Jat6EWcXcvWG6a8o6vPurwum\n"
+				+ "tagauthuser $2a$10$CXay0mG8MKHCWtwdyX/LmeBaga4M0Jat6EWcXcvWG6a8o6vPurwum t=specialtag\n"
 				+ "rpcuser@remote 0 +edittags\n";
 		final Users undertest = makeUnderTest(data);
+		assertThat(undertest.allUsernames(), containsInAnyOrder("myuser", "anotheruser", "tagauthuser", "rpcuser@remote"));
 
-		assertThat(undertest.allUsernames(), containsInAnyOrder("myuser", "anotheruser", "rpcuser@remote"));
 		assertNull(undertest.validUser("myuser", "12"));
 		final User myuser = undertest.validUser("myuser", "123");
 		assertNotNull(myuser);
 		assertEquals("myuser", myuser.getUsername());
 		assertEquals(Set.of(Permission.EDITTAGS, Permission.MANAGERPC), myuser.getPermissions());
+		assertEquals(Set.of(), myuser.getAuthTags());
 
 		final User anotheruser = undertest.validUser("anotheruser", "456");
 		assertNotNull(anotheruser);
-		assertEquals(null, anotheruser.getPermissions());
+		assertEquals(Set.of(), anotheruser.getPermissions());
+		assertEquals(Set.of(), anotheruser.getAuthTags());
 
+		final User tagauthuser = undertest.validUser("tagauthuser", "456");
+		assertNotNull(tagauthuser);
+		assertEquals(Set.of(), tagauthuser.getPermissions());
+		assertEquals(Set.of("specialtag"), tagauthuser.getAuthTags());
 
 		final User remoteuser = undertest.getUser("rpcuser@remote");
 		assertEquals(Set.of(Permission.EDITTAGS), remoteuser.getPermissions());
 		assertFalse(remoteuser.validPass("0"));
+		assertEquals(Set.of(), remoteuser.getAuthTags());
+
+		assertEquals(Set.of("specialtag"), undertest.allAuthTags());
 	}
 
 	@Test

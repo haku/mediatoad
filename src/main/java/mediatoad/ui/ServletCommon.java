@@ -265,7 +265,7 @@ public class ServletCommon {
 		}
 
 		final User user = ReqAttr.USER.get(req);
-		if (!node.isUserAuth(user)) {
+		if (!node.isUserAuth(user) && !item.isUserAuth(user)) {
 			returnDenied(resp, user);
 			return null;
 		}

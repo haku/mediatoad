@@ -313,12 +313,13 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
 		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
+		final Set<String> authTags = user != null ? user.getAuthTags() : null;
 
 		final Map<String, List<Tag>> idsToTags;
 		final Map<String, Playback> playbacks;
 		final Map<String, String> hashes;
 		try {
-			idsToTags = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, sorts).execute(this.mediaDb, maxResults, 0);
+			idsToTags = DbSearchParser.parseSearchWithTags(request.getQuery(), authIds, authTags, sorts).execute(this.mediaDb, maxResults, 0);
 			hashes = this.mediaDb.getFileHashes(idsToTags.keySet());
 			playbacks = this.mediaDb.getPlayback(idsToTags.keySet());
 		}
@@ -561,7 +562,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		if (node == null || !node.isUserAuth(user)) {
+		if (node == null || (!node.isUserAuth(user) && !item.isUserAuth(user))) {
 			onNotFound.run();
 			return null;
 		}

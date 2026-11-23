@@ -118,7 +118,7 @@ public class ContentTreeTest {
 	public void itReturnsASetOfItems() throws Exception {
 		final List<String> openItems = itemIds(this.mockContent.givenMockItems(100));
 
-		final User user = FakeAuth.user();
+		final User user = FakeAuth.userWithAuthTags("authtag");
 		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 		final ContentNode allowProtecDir = this.mockContent.addMockDir("allow-dir-protec", this.undertest.getRootNode(), allowAuthlist);
 		final List<String> allowProtecItems = itemIds(this.mockContent.givenMockItems(100, allowProtecDir));
@@ -127,14 +127,19 @@ public class ContentTreeTest {
 		final ContentNode blockProtecDir = this.mockContent.addMockDir("block-dir-protec", this.undertest.getRootNode(), blockAuthlist);
 		final List<String> blockProtecItems = itemIds(this.mockContent.givenMockItems(100, blockProtecDir));
 
+		final ContentNode allowTagAuthDir = this.mockContent.addMockDir("tag-auth-dir-protec", this.undertest.getRootNode(), blockAuthlist);
+		final List<String> allowTagAuthItems = itemIds(this.mockContent.givenMockItems(100, allowTagAuthDir, i -> i.setAuthTags(Set.of("authtag"))));
+
 		final List<String> idsToFetch = new ArrayList<>();
 		idsToFetch.addAll(openItems.subList(10, 20));
 		idsToFetch.addAll(allowProtecItems.subList(10, 20));
 		idsToFetch.addAll(blockProtecItems.subList(10, 20));
+		idsToFetch.addAll(allowTagAuthItems.subList(10, 20));
 
 		final List<String> expectedIds = new ArrayList<>();
 		expectedIds.addAll(openItems.subList(10, 20));
 		expectedIds.addAll(allowProtecItems.subList(10, 20));
+		expectedIds.addAll(allowTagAuthItems.subList(10, 20));
 
 		final List<String> actualIds = itemIds(this.undertest.getItemsForIds(idsToFetch, user));
 		assertEquals(expectedIds, actualIds);

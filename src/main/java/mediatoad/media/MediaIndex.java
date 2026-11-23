@@ -39,6 +39,7 @@ public class MediaIndex implements FileListener {
 	private final MediaId mediaId;
 	private final MediaInfo mediaInfo;
 	private final Authoriser authoriser;
+	private final AuthTagsUpdater authTagsUpdater;
 	private final boolean verboseLog;
 
 	private final ContentNode videoContainer;
@@ -47,12 +48,20 @@ public class MediaIndex implements FileListener {
 	private final ContentNode docContainer;
 
 	@SuppressFBWarnings(value = "EI_EXPOSE_REP2")
-	public MediaIndex(final ContentTree contentTree, final HierarchyMode hierarchyMode, final MediaId mediaId, final MediaInfo mediaInfo, final Authoriser authoriser, final boolean verboseLog) throws IOException {
+	public MediaIndex(
+			final ContentTree contentTree,
+			final HierarchyMode hierarchyMode,
+			final MediaId mediaId,
+			final MediaInfo mediaInfo,
+			final Authoriser authoriser,
+			final AuthTagsUpdater authTagsUpdater,
+			final boolean verboseLog) throws IOException {
 		this.contentTree = contentTree;
 		this.hierarchyMode = hierarchyMode;
 		this.mediaId = mediaId;
 		this.mediaInfo = mediaInfo;
 		this.authoriser = authoriser;
+		this.authTagsUpdater = authTagsUpdater;
 		this.verboseLog = verboseLog;
 
 		switch (hierarchyMode) {
@@ -332,6 +341,7 @@ public class MediaIndex implements FileListener {
 		final ContentItem item = new ContentItem(id, parent.getId(), title, file, format);
 		if (parent.addItemIfAbsent(item)) {
 			this.contentTree.addItem(item);
+			this.authTagsUpdater.updateItemAsync(item);
 			findMetadata(file, item);
 			findArt(file, format, item, parent);
 

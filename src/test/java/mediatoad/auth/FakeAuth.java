@@ -15,11 +15,15 @@ public class FakeAuth {
 	}
 
 	public static User user() {
-		return new User(makeName(), null, null);
+		return new User(makeName(), null, null, null);
 	}
 
 	public static User userWithPermission(final Permission permission) {
-		return new User(makeName(), null, Set.of(permission));
+		return new User(makeName(), null, Set.of(permission), null);
+	}
+
+	public static User userWithAuthTags(final String... authTags) {
+		return new User(makeName(), null, null, Set.of(authTags));
 	}
 
 	public static AuthList listOfUsers(final User... users) {

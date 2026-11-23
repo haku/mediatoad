@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,15 +36,20 @@ public class WritableMediaDb implements Closeable {
 
 	private final Connection conn;
 	private final AtomicLong writeCounter;
+	private final Consumer<Collection<String>> tagChangeListener;
+
 	private final long startTime;
 	private final AtomicBoolean committed = new AtomicBoolean(false);
 
-	protected WritableMediaDb(final Connection conn, final AtomicLong writeCounter) throws SQLException {
-		this.writeCounter = writeCounter;
+	private final Set<String> fileIdsWithChangedTags = new HashSet<>();
+
+	protected WritableMediaDb(final Connection conn, final AtomicLong writeCounter, Consumer<Collection<String>> tagChangeListener) throws SQLException {
 		if (conn.getAutoCommit()) {
 			throw new IllegalArgumentException("AutoCommit must not be enabled.");
 		}
 		this.conn = conn;
+		this.writeCounter = writeCounter;
+		this.tagChangeListener = tagChangeListener;
 		this.startTime = System.nanoTime();
 	}
 
@@ -89,6 +95,7 @@ public class WritableMediaDb implements Closeable {
 		}
 
 		this.writeCounter.incrementAndGet();
+		if (this.tagChangeListener != null && this.fileIdsWithChangedTags.size() > 0) this.tagChangeListener.accept(this.fileIdsWithChangedTags);
 	}
 
 	protected void rollbackWithoutThrow() {
@@ -397,6 +404,7 @@ public class WritableMediaDb implements Closeable {
 				updateTagString(fileId, tag, cls);
 			}
 
+			this.fileIdsWithChangedTags.add(fileId);
 			return true;
 		}
 
@@ -409,6 +417,8 @@ public class WritableMediaDb implements Closeable {
 			st.setBoolean(5, deleted);  // Yes first write might be recoding a deletion.
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException(String.format("No update occured inserting tag for id=%s: tag='%s' cls='%s'", fileId, tag, cls));
+
+			this.fileIdsWithChangedTags.add(fileId);
 			return true;
 		}
 		catch (final SQLException e) {
@@ -426,6 +436,8 @@ public class WritableMediaDb implements Closeable {
 			st.setString(5, cls);
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException(String.format("No update occured setting tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls));
+
+			this.fileIdsWithChangedTags.add(fileId);
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to set tag deleted=%s: id=%s tag='%s' cls='%s'", deleted, fileId, tag, cls), e);
@@ -441,6 +453,8 @@ public class WritableMediaDb implements Closeable {
 			st.setString(4, cls);
 			final int n = st.executeUpdate();
 			if (n < 1) throw new SQLException(String.format("No update occured setting tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls));
+
+			this.fileIdsWithChangedTags.add(fileId);
 		}
 		catch (final SQLException e) {
 			throw new SQLException(String.format("Failed to set tag tag=%s: id=%s tag='%s' cls='%s'", tag, fileId, tag, cls), e);

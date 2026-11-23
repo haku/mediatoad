@@ -170,6 +170,7 @@ public class SearchServlet extends HttpServlet {
 				if (this.mediaDb != null) {
 					genTimer.startSection("auth");
 					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
+					final Set<String> authTags = user != null ? user.getAuthTags() : null;
 
 					genTimer.startSection("setup");
 					final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_LIMIT, MAX_RESULTS, i -> i > 0);
@@ -177,7 +178,7 @@ public class SearchServlet extends HttpServlet {
 					offset = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_OFFSET, 0, i -> i >= 0);
 					if (offset == null) return;
 
-					final DbSearch idsQuery = DbSearchParser.parseSearch(query, authIds, RESULT_SORT_ORDER);
+					final DbSearch idsQuery = DbSearchParser.parseSearch(query, authIds, authTags, RESULT_SORT_ORDER);
 					genTimer.startSection("query");
 					final List<String> ids = idsQuery.execute(this.mediaDb, limit, offset);
 					debugFooter.append(idsQuery).append("\n");

@@ -272,6 +272,42 @@ public class MediaImplTest {
 		assertArrayEquals(expected, joinContent(msgs).toByteArray());
 	}
 
+	@Test
+	public void itGetsItemWithTagAuth() throws Exception {
+		final User authTagUser = FakeAuth.userWithAuthTags("authtag");
+		final AuthList authList = FakeAuth.listOfUsers(authTagUser);
+		final Context ctx = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, authTagUser);
+
+		final MockContent mockContent = setupFakeContent();
+		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
+
+		final String idNodeAuth = mockMediaMetadataStore.addFileWithTags();
+		final ContentNode nodeDirectAuth = mockContent.addMockDir("node-direct-auth", authList);
+		mockContent.addMockItem(idNodeAuth, nodeDirectAuth);
+		verifyHasMedia(ctx, idNodeAuth, FileExistance.EXISTS);
+
+		final String idTagAuth = mockMediaMetadataStore.addFileWithTags("authtag");
+		final ContentNode nodeNoAuth = mockContent.addMockDir("node-no-auth", FakeAuth.listOfUsers(FakeAuth.user()));
+		final ContentItem tagItem = mockContent.addMockItem(idTagAuth, nodeNoAuth);
+		verifyHasMedia(ctx, idTagAuth, FileExistance.UNKNOWN);
+		tagItem.setAuthTags(Set.of("authtag"));
+		verifyHasMedia(ctx, idTagAuth, FileExistance.EXISTS);
+	}
+
+	private void verifyHasMedia(final Context ctx, final String itemId, final FileExistance existance) {
+		final HasMediaRequest req = HasMediaRequest.newBuilder().setId(itemId).build();
+
+		final StreamObserver<HasMediaReply> respObs = mock(ServerCallStreamObserver.class);
+		ctx.run(() -> this.undertest.hasMedia(req, respObs));
+
+		final ArgumentCaptor<HasMediaReply> cap = ArgumentCaptor.forClass(HasMediaReply.class);
+		verify(respObs).onNext(cap.capture());
+		verify(respObs).onCompleted();
+
+		assertEquals(existance, cap.getValue().getExistence());
+		if (existance == FileExistance.EXISTS) assertEquals(itemId, cap.getValue().getItem().getId());
+	}
+
 	@SuppressWarnings("resource")
 	@Test
 	public void itRecordsPlayback() throws Exception {
@@ -334,7 +370,7 @@ public class MediaImplTest {
 		final MockContent mockContent = setupFakeContent();
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 
-		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS));
+		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS), null);
 		final Context ctx = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, tagUser);
 		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
 		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
@@ -372,7 +408,7 @@ public class MediaImplTest {
 		final MockContent mockContent = setupFakeContent();
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 
-		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS));
+		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS), null);
 		final Context ctx = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, tagUser);
 		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
 		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);

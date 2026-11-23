@@ -35,6 +35,7 @@ import mediatoad.dlnaserver.NodeConverter;
 import mediatoad.dlnaserver.SystemId;
 import mediatoad.httpserver.HttpServer;
 import mediatoad.importer.MetadataImporter;
+import mediatoad.media.AuthTagsUpdater;
 import mediatoad.media.ContentTree;
 import mediatoad.media.ExternalUrls;
 import mediatoad.media.MediaFormat;
@@ -169,6 +170,7 @@ public final class Main {
 		final File userfile = args.getUserfile();
 		final Users users = userfile != null ? new Users(userfile) : null;
 		final Authoriser authoriser = new Authoriser(args.getDefaultOpenHttp(), users);
+		final AuthTagsUpdater authTagsUpdater = new AuthTagsUpdater(users, mediaDb, contentTree, dbEx);
 
 		final RpcClient rpcClient = new RpcClient(args);
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -192,7 +194,7 @@ public final class Main {
 		final HierarchyMode hierarchyMode = args.isSimplifyHierarchy() ? HierarchyMode.FLATTERN : HierarchyMode.PRESERVE;
 		LOG.info("hierarchyMode: {}", hierarchyMode);
 
-		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, authoriser, args.isVerboseLog());
+		final MediaIndex index = new MediaIndex(contentTree, hierarchyMode, mediaId, mediaInfo, authoriser, authTagsUpdater, args.isVerboseLog());
 
 		final Thread watcherThread = new Thread(new RunWatcher(args, index, afterInitialScanFindsAllDirs));
 		watcherThread.setName("watcher");

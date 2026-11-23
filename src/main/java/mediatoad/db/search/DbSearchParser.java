@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -73,11 +74,15 @@ public class DbSearchParser {
 	private static final String _SQL_MEDIAFILES_WHERES_TYPE =
 			" (mimetype LIKE ? ESCAPE ?)";
 
-	private static final String _SQL_MEDIAFILES_WHERES_TAG =
+	// TODO should limit to manual tags?
+	private static final String _SQL_MEDIAFILES_WHERES_TAG_IN =
+			" (id IN (SELECT file_id FROM tags WHERE tag IN (PLACEHOLDER) AND deleted=0))";
+
+	private static final String _SQL_MEDIAFILES_WHERES_TAG_LIKE =
 			" (id IN (SELECT file_id FROM tags WHERE tag LIKE ? ESCAPE ? AND deleted=0))";
 
-	private static final String _SQL_MEDIAFILES_WHERES_NOT_TAG =
-			" NOT " + _SQL_MEDIAFILES_WHERES_TAG;
+	private static final String _SQL_MEDIAFILES_WHERES_NOT_TAG_LIKE =
+			" NOT " + _SQL_MEDIAFILES_WHERES_TAG_LIKE;
 
 	private static final String _SQL_MEDIAFILES_WHERES_TAG_COUNT_LESS_THAN =
 			" (id NOT IN (SELECT file_id FROM tags WHERE deleted=0 GROUP BY file_id HAVING COUNT(DISTINCT tag) >= ?))";
@@ -102,50 +107,55 @@ public class DbSearchParser {
 	public static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final Set<String> authTags,
 			final SortOrder sort) {
-		return parseSearch(allTerms, authIds, false, Collections.singletonList(sort));
+		return parseSearch(allTerms, authIds, authTags, false, Collections.singletonList(sort));
 	}
 
 	public static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final Set<String> authTags,
 			final List<SortOrder> sorts) {
-		return parseSearch(allTerms, authIds, false, sorts);
+		return parseSearch(allTerms, authIds, authTags, false, sorts);
 	}
 
 	public static DbSearch parseSearchWithAuthBypass (
 			final String allTerms,
 			final SortOrder sort) {
-		return parseSearch(allTerms, null, true, Collections.singletonList(sort));
+		return parseSearch(allTerms, null, null, true, Collections.singletonList(sort));
 	}
 
 	private static DbSearch parseSearch (
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final Set<String> authTags,
 			final boolean bypassAuthChecks,
 			final List<SortOrder> sorts) {
-		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, bypassAuthChecks, sorts, false);
-		return new DbSearch(s.getLeft(), s.getRight());
+		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, authTags, bypassAuthChecks, sorts, false);
+		return new DbSearch(s.getLeft(), s.getRight(), authTags);
 	}
 
 	public static DbSearchWithTags parseSearchWithTags(
 			final String allTerms,
 			final Set<BigInteger> authIds,
 			final SortOrder sort) {
-		return parseSearchWithTags(allTerms, authIds, Collections.singletonList(sort));
+		return parseSearchWithTags(allTerms, authIds, null, Collections.singletonList(sort));
 	}
 
 	public static DbSearchWithTags parseSearchWithTags(
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final Set<String> authTags,
 			final List<SortOrder> sorts) {
-		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, false, sorts, true);
-		return new DbSearchWithTags(s.getLeft(), s.getRight());
+		final Pair<String, List<String>> s = makeSearch(allTerms, authIds, authTags, false, sorts, true);
+		return new DbSearchWithTags(s.getLeft(), s.getRight(), authTags);
 	}
 
 	private static Pair<String, List<String>> makeSearch(
 			final String allTerms,
 			final Set<BigInteger> authIds,
+			final Set<String> authTags,
 			final boolean bypassAuthChecks,
 			final List<SortOrder> sorts,
 			final boolean includeTags) {
@@ -172,8 +182,14 @@ public class DbSearchParser {
 
 		final StringBuilder sql = new StringBuilder(base);
 		if (!bypassAuthChecks) {
-			sql.append(_SQL_AND);
+			sql.append(_SQL_AND).append(" ( ");
 			SqlFragments.appendWhereAuth(sql, authIds);
+
+			if (authTags != null && authTags.size() > 0) {
+				sql.append(_SQL_OR);
+				sql.append(_SQL_MEDIAFILES_WHERES_TAG_IN.replace("PLACEHOLDER", authTags.stream().map(t -> "?").collect(Collectors.joining(","))));
+			}
+			sql.append(" ) ");
 		}
 
 		final List<String> terms = QuerySplitter.split(allTerms, MAX_SEARCH_TERMS);
@@ -224,7 +240,7 @@ public class DbSearchParser {
 			throw new IllegalArgumentException("Method not supported: " + method);
 		}
 
-		return new DbSearch(sql.toString(), terms);
+		return new DbSearch(sql.toString(), terms, null);
 	}
 
 	public static TagFrequencySearch parseSearchForTags(final String allTerms, final Set<BigInteger> authIds) {
@@ -236,7 +252,7 @@ public class DbSearchParser {
 		appendWhereTerms(fileQuery, terms, authIds);
 
 		final String tagQuery = _SQL_TAG_FREQUENCY_SELECT.replace("FILEQUERY", fileQuery.toString());
-		return new TagFrequencySearch(tagQuery, terms);
+		return new TagFrequencySearch(tagQuery, terms, null);
 	}
 
 	private static void appendWhereTerms (final StringBuilder sql, final List<String> terms, final Set<BigInteger> authIds) {
@@ -300,10 +316,10 @@ public class DbSearchParser {
 					sql.append(_SQL_MEDIAFILES_WHERES_TYPE);
 				}
 				else if (DbSearchSyntax.isTagMatchPartial(term) || DbSearchSyntax.isTagMatchExact(term)) {
-					sql.append(_SQL_MEDIAFILES_WHERES_TAG);
+					sql.append(_SQL_MEDIAFILES_WHERES_TAG_LIKE);
 				}
 				else if (DbSearchSyntax.isTagNotMatchPartial(term) || DbSearchSyntax.isTagNotMatchExact(term)) {
-					sql.append(_SQL_MEDIAFILES_WHERES_NOT_TAG);
+					sql.append(_SQL_MEDIAFILES_WHERES_NOT_TAG_LIKE);
 				}
 				else if (DbSearchSyntax.isTagCountLessThan(term)) {
 					sql.append(_SQL_MEDIAFILES_WHERES_TAG_COUNT_LESS_THAN);
@@ -349,8 +365,8 @@ public class DbSearchParser {
 	}
 
 	public static class DbSearch extends Search<List<String>> {
-		public DbSearch (final String sql, final List<String> terms) {
-			super(sql, terms, true);
+		public DbSearch (final String sql, final List<String> terms, final Set<String> authTags) {
+			super(sql, terms, authTags, true);
 		}
 
 		@Override
@@ -364,8 +380,8 @@ public class DbSearchParser {
 	}
 
 	public static class DbSearchWithTags extends Search<Map<String, List<Tag>>> {
-		public DbSearchWithTags (final String sql, final List<String> terms) {
-			super(sql, terms, false);
+		public DbSearchWithTags (final String sql, final List<String> terms, final Set<String> authTags) {
+			super(sql, terms, authTags, false);
 		}
 
 		/**
@@ -404,8 +420,8 @@ public class DbSearchParser {
 	}
 
 	public static class TagFrequencySearch extends Search<List<TagFrequency>> {
-		public TagFrequencySearch (final String sql, final List<String> terms) {
-			super(sql, terms, true);
+		public TagFrequencySearch (final String sql, final List<String> terms, final Set<String> authTags) {
+			super(sql, terms, authTags, true);
 		}
 
 		@Override
@@ -422,11 +438,13 @@ public class DbSearchParser {
 
 		private final String sql;
 		private final List<String> terms;
+		private final Set<String> authTags;
 		private final boolean limitQueryRowCount;
 
-		public Search(final String sql, final List<String> terms, final boolean limitQueryRowCount) {
+		public Search(final String sql, final List<String> terms, final Set<String> authTags, final boolean limitQueryRowCount) {
 			this.sql = sql;
 			this.terms = terms;
+			this.authTags = authTags;
 			this.limitQueryRowCount = limitQueryRowCount;
 		}
 
@@ -451,6 +469,13 @@ public class DbSearchParser {
 
 			try (final PreparedStatement ps = db.prepare(modifiedSql)) {
 				int parmIn = 1;
+
+				if (this.authTags != null && this.authTags.size() > 0) {
+					for (final String tag : this.authTags) {
+						ps.setString(parmIn++, tag);
+					}
+				}
+
 				for (final String term : this.terms) {
 					if ("OR".equals(term)) continue;
 					if ("AND".equals(term)) continue;

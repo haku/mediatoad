@@ -80,7 +80,7 @@ public class JwtInterceptorTest {
 		verify(this.loader).locate(cap.capture());
 		assertEquals(USERNAME, cap.getValue().get("username"));
 
-		final User user = new User(null, null, ImmutableSet.of(Permission.EDITTAGS));
+		final User user = new User(null, null, ImmutableSet.of(Permission.EDITTAGS), null);
 		when(this.users.getUser(USERNAME)).thenReturn(user);
 		this.undertest.interceptCall(this.serverCall, metadata, this.serverCallHandler);
 		assertEquals(user, userInContext.get());

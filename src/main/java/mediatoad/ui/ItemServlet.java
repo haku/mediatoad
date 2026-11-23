@@ -118,7 +118,7 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final User user = ReqAttr.USER.get(req);
-		if (node == null || !node.isUserAuth(user)) {
+		if (node == null || (!node.isUserAuth(user) && !item.isUserAuth(user))) {
 			ServletCommon.returnDenied(resp, user);
 			return;
 		}
@@ -253,7 +253,8 @@ public class ItemServlet extends HttpServlet {
 			searchOffset = Math.max(offsetParam - PREV_NEXT_SEARCH_DISTANCE, 0);
 			final List<String> ids;
 			try {
-				ids = DbSearchParser.parseSearch(query, authIds, SearchServlet.RESULT_SORT_ORDER)
+				final Set<String> authTags = user != null ? user.getAuthTags() : null;
+				ids = DbSearchParser.parseSearch(query, authIds, authTags, SearchServlet.RESULT_SORT_ORDER)
 						.execute(this.mediaDb, PREV_NEXT_SEARCH_DISTANCE * 2, searchOffset);
 			}
 			catch (final SQLException e) {

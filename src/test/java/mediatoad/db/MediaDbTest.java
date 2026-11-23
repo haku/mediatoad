@@ -7,6 +7,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +18,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
@@ -406,6 +411,31 @@ public class MediaDbTest {
 		}
 		assertThat(this.undertest.getAllTagsNotMissingNotDeleted(), contains(
 				new TagFrequency("foobar", 10)));
+	}
+
+	@Test
+	public void itCallsTagChangeListener() throws Exception {
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.addTag("fileid2", "tag", "", 1234567891L);
+			w.setTagModifiedAndDeleted("fileid2", "tag", "", true, 12345671L);
+			w.addTag("fileid3", "tag", "cls", 1234567891L);
+			w.addTag("fileid4", "tag", "cls", 1234567891L);
+			w.commit();
+		}
+
+		final Consumer<Collection<String>> listener = mock(Consumer.class);
+		this.undertest.setTagChangeListener(listener);
+
+		try (final WritableMediaDb w = this.undertest.getWritable()) {
+			w.addTag("fileid1", "tag", 1234567891L);  // new
+			w.addTag("fileid2", "tag", 1234567891L);  // undelete
+			w.setTagModifiedAndDeleted("fileid3", "tag", "cls", false, 1234567891L);  // modify
+			w.updateTagString("fileid4", "TAG", "cls");  // change
+			verifyNoInteractions(listener);
+			w.commit();
+		}
+
+		verify(listener).accept(Set.of("fileid1", "fileid2", "fileid3", "fileid4"));
 	}
 
 	@Test

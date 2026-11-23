@@ -468,7 +468,7 @@ public class AuthFilterTest {
 
 	private void setValidCreds() {
 		this.req.addHeader("Authorization", "Basic aDRja2VyOmh1bnRlcjI=");
-		final User user = new User("h4cker", null, null);
+		final User user = new User("h4cker", null, null, null);
 		when(this.users.validUser("h4cker", "hunter2")).thenReturn(user);
 		when(this.users.getUser("h4cker")).thenReturn(user);
 	}
@@ -486,7 +486,7 @@ public class AuthFilterTest {
 		when(this.authTokens.usernameForToken("my-session-token")).thenReturn("h4cker");
 
 		final Set<Permission> permSet = permission != null ? Set.of(permission) : Set.of();
-		final User user = new User("h4cker", null, permSet);
+		final User user = new User("h4cker", null, permSet, null);
 
 		when(this.users.getUser("h4cker")).thenReturn(user);
 	}

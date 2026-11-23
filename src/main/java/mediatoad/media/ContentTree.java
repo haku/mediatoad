@@ -160,7 +160,7 @@ public class ContentTree {
 				continue;
 			}
 			final ContentNode node = getNode(item.getParentId());
-			if (!node.isUserAuth(user)) continue;
+			if (!node.isUserAuth(user) && !item.isUserAuth(user)) continue;
 			ret.add(item);
 		}
 		return ret;

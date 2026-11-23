@@ -50,9 +50,9 @@ public class MediaIndexTest {
 	private MediaId mediaId;
 	private Users users;
 	private Authoriser authoriser;
+	private AuthTagsUpdater authTagsUpdater;
 	private ScheduledThreadPoolExecutor schEx;
 	private MediaIndex undertest;
-
 
 	@Before
 	public void before() throws Exception {
@@ -61,13 +61,14 @@ public class MediaIndexTest {
 
 		this.users = mock(Users.class);
 		this.authoriser = new Authoriser(DefaultAccess.ALLOW, this.users);
+		this.authTagsUpdater = mock(AuthTagsUpdater.class);
 
 		this.contentTree = new ContentTree();
 		final List<File> roots = new ArrayList<>();
 		roots.add(this.tmp.getRoot());
 		this.mediaMetadataStore = new MediaMetadataStore(new InMemoryMediaDb(), this.schEx, this.schEx, true);
 		this.mediaId = spy(new MediaId(this.mediaMetadataStore));
-		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), this.authoriser, true);
+		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.FLATTERN, this.mediaId, new MediaInfo(), this.authoriser, this.authTagsUpdater, true);
 	}
 
 	@After
@@ -213,7 +214,7 @@ public class MediaIndexTest {
 
 		this.contentTree = new ContentTree(); // Reset it.
 		this.undertest = new MediaIndex(this.contentTree, HierarchyMode.PRESERVE,
-				new MediaId(this.mediaMetadataStore), new MediaInfo(), this.authoriser, true);
+				new MediaId(this.mediaMetadataStore), new MediaInfo(), this.authoriser, this.authTagsUpdater, true);
 
 		this.undertest.fileFound(topdir, file1, null, null);
 		this.undertest.fileFound(topdir, file3, null, null);

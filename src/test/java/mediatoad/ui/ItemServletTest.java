@@ -152,6 +152,23 @@ public class ItemServletTest {
 	}
 
 	@Test
+	public void itRendersProtectedItemWithTagAuth() throws Exception {
+		final ContentItem item = givenReqForItem(FakeAuth.listOfUsers(FakeAuth.user()));
+		item.setAuthTags(Set.of("authtag"));
+
+		this.req.setPathInfo("/" + item.getId());
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals(401, this.resp.getStatus());
+
+		this.resp = new MockHttpServletResponse();
+		ReqAttr.USER.set(this.req, FakeAuth.userWithAuthTags("authtag"));
+
+		this.undertest.doGet(this.req, this.resp);
+		assertEquals(200, this.resp.getStatus());
+		assertThat(this.resp.getOutputAsString(), containsString("<img src=\"../c/id00.jpeg\">"));
+	}
+
+	@Test
 	public void itBlocksAddingTagsIfNotPermitted() throws Exception {
 		givenReqForUnprotectedItem();
 		givenAddTagParams();
