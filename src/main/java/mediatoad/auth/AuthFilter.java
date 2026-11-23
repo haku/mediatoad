@@ -192,7 +192,7 @@ public class AuthFilter implements Filter {
 
 	private static void addUserDetailsToRequest(final User user, final HttpServletRequest req) {
 		if (user != null) {
-			ReqAttr.USERNAME.set(req, user.getUsername());
+			ReqAttr.USER.set(req, user);
 			ReqAttr.ALLOW_REMOTE_SEARCH.set(req, Boolean.TRUE);
 			ReqAttr.ALLOW_UPNP_INSPECTOR.set(req, Boolean.TRUE);
 

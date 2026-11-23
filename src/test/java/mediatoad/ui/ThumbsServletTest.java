@@ -15,6 +15,8 @@ import org.junit.rules.TemporaryFolder;
 import mediatoad.FakeServletCommon;
 import mediatoad.TestsWithHttpServer;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.Users.User;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
@@ -57,8 +59,8 @@ public class ThumbsServletTest extends TestsWithHttpServer {
 	public void itChecksPermissions() throws Exception {
 		startServer(this.undertest, "/t/*");
 
-		final AuthList allowAuthlist = mock(AuthList.class);
-		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final User user = FakeAuth.user();
+		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
 		final ContentItem item = this.mockContent.addMockItem(MediaFormat.JPEG, "item1", dir1);
@@ -69,7 +71,7 @@ public class ThumbsServletTest extends TestsWithHttpServer {
 
 		assertRequestResponseCode("/t/" + item.getId(), 401);
 
-		setAuthUsername("shork");
+		setAuthUsername(user);
 		assertRequestResponseCode("/t/" + item.getId(), 200);
 	}
 

@@ -24,6 +24,7 @@ import com.google.gson.GsonBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.Tag;
 import mediatoad.db.TagAutocompleter;
@@ -122,10 +123,10 @@ public class TagsServlet extends HttpServlet {
 			nodes.add(node);
 		}
 
-		final String username = ReqAttr.USERNAME.get(req);
+		final User user = ReqAttr.USER.get(req);
 		for (final ContentNode node : nodes) {
-			if (node.hasAuthList() && !node.isUserAuthWithPermission(username, Permission.EDITTAGS)) {
-				ServletCommon.returnDenied(resp, username);
+			if (node.hasAuthList() && !node.isUserAuthWithPermission(user, Permission.EDITTAGS)) {
+				ServletCommon.returnDenied(resp, user);
 				return;
 			}
 		}
@@ -152,8 +153,8 @@ public class TagsServlet extends HttpServlet {
 
 	@SuppressFBWarnings(value = "NP_UNWRITTEN_FIELD", justification = "TagsRequest fields are written by gson.")
 	private List<ContentItem> readReqItems(final HttpServletRequest req, final HttpServletResponse resp, final TagsRequest tagReq) throws IOException {
-		final String username = ReqAttr.USERNAME.get(req);
-		final List<ContentItem> items = this.contentTree.getItemsForIds(tagReq.ids, username);
+		final User user = ReqAttr.USER.get(req);
+		final List<ContentItem> items = this.contentTree.getItemsForIds(tagReq.ids, user);
 		if (tagReq.ids.size() != items.size()) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "One or more specified IDs are invalid.");
 			return null;

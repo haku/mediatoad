@@ -21,7 +21,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 
 import com.github.mustachejava.Mustache;
@@ -30,6 +29,7 @@ import com.google.common.net.UrlEscapers;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.DbCache;
 import mediatoad.db.DirPrefs;
 import mediatoad.db.MediaDb;
@@ -80,18 +80,18 @@ public class DirServlet extends HttpServlet {
 		final ContentNode node = getNodeFromPath(req, resp);
 		if (node == null) return;
 
-		final String username = ReqAttr.USERNAME.get(req);
-		if (!node.isUserAuth(username)) {
-			ServletCommon.returnDenied(resp, username);
+		final User user = ReqAttr.USER.get(req);
+		if (!node.isUserAuth(user)) {
+			ServletCommon.returnDenied(resp, user);
 			return;
 		}
 
 		if (req.getPathInfo().endsWith(".zip")) {
-			returnNodeAsZipFile(node, username, resp);
+			returnNodeAsZipFile(node, user, resp);
 			return;
 		}
 
-		returnNodeAsHtml(req, resp, node, username);
+		returnNodeAsHtml(req, resp, node, user);
 	}
 
 	@Override
@@ -99,9 +99,9 @@ public class DirServlet extends HttpServlet {
 		final ContentNode node = getNodeFromPath(req, resp);
 		if (node == null) return;
 
-		final String username = ReqAttr.USERNAME.get(req);
-		if (!node.isUserAuth(username)) {
-			ServletCommon.returnDenied(resp, username);
+		final User user = ReqAttr.USER.get(req);
+		if (!node.isUserAuth(user)) {
+			ServletCommon.returnDenied(resp, user);
 			return;
 		}
 
@@ -111,7 +111,7 @@ public class DirServlet extends HttpServlet {
 	}
 
 	@SuppressWarnings("resource")
-	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final String username) throws IOException {
+	private void returnNodeAsHtml(final HttpServletRequest req, final HttpServletResponse resp, final ContentNode node, final User user) throws IOException {
 		final GenTimer genTimer = new GenTimer();
 
 		final String sortRaw = ServletCommon.readParamWithDefault(req, resp, PARAM_SORT, "");
@@ -133,7 +133,7 @@ public class DirServlet extends HttpServlet {
 			genTimer.startSection("favs");
 
 			favouritesScope = new ResultGroupScope("Favourites", null, null, pageScope);
-			final List<ContentNode> favourites = readFavourites(username);
+			final List<ContentNode> favourites = readFavourites(user);
 			appendNodes(favouritesScope, favourites);
 
 			dirPrefs = DirPrefs.DEFAULT;
@@ -147,8 +147,8 @@ public class DirServlet extends HttpServlet {
 		}
 
 		genTimer.startSection("auth");
-		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(username);
-		final List<ContentItem> itemsUserHasAuth = node.itemsUserHasAuth(username);
+		final List<ContentNode> nodesUserHasAuth = node.nodesUserHasAuth(user);
+		final List<ContentItem> itemsUserHasAuth = node.itemsUserHasAuth(user);
 
 		genTimer.startSection("node");
 		final String listTitle = makeIndexTitle(node, nodesUserHasAuth, itemsUserHasAuth);
@@ -198,10 +198,10 @@ public class DirServlet extends HttpServlet {
 		}
 
 		genTimer.startSection("tags");
-		maybeAppendTopTags(resultScope, node, username);
+		maybeAppendTopTags(resultScope, node, user);
 
 		// TODO this should probable go somewhere more generic, like IndexServlet.
-		if (StringUtils.isNotBlank(username)) {
+		if (user != null) {
 			if (isRoot) {
 				pageScope.setDebugfooter(this.servletCommon.debugFooter());
 			}
@@ -252,14 +252,14 @@ public class DirServlet extends HttpServlet {
 		}
 	}
 
-	private void maybeAppendTopTags(final ResultGroupScope resultScope, final ContentNode node, final String username) throws IOException {
+	private void maybeAppendTopTags(final ResultGroupScope resultScope, final ContentNode node, final User user) throws IOException {
 		if (this.dbCache == null) return;
 
 		final File dir = node.getFile();
 		final String pathPrefix = dir != null ? dir.getAbsolutePath() : null;
 		if (pathPrefix == null && !ContentGroup.ROOT.getId().equals(node.getId())) return;
 
-		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 		try {
 			final List<TagFrequency> topTags = this.dbCache.dirTopTags(authIds, pathPrefix);
 			addTagFrequenciesToScope(resultScope, node, topTags);
@@ -283,12 +283,12 @@ public class DirServlet extends HttpServlet {
 		}
 	}
 
-	private static void returnNodeAsZipFile(final ContentNode node, final String username, final HttpServletResponse resp) throws IOException {
+	private static void returnNodeAsZipFile(final ContentNode node, final User user, final HttpServletResponse resp) throws IOException {
 		resp.setContentType("application/zip");
 		final ZipOutputStream zo = new ZipOutputStream(resp.getOutputStream());
 		zo.setLevel(Deflater.NO_COMPRESSION);  // No point try to compress media files.
 
-		final List<ContentItem> items = node.itemsUserHasAuth(username);
+		final List<ContentItem> items = node.itemsUserHasAuth(user);
 		for (final ContentItem i : items) {
 			final ZipEntry e = new ZipEntry(i.getFile().getName());
 			e.setSize(i.getFileLength());
@@ -303,7 +303,7 @@ public class DirServlet extends HttpServlet {
 		resp.flushBuffer();
 	}
 
-	private List<ContentNode> readFavourites(final String username) throws IOException {
+	private List<ContentNode> readFavourites(final User user) throws IOException {
 		if (this.db == null) return Collections.emptyList();
 
 		final Map<String, String> pathToValue;
@@ -319,7 +319,7 @@ public class DirServlet extends HttpServlet {
 			if (!Boolean.parseBoolean(e.getValue())) continue;
 
 			final ContentNode node = this.contentTree.getNode(e.getKey());
-			if (node == null || !node.isUserAuth(username)) continue;
+			if (node == null || !node.isUserAuth(user)) continue;
 			ret.add(node);
 		}
 		return ret;

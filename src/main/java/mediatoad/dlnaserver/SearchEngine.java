@@ -34,6 +34,7 @@ import cdsc.CDSCParser.BinOpContext;
 import cdsc.CDSCParser.LogOpContext;
 import cdsc.CDSCParser.RelExpContext;
 import cdsc.CDSCParser.SearchExpContext;
+import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.Sqlite;
 import mediatoad.media.ContentGroup;
@@ -48,14 +49,14 @@ public class SearchEngine {
 
 	public SearchEngine () {}
 
-	public List<ContentItem> search (final ContentNode node, final String searchCriteria, final int maxResults, final String username) throws ContentDirectoryException {
+	public List<ContentItem> search (final ContentNode node, final String searchCriteria, final int maxResults, final User user) throws ContentDirectoryException {
 		final long startTime = System.nanoTime();
 		final Predicate<ContentItem> predicate = criteriaToPredicate(searchCriteria);
 		if (predicate == null) throw new ContentDirectoryException(ContentDirectoryErrorCodes.UNSUPPORTED_SEARCH_CRITERIA, "Do not know how to parse: " + searchCriteria);
 		LOG.debug("'{}' => {} in {}ms.", searchCriteria, predicate, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
 		final List<ContentItem> results = new ArrayList<>();
-		filterItems(node, predicate, maxResults, username, results);
+		filterItems(node, predicate, maxResults, user, results);
 		return results;
 	}
 
@@ -264,9 +265,9 @@ public class SearchEngine {
 	/**
 	 * Lazy recursive impl.
 	 */
-	private static void filterItems (final ContentNode node, final Predicate<ContentItem> predicate, final int maxResults, final String username, final List<ContentItem> results) {
+	private static void filterItems (final ContentNode node, final Predicate<ContentItem> predicate, final int maxResults, final User user, final List<ContentItem> results) {
 		if (results.size() >= maxResults) return;
-		if (!node.isUserAuth(username)) return;
+		if (!node.isUserAuth(user)) return;
 
 		node.withEachItem(i -> {
 			if (results.size() >= maxResults) return;  // TODO is there a nicer way to stop iterating?
@@ -279,7 +280,7 @@ public class SearchEngine {
 		// TODO replace with non-recursive impl.
 		node.withEachNode(n -> {
 			if (ContentGroup.RECENT.getId().equals(n.getId())) return;  // Do not search in recent.
-			filterItems(n, predicate, maxResults, username, results);
+			filterItems(n, predicate, maxResults, user, results);
 		});
 	}
 

@@ -18,6 +18,7 @@ import io.prometheus.metrics.core.metrics.GaugeWithCallback;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import mediatoad.C;
 import mediatoad.auth.AuthSet;
+import mediatoad.auth.Users.User;
 
 /**
  * Based on a class from WireMe and used under Apache 2 License. See
@@ -150,7 +151,7 @@ public class ContentTree {
 		}
 	}
 
-	public List<ContentItem> getItemsForIds(final Collection<String> ids, final String username) {
+	public List<ContentItem> getItemsForIds(final Collection<String> ids, final User user) {
 		final List<ContentItem> ret = new ArrayList<>();
 		for (final String id : ids) {
 			final ContentItem item = getItem(id);
@@ -159,7 +160,7 @@ public class ContentTree {
 				continue;
 			}
 			final ContentNode node = getNode(item.getParentId());
-			if (!node.isUserAuth(username)) continue;
+			if (!node.isUserAuth(user)) continue;
 			ret.add(item);
 		}
 		return ret;

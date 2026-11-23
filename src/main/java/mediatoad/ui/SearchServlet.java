@@ -47,6 +47,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.DbCache;
 import mediatoad.db.DirPrefs;
 import mediatoad.db.MediaDb;
@@ -157,7 +158,7 @@ public class SearchServlet extends HttpServlet {
 		}
 
 		if (!StringUtils.isBlank(query)) {
-			final String username = ReqAttr.USERNAME.get(req);
+			final User user = ReqAttr.USER.get(req);
 			final String upnpQuery = String.format("(dc:title contains \"%s\")", query);
 
 			try {
@@ -168,7 +169,7 @@ public class SearchServlet extends HttpServlet {
 				final int nextOffset;
 				if (this.mediaDb != null) {
 					genTimer.startSection("auth");
-					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+					final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 
 					genTimer.startSection("setup");
 					final Integer limit = ServletCommon.readIntParamWithDefault(req, resp, PARAM_PAGE_LIMIT, MAX_RESULTS, i -> i > 0);
@@ -182,7 +183,7 @@ public class SearchServlet extends HttpServlet {
 					debugFooter.append(idsQuery).append("\n");
 
 					genTimer.startSection("ids");
-					results = this.contentTree.getItemsForIds(ids, username);
+					results = this.contentTree.getItemsForIds(ids, user);
 					nextLimit = limit;
 					nextOffset = ids.size() >= limit ? offset + limit : 0;
 
@@ -192,7 +193,7 @@ public class SearchServlet extends HttpServlet {
 				else {
 					genTimer.startSection("query");
 					final ContentNode rootNode = this.contentTree.getNode(ContentGroup.ROOT.getId());
-					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, username);
+					results = this.searchEngine.search(rootNode, upnpQuery, MAX_RESULTS, user);
 					offset = null;
 					nextLimit = MAX_RESULTS;  // Not implemented.
 					nextOffset = 0;

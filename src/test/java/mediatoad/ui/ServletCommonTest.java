@@ -1,10 +1,22 @@
 package mediatoad.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
 
 import org.junit.Test;
 
+import faecommon.servlet.MockHttpServletRequest;
+import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.FakeServletCommon;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
+import mediatoad.media.ContentItem;
+import mediatoad.media.ContentNode;
+import mediatoad.media.ContentTree;
 
 public class ServletCommonTest {
 
@@ -83,6 +95,41 @@ public class ServletCommonTest {
 
 		assertEquals("0", sc.fileFromPath("/mediatoad/0"));
 		assertEquals("t=tag", sc.fileFromPath("/mediatoad/t=tag"));
+	}
+
+	@Test
+	public void itResolvesItemFromPathWithPermissionsChecks() throws Exception {
+		final ContentTree contentTree = mock(ContentTree.class);
+		final ServletCommon sc = FakeServletCommon.make(contentTree);
+
+		final MockHttpServletRequest req = new MockHttpServletRequest();
+		checkGetItemResp(sc, req, 400, "ID missing.\n");
+
+		req.setPathInfo("/thing/myitemid");
+		checkGetItemResp(sc, req, 404, "Not found.\n");
+
+		final ContentItem item = mock(ContentItem.class);
+		when(item.getParentId()).thenReturn("parentid");
+		when(contentTree.getItem("myitemid")).thenReturn(item);
+		checkGetItemResp(sc, req, 500, "Parent ID is invalid.\n");
+
+		final ContentNode node = mock(ContentNode.class);
+		when(contentTree.getNode("parentid")).thenReturn(node);
+		checkGetItemResp(sc, req, 401, "Unauthorized\n");
+
+		final User user = FakeAuth.user();
+		ReqAttr.USER.set(req, user);
+		checkGetItemResp(sc, req, 403, "Forbidden\n");
+
+		when(node.isUserAuth(user)).thenReturn(true);
+		checkGetItemResp(sc, req, 200, "");
+	}
+
+	private static void checkGetItemResp(final ServletCommon sc, final MockHttpServletRequest req, final int status, final String body) throws IOException {
+		final MockHttpServletResponse resp = new MockHttpServletResponse();
+		sc.itemFromPathWithPermissionOrError(req, resp);
+		assertEquals(body, resp.getOutputAsString());
+		assertEquals(status, resp.getStatus());
 	}
 
 }

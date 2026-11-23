@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.text.StringEscapeUtils;
 
+import mediatoad.auth.Users.User;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.util.StringHelper;
@@ -17,8 +18,8 @@ public class Webdav {
 
 	private static final ThreadSafeDateFormatter RFC1123_DATE = new ThreadSafeDateFormatter("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
 
-	public static void appendPropfindNode(final HttpServletRequest req, final String username, final PrintWriter w, final ContentNode node, final boolean appendIdToPath) {
-		if (!node.isUserAuth(username)) return;
+	public static void appendPropfindNode(final HttpServletRequest req, final User user, final PrintWriter w, final ContentNode node, final boolean appendIdToPath) {
+		if (!node.isUserAuth(user)) return;
 
 		String path = req.getPathInfo();
 		if (appendIdToPath) {

@@ -3,8 +3,6 @@ package mediatoad.media;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -12,6 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.Users.User;
 
 public class RecentContentNodeTest {
 
@@ -28,15 +28,15 @@ public class RecentContentNodeTest {
 
 	@Test
 	public void itDoesSomething() throws Exception {
-		final AuthList allowAuthlist = mock(AuthList.class);
-		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final User user = FakeAuth.user();
+		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 
 		final ContentNode node = this.mockContent.addMockDir("node", allowAuthlist);
 		final ContentItem item = this.mockContent.addMockItem("item", node);
 
 		this.undertest.maybeAddToRecent(item, node);
 
-		final List<ContentItem> actual = this.undertest.itemsUserHasAuth("shork");
+		final List<ContentItem> actual = this.undertest.itemsUserHasAuth(user);
 		assertThat(actual, contains(item));
 
 		final List<ContentItem> actualNoAuth = this.undertest.itemsUserHasAuth(null);

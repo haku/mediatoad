@@ -13,6 +13,7 @@ import java.util.Objects;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.Permission;
+import mediatoad.auth.Users.User;
 import mediatoad.util.ExConsumer;
 
 /**
@@ -64,34 +65,37 @@ public class ContentNode extends AbstractContent {
 		return this.authList != null;
 	}
 
-	public boolean isUserAuth(final String username) {
+	public boolean isUserAuth(final User user) {
 		if (this.authList == null) return true;
-		return this.authList.hasUser(username);
+		if (user == null) return false;
+		return this.authList.hasUser(user.getUsername());
 	}
 
-	public boolean isUserAuthWithPermission(final String username, final Permission permission) {
+	public boolean isUserAuthWithPermission(final User user, final Permission permission) {
 		if (this.authList == null) return false;
-		return this.authList.hasUserWithPermission(username, permission);
+		if (user == null) return false;
+		return this.authList.hasUserWithPermission(user.getUsername(), permission);
 	}
 
 	public String getSortKey() {
 		return this.sortKey;
 	}
 
-	public List<ContentNode> nodesUserHasAuth(final String username) {
+	public List<ContentNode> nodesUserHasAuth(final User user) {
 		synchronized (this.nodes) {
 			final List<ContentNode> ret = new ArrayList<>(this.nodes.size());
 			for (final ContentNode node : this.nodes) {
-				if (node.isUserAuth(username)) ret.add(node);
+				if (node.isUserAuth(user)) ret.add(node);
 			}
 			return ret;
 		}
 	}
 
 	/**
-	 * Assumes access to node has already been checked.
+	 * This is here for RecentContentNode to override.
+	 * Default assumes access to node has already been checked.
 	 */
-	public List<ContentItem> itemsUserHasAuth(final String username) {
+	public List<ContentItem> itemsUserHasAuth(final User user) {
 		return getCopyOfItems();
 	}
 

@@ -24,6 +24,7 @@ import org.junit.After;
 
 import faecommon.servlet.RequestLoggingFilter;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.media.MediaFormat;
 
 public class TestsWithHttpServer {
@@ -61,8 +62,8 @@ public class TestsWithHttpServer {
 			this.server.stop();
 	}
 
-	public void setAuthUsername(final String username) {
-		this.authFilter.username = username;
+	public void setAuthUsername(final User user) {
+		this.authFilter.user = user;
 	}
 
 	public HttpURLConnection assertRequestResponseCode(final String path, final int code) throws MalformedURLException, IOException {
@@ -85,11 +86,11 @@ public class TestsWithHttpServer {
 
 	private static class MockAuthFilter implements Filter {
 
-		public String username = null;
+		public User user = null;
 
 		@Override
 		public void doFilter(final ServletRequest req, final ServletResponse resp, final FilterChain chain) throws IOException, ServletException {
-			if (this.username != null) ReqAttr.USERNAME.set(req, this.username);
+			if (this.user != null) ReqAttr.USER.set(req, this.user);
 
 			chain.doFilter(req, resp);
 		}

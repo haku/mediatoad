@@ -32,6 +32,7 @@ import io.grpc.stub.StreamObserver;
 import io.prometheus.metrics.core.metrics.Counter;
 import mediatoad.C;
 import mediatoad.auth.Permission;
+import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.Playback;
 import mediatoad.db.Tag;
@@ -117,9 +118,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void hasMedia(final HasMediaRequest request, final StreamObserver<HasMediaReply> responseObserver) {
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
 
-		final ContentItem item = getItemCheckingAuth(username, request.getId(), () -> {
+		final ContentItem item = getItemCheckingAuth(user, request.getId(), () -> {
 			responseObserver.onNext(HasMediaReply.newBuilder().setExistence(FileExistance.UNKNOWN).build());
 			responseObserver.onCompleted();
 		});
@@ -150,21 +151,21 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void listNode(final ListNodeRequest request, final StreamObserver<ListNodeReply> responseObserver) {
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
 
 		final ContentNode node = this.contentTree.getNode(request.getNodeId());
-		if (node == null || !node.isUserAuth(username)) {
+		if (node == null || !node.isUserAuth(user)) {
 			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
 			return;
 		}
 
 		final ListNodeReply.Builder reply = ListNodeReply.newBuilder();
 		reply.setNode(nodeToRpcNode(node));
-		for (final ContentNode n : node.nodesUserHasAuth(username)) {
+		for (final ContentNode n : node.nodesUserHasAuth(user)) {
 			reply.addChild(nodeToRpcNode(n));
 		}
 
-		final List<ContentItem> items = node.itemsUserHasAuth(username);
+		final List<ContentItem> items = node.itemsUserHasAuth(user);
 		final List<String> ids = items.stream().map(i -> i.getId()).collect(Collectors.toList());
 		try {
 			final Map<String, String> hashes = this.mediaDb.getFileHashes(ids);
@@ -187,9 +188,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void readMedia(final ReadMediaRequest request, final StreamObserver<ReadMediaReply> responseObserver) {
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
 
-		final ContentItem item = getItemCheckingAuth(username, request.getId(), responseObserver);
+		final ContentItem item = getItemCheckingAuth(user, request.getId(), responseObserver);
 		if (item == null) return;
 
 		final File file = item.getFile();
@@ -310,8 +311,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 		if (sorts.size() < 1) sorts.add(SortColumn.FILE_PATH.asc());
 
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
-		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 
 		final Map<String, List<Tag>> idsToTags;
 		final Map<String, Playback> playbacks;
@@ -325,7 +326,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			responseObserver.onError(Status.INVALID_ARGUMENT.withDescription("Failed to run query: " + e).asRuntimeException());
 			return;
 		}
-		final List<ContentItem> results = this.contentTree.getItemsForIds(idsToTags.keySet(), username);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(idsToTags.keySet(), user);
 
 		final SearchReply.Builder ret = SearchReply.newBuilder();
 		for (final ContentItem i : results) {
@@ -346,8 +347,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
-		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 
 		final List<String> ids;
 		try {
@@ -358,7 +359,7 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
-		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, username);
+		final List<ContentItem> results = this.contentTree.getItemsForIds(ids, user);
 
 		final ChooseMediaReply.Builder ret = ChooseMediaReply.newBuilder();
 		try {
@@ -398,9 +399,9 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 			return;
 		}
 
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
 
-		final ContentItem item = getItemCheckingAuth(username, request.getId(), responseObserver);
+		final ContentItem item = getItemCheckingAuth(user, request.getId(), responseObserver);
 		if (item == null) return;
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
@@ -420,8 +421,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 
 	@Override
 	public void updateTags(final UpdateTagsRequest request, final StreamObserver<UpdateTagsReply> responseObserver) {
-		final Set<Permission> permissions = JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get();
-		if (permissions == null || !permissions.contains(Permission.EDITTAGS)) {
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
+		if (user == null || !user.hasPermission(Permission.EDITTAGS)) {
 			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
 			return;
 		}
@@ -456,9 +457,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		// check items exist and user had access.
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
 		for (final TagChange change : request.getChangeList()) {
-			final ContentItem item = getItemCheckingAuth(username, change.getId(), responseObserver, Permission.EDITTAGS);
+			final ContentItem item = getItemCheckingAuth(user, change.getId(), responseObserver, Permission.EDITTAGS);
 			if (item == null) return;
 		}
 
@@ -496,8 +496,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 	@Override
 	public void updateExcluded(final UpdateExcludedRequest request, final StreamObserver<UpdateExcludedReply> responseObserver) {
 		// TODO make updating excluded its own permission?
-		final Set<Permission> permissions = JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get();
-		if (permissions == null || !permissions.contains(Permission.EDITTAGS)) {
+		final User user = JwtInterceptor.USER_CONTEXT_KEY.get();
+		if (user == null || !user.hasPermission(Permission.EDITTAGS)) {
 			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
 			return;
 		}
@@ -514,9 +514,8 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		// check items exist and user had access.
-		final String username = JwtInterceptor.USERNAME_CONTEXT_KEY.get();
 		for (final ExcludedChange change : request.getChangeList()) {
-			final ContentItem item = getItemCheckingAuth(username, change.getId(), responseObserver, Permission.EDITTAGS);
+			final ContentItem item = getItemCheckingAuth(user, change.getId(), responseObserver, Permission.EDITTAGS);
 			if (item == null) return;
 		}
 
@@ -535,26 +534,26 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		responseObserver.onCompleted();
 	}
 
-	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver) {
-		return getItemCheckingAuth(username, id, responseObserver, null);
+	private ContentItem getItemCheckingAuth(final User user, final String id, final StreamObserver<?> responseObserver) {
+		return getItemCheckingAuth(user, id, responseObserver, null);
 	}
 
-	private ContentItem getItemCheckingAuth(final String username, final String id, final StreamObserver<?> responseObserver,  final Permission permission) {
-		return getItemCheckingAuth(username, id, () -> {
+	private ContentItem getItemCheckingAuth(final User user, final String id, final StreamObserver<?> responseObserver,  final Permission permission) {
+		return getItemCheckingAuth(user, id, () -> {
 			responseObserver.onError(Status.NOT_FOUND.withDescription("Not found.").asRuntimeException());
 		}, permission, () -> {
 			responseObserver.onError(Status.PERMISSION_DENIED.withDescription("Not permitted.").asRuntimeException());
 		});
 	}
 
-	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound) {
-		return getItemCheckingAuth(username, itemId, onNotFound, null, null);
+	private ContentItem getItemCheckingAuth(final User user, final String itemId, final Runnable onNotFound) {
+		return getItemCheckingAuth(user, itemId, onNotFound, null, null);
 	}
 
 	/**
 	 * if response is null then error has already been returned to caller.
 	 */
-	private ContentItem getItemCheckingAuth(final String username, final String itemId, final Runnable onNotFound, final Permission permission, final Runnable onNotPermission) {
+	private ContentItem getItemCheckingAuth(final User user, final String itemId, final Runnable onNotFound, final Permission permission, final Runnable onNotPermission) {
 		final ContentItem item = this.contentTree.getItem(itemId);
 		if (item == null) {
 			onNotFound.run();
@@ -562,12 +561,12 @@ public class MediaImpl extends MediaGrpc.MediaImplBase {
 		}
 
 		final ContentNode node = this.contentTree.getNode(item.getParentId());
-		if (node == null || !node.isUserAuth(username)) {
+		if (node == null || !node.isUserAuth(user)) {
 			onNotFound.run();
 			return null;
 		}
 
-		if (permission != null && node.hasAuthList() && !node.isUserAuthWithPermission(username, permission)) {
+		if (permission != null && node.hasAuthList() && !node.isUserAuthWithPermission(user, permission)) {
 			onNotPermission.run();
 			return null;
 		}

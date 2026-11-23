@@ -18,8 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import javax.servlet.FilterChain;
@@ -128,7 +128,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertNull(ReqAttr.USERNAME.get(this.req));
+		assertUsername(null);
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
 
@@ -142,7 +142,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertNull(ReqAttr.USERNAME.get(this.req));
+		assertUsername(null);
 
 		final Cookie cookie = getSingleCookie();
 		assertEquals("MEDIATOADTOKEN", cookie.getName());
@@ -203,7 +203,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -218,7 +218,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 
 		final Cookie cookie = getSingleCookie();
 		assertEquals("MEDIATOADTOKEN", cookie.getName());
@@ -259,7 +259,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -272,7 +272,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 
 		verify(this.chain).doFilter(this.req, this.resp);
 	}
@@ -287,7 +287,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 		assertThat(this.resp.getCookies(), hasSize(0));
 
 		verify(this.chain).doFilter(this.req, this.resp);
@@ -319,7 +319,6 @@ public class AuthFilterTest {
 						Boolean.FALSE, otherParam.getRight().get(this.req));
 			}
 		}
-
 	}
 
 	@Test
@@ -331,7 +330,7 @@ public class AuthFilterTest {
 		this.undertest.doFilter(this.req, this.resp, this.chain);
 
 		assertEquals(200, this.resp.getStatus());
-		assertEquals("h4cker", ReqAttr.USERNAME.get(this.req));
+		assertUsername("h4cker");
 		assertThat(this.resp.getCookies(), hasSize(0));
 	}
 
@@ -437,6 +436,17 @@ public class AuthFilterTest {
 		}
 	}
 
+//Asserts:
+
+	private void assertUsername(final String username) {
+		final User user = ReqAttr.USER.get(this.req);
+		if (username == null) {
+			assertNull(user);
+			return;
+		}
+		assertEquals(username, user.getUsername());
+	}
+
 	private void assertNoAuth(final int code, final boolean callChain) throws Exception {
 		assertEquals(code, this.resp.getStatus());
 		assertThat((Collection<?>) this.resp.getHeaderNames(), hasSize(0));
@@ -468,14 +478,14 @@ public class AuthFilterTest {
 	}
 
 	private void setValidSessionToken() throws IOException {
-		setValidSessionToken((Permission[]) null);
+		setValidSessionToken(null);
 	}
 
-	private void setValidSessionToken(final Permission... permissions) throws IOException {
+	private void setValidSessionToken(final Permission permission) throws IOException {
 		setSessionTokenCookie("my-session-token");
 		when(this.authTokens.usernameForToken("my-session-token")).thenReturn("h4cker");
 
-		final HashSet<Permission> permSet = permissions != null ? new HashSet<>(Arrays.asList(permissions)) : null;
+		final Set<Permission> permSet = permission != null ? Set.of(permission) : Set.of();
 		final User user = new User("h4cker", null, permSet);
 
 		when(this.users.getUser("h4cker")).thenReturn(user);

@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.FileData;
 import mediatoad.db.MediaDb;
 import mediatoad.db.Tag;
@@ -116,16 +117,16 @@ public class ItemServlet extends HttpServlet {
 			node = this.contentTree.getNode(item.getParentId());
 		}
 
-		final String username = ReqAttr.USERNAME.get(req);
-		if (node == null || !node.isUserAuth(username)) {
-			ServletCommon.returnDenied(resp, username);
+		final User user = ReqAttr.USER.get(req);
+		if (node == null || !node.isUserAuth(user)) {
+			ServletCommon.returnDenied(resp, user);
 			return;
 		}
-		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+		final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 
 		final PageScope pageScope = this.servletCommon.pageScope(req, item.getTitle(), "../");
 		final ItemScope itemScope = new ItemScope();
-		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, username, authIds, pageScope, itemScope);
+		final String editReqQueryParms = printPrevNextLinks(req, resp, item, node, user, authIds, pageScope, itemScope);
 
 		if (itemScope.prevnext_title == null) itemScope.prevnext_title = item.getTitle();
 		itemScope.item_id = item.getId();
@@ -148,7 +149,7 @@ public class ItemServlet extends HttpServlet {
 		});
 
 		if (this.mediaDb != null) {
-			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req) && (!node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
+			final boolean allowEditTags = ReqAttr.ALLOW_EDIT_TAGS.get(req) && (!node.hasAuthList() || node.isUserAuthWithPermission(user, Permission.EDITTAGS));
 			final boolean editMode = allowEditTags && "true".equalsIgnoreCase(req.getParameter("edit"));
 			itemScope.edit_tags = editMode;
 
@@ -220,14 +221,13 @@ public class ItemServlet extends HttpServlet {
 	/**
 	 * Returns query params for paths to self for POSTs.
 	 * return always starts with '?'.
-	 * @param authIds
 	 */
 	private String printPrevNextLinks(
 			final HttpServletRequest req,
 			final HttpServletResponse resp,
 			final ContentItem item,
 			final ContentNode node,
-			final String username,
+			final User user,
 			final Set<BigInteger> authIds,
 			final PageScope pageScope,
 			final ItemScope itemScope) throws IOException {
@@ -259,7 +259,7 @@ public class ItemServlet extends HttpServlet {
 			catch (final SQLException e) {
 				throw new IOException("Failed to make prev/next links: " + StringEscapeUtils.escapeHtml4(e.toString()));
 			}
-			results = this.contentTree.getItemsForIds(ids, username);
+			results = this.contentTree.getItemsForIds(ids, user);
 
 			sortParam = null;
 		}
@@ -273,7 +273,7 @@ public class ItemServlet extends HttpServlet {
 				return printPrevNextLinksHtml(pageScope, itemScope, null, sortParam, node, prevIdParam, nextIdParam, null, null);
 			}
 
-			results = node.itemsUserHasAuth(username);
+			results = node.itemsUserHasAuth(user);
 			if (sort != null) {
 				results.sort(sort);
 			}
@@ -417,10 +417,10 @@ public class ItemServlet extends HttpServlet {
 		}
 
 		final ContentItem item = this.servletCommon.itemFromPathWithPermissionOrError(req, resp,
-				(node, username) -> !node.hasAuthList() || node.isUserAuthWithPermission(username, Permission.EDITTAGS));
+				(node, user) -> !node.hasAuthList() || node.isUserAuthWithPermission(user, Permission.EDITTAGS));
 		if (item == null) return;
 
-		final String username = ReqAttr.USERNAME.get(req);
+		final User user = ReqAttr.USER.get(req);
 
 		if ("addtag".equalsIgnoreCase(req.getParameter("action"))) {
 			final String tag = ServletCommon.readRequiredParam(req, resp, "addTag", 1);
@@ -441,7 +441,7 @@ public class ItemServlet extends HttpServlet {
 			catch (final SQLException e) {
 				throw new IOException(e);
 			}
-			LOG.info("{} added tag to {}: {}", username, item.getId(), StringHelper.escapeNewLines(tag));
+			LOG.info("{} added tag to {}: {}", user.getUsername(), item.getId(), StringHelper.escapeNewLines(tag));
 			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.queryWithParam(req, "autofocus=addtag"), "Tag added.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.
@@ -473,7 +473,7 @@ public class ItemServlet extends HttpServlet {
 				throw new IOException(e);
 			}
 			// TODO decode b64tagsandclss.
-			LOG.info("{} rm tags from {}: {}", username, item.getId(), StringHelper.escapeNewLines(Arrays.toString(b64tagsandclss)));
+			LOG.info("{} rm tags from {}: {}", user.getUsername(), item.getId(), StringHelper.escapeNewLines(Arrays.toString(b64tagsandclss)));
 			ServletCommon.returnRedirect(resp, HttpServletResponse.SC_SEE_OTHER, item.getId() + ServletCommon.query(req), "Tags removed.");
 
 			// TODO this should probably be integrated somewhere more central so that other tag changes are also taken into account.

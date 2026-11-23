@@ -8,13 +8,13 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -27,6 +27,8 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.Users.User;
 import mediatoad.util.FileHelper;
 
 public class ContentTreeTest {
@@ -116,12 +118,12 @@ public class ContentTreeTest {
 	public void itReturnsASetOfItems() throws Exception {
 		final List<String> openItems = itemIds(this.mockContent.givenMockItems(100));
 
-		final AuthList allowAuthlist = mock(AuthList.class);
-		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final User user = FakeAuth.user();
+		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 		final ContentNode allowProtecDir = this.mockContent.addMockDir("allow-dir-protec", this.undertest.getRootNode(), allowAuthlist);
 		final List<String> allowProtecItems = itemIds(this.mockContent.givenMockItems(100, allowProtecDir));
 
-		final AuthList blockAuthlist = mock(AuthList.class);
+		final AuthList blockAuthlist = FakeAuth.listOfEmpty();
 		final ContentNode blockProtecDir = this.mockContent.addMockDir("block-dir-protec", this.undertest.getRootNode(), blockAuthlist);
 		final List<String> blockProtecItems = itemIds(this.mockContent.givenMockItems(100, blockProtecDir));
 
@@ -134,7 +136,7 @@ public class ContentTreeTest {
 		expectedIds.addAll(openItems.subList(10, 20));
 		expectedIds.addAll(allowProtecItems.subList(10, 20));
 
-		final List<String> actualIds = itemIds(this.undertest.getItemsForIds(idsToFetch, "shork"));
+		final List<String> actualIds = itemIds(this.undertest.getItemsForIds(idsToFetch, user));
 		assertEquals(expectedIds, actualIds);
 	}
 
@@ -151,7 +153,8 @@ public class ContentTreeTest {
 		this.mockContent.setSpy(false);
 		this.mockContent.setShuffle(false);
 
-		final AuthList authList = AuthList.ofNames("foo", "bar", "bat", "baz", "shork");
+		final User user = FakeAuth.user();
+		final AuthList authList = FakeAuth.listOfUsers(user, FakeAuth.user(), FakeAuth.user(), FakeAuth.user(), FakeAuth.user());
 		final int itemsPerNode = itemCount / nodeCount;
 		for (int i = 0; i < nodeCount; i++) {
 			final ContentNode n = this.mockContent.addMockDir("node-" + i, authList);
@@ -170,7 +173,7 @@ public class ContentTreeTest {
 			final List<String> idsToFetch = allItemIds.subList(0, fetchCount);
 
 			final long start = System.nanoTime();
-			final List<ContentItem> ret = this.undertest.getItemsForIds(idsToFetch, "shork");
+			final List<ContentItem> ret = this.undertest.getItemsForIds(idsToFetch, user);
 			final long end = System.nanoTime();
 			totalTime += end - start;
 

@@ -1,7 +1,5 @@
 package mediatoad.rpc.server;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
@@ -13,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.security.KeyPair;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Before;
@@ -65,11 +62,11 @@ public class JwtInterceptorTest {
 
 		final Metadata metadata = makeMetadataWithJws(makeJws(pair, false));
 
+		final AtomicReference<User> userInContext = new AtomicReference<>();
 		final AtomicReference<String> nameInContext = new AtomicReference<>();
-		final AtomicReference<Set<Permission>> permissionsInContext = new AtomicReference<>();
 		when(this.serverCallHandler.startCall(this.serverCall, metadata)).thenAnswer((a) -> {
+			userInContext.set(JwtInterceptor.USER_CONTEXT_KEY.get());
 			nameInContext.set(JwtInterceptor.USERNAME_CONTEXT_KEY.get());
-			permissionsInContext.set(JwtInterceptor.PERMISSIONS_CONTEXT_KEY.get());
 			return null;
 		});
 
@@ -83,10 +80,10 @@ public class JwtInterceptorTest {
 		verify(this.loader).locate(cap.capture());
 		assertEquals(USERNAME, cap.getValue().get("username"));
 
-		assertThat(permissionsInContext.get(), hasSize(0));
-		when(this.users.getUser(USERNAME)).thenReturn(new User(null, null, ImmutableSet.of(Permission.EDITTAGS)));
+		final User user = new User(null, null, ImmutableSet.of(Permission.EDITTAGS));
+		when(this.users.getUser(USERNAME)).thenReturn(user);
 		this.undertest.interceptCall(this.serverCall, metadata, this.serverCallHandler);
-		assertEquals(ImmutableSet.of(Permission.EDITTAGS), permissionsInContext.get());
+		assertEquals(user, userInContext.get());
 	}
 
 	@Test

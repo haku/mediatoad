@@ -30,6 +30,7 @@ import io.jsonwebtoken.security.Jwk;
 import io.jsonwebtoken.security.JwkSet;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
+import mediatoad.auth.Users.User;
 
 public class JwkLoader extends LocatorAdapter<Key> {
 
@@ -87,31 +88,31 @@ public class JwkLoader extends LocatorAdapter<Key> {
 		return Jwks.setParser().build().parse(rawJson);
 	}
 
-	public void authorisePublicKey(final String callingUsername, final String keyUsername, final PublicJwk<?> publicJwk) throws IOException {
+	public void authorisePublicKey(final User callingUser, final String keyUsername, final PublicJwk<?> publicJwk) throws IOException {
 		if (StringUtils.isBlank(keyUsername)) throw new IllegalArgumentException("Missing username.");
 		if (!keyUsername.equals(publicJwk.getId()))
 			throw new IllegalArgumentException("keyId does not match username: " + keyUsername + " != " + publicJwk.getId());
 		if (this.publicKeys.containsKey(keyUsername))
 			throw new IllegalArgumentException("username already in RPC auth file: " + keyUsername);
 
-		LOG.warn("{} adding JWT to auth file: {} {}", callingUsername, keyUsername, publicJwk);
-		updateAuthFile(callingUsername, keyUsername, s -> s.add(publicJwk));
+		LOG.warn("{} adding JWT to auth file: {} {}", callingUser.getUsername(), keyUsername, publicJwk);
+		updateAuthFile(keyUsername, s -> s.add(publicJwk));
 
 		this.recentRejectedPublicKeys.invalidate(keyUsername);
 	}
 
-	public void revokePublicKey(final String callingUsername, final String keyUsername) throws IOException {
+	public void revokePublicKey(final User callingUser, final String keyUsername) throws IOException {
 		if (StringUtils.isBlank(keyUsername)) throw new IllegalArgumentException("Missing username.");
 
 		final PublicJwk<?> revokedKey = this.publicKeys.get(keyUsername);
 
-		updateAuthFile(callingUsername, keyUsername, s -> s.removeIf(k -> k.getId().equals(keyUsername)));
-		LOG.warn("{} removed user from auth file: {}", callingUsername, keyUsername);
+		updateAuthFile(keyUsername, s -> s.removeIf(k -> k.getId().equals(keyUsername)));
+		LOG.warn("{} removed user from auth file: {}", callingUser.getUsername(), keyUsername);
 
 		this.recentRejectedPublicKeys.asMap().putIfAbsent(keyUsername, revokedKey);
 	}
 
-	private void updateAuthFile(final String callingUsername, final String keyUsername, final Consumer<Set<Jwk<?>>> updater) throws IOException {
+	private void updateAuthFile(final String keyUsername, final Consumer<Set<Jwk<?>>> updater) throws IOException {
 		final Set<Jwk<?>> beforeUpdate = new HashSet<>();
 		final JwkSet existingKeys = readJwkSetFile();
 		if (existingKeys != null) beforeUpdate.addAll(readJwkSetFile().getKeys());

@@ -14,6 +14,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import faecommon.servlet.StatusPageServlet;
 import io.jsonwebtoken.security.PublicJwk;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.ui.ServletCommon;
 
 public class RpcAuthServlet extends StatusPageServlet {
@@ -86,7 +87,7 @@ public class RpcAuthServlet extends StatusPageServlet {
 
 	@Override
 	protected void doPost(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String callingUsername = ReqAttr.USERNAME.get(req);
+		final User callingUser = ReqAttr.USER.get(req);
 
 		final String keyUsername = req.getParameter("username");
 		final String thumbprint = req.getParameter("thumbprint");
@@ -106,7 +107,7 @@ public class RpcAuthServlet extends StatusPageServlet {
 				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid thumbprint.");
 				return;
 			}
-			this.jwtLoader.authorisePublicKey(callingUsername, keyUsername, pubKey);
+			this.jwtLoader.authorisePublicKey(callingUser, keyUsername, pubKey);
 		}
 		else if ("authrm".equalsIgnoreCase(action)) {
 			final PublicJwk<?> pubKey = this.jwtLoader.getAllowedPublicKeys().get(keyUsername);
@@ -114,7 +115,7 @@ public class RpcAuthServlet extends StatusPageServlet {
 				ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Unkown username.");
 				return;
 			}
-			this.jwtLoader.revokePublicKey(callingUsername, keyUsername);
+			this.jwtLoader.revokePublicKey(callingUser, keyUsername);
 		}
 		else {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "Invalid action.");

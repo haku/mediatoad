@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.Users.User;
 
 @SuppressFBWarnings(value = "EQ_DOESNT_OVERRIDE_EQUALS")
 public class RecentContentNode extends ContentNode {
@@ -31,12 +32,12 @@ public class RecentContentNode extends ContentNode {
 	}
 
 	@Override
-	public List<ContentItem> itemsUserHasAuth(final String username) {
+	public List<ContentItem> itemsUserHasAuth(final User user) {
 		synchronized (this.recent) {
 			final List<ContentItem> ret = new ArrayList<>(this.recent.size());
 			for (final ContentItem item : this.recent) {
 				final AuthList auth = this.itemIdToAuth.get(item.getId());
-				if (auth == null || auth.hasUser(username)) ret.add(item);
+				if (auth == null || auth.hasUser(user != null ? user.getUsername() : null)) ret.add(item);
 			}
 			return ret;
 		}

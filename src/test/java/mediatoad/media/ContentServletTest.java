@@ -5,8 +5,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.net.HttpURLConnection;
 import java.util.List;
@@ -21,6 +19,8 @@ import org.junit.rules.TemporaryFolder;
 import mediatoad.FakeServletCommon;
 import mediatoad.TestsWithHttpServer;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.Users.User;
 
 @SuppressWarnings("resource")
 public class ContentServletTest extends TestsWithHttpServer {
@@ -74,15 +74,15 @@ public class ContentServletTest extends TestsWithHttpServer {
 	public void itChecksPermissions() throws Exception {
 		startServer();
 
-		final AuthList allowAuthlist = mock(AuthList.class);
-		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final User user = FakeAuth.user();
+		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
 		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
 		assertRequestResponseCode("/c/" + item1.getId(), 401);
 
-		setAuthUsername("shork");
+		setAuthUsername(user);
 		assertRequestResponseCode("/c/" + item1.getId(), 200);
 	}
 
@@ -109,13 +109,13 @@ public class ContentServletTest extends TestsWithHttpServer {
 	public void itWorksWithWebdavSearchResults() throws Exception {
 		startServer(this.undertest, "/search/*");
 
-		final AuthList allowAuthlist = mock(AuthList.class);
-		when(allowAuthlist.hasUser("shork")).thenReturn(true);
+		final User user = FakeAuth.user();
+		final AuthList allowAuthlist = FakeAuth.listOfUsers(user);
 
 		final ContentNode dir1 = this.mockContent.addMockDir("dir1", allowAuthlist);
 		final ContentItem item1 = this.mockContent.addMockItem("item1", dir1);
 
-		setAuthUsername("shork");
+		setAuthUsername(user);
 		assertRequestResponseCode("/search/t=foo/" + item1.getId(), 200);
 	}
 

@@ -3,10 +3,7 @@ package mediatoad.rpc.server;
 import java.security.Key;
 import java.util.Date;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.ImmutableSet;
 
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -24,7 +21,6 @@ import io.jsonwebtoken.LocatorAdapter;
 import io.jsonwebtoken.ProtectedHeader;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.PublicJwk;
-import mediatoad.auth.Permission;
 import mediatoad.auth.Users;
 import mediatoad.auth.Users.User;
 
@@ -33,8 +29,8 @@ public class JwtInterceptor implements ServerInterceptor {
 	private static final String HEADER_USERNAME = "username";
 	private static final String HEADER_JWK = "jwk";
 
+	static final Context.Key<User> USER_CONTEXT_KEY = Context.key("user");
 	static final Context.Key<String> USERNAME_CONTEXT_KEY = Context.key(HEADER_USERNAME);
-	static final Context.Key<Set<Permission>> PERMISSIONS_CONTEXT_KEY = Context.key("PERMISSIONS");
 
 	private static final String BEARER_TYPE = "Bearer";
 	private static final Metadata.Key<String> AUTHORIZATION_METADATA_KEY = Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -91,16 +87,11 @@ public class JwtInterceptor implements ServerInterceptor {
 		}
 
 		final String username = (String) claims.getHeader().get(HEADER_USERNAME);
-		final ImmutableSet.Builder<Permission> permissions = ImmutableSet.builder();
-
 		final User user = this.users.getUser(username);
-		if (user != null) {
-			if (user.hasPermission(Permission.EDITTAGS)) permissions.add(Permission.EDITTAGS);
-		}
 
 		final Context ctx = Context.current().withValues(
-				USERNAME_CONTEXT_KEY, username,
-				PERMISSIONS_CONTEXT_KEY, permissions.build());
+				USER_CONTEXT_KEY, user,
+				USERNAME_CONTEXT_KEY, username);
 		return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler);
 	}
 

@@ -3,8 +3,6 @@ package mediatoad.dlnaserver;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -14,6 +12,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
+import mediatoad.auth.Users.User;
 import mediatoad.dlnaserver.SearchEngine.Predicate;
 import mediatoad.dlnaserver.SearchEngine.Where;
 import mediatoad.media.ContentItem;
@@ -63,13 +63,14 @@ public class SearchEngineTest {
 
 	@Test
 	public void itEnforcedAuthLists() throws Exception {
+		final User user = FakeAuth.user();
+		final AuthList authlist = FakeAuth.listOfUsers(user);
+
 		final ContentNode root = this.mockContent.givenMockDirs(1).get(0);
 
 		final ContentNode openDir = this.mockContent.addMockDir("dir-open", root);
 		final List<ContentItem> openItems = this.mockContent.givenMockItems(10, openDir);
 
-		final AuthList authlist = mock(AuthList.class);
-		when(authlist.hasUser("shork")).thenReturn(true);
 		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", root, authlist);
 		final List<ContentItem> protecItems = this.mockContent.givenMockItems(10, protecDir);
 
@@ -80,11 +81,10 @@ public class SearchEngineTest {
 				"dc:title contains \"foobar\"",
 				100, null);
 		assertEquals(openItems.subList(3, 4), openRet);
-		verify(authlist).hasUser(null);
 
 		final List<ContentItem> protecRet = this.undertest.search(this.contentTree.getRootNode(),
 				"dc:title contains \"foobar\"",
-				100, "shork");
+				100, user);
 		assertEquals(Arrays.asList(openItems.get(3), protecItems.get(4)), protecRet);
 	}
 

@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 
+import mediatoad.auth.Users.User;
+
 public class AuthSet {
 
 	// Is this the most efficient choice here?
@@ -20,9 +22,9 @@ public class AuthSet {
 		}
 	}
 
-	public Set<BigInteger> authIdsForUser(final String user) {
+	public Set<BigInteger> authIdsForUser(final User user) {
 		if (user == null) return null;
-		return this.userToAuthIds.get(user);
+		return this.userToAuthIds.get(user.getUsername());
 	}
 
 }

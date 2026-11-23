@@ -12,14 +12,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.DefaultAccess;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.TagAutocompleter;
 import mediatoad.db.TagFrequency;
 import mediatoad.db.search.DbSearchSyntax;
@@ -42,8 +41,8 @@ public class AutocompleteServlet extends HttpServlet {
 	@SuppressWarnings("resource")
 	@Override
 	protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String username = ReqAttr.USERNAME.get(req);
-		if (this.defaultAccess != DefaultAccess.ALLOW && StringUtils.isBlank(username)) {
+		final User user = ReqAttr.USER.get(req);
+		if (this.defaultAccess != DefaultAccess.ALLOW && user == null) {
 			resp.setContentType(ServletCommon.CONTENT_TYPE_JSON);
 			resp.getWriter().write("[]");
 			return;
@@ -54,7 +53,7 @@ public class AutocompleteServlet extends HttpServlet {
 			return;
 		}
 
-		if (req.getParameter("reload") != null && ReqAttr.USERNAME.get(req) != null) {
+		if (req.getParameter("reload") != null && user != null) {
 			try {
 				this.tagAutocompleter.generateIndex();
 				resp.getWriter().println("Index generated successfully.");
@@ -64,7 +63,7 @@ public class AutocompleteServlet extends HttpServlet {
 				throw new ServletException("Failed to reload autocomplete.", e);
 			}
 		}
-		else if (req.getParameter("dump") != null && ReqAttr.USERNAME.get(req) != null) {
+		else if (req.getParameter("dump") != null && user != null) {
 			this.tagAutocompleter.dumpTo(resp.getWriter());
 			return;
 		}

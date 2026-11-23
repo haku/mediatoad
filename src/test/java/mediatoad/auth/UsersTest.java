@@ -7,11 +7,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
@@ -38,16 +38,18 @@ public class UsersTest {
 
 		assertThat(undertest.allUsernames(), containsInAnyOrder("myuser", "anotheruser", "rpcuser@remote"));
 		assertNull(undertest.validUser("myuser", "12"));
-
 		final User myuser = undertest.validUser("myuser", "123");
 		assertNotNull(myuser);
 		assertEquals("myuser", myuser.getUsername());
-		assertTrue(myuser.hasPermission(Permission.EDITTAGS));
+		assertEquals(Set.of(Permission.EDITTAGS, Permission.MANAGERPC), myuser.getPermissions());
 
-		assertNotNull(undertest.validUser("anotheruser", "456"));
+		final User anotheruser = undertest.validUser("anotheruser", "456");
+		assertNotNull(anotheruser);
+		assertEquals(null, anotheruser.getPermissions());
+
 
 		final User remoteuser = undertest.getUser("rpcuser@remote");
-		assertTrue(remoteuser.hasPermission(Permission.EDITTAGS));
+		assertEquals(Set.of(Permission.EDITTAGS), remoteuser.getPermissions());
 		assertFalse(remoteuser.validPass("0"));
 	}
 
@@ -67,7 +69,7 @@ public class UsersTest {
 				makeUnderTest(line);
 				fail("Expected input to be rejected: \"" + line + "\"");
 			}
-			catch (IOException e) {
+			catch (final IOException e) {
 				assertThat(e.getMessage(), startsWith("Invalid userfile line 1, "));
 			}
 		}

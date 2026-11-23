@@ -39,7 +39,9 @@ import faecommon.servlet.MockHttpServletRequest;
 import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.FakeServletCommon;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.DbCache;
 import mediatoad.db.DirPrefs;
 import mediatoad.db.InMemoryMediaDb;
@@ -203,11 +205,12 @@ public class DirServletTest {
 
 	@Test
 	public void itFiltersOutProtectedNodes() throws Exception {
+		final User user = FakeAuth.user();
+		final AuthList authlist = FakeAuth.listOfUsers(user);
+
 		final ContentNode openDir = this.mockContent.addMockDir("dir-open", this.contentTree.getRootNode());
 		this.mockContent.givenMockItems(10, openDir);
 
-		final AuthList authlist = mock(AuthList.class);
-		when(authlist.hasUser("shork")).thenReturn(true);
 		final ContentNode protecDir = this.mockContent.addMockDir("dir-protec", this.contentTree.getRootNode(), authlist);
 		final List<ContentItem> protecItems = this.mockContent.givenMockItems(MediaFormat.MP3, 10, protecDir);
 
@@ -224,7 +227,7 @@ public class DirServletTest {
 		assertEquals(401, this.resp.getStatus());
 
 		this.req.setPathInfo("/" + ContentGroup.ROOT.getId());
-		ReqAttr.USERNAME.set(this.req, "shork");
+		ReqAttr.USER.set(this.req, user);
 		this.resp = new MockHttpServletResponse();
 		this.undertest.doGet(this.req, this.resp);
 

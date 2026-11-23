@@ -24,6 +24,7 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Jwks;
 import io.jsonwebtoken.security.PublicJwk;
+import mediatoad.auth.FakeAuth;
 
 public class JwkLoaderTest {
 
@@ -64,7 +65,7 @@ public class JwkLoaderTest {
 				.build();
 
 		final JwkLoader undertest = new JwkLoader(f);
-		undertest.authorisePublicKey("admin-user", "bob", newJwk);
+		undertest.authorisePublicKey(FakeAuth.user(), "bob", newJwk);
 
 		final Map<String, PublicJwk<?>> actual1 = undertest.getAllowedPublicKeys();
 		assertThat(actual1, hasKey("alice"));
@@ -81,7 +82,7 @@ public class JwkLoaderTest {
 		final File f = writeSet(existingPair);
 
 		final JwkLoader undertest = new JwkLoader(f);
-		undertest.revokePublicKey("admin-user", "alice");
+		undertest.revokePublicKey(FakeAuth.user(), "alice");
 
 		final Map<String, PublicJwk<?>> actual1 = undertest.getAllowedPublicKeys();
 		assertEquals(Collections.emptyMap(), actual1);

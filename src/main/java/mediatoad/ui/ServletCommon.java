@@ -30,6 +30,7 @@ import mediatoad.Args;
 import mediatoad.Args.ArgsException;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ContentServingHistory;
@@ -87,8 +88,8 @@ public class ServletCommon {
 		resp.getWriter().println(StringEscapeUtils.escapeHtml4(msg));
 	}
 
-	public static void returnDenied(final HttpServletResponse resp, final String username) throws IOException {
-		if (username == null) {
+	public static void returnDenied(final HttpServletResponse resp, final User user) throws IOException {
+		if (user == null) {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
 		}
 		else {
@@ -128,10 +129,11 @@ public class ServletCommon {
 	}
 
 	public PageScope pageScope(final HttpServletRequest req, final String title, final String pathPrefix, final String query) {
+		final User user = ReqAttr.USER.get(req);
 		return new PageScope(
 				pageTitle(title),
 				pathPrefix,
-				ReqAttr.USERNAME.get(req),
+				user != null ? user.getUsername() : null,
 				this.openidEnabled,
 				this.mediaDbEnabled,
 				StringUtils.trimToEmpty(query),
@@ -244,7 +246,7 @@ public class ServletCommon {
 	public ContentItem itemFromPathWithPermissionOrError(
 			final HttpServletRequest req,
 			final HttpServletResponse resp,
-			final BiFunction<ContentNode, String, Boolean> nodeCheck) throws IOException {
+			final BiFunction<ContentNode, User, Boolean> nodeCheck) throws IOException {
 		final String id = idFromPath(req.getPathInfo(), null);
 		if (id == null) {
 			returnStatus(resp, HttpServletResponse.SC_BAD_REQUEST, "ID missing.");
@@ -262,14 +264,14 @@ public class ServletCommon {
 			return null;
 		}
 
-		final String username = ReqAttr.USERNAME.get(req);
-		if (!node.isUserAuth(username)) {
-			returnDenied(resp, username);
+		final User user = ReqAttr.USER.get(req);
+		if (!node.isUserAuth(user)) {
+			returnDenied(resp, user);
 			return null;
 		}
 
-		if (nodeCheck != null && !nodeCheck.apply(node, username)) {
-			returnDenied(resp, username);
+		if (nodeCheck != null && !nodeCheck.apply(node, user)) {
+			returnDenied(resp, user);
 			return null;
 		}
 

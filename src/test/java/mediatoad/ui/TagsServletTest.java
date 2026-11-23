@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,8 +15,10 @@ import org.junit.Test;
 import faecommon.servlet.MockHttpServletRequest;
 import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.InMemoryMediaDb;
 import mediatoad.db.MediaDb;
 import mediatoad.db.TagAutocompleter;
@@ -56,8 +57,7 @@ public class TagsServletTest {
 
 	@Test
 	public void itDoesBulkGetTags() throws Exception {
-		final AuthList authlist = makeAuthList();
-		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), authlist);
+		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode());
 		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.JPEG, 2, dir);
 
 		try (final WritableMediaDb w = this.mediaDb.getWritable()) {
@@ -73,7 +73,6 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
 
 		this.undertest.service(this.req, this.resp);
 
@@ -95,7 +94,6 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.service(this.req, this.resp);
@@ -123,7 +121,6 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.service(this.req, this.resp);
@@ -135,7 +132,9 @@ public class TagsServletTest {
 
 	@Test
 	public void itDoesBulkAddTagWithAuthList() throws Exception {
-		final AuthList authlist = makeAuthListWithEdittags();
+		final User user = FakeAuth.user();
+		final AuthList authlist = FakeAuth.listOfUserWithPermission(user, Permission.EDITTAGS);
+
 		final ContentNode dir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), authlist);
 		final List<ContentItem> items = this.mockContent.givenMockItems(MediaFormat.JPEG, 2, dir);
 
@@ -144,7 +143,7 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
+		ReqAttr.USER.set(this.req, user);
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.service(this.req, this.resp);
@@ -164,7 +163,6 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
 
 		this.undertest.service(this.req, this.resp);
 		assertEquals(403, this.resp.getStatus());
@@ -173,11 +171,13 @@ public class TagsServletTest {
 
 	@Test
 	public void itBlocksIncompleteWriteAccess() throws Exception {
-		final AuthList writeAuth = makeAuthListWithEdittags();
+		final User user = FakeAuth.user();
+		final AuthList writeAuth = FakeAuth.listOfUserWithPermission(user, Permission.EDITTAGS);
+
 		final ContentNode writeDir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), writeAuth);
 		final ContentItem writeI = this.mockContent.givenMockItems(MediaFormat.JPEG, 1, writeDir).get(0);
 
-		final AuthList roAuth = makeAuthList();
+		final AuthList roAuth = FakeAuth.listOfUsers(user);
 		final ContentNode roDir = this.mockContent.addMockDir("dir", this.contentTree.getRootNode(), roAuth);
 		final ContentItem roI = this.mockContent.givenMockItems(MediaFormat.JPEG, 1, roDir).get(0);
 
@@ -186,24 +186,12 @@ public class TagsServletTest {
 
 		this.req.setMethod("POST");
 		this.req.setContent(body.getBytes());
-		ReqAttr.USERNAME.set(this.req, "userfoo");
+		ReqAttr.USER.set(this.req, user);
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 
 		this.undertest.service(this.req, this.resp);
 		assertEquals(403, this.resp.getStatus());
 		assertEquals("Forbidden\n", this.resp.getOutputAsString());
-	}
-
-	private static AuthList makeAuthList() {
-		final AuthList authlist = mock(AuthList.class);
-		when(authlist.hasUser("userfoo")).thenReturn(true);
-		return authlist;
-	}
-
-	private static AuthList makeAuthListWithEdittags() {
-		final AuthList authlist = makeAuthList();
-		when(authlist.hasUserWithPermission("userfoo", Permission.EDITTAGS)).thenReturn(true);
-		return authlist;
 	}
 
 }

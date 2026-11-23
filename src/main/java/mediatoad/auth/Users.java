@@ -14,6 +14,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mindrot.jbcrypt.BCrypt;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class Users {
 
 	private final Map<String, User> users;
@@ -108,6 +110,11 @@ public class Users {
 		public boolean hasPermission(final Permission permission) {
 			if (this.permissions == null) return false;
 			return this.permissions.contains(permission);
+		}
+
+		@VisibleForTesting
+		protected Set<Permission> getPermissions() {
+			return this.permissions;
 		}
 
 	}

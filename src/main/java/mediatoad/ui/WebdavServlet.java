@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.C;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.search.DbSearchParser;
 import mediatoad.db.search.DbSearchParser.DbSearch;
@@ -59,7 +60,7 @@ public class WebdavServlet extends HttpServlet {
 
 	// http://www.webdav.org/specs/rfc4918.html
 	protected void doPropfind(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
-		final String username = ReqAttr.USERNAME.get(req);
+		final User user = ReqAttr.USER.get(req);
 
 		final String depth = req.getHeader("Depth");
 		if (depth == null) {
@@ -72,15 +73,15 @@ public class WebdavServlet extends HttpServlet {
 		}
 
 		if (req.getPathInfo().startsWith("/" + C.SEARCH_PATH_PREFIX)) {
-			searchReq(req, resp, username, depth);
+			searchReq(req, resp, user, depth);
 		}
 		else {
-			dirOrFileReq(req, resp, username, depth);
+			dirOrFileReq(req, resp, user, depth);
 		}
 	}
 
 	@SuppressWarnings("resource")
-	private void searchReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
+	private void searchReq(final HttpServletRequest req, final HttpServletResponse resp, final User user, final String depth) throws IOException {
 		final PrintWriter w = startXmlResp(resp);
 		final String dirPath = StringHelper.removeSuffix(req.getRequestURI(), "/");
 
@@ -89,13 +90,13 @@ public class WebdavServlet extends HttpServlet {
 			if (searchPath.file.length() > 0) {
 				// TODO be less lazy.
 				resp.reset();
-				dirOrFileReq(req, resp, username, depth);
+				dirOrFileReq(req, resp, user, depth);
 				return;
 			}
 			else {
 				Webdav.appendPropfindDir(w, dirPath, searchPath.query, System.currentTimeMillis());
 				if ("1".equals(depth)) {
-					final List<ContentItem> results = runQuery(username, searchPath.query);
+					final List<ContentItem> results = runQuery(user, searchPath.query);
 					for (final ContentItem i : results) {
 						Webdav.appendPropfindItem(w, i, i.getId() + "." + i.getFormat().getExt());
 					}
@@ -109,19 +110,19 @@ public class WebdavServlet extends HttpServlet {
 		endXmlResp(w);
 	}
 
-	private List<ContentItem> runQuery(final String username, final String query) throws IOException {
+	private List<ContentItem> runQuery(final User user, final String query) throws IOException {
 		try {
-			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(username);
+			final Set<BigInteger> authIds = this.contentTree.getAuthSet().authIdsForUser(user);
 			final DbSearch search = DbSearchParser.parseSearch(query, authIds, SortColumn.FILE_PATH.asc());
 			final List<String> ids = search.execute(this.db, MAX_SEARCH_ITEMS, 0);
-			return this.contentTree.getItemsForIds(ids, username);
+			return this.contentTree.getItemsForIds(ids, user);
 		}
 		catch (final SQLException e) {
 			throw new IOException(e);
 		}
 	}
 
-	private void dirOrFileReq(final HttpServletRequest req, final HttpServletResponse resp, final String username, final String depth) throws IOException {
+	private void dirOrFileReq(final HttpServletRequest req, final HttpServletResponse resp, final User user, final String depth) throws IOException {
 		final String id = this.servletCommon.idFromPath(req.getPathInfo(), ContentGroup.ROOT.getId());
 		final ContentNode node = this.contentTree.getNode(id);
 		final ContentItem item = node != null ? null : this.contentTree.getItem(id);
@@ -129,8 +130,8 @@ public class WebdavServlet extends HttpServlet {
 			ServletCommon.returnStatus(resp, HttpServletResponse.SC_NOT_FOUND, "Not found: " + req.getPathInfo());
 			return;
 		}
-		if (node != null && !node.isUserAuth(username)) {
-			ServletCommon.returnDenied(resp, username);
+		if (node != null && !node.isUserAuth(user)) {
+			ServletCommon.returnDenied(resp, user);
 			return;
 		}
 
@@ -138,9 +139,9 @@ public class WebdavServlet extends HttpServlet {
 		final PrintWriter w = startXmlResp(resp);
 
 		if (node != null) {
-			Webdav.appendPropfindNode(req, username, w, node, false);
+			Webdav.appendPropfindNode(req, user, w, node, false);
 			if ("1".equals(depth)) {
-				node.withEachNode(n -> Webdav.appendPropfindNode(req, username, w, n, true));
+				node.withEachNode(n -> Webdav.appendPropfindNode(req, user, w, n, true));
 				node.withEachItem(i -> Webdav.appendPropfindItem(req, w, i, true));
 			}
 		}

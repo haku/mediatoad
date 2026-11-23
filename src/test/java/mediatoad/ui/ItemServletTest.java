@@ -9,10 +9,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,8 +23,10 @@ import faecommon.servlet.MockHttpServletRequest;
 import faecommon.servlet.MockHttpServletResponse;
 import mediatoad.FakeServletCommon;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
 import mediatoad.auth.Permission;
 import mediatoad.auth.ReqAttr;
+import mediatoad.auth.Users.User;
 import mediatoad.db.InMemoryMediaDb;
 import mediatoad.db.MediaDb;
 import mediatoad.db.TagAutocompleter;
@@ -47,6 +49,7 @@ public class ItemServletTest {
 
 	private MockHttpServletRequest req;
 	private MockHttpServletResponse resp;
+	private User user;
 
 	@Before
 	public void before() throws Exception {
@@ -58,6 +61,7 @@ public class ItemServletTest {
 
 		this.req = new MockHttpServletRequest();
 		this.resp = new MockHttpServletResponse();
+		this.user = FakeAuth.user();
 	}
 
 	@Test
@@ -240,16 +244,12 @@ public class ItemServletTest {
 		verify(this.tagAutocompleter).decrementTag(tagToRm);
 	}
 
-	private static AuthList makeAuthList() {
-		final AuthList authlist = mock(AuthList.class);
-		when(authlist.hasUser("userfoo")).thenReturn(true);
-		return authlist;
+	private AuthList makeAuthList() {
+		return FakeAuth.listOfUsers(this.user);
 	}
 
-	private static AuthList makeAuthListWithEdittags() {
-		final AuthList authlist = makeAuthList();
-		when(authlist.hasUserWithPermission("userfoo", Permission.EDITTAGS)).thenReturn(true);
-		return authlist;
+	private AuthList makeAuthListWithEdittags() {
+		return FakeAuth.listOfUserWithPermission(this.user, Permission.EDITTAGS);
 	}
 
 	private ContentItem givenReqForUnprotectedItem() throws IOException {
@@ -274,7 +274,7 @@ public class ItemServletTest {
 	}
 
 	private void givenUserWithEditTagsPermission() {
-		ReqAttr.USERNAME.set(this.req, "userfoo");
+		ReqAttr.USER.set(this.req, this.user);
 		ReqAttr.ALLOW_EDIT_TAGS.set(this.req, Boolean.TRUE);
 	}
 

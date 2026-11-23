@@ -7,7 +7,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -25,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
@@ -47,7 +47,9 @@ import io.grpc.stub.StreamObserver;
 import io.prometheus.metrics.model.snapshots.Labels;
 import mediatoad.MetricAssert;
 import mediatoad.auth.AuthList;
+import mediatoad.auth.FakeAuth;
 import mediatoad.auth.Permission;
+import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.MockMediaMetadataStore;
 import mediatoad.db.Playback;
@@ -59,6 +61,9 @@ import mediatoad.media.ContentTree;
 import mediatoad.media.MediaFormat;
 import mediatoad.media.MockContent;
 import mediatoad.rpc.MediaToadProto.ExcludedChange;
+import mediatoad.rpc.MediaToadProto.FileExistance;
+import mediatoad.rpc.MediaToadProto.HasMediaReply;
+import mediatoad.rpc.MediaToadProto.HasMediaRequest;
 import mediatoad.rpc.MediaToadProto.ListNodeReply;
 import mediatoad.rpc.MediaToadProto.ListNodeRequest;
 import mediatoad.rpc.MediaToadProto.MediaItem;
@@ -89,6 +94,9 @@ public class MediaImplTest {
 	private MediaImpl undertest;
 	private MetricAssert metricAssert;
 
+	private User user;
+	private Context ctxWithUser;
+
 	@SuppressWarnings("resource")
 	@Before
 	public void before() throws Exception {
@@ -98,6 +106,9 @@ public class MediaImplTest {
 		when(this.mediaDb.getWritable()).thenReturn(this.writableMediaDb);
 		this.undertest = new MediaImpl(this.contentTree, this.mediaDb);
 		this.metricAssert = new MetricAssert();
+
+		this.user = FakeAuth.user();
+		this.ctxWithUser = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, this.user);
 	}
 
 	private MockContent setupFakeContent() {
@@ -121,11 +132,10 @@ public class MediaImplTest {
 		when(this.mediaDb.getPlayback(Collections.singletonList("itemid"))).thenReturn(ImmutableMap.of("itemid", new Playback(0, 0, 0, true)));
 
 		final ContentNode node = mockNode("nodeid");
-		when(node.itemsUserHasAuth("somegirlthing")).thenReturn(Collections.singletonList(item));
+		when(node.itemsUserHasAuth(this.user)).thenReturn(Collections.singletonList(item));
 
 		final StreamObserver<ListNodeReply> respObs = mock(ServerCallStreamObserver.class);
-		final Context ctx = Context.current().withValue(JwtInterceptor.USERNAME_CONTEXT_KEY, "somegirlthing");
-		ctx.run(() -> this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs));
+		this.ctxWithUser.run(() -> this.undertest.listNode(ListNodeRequest.newBuilder().setNodeId("nodeid").build(), respObs));
 
 		verify(respObs).onNext(ListNodeReply.newBuilder()
 				.setNode(MediaNode.newBuilder()
@@ -199,7 +209,7 @@ public class MediaImplTest {
 
 		final ServerCallStreamObserver<ReadMediaReply> respObs = mock(ServerCallStreamObserver.class);
 		when(respObs.isReady()).thenReturn(true);
-		this.undertest.readMedia(req, respObs);
+		this.ctxWithUser.run(() -> this.undertest.readMedia(req, respObs));
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
 		final List<ReadMediaReply> msgs = getRespMsgs(4, respObs);
@@ -250,7 +260,7 @@ public class MediaImplTest {
 
 		final ServerCallStreamObserver<ReadMediaReply> respObs = mock(ServerCallStreamObserver.class);
 		when(respObs.isReady()).thenReturn(true);
-		this.undertest.readMedia(req, respObs);
+		this.ctxWithUser.run(() -> this.undertest.readMedia(req, respObs));
 
 		verify(respObs, Mockito.never()).onError(any(Throwable.class));
 		final byte[] expected = new byte[last - first + 1];
@@ -274,7 +284,7 @@ public class MediaImplTest {
 				.build();
 
 		final StreamObserver<RecordPlaybackReply> respObs = mock(StreamObserver.class);
-		this.undertest.recordPlayback(req, respObs);
+		this.ctxWithUser.run(() -> this.undertest.recordPlayback(req, respObs));
 
 		final InOrder ord = inOrder(this.writableMediaDb);
 		ord.verify(this.writableMediaDb).recordPlayback("someid", time, true);
@@ -301,19 +311,18 @@ public class MediaImplTest {
 
 		final StreamObserver<RecordPlaybackReply> respObs = mock(StreamObserver.class);
 
-		when(node.isUserAuth(nullable(String.class))).thenReturn(false);
+		when(node.isUserAuth(this.user)).thenReturn(false);
 		this.undertest.recordPlayback(req, respObs);
 		verifyErrorStatus(respObs, Code.NOT_FOUND);
 		verifyNoInteractions(this.writableMediaDb);
 
 		reset(respObs);
-		final Context ctx = Context.current().withValue(JwtInterceptor.USERNAME_CONTEXT_KEY, "someone");
-		ctx.run(() -> this.undertest.recordPlayback(req, respObs));
+		this.ctxWithUser.run(() -> this.undertest.recordPlayback(req, respObs));
 		verifyErrorStatus(respObs, Code.NOT_FOUND);
 		verifyNoInteractions(this.writableMediaDb);
 
-		when(node.isUserAuth("someone")).thenReturn(true);
-		ctx.run(() -> this.undertest.recordPlayback(req, respObs));
+		when(node.isUserAuth(this.user)).thenReturn(true);
+		this.ctxWithUser.run(() -> this.undertest.recordPlayback(req, respObs));
 		verify(this.writableMediaDb).recordPlayback("someid", time, true);
 
 		verify(respObs).onNext(RecordPlaybackReply.newBuilder().build());
@@ -325,9 +334,8 @@ public class MediaImplTest {
 		final MockContent mockContent = setupFakeContent();
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 
-		final Context ctx = Context.current().withValues(
-				JwtInterceptor.USERNAME_CONTEXT_KEY, "testuser@client",
-				JwtInterceptor.PERMISSIONS_CONTEXT_KEY, ImmutableSet.of(Permission.EDITTAGS));
+		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS));
+		final Context ctx = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, tagUser);
 		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
 		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
 
@@ -364,9 +372,8 @@ public class MediaImplTest {
 		final MockContent mockContent = setupFakeContent();
 		final MockMediaMetadataStore mockMediaMetadataStore = setupFakeDb();
 
-		final Context ctx = Context.current().withValues(
-				JwtInterceptor.USERNAME_CONTEXT_KEY, "testuser@client",
-				JwtInterceptor.PERMISSIONS_CONTEXT_KEY, ImmutableSet.of(Permission.EDITTAGS));
+		final User tagUser = new User("testuser@client", null, ImmutableSet.of(Permission.EDITTAGS));
+		final Context ctx = Context.current().withValue(JwtInterceptor.USER_CONTEXT_KEY, tagUser);
 		final AuthList authList = AuthList.ofNameAndPermission("testuser@client", Permission.EDITTAGS);
 		final ContentNode node = mockContent.addMockDir("some-parent-node", authList);
 
@@ -419,7 +426,7 @@ public class MediaImplTest {
 		when(node.getId()).thenReturn(id);
 		when(node.getTitle()).thenReturn("title for " + id);
 		when(node.getParentId()).thenReturn("parent-for-" + id);
-		when(node.isUserAuth(nullable(String.class))).thenReturn(true);
+		when(node.isUserAuth(this.user)).thenReturn(true);
 		this.contentTree.addNode(node);
 		return node;
 	}
