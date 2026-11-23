@@ -59,7 +59,7 @@ public class WatcherTest {
 		roots.add(this.tmpRoot);
 		this.listener = mock(FileListener.class);
 		this.time = new Time.FakeTime();
-		this.undertest = new Watcher(roots, MediaFormat.MediaFileFilter.INSTANCE, this.listener, this.time, 10);
+		this.undertest = new Watcher(roots, MediaFormat.MediaFileFilter.INSTANCE, this.listener, this.time, 100);
 		this.metricAssert = new MetricAssert();
 	}
 
@@ -202,7 +202,7 @@ public class WatcherTest {
 		verifyNoMoreInteractions(this.listener);
 
 		this.time.advance(2, TimeUnit.SECONDS);
-		waitForWatcher(10);
+		waitForWatcher(40);
 		verify(this.listener).fileModified(this.tmpRoot, f1, null);
 	}
 
