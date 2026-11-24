@@ -51,3 +51,36 @@
   });
 })();
 
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey) return;
+  if (!e.altKey) {
+    switch (e.target.tagName.toLowerCase()) {
+      case 'input':
+      case 'textarea':
+        return;
+    }
+  }
+  switch (e.key) {
+    case 'f':
+    case 'n':
+      event.preventDefault();
+      clickLinkById('next');
+      break;
+    case 'b':
+    case 'p':
+      event.preventDefault();
+      clickLinkById('previous');
+      break;
+    case 'F':
+      event.preventDefault();
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+        return;
+      }
+      const i = document.getElementsByClassName("mainimage")[0];
+      i.requestFullscreen().catch((err) => {
+        console.error(`Error going fullscreen: ${err.message}`);
+      });
+      break;
+  }
+});
