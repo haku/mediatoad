@@ -3,44 +3,65 @@ package mediatoad.media;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collection;
 
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+import mediatoad.media.MetadataReader.Confidence;
 import mediatoad.media.MetadataReader.Metadata;
 
-
+@RunWith(Parameterized.class)
 public class MetadataReaderTest {
 
-	@Test
-	public void itReadsFilenameArtistAlbum () throws Exception {
-		testFileNameExtraction("/foo/bar/Some Artist - Some Album - 01 - Some Track.ogg",
-				"Some Artist", "Some Album");
+	private static final Metadata ARTIST_ALBUM_TITLE = new Metadata("Some Artist", "Some Album", "Some Track", Confidence.OK);
+	private static final Metadata ARTIST_TITLE = new Metadata("Some Artist", null, "Some Track", Confidence.OK);
+	private static final Metadata ALBUM_TITLE = new Metadata(null, "Some Album", "Some Track", Confidence.OK);
+
+	@Parameters(name = "{index}: {1} = {0}")
+	public static Collection<Object[]> params() {
+		return Arrays.asList(new Object[][] {
+				// Basic structure
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album - 01 - Some Track.ogg" },
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album/01 - Some Track.ogg" },
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album/Some Track.ogg" },
+				{ ARTIST_TITLE, "/foo/bar/Some Artist - Some Track.ogg" },
+				{ ARTIST_TITLE.withConfidence(Confidence.GUESS), "/foo/bar/Some Artist/Some Track.ogg" },
+				{ ALBUM_TITLE, "/foo/bar/Some Album/01 - Some Track.ogg" },
+
+				// Awkward titles
+				{ ARTIST_ALBUM_TITLE.withTitle("Some Track - Some Subtitle"),
+						"/foo/bar/Some Artist - Some Album - 01 - Some Track - Some Subtitle.ogg" },
+				{ ARTIST_ALBUM_TITLE.withTitle("Some Track - 99 - Some Subtitle"),
+						"/foo/bar/Some Artist - Some Album - 01 - Some Track - 99 - Some Subtitle.ogg" },
+				{ ARTIST_ALBUM_TITLE.withTitle("Some Track - Some Subtitle"),
+						"/foo/bar/Some Artist - Some Album/01 - Some Track - Some Subtitle.ogg" },
+				{ ARTIST_ALBUM_TITLE.withTitle("Some Track - 99 - Some Subtitle"),
+						"/foo/bar/Some Artist - Some Album/01 - Some Track - 99 - Some Subtitle.ogg" },
+
+				// Remove notes in [brackets] [after whitespace]
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album - 01 - Some Track [some note].ogg" },
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album/01 - Some Track [some note] [another].ogg" },
+				{ ARTIST_ALBUM_TITLE, "/foo/bar/Some Artist - Some Album/Some Track [some note] [another].ogg" },
+				{ ARTIST_TITLE, "/foo/bar/Some Artist - Some Track [some note]  [another].ogg" },
+				{ ARTIST_TITLE.withConfidence(Confidence.GUESS), "/foo/bar/Some Artist/Some Track [some note]  [another].ogg" },
+				{ ALBUM_TITLE, "/foo/bar/Some Album/01 - Some Track [some note]  [another].ogg" },
+		});
 	}
 
-	@Test
-	public void itReadsArtistFilename () throws Exception {
-		testFileNameExtraction("/foo/bar/Some Artist - Some Track.ogg",
-				"Some Artist", null);
-	}
+	@Parameter(0)
+	public Metadata expected;
 
-	@Ignore("unimplemented")
-	@Test
-	public void itReadsArtistAlbumPathAndFilename () throws Exception {
-		testFileNameExtraction("/foo/bar/Some Artist - Some Album/01 - Some Track.ogg",
-				"Some Artist", "Some Album");
-	}
+	@Parameter(1)
+	public String filePath;
 
-	@Ignore("unimplemented")
 	@Test
-	public void itReadsArtistPathAndFilename () throws Exception {
-		testFileNameExtraction("/foo/bar/Some Artist/01 - Some Track.ogg",
-				"Some Artist", null);
-	}
-
-	private static void testFileNameExtraction(final String path, final String artist, final String album) {
-		assertEquals(new Metadata(artist, album),
-				MetadataReader.read(new File(path)));
+	public void itExtractsMetadata() throws Exception {
+		assertEquals(this.expected, MetadataReader.read(new File(this.filePath)));
 	}
 
 }

@@ -26,6 +26,7 @@ import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;
 import mediatoad.media.MediaFormat;
+import mediatoad.media.MetadataReader.Confidence;
 import mediatoad.media.MetadataReader.Metadata;
 
 public class NodeConverterTest {
@@ -77,10 +78,10 @@ public class NodeConverterTest {
 
 	@Test
 	public void itMakesAnItem() throws Exception {
-		final ContentItem input = new ContentItem("id", "pid", "title", mock(File.class), MediaFormat.MP3);
+		final ContentItem input = new ContentItem("id", "pid", "title.ext", mock(File.class), MediaFormat.MP3);
 		input.setFileLength(123456L);
 
-		final Metadata md = new Metadata("artist", "album");
+		final Metadata md = new Metadata("artist", "album", "title", Confidence.OK);
 		input.setMetadata(md);
 		input.setDurationMillis(TimeUnit.MINUTES.toMillis(90));
 

@@ -39,6 +39,7 @@ import mediatoad.auth.AuthList.AccessType;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;
+import mediatoad.media.MetadataReader.Confidence;
 import mediatoad.media.MetadataReader.Metadata;
 
 /**
@@ -114,16 +115,19 @@ public class NodeConverter {
 			res.setDuration(ModelUtil.toTimeString(durationSeconds));
 		}
 
+		final Metadata okMd = c.getMetadata() != null && c.getMetadata().hasConfidence(Confidence.OK) ? c.getMetadata() : null;
+		final String title = okMd != null ? okMd.getTitle() : c.getTitle();
+
 		final Item i;
 		switch (c.getFormat().getContentGroup()) {
 		case VIDEO:
-			i = new VideoItem(c.getId(), c.getParentId(), c.getTitle(), "", res);
+			i = new VideoItem(c.getId(), c.getParentId(), title, "", res);
 			break;
 		case IMAGE:
-			i = new ImageItem(c.getId(), c.getParentId(), c.getTitle(), "", res);
+			i = new ImageItem(c.getId(), c.getParentId(), title, "", res);
 			break;
 		case AUDIO:
-			i = new AudioItem(c.getId(), c.getParentId(), c.getTitle(), "", res);
+			i = new AudioItem(c.getId(), c.getParentId(), title, "", res);
 			break;
 		default:
 			throw new IllegalArgumentException();
@@ -142,10 +146,9 @@ public class NodeConverter {
 			});
 		}
 
-		final Metadata md = c.getMetadata();
-		if (md != null) {
-			if (md.getArtist() != null) i.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(md.getArtist())));
-			if (md.getAlbum() != null) i.addProperty(new DIDLObject.Property.UPNP.ALBUM(md.getAlbum()));
+		if (okMd != null) {
+			if (okMd.getArtist() != null) i.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(okMd.getArtist())));
+			if (okMd.getAlbum() != null) i.addProperty(new DIDLObject.Property.UPNP.ALBUM(okMd.getAlbum()));
 		}
 
 		return i;
