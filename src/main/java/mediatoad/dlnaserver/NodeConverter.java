@@ -39,8 +39,8 @@ import mediatoad.auth.AuthList.AccessType;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;
-import mediatoad.media.MetadataReader.Confidence;
-import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.media.ArtistInfoGuesser.Confidence;
+import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 
 /**
  * TODO add caching like Morrigan ContentAdaptor has?
@@ -115,8 +115,8 @@ public class NodeConverter {
 			res.setDuration(ModelUtil.toTimeString(durationSeconds));
 		}
 
-		final Metadata okMd = c.getMetadata() != null && c.getMetadata().hasConfidence(Confidence.OK) ? c.getMetadata() : null;
-		final String title = okMd != null ? okMd.getTitle() : c.getTitle();
+		final ArtistInfo okInfo = c.getArtistInfo() != null && c.getArtistInfo().hasConfidence(Confidence.OK) ? c.getArtistInfo() : null;
+		final String title = okInfo != null ? okInfo.getTitle() : c.getTitle();
 
 		final Item i;
 		switch (c.getFormat().getContentGroup()) {
@@ -146,9 +146,9 @@ public class NodeConverter {
 			});
 		}
 
-		if (okMd != null) {
-			if (okMd.getArtist() != null) i.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(okMd.getArtist())));
-			if (okMd.getAlbum() != null) i.addProperty(new DIDLObject.Property.UPNP.ALBUM(okMd.getAlbum()));
+		if (okInfo != null) {
+			if (okInfo.getArtist() != null) i.addProperty(new DIDLObject.Property.UPNP.ARTIST(new PersonWithRole(okInfo.getArtist())));
+			if (okInfo.getAlbum() != null) i.addProperty(new DIDLObject.Property.UPNP.ALBUM(okInfo.getAlbum()));
 		}
 
 		return i;

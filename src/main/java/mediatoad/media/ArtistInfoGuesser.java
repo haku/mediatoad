@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MetadataReader {
+public class ArtistInfoGuesser {
 
 	private static final String EXTENSION = "\\.[A-Za-z0-9]{2,}$";
 
@@ -37,7 +37,7 @@ public class MetadataReader {
 	private static final Pattern NOTE_PATTERN = Pattern.compile(
 			"(\\s+\\[[^\\]]+\\])");
 
-	public static Metadata read (final File file) {
+	public static ArtistInfo read (final File file) {
 		if (file == null) return null;
 
 		final String fileName = file.getName();
@@ -90,8 +90,8 @@ public class MetadataReader {
 		return NOTE_PATTERN.matcher(title).replaceAll("");
 	}
 
-	private static Metadata makeMetadata(final String artist, final String album, final String title, final Confidence confidence) {
-		return new Metadata(artist, album, removeNotes(title), confidence);
+	private static ArtistInfo makeMetadata(final String artist, final String album, final String title, final Confidence confidence) {
+		return new ArtistInfo(artist, album, removeNotes(title), confidence);
 	}
 
 	public enum Confidence {
@@ -99,14 +99,14 @@ public class MetadataReader {
 		GUESS,
 	}
 
-	public static class Metadata {
+	public static class ArtistInfo {
 
 		private final String artist;
 		private final String album;
 		private final String title;
 		private final Confidence confidence;
 
-		public Metadata (final String artist, final String album, final String title, final Confidence confidence) {
+		public ArtistInfo (final String artist, final String album, final String title, final Confidence confidence) {
 			if (title == null) throw new IllegalArgumentException("title is required.");
 			if (confidence == null) throw new IllegalArgumentException("confidence is required.");
 
@@ -155,20 +155,20 @@ public class MetadataReader {
 		public boolean equals (final Object obj) {
 			if (obj == this) return true;
 			if (obj == null) return false;
-			if (!(obj instanceof Metadata)) return false;
-			final Metadata that = (Metadata) obj;
+			if (!(obj instanceof ArtistInfo)) return false;
+			final ArtistInfo that = (ArtistInfo) obj;
 			return Objects.equals(this.artist, that.artist)
 					&& Objects.equals(this.album, that.album)
 					&& Objects.equals(this.title, that.title)
 					&& Objects.equals(this.confidence, that.confidence);
 		}
 
-		protected Metadata withTitle(final String newTitle) {
-			return new Metadata(this.artist, this.album, newTitle, this.confidence);
+		protected ArtistInfo withTitle(final String newTitle) {
+			return new ArtistInfo(this.artist, this.album, newTitle, this.confidence);
 		}
 
-		protected Metadata withConfidence(final Confidence newConfidence) {
-			return new Metadata(this.artist, this.album, this.title, newConfidence);
+		protected ArtistInfo withConfidence(final Confidence newConfidence) {
+			return new ArtistInfo(this.artist, this.album, this.title, newConfidence);
 		}
 
 	}

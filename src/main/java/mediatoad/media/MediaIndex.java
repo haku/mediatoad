@@ -18,7 +18,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.AuthList.AccessType;
 import mediatoad.auth.Authoriser;
-import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.util.AsyncCallback;
 import mediatoad.util.FileHelper;
 import mediatoad.util.Watcher.EventResult;
@@ -359,9 +359,9 @@ public class MediaIndex implements FileListener {
 	}
 
 	private static void findMetadata(final File file, final ContentItem item) {
-		final Metadata md = MetadataReader.read(file);
-		if (md == null) return;
-		item.setMetadata(md);
+		final ArtistInfo info = ArtistInfoGuesser.read(file);
+		if (info == null) return;
+		item.setArtistInfo(info);
 	}
 
 	private void findArt(final File mediaFile, final MediaFormat mediaFormat, final ContentItem item, final ContentNode node) throws IOException {

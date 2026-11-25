@@ -12,15 +12,15 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import mediatoad.media.MetadataReader.Confidence;
-import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.media.ArtistInfoGuesser.Confidence;
+import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 
 @RunWith(Parameterized.class)
-public class MetadataReaderTest {
+public class ArtistInfoGuesserTest {
 
-	private static final Metadata ARTIST_ALBUM_TITLE = new Metadata("Some Artist", "Some Album", "Some Track", Confidence.OK);
-	private static final Metadata ARTIST_TITLE = new Metadata("Some Artist", null, "Some Track", Confidence.OK);
-	private static final Metadata ALBUM_TITLE = new Metadata(null, "Some Album", "Some Track", Confidence.OK);
+	private static final ArtistInfo ARTIST_ALBUM_TITLE = new ArtistInfo("Some Artist", "Some Album", "Some Track", Confidence.OK);
+	private static final ArtistInfo ARTIST_TITLE = new ArtistInfo("Some Artist", null, "Some Track", Confidence.OK);
+	private static final ArtistInfo ALBUM_TITLE = new ArtistInfo(null, "Some Album", "Some Track", Confidence.OK);
 
 	@Parameters(name = "{index}: {1} = {0}")
 	public static Collection<Object[]> params() {
@@ -54,14 +54,14 @@ public class MetadataReaderTest {
 	}
 
 	@Parameter(0)
-	public Metadata expected;
+	public ArtistInfo expected;
 
 	@Parameter(1)
 	public String filePath;
 
 	@Test
 	public void itExtractsMetadata() throws Exception {
-		assertEquals(this.expected, MetadataReader.read(new File(this.filePath)));
+		assertEquals(this.expected, ArtistInfoGuesser.read(new File(this.filePath)));
 	}
 
 }

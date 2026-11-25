@@ -40,7 +40,8 @@ import mediatoad.db.Sqlite;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
-import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
+import mediatoad.media.ArtistInfoGuesser.Confidence;
 import mediatoad.util.StringHelper;
 
 public class SearchEngine {
@@ -478,7 +479,14 @@ public class SearchEngine {
 
 		@Override
 		public boolean matches (final ContentItem item) {
-			return item.getTitle().toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString);
+			String title = item.getTitle();
+
+			final ArtistInfo info = item.getArtistInfo();
+			if (info != null && info.getTitle() != null && info.hasConfidence(Confidence.OK)) {
+				title = info.getTitle();
+			}
+
+			return title.toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString);
 		}
 
 		@Override
@@ -518,10 +526,10 @@ public class SearchEngine {
 
 		@Override
 		public boolean matches (final ContentItem item) {
-			final Metadata md = item.getMetadata();
-			if (md == null) return false;
+			final ArtistInfo info = item.getArtistInfo();
+			if (info == null) return false;
 
-			final String artist = md.getArtist();
+			final String artist = info.getArtist();
 			if (artist == null) return false;
 
 			return artist.toLowerCase(Locale.ENGLISH).contains(this.lcaseSubString);

@@ -16,7 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import mediatoad.auth.Users.User;
-import mediatoad.media.MetadataReader.Metadata;
+import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.util.CollectionHelper;
 import mediatoad.util.ExConsumer;
 
@@ -32,7 +32,7 @@ public class ContentItem extends AbstractContent {
 	private volatile int width;
 	private volatile int height;
 	private volatile ContentItem art;
-	private volatile Metadata metadata;
+	private volatile ArtistInfo artistInfo;
 	private volatile long fileLength = 0L;
 	private volatile long createdMillis = 0L;
 	private volatile long modifiedMillis = 0L;
@@ -95,8 +95,8 @@ public class ContentItem extends AbstractContent {
 		this.art = art;
 	}
 
-	public void setMetadata(final Metadata metadata) {
-		this.metadata = metadata;
+	public void setArtistInfo(final ArtistInfo artistInfo) {
+		this.artistInfo = artistInfo;
 	}
 
 	public void setWidthAndHeight(final int width, final int height) {
@@ -180,8 +180,8 @@ public class ContentItem extends AbstractContent {
 		return this.art;
 	}
 
-	public Metadata getMetadata() {
-		return this.metadata;
+	public ArtistInfo getArtistInfo() {
+		return this.artistInfo;
 	}
 
 	public long getFileLength() {
