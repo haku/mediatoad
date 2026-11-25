@@ -15,8 +15,8 @@ import java.util.Set;
 import com.google.common.annotations.VisibleForTesting;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.auth.Users.User;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.util.CollectionHelper;
 import mediatoad.util.ExConsumer;
 

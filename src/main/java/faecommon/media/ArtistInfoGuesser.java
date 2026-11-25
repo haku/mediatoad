@@ -1,4 +1,4 @@
-package mediatoad.media;
+package faecommon.media;
 
 import java.io.File;
 import java.util.Objects;

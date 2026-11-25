@@ -21,13 +21,13 @@ import org.jupnp.support.model.container.Container;
 import org.jupnp.support.model.item.AudioItem;
 import org.jupnp.support.model.item.Item;
 
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
+import faecommon.media.ArtistInfoGuesser.Confidence;
 import mediatoad.auth.AuthList;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;
 import mediatoad.media.MediaFormat;
-import mediatoad.media.ArtistInfoGuesser.Confidence;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 
 public class NodeConverterTest {
 

@@ -15,10 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import faecommon.media.ArtistInfoGuesser;
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.auth.AuthList;
 import mediatoad.auth.AuthList.AccessType;
 import mediatoad.auth.Authoriser;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 import mediatoad.util.AsyncCallback;
 import mediatoad.util.FileHelper;
 import mediatoad.util.Watcher.EventResult;

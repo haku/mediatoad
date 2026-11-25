@@ -35,12 +35,12 @@ import org.jupnp.support.model.item.Item;
 import org.jupnp.support.model.item.VideoItem;
 import org.jupnp.util.MimeType;
 
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
+import faecommon.media.ArtistInfoGuesser.Confidence;
 import mediatoad.auth.AuthList.AccessType;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
 import mediatoad.media.ExternalUrls;
-import mediatoad.media.ArtistInfoGuesser.Confidence;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
 
 /**
  * TODO add caching like Morrigan ContentAdaptor has?

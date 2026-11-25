@@ -34,14 +34,14 @@ import cdsc.CDSCParser.BinOpContext;
 import cdsc.CDSCParser.LogOpContext;
 import cdsc.CDSCParser.RelExpContext;
 import cdsc.CDSCParser.SearchExpContext;
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
+import faecommon.media.ArtistInfoGuesser.Confidence;
 import mediatoad.auth.Users.User;
 import mediatoad.db.MediaDb;
 import mediatoad.db.Sqlite;
 import mediatoad.media.ContentGroup;
 import mediatoad.media.ContentItem;
 import mediatoad.media.ContentNode;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
-import mediatoad.media.ArtistInfoGuesser.Confidence;
 import mediatoad.util.StringHelper;
 
 public class SearchEngine {

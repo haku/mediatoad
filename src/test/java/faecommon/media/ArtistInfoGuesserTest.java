@@ -1,4 +1,4 @@
-package mediatoad.media;
+package faecommon.media;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,8 +12,8 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
-import mediatoad.media.ArtistInfoGuesser.Confidence;
-import mediatoad.media.ArtistInfoGuesser.ArtistInfo;
+import faecommon.media.ArtistInfoGuesser.ArtistInfo;
+import faecommon.media.ArtistInfoGuesser.Confidence;
 
 @RunWith(Parameterized.class)
 public class ArtistInfoGuesserTest {
